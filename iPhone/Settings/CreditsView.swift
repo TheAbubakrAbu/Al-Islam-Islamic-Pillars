@@ -42,10 +42,14 @@ struct CreditsView: View {
                 Text("This app was inspired by my desire to help new reverts and non-Muslims learn about Islam and easily access the Quran and prayer times. I’m deeply grateful to my parents for instilling in me a love for the faith—may Allah reward them. I also extend my thanks to my teacher, Mr. Joe Silvey, who, though not Muslim, has been a constant ally, supporting our school's Muslim Student Association and helping us hold weekly Jummuah prayers.")
                     .font(.body)
                     .multilineTextAlignment(.leading)
+                
+                Link("View the source code on GitHub: github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars", destination: URL(string: "https://github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars")!)
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
             }
             
             Section {
-                Text("Version 3.1.2")
+                Text("Version 3.2")
                     .font(.caption)
             }
             

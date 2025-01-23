@@ -157,7 +157,6 @@
 		720D00852C1A8C8A00D00D7E /* QuranPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranPlayer.swift; sourceTree = "<group>"; };
 		720DEC5A2D244EEF006EA342 /* CreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
 		72109F302A65D77400BD373E /* Complication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Complication.swift; sourceTree = "<group>"; };
-		7230F8922D41CA060017DAE3 /* adhan-swift-main */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "adhan-swift-main"; sourceTree = "<group>"; };
 		7230F8962D41CA7C0017DAE3 /* Entitlements.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Entitlements.entitlements; sourceTree = "<group>"; };
 		7247DB992CD4D666000803F2 /* Hafs.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Hafs.ttf; sourceTree = "<group>"; };
 		7247DBA52CD4DD78000803F2 /* Indopak.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Indopak.ttf; sourceTree = "<group>"; };
@@ -183,6 +182,12 @@
 		7260F9342A8715D600E8FF87 /* LaunchScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LaunchScreen.swift; sourceTree = "<group>"; };
 		7260F9352A8715D600E8FF87 /* SplashScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
 		7260F93B2A8715D600E8FF87 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7287AB092D42E50A00C3D776 /* iPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7287AB0A2D42E50A00C3D776 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7287AB0B2D42E50A00C3D776 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Complication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7287AB0C2D42E50A00C3D776 /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Widget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7287AB0D2D42E55D00C3D776 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		7287AB0E2D42E55D00C3D776 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		729115322AF817CF00A4EB2B /* MosquesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MosquesView.swift; sourceTree = "<group>"; };
 		729115332AF817CF00A4EB2B /* ToolsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ToolsView.swift; sourceTree = "<group>"; };
 		729115342AF817CF00A4EB2B /* 99_Names_Of_Allah.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = 99_Names_Of_Allah.json; sourceTree = "<group>"; };
@@ -194,10 +199,6 @@
 		7291153B2AF817CF00A4EB2B /* ArabicLetterView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArabicLetterView.swift; sourceTree = "<group>"; };
 		72B531A42A22DCFE007FA002 /* Al-IslamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Al-IslamApp.swift"; sourceTree = "<group>"; };
 		72CA76E72CD39738002D4EFB /* quran_en.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = quran_en.json; sourceTree = "<group>"; };
-		72CCAE8F2D42DCE000871A6A /* iPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = iPhone.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Apps/Al-Islam | Islamic Pillars/build/Debug-iphoneos/iPhone.app"; sourceTree = "<absolute>"; };
-		72CCAE902D42DCE300871A6A /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Widget.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Apps/Al-Islam | Islamic Pillars/build/Debug-iphoneos/Widget.appex"; sourceTree = "<absolute>"; };
-		72CCAE912D42DCE600871A6A /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Watch.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Apps/Al-Islam | Islamic Pillars/build/Debug-watchos/Watch.app"; sourceTree = "<absolute>"; };
-		72CCAE922D42DCE900871A6A /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Complication.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Apps/Al-Islam | Islamic Pillars/build/Debug-watchos/Complication.appex"; sourceTree = "<absolute>"; };
 		72CCAE962D42DDF100871A6A /* WatchConnectivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivity.swift; sourceTree = "<group>"; };
 		72CCAE9B2D42DE8F00871A6A /* Arabic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arabic.swift; sourceTree = "<group>"; };
 		72CCAE9F2D42DF5700871A6A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -205,6 +206,7 @@
 		72CCAEA12D42DF5700871A6A /* ConditionalStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalStyle.swift; sourceTree = "<group>"; };
 		72CCAEA22D42DF5700871A6A /* SearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBar.swift; sourceTree = "<group>"; };
 		72CCAEA82D42DF9D00871A6A /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
+		72CCAEB62D42E4ED00871A6A /* adhan-swift-main */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "adhan-swift-main"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -254,7 +256,7 @@
 		7230F8932D41CA060017DAE3 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				7230F8922D41CA060017DAE3 /* adhan-swift-main */,
+				72CCAEB62D42E4ED00871A6A /* adhan-swift-main */,
 			);
 			path = Packages;
 			sourceTree = "<group>";
@@ -288,11 +290,17 @@
 		725E6F442A1C687500AF8854 = {
 			isa = PBXGroup;
 			children = (
+				7287AB0D2D42E55D00C3D776 /* LICENSE.txt */,
+				7287AB0E2D42E55D00C3D776 /* README.md */,
 				7230F8A32D42119D0017DAE3 /* Resources */,
 				7260F9132A8715D600E8FF87 /* iPhone */,
 				725B42032AA0061C009C8C91 /* Widget */,
 				72B531A32A22DCFE007FA002 /* Apple Watch */,
 				72109F2F2A65D77400BD373E /* Complication */,
+				7287AB092D42E50A00C3D776 /* iPhone.app */,
+				7287AB0A2D42E50A00C3D776 /* Watch.app */,
+				7287AB0B2D42E50A00C3D776 /* Complication.appex */,
+				7287AB0C2D42E50A00C3D776 /* Widget.appex */,
 			);
 			sourceTree = "<group>";
 		};
@@ -429,7 +437,7 @@
 				72802B942C570B9F000DF9B5 /* Adhan */,
 			);
 			productName = ComplicationExtension;
-			productReference = 72CCAE922D42DCE900871A6A /* Complication.appex */;
+			productReference = 7287AB0B2D42E50A00C3D776 /* Complication.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		725B41FF2AA0061B009C8C91 /* Widget */ = {
@@ -449,7 +457,7 @@
 				72802B902C570B86000DF9B5 /* Adhan */,
 			);
 			productName = WidgetExtension;
-			productReference = 72CCAE902D42DCE300871A6A /* Widget.appex */;
+			productReference = 7287AB0C2D42E50A00C3D776 /* Widget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		725E6F4C2A1C687500AF8854 /* iPhone */ = {
@@ -473,7 +481,7 @@
 				72802B8E2C570B76000DF9B5 /* Adhan */,
 			);
 			productName = "Islamic Pillars";
-			productReference = 72CCAE8F2D42DCE000871A6A /* iPhone.app */;
+			productReference = 7287AB092D42E50A00C3D776 /* iPhone.app */;
 			productType = "com.apple.product-type.application";
 		};
 		72B531A12A22DCFE007FA002 /* Watch */ = {
@@ -495,7 +503,7 @@
 				72802B922C570B93000DF9B5 /* Adhan */,
 			);
 			productName = "IslamicPillars Watch App";
-			productReference = 72CCAE912D42DCE600871A6A /* Watch.app */;
+			productReference = 7287AB0A2D42E50A00C3D776 /* Watch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -531,7 +539,7 @@
 			);
 			mainGroup = 725E6F442A1C687500AF8854;
 			packageReferences = (
-				72802B8B2C570B47000DF9B5 /* XCLocalSwiftPackageReference "adhan-swift-main" */,
+				72CCAEB22D42E4C100871A6A /* XCLocalSwiftPackageReference "Resources/Packages/adhan-swift-main" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 725E6F442A1C687500AF8854;
@@ -733,7 +741,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp.complication1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -770,7 +778,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp.complication1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -804,7 +812,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -837,7 +845,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1008,7 +1016,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1050,7 +1058,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1088,7 +1096,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1125,7 +1133,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.1.2;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1188,9 +1196,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		72802B8B2C570B47000DF9B5 /* XCLocalSwiftPackageReference "adhan-swift-main" */ = {
+		72CCAEB22D42E4C100871A6A /* XCLocalSwiftPackageReference "Resources/Packages/adhan-swift-main" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "adhan-swift-main";
+			relativePath = "Resources/Packages/adhan-swift-main";
 		};
 /* End XCLocalSwiftPackageReference section */
 
