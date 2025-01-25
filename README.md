@@ -1,11 +1,12 @@
 # Al-Islam | Islamic Pillars
 
-A free, beginner-friendly Islamic app featuring prayer times, Quran, and unique features like Traveling Mode and Beginner Arabic Mode.
-Published on the App Store on July 26, 2023.
+**Apple Ecosystem App** – Available on iPhone, iPad, Mac, and Apple Watch
 
-## Overview
+Explore Islam with **Al-Islam**! Perfect for converts & all Muslims, featuring Traveling Mode & Beginner Quran Mode. Dive deeper, anywhere, anytime.
 
-Discover **Al-Islam | Islamic Pillars**, a comprehensive and user-friendly app designed for reverts, lifelong Muslims, and anyone seeking a deeper connection to Islam. With innovative features like Traveling Mode and Beginner Arabic Mode, this app supports your spiritual growth and makes Islamic practices accessible, enriching, and meaningful.
+I was a **17-year-old** high school student when this app was published on the App Store on **July 26, 2023**.
+
+[**Download Al-Islam on the App Store here**](https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone)
 
 ## Features
 
