@@ -12,11 +12,11 @@ struct IslamicPillarsApp: App {
     @State private var isLaunching = true
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
+    
     init() {
         _ = WatchConnectivityManager.shared
     }
-
+    
     var body: some Scene {
         WindowGroup {
             Group {
