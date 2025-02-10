@@ -42,17 +42,6 @@ struct PrayerCountdown: View {
     }
     
     private func setupTimer() {
-        self.timer.upstream.connect().cancel()
-
-        if let nextPrayer = settings.nextPrayer {
-            let now = Date()
-            let remainingInterval = nextPrayer.time.timeIntervalSince(now)
-            
-            if remainingInterval > 0 {
-                self.timer = Timer.publish(every: remainingInterval, on: .main, in: .common).autoconnect()
-            }
-        }
-
         progressToNextPrayer = calculateProgress()
     }
     
@@ -181,6 +170,10 @@ struct PrayerCountdown: View {
                             .tint(settings.accentColor.color)
                             .onReceive(timer) { _ in
                                 progressToNextPrayer = calculateProgress()
+                                if progressToNextPrayer >= 1 {
+                                    settings.fetchPrayerTimes()
+                                    setupTimer()
+                                }
                             }
                         
                         HStack(alignment: .center) {
@@ -209,10 +202,10 @@ struct PrayerCountdown: View {
                     setupTimer()
                 }
             }
-            .onChange(of: currentPrayer) { value in
+            .onChange(of: currentPrayer) { _ in
                 setupTimer()
             }
-            .onChange(of: nextPrayer) { value in
+            .onChange(of: nextPrayer) { _ in
                 setupTimer()
             }
         }

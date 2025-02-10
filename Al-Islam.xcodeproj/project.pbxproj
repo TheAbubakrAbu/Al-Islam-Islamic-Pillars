@@ -181,11 +181,8 @@
 		7260F9332A8715D600E8FF87 /* Al-IslamApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Al-IslamApp.swift"; sourceTree = "<group>"; };
 		7260F9342A8715D600E8FF87 /* LaunchScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LaunchScreen.swift; sourceTree = "<group>"; };
 		7260F9352A8715D600E8FF87 /* SplashScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
-		7260F93B2A8715D600E8FF87 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		7287AB092D42E50A00C3D776 /* iPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		7287AB0A2D42E50A00C3D776 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		7287AB0B2D42E50A00C3D776 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Complication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		7287AB0C2D42E50A00C3D776 /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Widget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		72616D802D52F7B000A66C86 /* Info-Main.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Main.plist"; sourceTree = "<group>"; };
+		72616D812D52F7BD00A66C86 /* Info-Widget.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Widget.plist"; sourceTree = "<group>"; };
 		7287AB0D2D42E55D00C3D776 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 		7287AB0E2D42E55D00C3D776 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		729115322AF817CF00A4EB2B /* MosquesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MosquesView.swift; sourceTree = "<group>"; };
@@ -198,6 +195,10 @@
 		7291153A2AF817CF00A4EB2B /* ArabicView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArabicView.swift; sourceTree = "<group>"; };
 		7291153B2AF817CF00A4EB2B /* ArabicLetterView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArabicLetterView.swift; sourceTree = "<group>"; };
 		72B531A42A22DCFE007FA002 /* Al-IslamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Al-IslamApp.swift"; sourceTree = "<group>"; };
+		72B8AC2A2D597DA000591AD4 /* iPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = iPhone.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/GItHub/(1) XCode/Al-Islam | Islamic Pillars/build/Debug-iphoneos/iPhone.app"; sourceTree = "<absolute>"; };
+		72B8AC2B2D597DA000591AD4 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Watch.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/GItHub/(1) XCode/Al-Islam | Islamic Pillars/build/Debug-watchos/Watch.app"; sourceTree = "<absolute>"; };
+		72B8AC2C2D597DA000591AD4 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Complication.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/GItHub/(1) XCode/Al-Islam | Islamic Pillars/build/Debug-watchos/Complication.appex"; sourceTree = "<absolute>"; };
+		72B8AC2D2D597DA000591AD4 /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Widget.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/GItHub/(1) XCode/Al-Islam | Islamic Pillars/build/Debug-iphoneos/Widget.appex"; sourceTree = "<absolute>"; };
 		72CA76E72CD39738002D4EFB /* quran_en.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = quran_en.json; sourceTree = "<group>"; };
 		72CCAE962D42DDF100871A6A /* WatchConnectivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivity.swift; sourceTree = "<group>"; };
 		72CCAE9B2D42DE8F00871A6A /* Arabic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arabic.swift; sourceTree = "<group>"; };
@@ -265,7 +266,8 @@
 			isa = PBXGroup;
 			children = (
 				7230F8962D41CA7C0017DAE3 /* Entitlements.entitlements */,
-				7260F93B2A8715D600E8FF87 /* Info.plist */,
+				72616D802D52F7B000A66C86 /* Info-Main.plist */,
+				72616D812D52F7BD00A66C86 /* Info-Widget.plist */,
 				7260F91F2A8715D600E8FF87 /* Assets.xcassets */,
 				7260F9382A8715D600E8FF87 /* Fonts */,
 				7260F9222A8715D600E8FF87 /* JSONs */,
@@ -297,10 +299,6 @@
 				725B42032AA0061C009C8C91 /* Widget */,
 				72B531A32A22DCFE007FA002 /* Apple Watch */,
 				72109F2F2A65D77400BD373E /* Complication */,
-				7287AB092D42E50A00C3D776 /* iPhone.app */,
-				7287AB0A2D42E50A00C3D776 /* Watch.app */,
-				7287AB0B2D42E50A00C3D776 /* Complication.appex */,
-				7287AB0C2D42E50A00C3D776 /* Widget.appex */,
 			);
 			sourceTree = "<group>";
 		};
@@ -437,7 +435,7 @@
 				72802B942C570B9F000DF9B5 /* Adhan */,
 			);
 			productName = ComplicationExtension;
-			productReference = 7287AB0B2D42E50A00C3D776 /* Complication.appex */;
+			productReference = 72B8AC2C2D597DA000591AD4 /* Complication.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		725B41FF2AA0061B009C8C91 /* Widget */ = {
@@ -457,7 +455,7 @@
 				72802B902C570B86000DF9B5 /* Adhan */,
 			);
 			productName = WidgetExtension;
-			productReference = 7287AB0C2D42E50A00C3D776 /* Widget.appex */;
+			productReference = 72B8AC2D2D597DA000591AD4 /* Widget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		725E6F4C2A1C687500AF8854 /* iPhone */ = {
@@ -481,7 +479,7 @@
 				72802B8E2C570B76000DF9B5 /* Adhan */,
 			);
 			productName = "Islamic Pillars";
-			productReference = 7287AB092D42E50A00C3D776 /* iPhone.app */;
+			productReference = 72B8AC2A2D597DA000591AD4 /* iPhone.app */;
 			productType = "com.apple.product-type.application";
 		};
 		72B531A12A22DCFE007FA002 /* Watch */ = {
@@ -503,7 +501,7 @@
 				72802B922C570B93000DF9B5 /* Adhan */,
 			);
 			productName = "IslamicPillars Watch App";
-			productReference = 7287AB0A2D42E50A00C3D776 /* Watch.app */;
+			productReference = 72B8AC2B2D597DA000591AD4 /* Watch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -722,14 +720,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -741,7 +739,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp.complication1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -759,14 +757,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -778,7 +776,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp.complication1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -795,14 +793,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -812,7 +810,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -828,14 +826,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -845,7 +843,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -909,7 +907,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
 				INFOPLIST_PREPROCESS = NO;
@@ -972,7 +970,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
 				INFOPLIST_PREPROCESS = NO;
@@ -999,6 +997,7 @@
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Resources/Info-Main.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to accurately determine prayer times (no information leaves the device)";
@@ -1016,7 +1015,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1041,6 +1040,7 @@
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Resources/Info-Main.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to accurately determine prayer times (no information leaves the device)";
@@ -1058,7 +1058,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1082,7 +1082,7 @@
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Main.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to accurately determine prayer times (no data leaves your device)";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your location is needed to accurately determine prayer times and to determine whether you are traveling or not (no data leaves your device) ";
@@ -1096,7 +1096,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1119,7 +1119,7 @@
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Main.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Al-Islam";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to accurately determine prayer times (no data leaves your device)";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your location is needed to accurately determine prayer times and to determine whether you are traveling or not (no data leaves your device) ";
@@ -1133,7 +1133,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2;
+				MARKETING_VERSION = 3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

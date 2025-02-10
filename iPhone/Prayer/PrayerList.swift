@@ -334,32 +334,32 @@ struct PrayerList: View {
                                         }
                                         
                                         if prayerTime.nameTransliteration == "Fajr" {
-                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Subh (Fajr) prayer lasts from the beginning of the pre-dawn so long as the sun has not yet started to rise. When the sun starts to rise then stop praying, for it rises between the two horns of the Shaytan.”")
+                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Fajr prayer is from the appearance of dawn, as long as the sun has not yet risen” (Muslim 612).")
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
                                                 .padding(.top, 2)
                                         } else if prayerTime.nameTransliteration.contains("Dhuhr") {
-                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Dhuhr is from when the sun has passed its zenith and a man’s shadow is equal in length to his height (this is the end time), until the time for Asr comes.”")
+                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Dhuhr is when the sun has passed its zenith and a person’s shadow is equal in length to his height, until the time for Asr begins” (Muslim 612).")
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
                                                 .padding(.top, 2)
                                         } else if prayerTime.nameTransliteration == "Jummuah" {
-                                            Text("Jummuah is Arabic for Friday because this is an obligatory congregation prayer for men every Friday. Prophet Muhammad Muhammad (peace and blessings of Allah be upon him) said: \"The best day in the sight of Allah is Friday, the day of the congregation.\"")
+                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The Friday prayer is obligatory upon every Muslim in the time of Dhuhr, except for a child, a woman, or an ill person” (Abu Dawood 1067).")
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
                                                 .padding(.top, 2)
                                         } else if prayerTime.nameTransliteration == "Asr" {
-                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Asr lasts until the sun turns yellow.”")
+                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Asr prayer lasts until the sun turns yellow” (Muslim 612).")
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
                                                 .padding(.top, 2)
                                         } else if prayerTime.nameTransliteration.contains("Maghrib") {
-                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Maghrib lasts until the twilight has faded.”")
+                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Maghrib lasts until the twilight has faded” (Muslim 612).")
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
                                                 .padding(.top, 2)
                                         } else if prayerTime.nameTransliteration == "Isha" {
-                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Isha lasts until midnight.”")
+                                            Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Isha lasts until the middle of the night” (Muslim 612).")
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
                                                 .padding(.top, 2)
@@ -371,7 +371,7 @@ struct PrayerList: View {
                                             .foregroundColor(.primary)
                                             .font(.footnote)
                                         
-                                        Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Subh (Fajr) prayer lasts from the beginning of the pre-dawn so long as the sun has not yet started to rise. When the sun starts to rise then stop praying, for it rises between the two horns of the Shaytan.”")
+                                        Text("Prophet Muhammad (peace and blessings of Allah be upon him) said: “The time for Fajr prayer is from the appearance of dawn as long as the sun has not yet risen. When the sun begins to rise, stop praying, for it rises between the horns of Shaytan” (Muslim 612).")
                                             .foregroundColor(.secondary)
                                             .font(.caption)
                                             .padding(.top, 2)

@@ -19,7 +19,6 @@ struct SplashScreen: View {
                     .aspectRatio(contentMode: .fit)
                     .scaledToFit()
                     .cornerRadius(10)
-                    .frame(maxWidth: 200)
                 
                 Spacer()
                 

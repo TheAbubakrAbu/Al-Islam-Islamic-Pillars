@@ -364,11 +364,17 @@ struct SettingsPrayerView: View {
             if newValue {
                 settings.fetchPrayerTimes()
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if settings.travelTurnOnAutomatic {
-                        showAlert = .travelTurnOnAutomatic
-                    } else if settings.travelTurnOffAutomatic {
-                        showAlert = .travelTurnOffAutomatic
+                if settings.homeLocation == nil {
+                    withAnimation {
+                        settings.travelingMode = false
+                    }
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if settings.travelTurnOnAutomatic {
+                            showAlert = .travelTurnOnAutomatic
+                        } else if settings.travelTurnOffAutomatic {
+                            showAlert = .travelTurnOffAutomatic
+                        }
                     }
                 }
             }

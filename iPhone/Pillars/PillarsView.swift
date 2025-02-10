@@ -109,7 +109,7 @@ struct PillarsView: View {
             .navigationTitle("Islamic Pillars")
             #endif
             
-            IslamView()
+            AdhkarView()
         }
     }
 }

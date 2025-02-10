@@ -255,10 +255,16 @@ struct AyahRow: View {
                             Label("Share Ayah", systemImage: "square.and.arrow.up")
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.system(size: UIFont.preferredFont(forTextStyle: .title2).pointSize))
-                            .foregroundColor(settings.accentColor.color)
-                            .padding(.trailing, -2)
+                        ZStack(alignment: .trailing) {
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(width: 32, height: 32)
+                            
+                            Image(systemName: "ellipsis.circle")
+                                .font(.system(size: UIFont.preferredFont(forTextStyle: .title2).pointSize))
+                                .foregroundColor(settings.accentColor.color)
+                                .padding(.trailing, -2)
+                        }
                     }
                     .sheet(isPresented: $showingAyahSheet) {
                         CopyAyahSheet(copySettings: $copySettings, surahNumber: surah.id, ayahNumber: ayah.id)

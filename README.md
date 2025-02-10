@@ -8,53 +8,61 @@ I was a **17-year-old** high school student when this app was published on the A
 
 [**Download Al-Islam on the App Store here**](https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone)
 
-## Features
+## Features  
 
-### Core Islamic Practices
+### Core Islamic Practices  
 
-- **Prayer Times**: Accurate prayer time calculations based on your location.
-- **Qibla Direction**: Real-time qibla compass ensures you’re always facing the Kaaba.
+- **Prayer Times** – Accurate prayer times based on your location with customizable settings for Madhab and calculation methods.  
+- **Qibla Direction** – Real-time Qibla compass ensures you always face the Kaaba when praying.  
 
-### Unique Traveling Mode
+### Unique Traveling Mode  
 
-- Automatically shortens prayers (Qasr) when traveling over 48 miles from home.
-- Manually activate Traveling Mode to simplify worship on the go.
+- **Automatic Activation** – Traveling Mode can turn on automatically when you’re over **48 miles (77 km) from home**.  
+- **Manual Control** – Activate Traveling Mode manually to **shorten prayers (Qasr)** and make worship easier while traveling.  
+- **Customizable Settings** – Adjust Traveling Mode settings, including prayer calculations, prayer offsets, and Madhab preferences.  
 
-### Beginner-Friendly Arabic Learning
+### Beginner-Friendly Arabic Learning  
 
-- **Beginner Arabic Mode**: Spaces between Arabic letters to help new learners recognize and read the Quran.
-- **Arabic Alphabet Tutorials**: Learn the Arabic script with ease.
+- **Beginner Arabic Mode** – Arabic letters are spaced out to help new learners **recognize and read Arabic** more easily.  
+- **Arabic Alphabet Tutorials** – Learn the **complete Arabic alphabet, special letters, and numbers**, with detailed examples of different letter forms.  
 
-### Quranic Study Tools
+### Quranic Study Tools  
 
-- **Read and Listen**: Access Quranic text with translations and transliteration. Listen to multiple reciters.
-- **Sharing Options**: Share ayahs as text or images with friends and family.
-- **Customizable Quran Reading**:
-  - Adjust Arabic fonts and remove tashkeel (vowel diacritics) for a simplified experience.
-  - Save your favorite ayahs with bookmarks and keep track of your progress.
+- **Complete Quran Access** – Read the **entire Quran** with **Arabic text, English transliteration, and translations**.  
+- **Listen to Recitations** – Choose from **over 10 reciters**, with options for **Surah and Ayah-by-Ayah playback**.  
+- **Surah & Juz Navigation** – Browse the Quran by **Surah (114 chapters) or Juz**, with Juz showing the **starting Ayah** for each section.  
+- **Powerful Search** – Find any Ayah instantly using **Surah:Ayah format (e.g., 5:27)** or by searching for keywords.  
+- **Ayah Sharing** – Share **Quranic verses as text or images**, making it easier than ever to spread the message of the Quran.  
+- **Customizable Quran Reading**:  
+  - Adjust **Arabic fonts** for readability.  
+  - Enable or disable **tashkeel (diacritics)** for a cleaner reading experience.  
+  - **Bookmark Ayahs and Favorite Surahs** to save and track your progress.  
+  - **Last Read & Last Listened Ayah** keeps track of where you left off.  
+  - **Random Surah Mode** lets you explore new chapters of the Quran.  
 
-### Additional Islamic Tools
+### Additional Islamic Tools  
 
-- **Adhkar and Duas**: Daily supplications to strengthen your connection to Allah.
-- **Tasbih Counter**: Track your dhikr with a sleek, built-in counter.
-- **99 Names of Allah**: Explore the beautiful attributes of Allah and reflect on their meanings.
-- **Hijri Calendar Converter**: Seamlessly convert dates between Gregorian and Hijri calendars.
+- **Adhkar and Duas** – Access **daily supplications and remembrances** to strengthen your spiritual practice.  
+- **Tasbih Counter** – Keep track of your **dhikr** with a built-in counter.  
+- **99 Names of Allah** – Learn and reflect on **Allah’s beautiful names and meanings**.  
+- **Hijri Calendar & Converter** – View **both Hijri and Gregorian dates** and convert between them seamlessly.  
+- **Islamic Event Notifications** – Stay informed about important dates like **Ramadan, Eid, and other Islamic holidays**.  
 
-### Customizable Experience
+### Customizable Experience  
 
-- Choose your preferred Madhab and prayer calculation method.
-- Personalize the app’s interface with accent colors and themes.
+- **Personalization Options** – Choose your preferred **Madhab, prayer calculation method, Arabic font size, and accent color**.  
+- **Advanced Settings** – Adjust **Hijri date offset, notification preferences, and more**.  
 
-### Accessibility and Integration
+### Accessibility and Integration  
 
-- **Widgets**: Add prayer times to your lock screen or home screen for quick access.
-- **WatchOS Compatibility**: Stay connected with your prayers and Islamic tools on your wrist.
+- **Widgets** – Add **prayer times to your home screen and lock screen** for quick access.  
+- **WatchOS Compatibility** – Stay connected with your **prayers, Quran, and Islamic tools on your wrist**.  
 
-### Privacy and Accessibility
+### Privacy and Accessibility  
 
-- **Completely Free**: No fees, subscriptions, or in-app purchases.
-- **Ad-Free**: Enjoy an uninterrupted spiritual experience.
-- **Privacy-Focused**: Your data stays on your device, ensuring complete privacy.
+- **Completely Free** – No fees, no subscriptions, and no in-app purchases.  
+- **Ad-Free** – Enjoy an uninterrupted experience with **no distractions**.  
+- **Privacy-Focused** – Your data **never leaves your device**, ensuring complete security and privacy.  
 
 ## License
 
@@ -75,4 +83,4 @@ For feedback, feature requests, or questions, feel free to reach out:
 - **Website**: [abubakrelmallah.com](https://abubakrelmallah.wordpress.com/)
 - **LinkedIn**: [linkedin.com/abubakr](https://www.linkedin.com/in/abubakr-elmallah-416a0b273/)
 
-Created by Abubakr Elmallah
+Created by **Abubakr Elmallah**
