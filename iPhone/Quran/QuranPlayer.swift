@@ -485,17 +485,14 @@ extension QuranPlayer {
     }
     
     func saveLastListenedSurah() {
-        guard
-            let sName = nowPlayingTitle,
-            let sNumber = currentSurahNumber,
-            let reciter = reciters.first(where: { $0.name == nowPlayingReciter }),
+        guard nowPlayingTitle != nil, let sNumber = currentSurahNumber, let reciter = reciters.first(where: { $0.name == nowPlayingReciter}),
             let p = player
         else { return }
         
         let currentDuration = CMTimeGetSeconds(p.currentTime())
         let fullDuration = CMTimeGetSeconds(p.currentItem?.duration ?? .zero)
         
-        if isPlayingSurah {
+        if isPlayingSurah, let currentSurah = quranData.quran.first(where: { $0.id == sNumber }) {
             if currentDuration == fullDuration {
                 let nextSurahNumber: Int?
                 switch settings.reciteType {
@@ -506,13 +503,12 @@ extension QuranPlayer {
                 default:
                     nextSurahNumber = sNumber < 114 ? sNumber + 1 : nil
                 }
-                if let n = nextSurahNumber,
-                   let nxtSurah = quranData.quran.first(where: { $0.id == n }) {
+                if let n = nextSurahNumber, let nxtSurah = quranData.quran.first(where: { $0.id == n }) {
                     let nxtFull = getSurahDuration(surahNumber: n)
                     withAnimation {
                         settings.lastListenedSurah = LastListenedSurah(
                             surahNumber: n,
-                            surahName: "Surah \(nxtSurah.id): \(nxtSurah.nameTransliteration)",
+                            surahName: nxtSurah.nameTransliteration,
                             reciter: reciter,
                             currentDuration: 0,
                             fullDuration: nxtFull
@@ -522,7 +518,7 @@ extension QuranPlayer {
                     withAnimation {
                         settings.lastListenedSurah = LastListenedSurah(
                             surahNumber: sNumber,
-                            surahName: sName,
+                            surahName: currentSurah.nameTransliteration,
                             reciter: reciter,
                             currentDuration: 0,
                             fullDuration: fullDuration
@@ -533,7 +529,7 @@ extension QuranPlayer {
                 withAnimation {
                     settings.lastListenedSurah = LastListenedSurah(
                         surahNumber: sNumber,
-                        surahName: sName,
+                        surahName: currentSurah.nameTransliteration,
                         reciter: reciter,
                         currentDuration: currentDuration,
                         fullDuration: fullDuration

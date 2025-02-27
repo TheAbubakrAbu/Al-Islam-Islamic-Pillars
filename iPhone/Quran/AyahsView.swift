@@ -113,6 +113,7 @@ struct HeaderRow: View {
                     .padding(.vertical, 4)
             }
         }
+        .padding(.top, -4)
         #if !os(watchOS)
         .contextMenu {
             if !settings.beginnerMode {
@@ -312,6 +313,7 @@ struct AyahRow: View {
                                 .padding(.vertical, 4)
                         }
                     }
+                    .padding(.bottom, 2)
                     .fixedSize(horizontal: false, vertical: true)
                 }
                 .disabled(searchText.isEmpty)
@@ -350,7 +352,6 @@ struct AyahRow: View {
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 #endif
-
             }
             .lineLimit(nil)
             #if !os(watchOS)
@@ -438,77 +439,72 @@ struct AyahsView: View {
                     Section(header: SurahSectionHeader(surah: surah)) {
                         if searchText.isEmpty {
                             VStack {
-                                VStack {
-                                    if surah.id == 1 || surah.id == 9 {
-                                        HeaderRow(arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيْطَانِ ٱلرَّجِيمِ", englishTransliteration: "Audhu billahi minashaitanir rajeem", englishTranslation: "I seek refuge in Allah from the accursed Satan.")
-                                            .padding(.vertical)
-                                            .environmentObject(quranPlayer)
-                                    } else {
-                                        HeaderRow(arabicText: "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", englishTransliteration: "Bismi Allahi alrrahmani alrraheemi", englishTranslation: "In the name of Allah, the Compassionate, the Merciful.")
-                                            .padding(.vertical)
-                                            .environmentObject(quranPlayer)
-                                    }
+                                if surah.id == 1 || surah.id == 9 {
+                                    HeaderRow(arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيْطَانِ ٱلرَّجِيمِ", englishTransliteration: "Audhu billahi minashaitanir rajeem", englishTranslation: "I seek refuge in Allah from the accursed Satan.")
+                                        .padding(.vertical)
+                                } else {
+                                    HeaderRow(arabicText: "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", englishTransliteration: "Bismi Allahi alrrahmani alrraheemi", englishTranslation: "In the name of Allah, the Compassionate, the Merciful.")
+                                        .padding(.vertical)
                                 }
-                                #if !os(watchOS)
-                                .listRowSeparator(.hidden, edges: .bottom)
-                                #endif
                                 
                                 #if !os(watchOS)
-                                Divider()
-                                    .background(settings.accentColor.color)
-                                    .padding(.trailing, -100)
-                                    .padding(.bottom, -100)
+                                if !settings.defaultView {
+                                    Divider()
+                                        .background(settings.accentColor.color)
+                                        .padding(.trailing, -100)
+                                        .padding(.bottom, -100)
+                                }
                                 #endif
                             }
                         }
+                    }
+                    #if !os(watchOS)
+                    .listRowSeparator(.hidden, edges: .bottom)
+                    #endif
                         
-                        let filteredAyahs = surah.ayahs.filter { ayah in
-                            let cleanSearchText = cleanSearch(searchText)
-                            return searchText.isEmpty || cleanSearch(ayah.textClearArabic).contains(cleanSearchText) || cleanSearch(ayah.textTransliteration ?? "").contains(cleanSearchText) || cleanSearch(ayah.textEnglish ?? "").contains(cleanSearchText) || cleanSearch(String(ayah.id)).contains(cleanSearchText) || cleanSearch(arabicNumberString(from: ayah.id)).contains(cleanSearchText) || Int(cleanSearchText) == ayah.id
-                        }
+                    let filteredAyahs = surah.ayahs.filter { ayah in
+                        let cleanSearchText = cleanSearch(searchText)
+                        return searchText.isEmpty || cleanSearch(ayah.textClearArabic).contains(cleanSearchText) || cleanSearch(ayah.textTransliteration ?? "").contains(cleanSearchText) || cleanSearch(ayah.textEnglish ?? "").contains(cleanSearchText) || cleanSearch(String(ayah.id)).contains(cleanSearchText) || cleanSearch(arabicNumberString(from: ayah.id)).contains(cleanSearchText) || Int(cleanSearchText) == ayah.id
+                    }
                         
-                        ForEach(filteredAyahs, id: \.id) { ayah in
-                            VStack {
-                                AyahRow(surah: surah, ayah: ayah, scrollDown: $scrollDown, searchText: $searchText)
-                                    .environmentObject(quranPlayer)
-                                    .id(ayah.id)
-                                    #if !os(watchOS)
-                                    .onChange(of: scrollDown) { value in
-                                        if let ayahID = value {
-                                            if !searchText.isEmpty {
-                                                settings.hapticFeedback()
-                                                
+                    ForEach(filteredAyahs, id: \.id) { ayah in
+                        Section {
+                            AyahRow(surah: surah, ayah: ayah, scrollDown: $scrollDown, searchText: $searchText)
+                                .id(ayah.id)
+                                #if !os(watchOS)
+                                .onChange(of: scrollDown) { value in
+                                    if let ayahID = value {
+                                        if !searchText.isEmpty {
+                                            settings.hapticFeedback()
+                                            
+                                            withAnimation {
+                                                searchText = ""
+                                                self.endEditing()
+                                            }
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                                                 withAnimation {
-                                                    searchText = ""
-                                                    self.endEditing()
-                                                }
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                                    withAnimation {
-                                                        proxy.scrollTo(ayahID, anchor: .top)
-                                                    }
+                                                    proxy.scrollTo(ayahID, anchor: .top)
                                                 }
                                             }
-                                            scrollDown = nil
                                         }
+                                        scrollDown = nil
                                     }
-                                    #endif
-                                    .onDisappear {
-                                        self.lastAyahViewed = ayah.id
-                                    }
-                            }
-                            #if !os(watchOS)
-                            .listRowSeparator(ayah.id == filteredAyahs.first?.id && searchText.isEmpty ? .hidden : .visible, edges: .top)
-                            .listRowSeparator(ayah.id == filteredAyahs.last?.id ? .hidden : .visible, edges: .bottom)
-                            #else
-                            .padding(.vertical)
-                            #endif
+                                }
+                                #endif
+                                .onDisappear {
+                                    self.lastAyahViewed = ayah.id
+                                }
                         }
+                        #if !os(watchOS)
+                        .listRowSeparator((ayah.id == filteredAyahs.first?.id && searchText.isEmpty) || settings.defaultView ? .hidden : .visible, edges: .top)
+                        .listRowSeparator(ayah.id == filteredAyahs.last?.id || settings.defaultView ? .hidden : .visible, edges: .bottom)
+                        #else
+                        .padding(.vertical)
+                        #endif
                     }
                 }
-                #if !os(watchOS)
                 .applyConditionalListStyle(defaultView: settings.defaultView)
                 .dismissKeyboardOnScroll()
-                #endif
                 .onAppear {
                     if let selectedAyah = ayah {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -620,6 +616,7 @@ struct AyahsView: View {
                 #endif
             }
         }
+        .environmentObject(quranPlayer)
         .onDisappear {
             withAnimation {
                 settings.lastReadSurah = surah.id
@@ -657,9 +654,7 @@ struct AyahsView: View {
                 .preferredColorScheme(settings.colorScheme)
                 .navigationTitle("Al-Quran Settings")
                 .navigationBarTitleDisplayMode(.inline)
-                #if !os(watchOS)
                 .applyConditionalListStyle(defaultView: true)
-                #endif
             }
         }
         .onChange(of: quranPlayer.showInternetAlert) { newValue in

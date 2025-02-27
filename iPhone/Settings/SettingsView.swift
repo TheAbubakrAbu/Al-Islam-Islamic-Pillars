@@ -32,9 +32,7 @@ struct SettingsView: View {
                                 .environmentObject(quranData)
                                 .environmentObject(settings)
                         }
-                        #if !os(watchOS)
                         .applyConditionalListStyle(defaultView: true)
-                        #endif
                         .navigationTitle("Al-Quran Settings")
                         .navigationBarTitleDisplayMode(.inline)
                     ) {
@@ -67,9 +65,7 @@ struct SettingsView: View {
                             
                             PrayerOffsetsView()
                         }
-                        #if !os(watchOS)
                         .applyConditionalListStyle(defaultView: true)
-                        #endif
                         .navigationTitle("Manual Offset Settings")
                         .navigationBarTitleDisplayMode(.inline)
                     }) {
@@ -156,9 +152,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            #if !os(watchOS)
             .applyConditionalListStyle(defaultView: true)
-            #endif
         }
         .navigationViewStyle(.stack)
     }
@@ -182,9 +176,7 @@ struct NotificationView: View {
             PrayerSettingsSection(prayerName: "Maghrib", preNotificationTime: $settings.preNotificationMaghrib, isNotificationOn: $settings.notificationMaghrib)
             PrayerSettingsSection(prayerName: "Isha", preNotificationTime: $settings.preNotificationIsha, isNotificationOn: $settings.notificationIsha)
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Notification Settings")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -344,9 +336,7 @@ struct SettingsPrayerView: View {
             PrayerOffsetsView()
             #endif
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Al-Adhan Settings")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: settings.homeLocation) { _ in

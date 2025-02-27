@@ -132,10 +132,9 @@ struct ArabicView: View {
                 }
                 #if os(watchOS)
                 .searchable(text: $searchText)
-                #else
+                #endif
                 .applyConditionalListStyle(defaultView: true)
                 .dismissKeyboardOnScroll()
-                #endif
                 
                 #if !os(watchOS)
                 Picker("Grouping", selection: $groupingType.animation(.easeInOut)) {

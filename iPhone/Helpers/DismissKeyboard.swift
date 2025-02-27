@@ -3,6 +3,7 @@ import SwiftUI
 struct DismissKeyboardOnScrollModifier: ViewModifier {
     func body(content: Content) -> some View {
         Group {
+            #if !os(watchOS)
             if #available(iOS 16.0, *) {
                 content
                     .scrollDismissesKeyboard(.immediately)
@@ -14,6 +15,9 @@ struct DismissKeyboardOnScrollModifier: ViewModifier {
                         }
                     )
             }
+            #else
+            content
+            #endif
         }
     }
 }

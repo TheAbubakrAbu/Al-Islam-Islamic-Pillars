@@ -83,9 +83,7 @@ struct AdhkarView: View {
                 AdhkarRow(arabicText: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير", transliteration: "La ilaha illallah wahdahu la sharika lah, lahul-mulk wa lahul-hamd, wa huwa 'ala kulli shayin qadir", translation: "There is no deity worthy of worship except Allah, alone, without any partner. His is the sovereignty and His is the praise, and He is capable of all things")
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Common Adhkar")
     }
 }
@@ -117,9 +115,7 @@ struct DuaView: View {
                 AdhkarRow(arabicText: "اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا طَيِّبًا، وَعَمَلًا مُتَقَبَّلًا", transliteration: "Allahumma inni as'aluka 'ilman nafi'an, wa rizqan tayyiban, wa 'amalan mutaqabbalan", translation: "O Allah, I ask You for knowledge that is of benefit, a good provision, and deeds that will be accepted.")
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Common Duas")
     }
 }
@@ -243,9 +239,7 @@ struct TasbihView: View {
                 counters[index] = counters[index] ?? 0
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Tasbih Counter")
     }
 }
@@ -578,10 +572,9 @@ struct NamesView : View {
             }
             #if os(watchOS)
             .searchable(text: $searchText)
-            #else
+            #endif
             .applyConditionalListStyle(defaultView: true)
             .dismissKeyboardOnScroll()
-            #endif
             
             #if !os(watchOS)
             SearchBar(text: $searchText.animation(.easeInOut))
@@ -677,10 +670,7 @@ struct DateView: View {
             #endif
         }
         .navigationTitle("Hijri Converter")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
-        
     }
     
     private func datePickerSection(title: String, date: Binding<Date>, calendar: Calendar) -> some View {
@@ -726,9 +716,7 @@ struct WallpaperView: View {
             WallpaperCell(imageName: "Laptop Wallpaper", description: "LAPTOP (16:9) WALLPAPER")
             WallpaperCell(imageName: "Desktop Wallpaper", description: "DESKTOP (21:9) WALLPAPER")
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Wallpapers")
     }
 }

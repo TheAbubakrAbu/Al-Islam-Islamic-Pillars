@@ -162,10 +162,8 @@ struct ArabicLetterView: View {
             .padding(.bottom, 12)
             #endif
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
         .dismissKeyboardOnScroll()
-        #endif
         .navigationTitle(letterData.letter)
     }
 }

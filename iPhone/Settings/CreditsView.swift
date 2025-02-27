@@ -49,7 +49,7 @@ struct CreditsView: View {
             }
             
             Section {
-                Text("Version 3.3")
+                Text("Version 3.3.1")
                     .font(.caption)
             }
             

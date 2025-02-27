@@ -137,9 +137,7 @@ struct WudhuView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Wudhu and Ghusl")
     }
 }
@@ -219,9 +217,7 @@ struct JummuahView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Jummuah")
     }
 }
@@ -322,9 +318,7 @@ struct AdhanView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Adhan")
     }
 }
@@ -406,9 +400,7 @@ struct IqamahView: View {
                 .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Iqamah")
     }
 }
@@ -516,9 +508,7 @@ struct TakbiratView: View {
             }
         }
         .navigationTitle("Takbirat Al-Eid")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 
@@ -581,9 +571,7 @@ struct CalendarView: View {
             }
         }
         .navigationTitle("Hijri Calendar")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 
@@ -632,9 +620,7 @@ struct TajweedView: View {
             }
         }
         .navigationTitle("Tajweed")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 
@@ -682,9 +668,7 @@ struct JuzView: View {
             }
         }
         .navigationTitle("Juz")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 
@@ -745,9 +729,7 @@ struct FarewellView: View {
             }
         }
         .navigationTitle("Farewell Sermon")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 
@@ -793,9 +775,7 @@ struct SahabahView: View {
             }
         }
         .navigationTitle("The Sahabah")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 
@@ -841,9 +821,7 @@ struct WivesView: View {
             }
         }
         .navigationTitle("The Wives")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 
@@ -889,8 +867,6 @@ struct CaliphatesView: View {
             }
         }
         .navigationTitle("The Caliphates")
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }

@@ -6,7 +6,9 @@ extension View {
     }
     
     func endEditing() {
+        #if !os(watchOS)
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
     }
     
     func dismissKeyboardOnScroll() -> some View {
@@ -32,17 +34,30 @@ struct ConditionalListStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         Group {
-            if defaultView {
-                content
-                    .accentColor(settings.accentColor.color)
-                    .navigationBarTitleDisplayMode(.inline)
-            } else {
-                content
-                    .listStyle(PlainListStyle())
-                    .accentColor(settings.accentColor.color)
-                    .background(currentColorScheme == .dark ? Color.black : Color.white)
-                    .navigationBarTitleDisplayMode(.inline)
+            #if !os(watchOS)
+            Group {
+                if defaultView {
+                    content
+                        .apply {
+                            if #available(iOS 17.0, *) {
+                                $0.listSectionSpacing(.compact)
+                            }
+                        }
+                } else {
+                    content
+                        .listStyle(.plain)
+                        .background(currentColorScheme == .dark ? Color.black : Color.white)
+                }
             }
+            .navigationBarTitleDisplayMode(.inline)
+            #else
+            content
+            #endif
         }
+        .accentColor(settings.accentColor.color)
     }
+}
+
+extension View {
+    func apply<V: View>(@ViewBuilder _ block: (Self) -> V) -> V { block(self) }
 }

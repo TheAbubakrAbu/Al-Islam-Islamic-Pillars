@@ -294,8 +294,8 @@ struct PrayerView: View {
                      .navigationBarTitleDisplayMode(.inline)
                  */
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
             #endif
+            .applyConditionalListStyle(defaultView: settings.defaultView)
         }
         .onChange(of: settings.selectedDate) { value in
             settings.datePrayers = settings.getPrayerTimes(for: value) ?? []

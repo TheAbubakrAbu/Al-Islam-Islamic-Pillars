@@ -112,9 +112,7 @@ struct ShahaadahView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Shahaadah")
     }
 }
@@ -178,10 +176,8 @@ struct SalahView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
-        .navigationTitle("Salah")
+        .navigationTitle("Salaah")
     }
 }
 
@@ -254,9 +250,7 @@ struct SawmView: View {
                 Text("“Indeed, We sent the Quran down during the Night of Decree. And what can make you know what is the Night of Decree? The Night of Decree is better than a thousand months.” (Quran 97:1-3)").font(.body).foregroundColor(settings.accentColor.color)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Sawm")
     }
 }
@@ -311,9 +305,7 @@ struct ZakahView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Zakah")
     }
 }
@@ -391,9 +383,7 @@ struct HajjView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Hajj")
     }
 }

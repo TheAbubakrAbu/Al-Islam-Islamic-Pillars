@@ -99,9 +99,7 @@ struct GodView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("One God")
     }
 }
@@ -195,9 +193,7 @@ struct AngelsView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Angels")
     }
 }
@@ -271,9 +267,7 @@ struct BooksView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Books")
     }
 }
@@ -363,9 +357,7 @@ struct ProphetsView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Prophets")
     }
 }
@@ -442,9 +434,7 @@ struct DayView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Day of Judgment")
     }
 }
@@ -516,9 +506,7 @@ struct QadrView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Qadr")
     }
 }
