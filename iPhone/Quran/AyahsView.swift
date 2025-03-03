@@ -417,7 +417,7 @@ struct AyahsView: View {
     @EnvironmentObject var quranPlayer: QuranPlayer
 
     @State private var searchText = ""
-    @State private var lastAyahViewed: Int? = 1
+    @State private var visibleAyahs: [Int] = []
     @State private var scrollDown: Int? = nil
     @State private var filteredAyahs: [Ayah] = []
     @State private var showingSettingsSheet = false
@@ -471,6 +471,18 @@ struct AyahsView: View {
                         Section {
                             AyahRow(surah: surah, ayah: ayah, scrollDown: $scrollDown, searchText: $searchText)
                                 .id(ayah.id)
+                                .onAppear {
+                                    if !visibleAyahs.contains(ayah.id) {
+                                        visibleAyahs.append(ayah.id)
+                                    }
+                                }
+                                .onDisappear {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                        if let index = visibleAyahs.firstIndex(of: ayah.id) {
+                                            visibleAyahs.remove(at: index)
+                                        }
+                                    }
+                                }
                                 #if !os(watchOS)
                                 .onChange(of: scrollDown) { value in
                                     if let ayahID = value {
@@ -491,9 +503,6 @@ struct AyahsView: View {
                                     }
                                 }
                                 #endif
-                                .onDisappear {
-                                    self.lastAyahViewed = ayah.id
-                                }
                         }
                         #if !os(watchOS)
                         .listRowSeparator((ayah.id == filteredAyahs.first?.id && searchText.isEmpty) || settings.defaultView ? .hidden : .visible, edges: .top)
@@ -618,11 +627,16 @@ struct AyahsView: View {
         }
         .environmentObject(quranPlayer)
         .onDisappear {
-            withAnimation {
-                settings.lastReadSurah = surah.id
-                if let lastAyah = lastAyahViewed {
-                    settings.lastReadAyah = lastAyah
+            DispatchQueue.main.async {
+                withAnimation {
+                    settings.lastReadSurah = surah.id
+                    visibleAyahs.sort()
+                    if let firstVisible = visibleAyahs.first {
+                        settings.lastReadAyah = firstVisible
+                    }
                 }
+                
+                print("Visible Ayahs: \(visibleAyahs)")
             }
         }
         #if !os(watchOS)

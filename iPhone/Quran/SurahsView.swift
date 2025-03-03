@@ -1,10 +1,103 @@
 import SwiftUI
 
+struct SurahsHeader: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
+    
+    @State private var randomSurah: Surah?
+        
+    var body: some View {
+        HStack {
+            Text("SURAHS")
+            
+            #if !os(watchOS)
+            Spacer()
+            
+            NavigationLink {
+                if let randomS = randomSurah {
+                    AyahsView(surah: randomS)
+                        .onDisappear {
+                            withAnimation {
+                                randomSurah = quranData.quran.randomElement()
+                            }
+                        }
+                } else {
+                    Text("No surah found!")
+                }
+            } label: {
+                Image(systemName: "shuffle")
+            }
+            #endif
+        }
+        .font(.subheadline)
+        .onAppear {
+            if randomSurah == nil {
+                withAnimation {
+                    randomSurah = quranData.quran.randomElement()
+                }
+            }
+        }
+    }
+}
+
+struct JuzHeader: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
+    @EnvironmentObject var quranPlayer: QuranPlayer
+    
+    let juz: Juz
+    
+    @State private var randomSurah: Surah?
+
+    private func randomSurah(for juz: Juz) -> Surah? {
+        let surahsInRange = quranData.quran.filter {
+            $0.id >= juz.startSurah && $0.id <= juz.endSurah
+        }
+        return surahsInRange.randomElement()
+    }
+    
+    var body: some View {
+        HStack {
+            Text("JUZ \(juz.id) - \(juz.nameTransliteration.uppercased())")
+            
+            #if !os(watchOS)
+            Spacer()
+            
+            NavigationLink {
+                Group {
+                    if let randomS = randomSurah(for: juz) {
+                        AyahsView(surah: randomS)
+                    } else {
+                        Text("No surah found in Juz \(juz.id).")
+                    }
+                }
+                .onDisappear {
+                    withAnimation {
+                        randomSurah = randomSurah(for: juz)
+                    }
+                }
+            } label: {
+                Image(systemName: "shuffle")
+            }
+            #endif
+        }
+        .font(.subheadline)
+        .onAppear {
+            if randomSurah == nil {
+                withAnimation {
+                    randomSurah = randomSurah(for: juz)
+                }
+            }
+        }
+    }
+}
+
 struct SurahRow: View {
     @EnvironmentObject var settings: Settings
     
     var surah: Surah
     var ayah: Int?
+    var end: Bool?
 
     var body: some View {
         #if !os(watchOS)
@@ -13,9 +106,15 @@ struct SurahRow: View {
                 VStack(alignment: .leading) {
                     HStack {
                         if let ayah = ayah {
-                            Text("Starts at \(surah.id):\(ayah)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                            if let end = end {
+                                Text("Ends at \(surah.id):\(ayah)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("Starts at \(surah.id):\(ayah)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
                         } else {
                             Text("\(surah.numberOfAyahs) Ayahs")
                                 .font(.subheadline)
@@ -842,7 +941,7 @@ struct SurahsView: View {
                                 }
                             }
 
-                            Section(header: searchText.isEmpty ? Text("SURAHS") : Text("SURAH SEARCH RESULTS")) {
+                            Section(header: searchText.isEmpty ? AnyView(SurahsHeader()) : AnyView(Text("SURAH SEARCH RESULTS"))) {
                                 ForEach(quranData.quran.filter { surah in
                                     let cleanSearchText = cleanSearch(searchText.replacingOccurrences(of: ":", with: ""))
                                     let surahAyahPair = searchText.split(separator: ":").map(String.init)
@@ -937,16 +1036,75 @@ struct SurahsView: View {
                             }
                         } else {
                            ForEach(quranData.juzList, id: \.id) { juz in
-                               if let surah = quranData.quran.first(where: { $0.id == juz.startSurah }) {
-                                   Section(header: Text("JUZ \(juz.id) - \(juz.nameTransliteration.uppercased())")) {
-                                       NavigationLink(destination: AyahsView(surah: surah, ayah: juz.startAyah)) {
-                                           SurahRow(surah: surah, ayah: juz.startAyah)
+                               Section(header: JuzHeader(juz: juz)) {
+                                   let surahsInRange = quranData.quran.filter {
+                                       $0.id >= juz.startSurah && $0.id <= juz.endSurah
+                                   }
+                                   
+                                   ForEach(surahsInRange, id: \.id) { surah in
+                                       let startAyah = (surah.id == juz.startSurah) ? juz.startAyah : 1
+                                       let endAyah   = (surah.id == juz.endSurah)   ? juz.endAyah   : surah.numberOfAyahs
+                                       
+                                       let isSingleSurahJuz = (juz.startSurah == surah.id && juz.endSurah == surah.id)
+                                       
+                                       Group {
+                                           if isSingleSurahJuz {
+                                               if startAyah > 1 {
+                                                   NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
+                                                       SurahRow(surah: surah, ayah: startAyah)
+                                                   }
+                                               } else {
+                                                   NavigationLink(destination: AyahsView(surah: surah)) {
+                                                       SurahRow(surah: surah, ayah: startAyah)
+                                                   }
+                                               }
+                                               
+                                               if endAyah < surah.numberOfAyahs {
+                                                   NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
+                                                       SurahRow(surah: surah, ayah: endAyah, end: true)
+                                                   }
+                                               } else {
+                                                   NavigationLink(destination: AyahsView(surah: surah)) {
+                                                       SurahRow(surah: surah)
+                                                   }
+                                               }
+                                               
+                                           } else if surah.id == juz.startSurah {
+                                               if startAyah > 1 {
+                                                   NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
+                                                       SurahRow(surah: surah, ayah: startAyah)
+                                                   }
+                                               } else {
+                                                   NavigationLink(destination: AyahsView(surah: surah)) {
+                                                       SurahRow(surah: surah, ayah: startAyah)
+                                                   }
+                                               }
+                                               
+                                           } else if surah.id == juz.endSurah {
+                                               if surah.id == 114 {
+                                                   NavigationLink(destination: AyahsView(surah: surah)) {
+                                                       SurahRow(surah: surah)
+                                                   }
+                                               } else if endAyah < surah.numberOfAyahs {
+                                                   NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
+                                                       SurahRow(surah: surah, ayah: endAyah, end: true)
+                                                   }
+                                               } else {
+                                                   NavigationLink(destination: AyahsView(surah: surah)) {
+                                                       SurahRow(surah: surah)
+                                                   }
+                                               }
+                                               
+                                           } else {
+                                               NavigationLink(destination: AyahsView(surah: surah)) {
+                                                   SurahRow(surah: surah)
+                                               }
+                                           }
                                        }
-                                        #if !os(watchOS)
+                                       #if !os(watchOS)
                                        .swipeActions(edge: .trailing) {
                                            Button(action: {
                                                settings.hapticFeedback()
-                                               
                                                quranPlayer.playSurah(surahNumber: surah.id, surahName: surah.nameTransliteration)
                                            }) {
                                                Image(systemName: "play.fill")
@@ -956,7 +1114,6 @@ struct SurahsView: View {
                                        .swipeActions(edge: .leading) {
                                            Button(action: {
                                                settings.hapticFeedback()
-                                               
                                                settings.toggleSurahFavorite(surah: surah)
                                            }) {
                                                Image(systemName: settings.isSurahFavorite(surah: surah) ? "star.fill" : "star")
@@ -966,42 +1123,18 @@ struct SurahsView: View {
                                        .contextMenu {
                                            Button(action: {
                                                settings.hapticFeedback()
-                                               
-                                               settings.toggleBookmark(surah: juz.startSurah, ayah: juz.startAyah)
-                                           }) {
-                                               Label(settings.isBookmarked(surah: juz.startSurah, ayah: juz.startAyah) ? "Unbookmark Ayah" : "Bookmark Ayah", systemImage: settings.isBookmarked(surah: juz.startSurah, ayah: juz.startAyah) ? "bookmark.fill" : "bookmark")
-                                           }
-                                           
-                                           Button(action: {
-                                               settings.hapticFeedback()
-                                               
-                                               quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: juz.startAyah)
-                                           }) {
-                                               Label("Play Ayah", systemImage: "play.circle")
-                                           }
-                                           
-                                           Button(action: {
-                                               settings.hapticFeedback()
-                                               
-                                               quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: juz.startAyah, continueRecitation: true)
-                                           }) {
-                                               Label("Play from Ayah", systemImage: "play.circle.fill")
-                                           }
-                                           
-                                           Divider()
-                                           
-                                           Button(action: {
-                                               settings.hapticFeedback()
-                                               
                                                settings.toggleSurahFavorite(surah: surah)
                                            }) {
-                                               Label(settings.isSurahFavorite(surah: surah) ? "Unfavorite Surah" : "Favorite Surah", systemImage: settings.isSurahFavorite(surah: surah) ? "star.fill" : "star")
+                                               Label(
+                                                   settings.isSurahFavorite(surah: surah) ? "Unfavorite Surah" : "Favorite Surah",
+                                                   systemImage: settings.isSurahFavorite(surah: surah) ? "star.fill" : "star"
+                                               )
                                            }
                                            
                                            Button(action: {
                                                settings.hapticFeedback()
-                                               
-                                               quranPlayer.playSurah(surahNumber: surah.id, surahName: surah.nameTransliteration)
+                                               quranPlayer.playSurah(surahNumber: surah.id, surahName: surah.nameTransliteration
+                                               )
                                            }) {
                                                Label("Play Surah", systemImage: "play.fill")
                                            }
@@ -1009,7 +1142,6 @@ struct SurahsView: View {
                                            if !searchText.isEmpty {
                                                Button(action: {
                                                    settings.hapticFeedback()
-                                                   
                                                    withAnimation {
                                                        searchText = ""
                                                        settings.groupBySurah = true
@@ -1022,7 +1154,7 @@ struct SurahsView: View {
                                                }
                                            }
                                        }
-                                        #endif
+                                       #endif
                                    }
                                }
                            }

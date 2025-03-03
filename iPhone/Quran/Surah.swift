@@ -4,8 +4,12 @@ struct Juz: Codable, Identifiable {
     let id: Int
     let nameArabic: String
     let nameTransliteration: String
+    
     let startSurah: Int
     let startAyah: Int
+    
+    let endSurah: Int
+    let endAyah: Int
 }
 
 struct Surah: Codable, Identifiable {
@@ -13,8 +17,10 @@ struct Surah: Codable, Identifiable {
     let nameArabic: String
     let nameTransliteration: String
     let nameEnglish: String
+    
     let type: String
     let numberOfAyahs: Int
+    
     var ayahs: [Ayah]
     
     enum CodingKeys: String, CodingKey {
@@ -53,7 +59,9 @@ struct LastListenedSurah: Identifiable, Codable {
     var id = UUID()
     let surahNumber: Int
     let surahName: String
+    
     let reciter: Reciter
+    
     let currentDuration: Double
     let fullDuration: Double
 }
@@ -91,39 +99,6 @@ class QuranData: ObservableObject {
     static let shared = QuranData()
     
     @Published var quran: [Surah] = []
-    
-    var juzList: [Juz] = [
-        Juz(id: 1, nameArabic: "آلم", nameTransliteration: "Alif Lam Meem", startSurah: 1, startAyah: 1),
-        Juz(id: 2, nameArabic: "سَيَقُولُ", nameTransliteration: "Sayaqoolu", startSurah: 2, startAyah: 142),
-        Juz(id: 3, nameArabic: "تِلْكَ ٱلْرُّسُلُ", nameTransliteration: "Tilka Rusulu", startSurah: 2, startAyah: 253),
-        Juz(id: 4, nameArabic: "ْلَنْ تَنالُوا", nameTransliteration: "Lan Tanaaloo", startSurah: 3, startAyah: 93),
-        Juz(id: 5, nameArabic: "وَٱلْمُحْصَنَاتُ", nameTransliteration: "Walmohsanaatu", startSurah: 4, startAyah: 24),
-        Juz(id: 6, nameArabic: "لَا يُحِبُّ ٱللهُ", nameTransliteration: "Laa Yuhibbu Allahu", startSurah: 4, startAyah: 148),
-        Juz(id: 7, nameArabic: "ْوَإِذَا سَمِعُوا", nameTransliteration: "Waidhaa Samioo", startSurah: 5, startAyah: 82),
-        Juz(id: 8, nameArabic: "وَلَوْ أَنَّنَا", nameTransliteration: "Walau Annanaa", startSurah: 6, startAyah: 111),
-        Juz(id: 9, nameArabic: "قَالَ ٱلْمَلَأُ", nameTransliteration: "Qaalal-Mala'u", startSurah: 7, startAyah: 88),
-        Juz(id: 10, nameArabic: "وَٱعْلَمُواْ", nameTransliteration: "Wa'alamu", startSurah: 8, startAyah: 41),
-        Juz(id: 11, nameArabic: "يَعْتَذِرُونَ", nameTransliteration: "Ya'atadheroon", startSurah: 9, startAyah: 93),
-        Juz(id: 12, nameArabic: "وَمَا مِنْ دَآبَّةٍ", nameTransliteration: "Wamaa Min Da'abatin", startSurah: 11, startAyah: 6),
-        Juz(id: 13, nameArabic: "وَمَا أُبَرِّئُ", nameTransliteration: "Wamaa Ubari'oo", startSurah: 12, startAyah: 53),
-        Juz(id: 14, nameArabic: "رُبَمَا", nameTransliteration: "Rubamaa", startSurah: 15, startAyah: 1),
-        Juz(id: 15, nameArabic: "سُبْحَانَ ٱلَّذِى", nameTransliteration: "Subhana Allathee", startSurah: 17, startAyah: 1),
-        Juz(id: 16, nameArabic: "قَالَ أَلَمْ", nameTransliteration: "Qaala Alam", startSurah: 18, startAyah: 75),
-        Juz(id: 17, nameArabic: "ٱقْتَرَبَ لِلْنَّاسِ", nameTransliteration: "Iqtaraba Linnaasi", startSurah: 21, startAyah: 1),
-        Juz(id: 18, nameArabic: "قَدْ أَفْلَحَ", nameTransliteration: "Qad Aflaha", startSurah: 23, startAyah: 1),
-        Juz(id: 19, nameArabic: "وَقَالَ ٱلَّذِينَ", nameTransliteration: "Waqaal Alladheena", startSurah: 25, startAyah: 21),
-        Juz(id: 20, nameArabic: "أَمَّنْ خَلَقَ", nameTransliteration: "A'man Khalaqa", startSurah: 27, startAyah: 56),
-        Juz(id: 21, nameArabic: "أُتْلُ مَاأُوْحِیَ", nameTransliteration: "Utlu Maa Oohia", startSurah: 29, startAyah: 46),
-        Juz(id: 22, nameArabic: "وَمَنْ يَّقْنُتْ", nameTransliteration: "Waman Yaqnut", startSurah: 33, startAyah: 31),
-        Juz(id: 23, nameArabic: "وَمَآ لِي", nameTransliteration: "Wamaa Lee", startSurah: 36, startAyah: 28),
-        Juz(id: 24, nameArabic: "فَمَنْ أَظْلَمُ", nameTransliteration: "Faman Adhlamu", startSurah: 39, startAyah: 32),
-        Juz(id: 25, nameArabic: "إِلَيْهِ يُرَدُّ", nameTransliteration: "Ilayhi Yuraddu", startSurah: 41, startAyah: 47),
-        Juz(id: 26, nameArabic: "حم", nameTransliteration: "Haaa Meem", startSurah: 46, startAyah: 1),
-        Juz(id: 27, nameArabic: "قَالَ فَمَا خَطْبُكُم", nameTransliteration: "Qaala Famaa Khatbukum", startSurah: 51, startAyah: 31),
-        Juz(id: 28, nameArabic: "قَدْ سَمِعَ ٱللهُ", nameTransliteration: "Qadd Samia Allahu", startSurah: 58, startAyah: 1),
-        Juz(id: 29, nameArabic: "تَبَارَكَ ٱلَّذِى", nameTransliteration: "Tabaraka Alladhee", startSurah: 67, startAyah: 1),
-        Juz(id: 30, nameArabic: "عَمَّ", nameTransliteration: "'Amma", startSurah: 78, startAyah: 1)
-    ]
 
     init() {
         loadQuranData()
@@ -162,6 +137,218 @@ class QuranData: ObservableObject {
             print("Error: \(error)")
         }
     }
+    
+    var juzList: [Juz] = [
+        Juz(id: 1,
+            nameArabic: "آلم",
+            nameTransliteration: "Alif Lam Meem",
+            startSurah: 1, startAyah: 1,
+            endSurah: 2, endAyah: 141
+        ),
+
+        Juz(id: 2,
+            nameArabic: "سَيَقُولُ",
+            nameTransliteration: "Sayaqoolu",
+            startSurah: 2, startAyah: 142,
+            endSurah: 2, endAyah: 252
+        ),
+
+        Juz(id: 3,
+            nameArabic: "تِلْكَ ٱلْرُّسُلُ",
+            nameTransliteration: "Tilka Rusulu",
+            startSurah: 2, startAyah: 253,
+            endSurah: 3, endAyah: 92
+        ),
+
+        Juz(id: 4,
+            nameArabic: "لَنْ تَنالُوا",
+            nameTransliteration: "Lan Tanaaloo",
+            startSurah: 3, startAyah: 93,
+            endSurah: 4, endAyah: 23
+        ),
+
+        Juz(id: 5,
+            nameArabic: "وَٱلْمُحْصَنَاتُ",
+            nameTransliteration: "Walmohsanaatu",
+            startSurah: 4, startAyah: 24,
+            endSurah: 4, endAyah: 147
+        ),
+
+        Juz(id: 6,
+            nameArabic: "لَا يُحِبُّ ٱللهُ",
+            nameTransliteration: "Laa Yuhibbu Allahu",
+            startSurah: 4, startAyah: 148,
+            endSurah: 5, endAyah: 81
+        ),
+
+        Juz(id: 7,
+            nameArabic: "وَإِذَا سَمِعُوا",
+            nameTransliteration: "Waidhaa Samioo",
+            startSurah: 5, startAyah: 82,
+            endSurah: 6, endAyah: 110
+        ),
+
+        Juz(id: 8,
+            nameArabic: "وَلَوْ أَنَّنَا",
+            nameTransliteration: "Walau Annanaa",
+            startSurah: 6, startAyah: 111,
+            endSurah: 7, endAyah: 87
+        ),
+
+        Juz(id: 9,
+            nameArabic: "قَالَ ٱلْمَلَأُ",
+            nameTransliteration: "Qaalal-Mala'u",
+            startSurah: 7, startAyah: 88,
+            endSurah: 8, endAyah: 40
+        ),
+
+        Juz(id: 10,
+            nameArabic: "وَٱعْلَمُواْ",
+            nameTransliteration: "Wa'alamu",
+            startSurah: 8, startAyah: 41,
+            endSurah: 9, endAyah: 92
+        ),
+
+        Juz(id: 11,
+            nameArabic: "يَعْتَذِرُونَ",
+            nameTransliteration: "Ya'atadheroon",
+            startSurah: 9, startAyah: 93,
+            endSurah: 11, endAyah: 5
+        ),
+
+        Juz(id: 12,
+            nameArabic: "وَمَا مِنْ دَآبَّةٍ",
+            nameTransliteration: "Wamaa Min Da'abatin",
+            startSurah: 11, startAyah: 6,
+            endSurah: 12, endAyah: 52
+        ),
+
+        Juz(id: 13,
+            nameArabic: "وَمَا أُبَرِّئُ",
+            nameTransliteration: "Wamaa Ubari'oo",
+            startSurah: 12, startAyah: 53,
+            endSurah: 14, endAyah: 52
+        ),
+
+        Juz(id: 14,
+            nameArabic: "رُبَمَا",
+            nameTransliteration: "Rubamaa",
+            startSurah: 15, startAyah: 1,
+            endSurah: 16, endAyah: 128
+        ),
+
+        Juz(id: 15,
+            nameArabic: "سُبْحَانَ ٱلَّذِى",
+            nameTransliteration: "Subhana Allathee",
+            startSurah: 17, startAyah: 1,
+            endSurah: 18, endAyah: 74
+        ),
+
+        Juz(id: 16,
+            nameArabic: "قَالَ أَلَمْ",
+            nameTransliteration: "Qaala Alam",
+            startSurah: 18, startAyah: 75,
+            endSurah: 20, endAyah: 135
+        ),
+
+        Juz(id: 17,
+            nameArabic: "ٱقْتَرَبَ لِلْنَّاسِ",
+            nameTransliteration: "Iqtaraba Linnaasi",
+            startSurah: 21, startAyah: 1,
+            endSurah: 22, endAyah: 78
+        ),
+
+        Juz(id: 18,
+            nameArabic: "قَدْ أَفْلَحَ",
+            nameTransliteration: "Qad Aflaha",
+            startSurah: 23, startAyah: 1,
+            endSurah: 25, endAyah: 20
+        ),
+
+        Juz(id: 19,
+            nameArabic: "وَقَالَ ٱلَّذِينَ",
+            nameTransliteration: "Waqaal Alladheena",
+            startSurah: 25, startAyah: 21,
+            endSurah: 27, endAyah: 55
+        ),
+
+        Juz(id: 20,
+            nameArabic: "أَمَّنْ خَلَقَ",
+            nameTransliteration: "A'man Khalaqa",
+            startSurah: 27, startAyah: 56,
+            endSurah: 29, endAyah: 45
+        ),
+
+        Juz(id: 21,
+            nameArabic: "أُتْلُ مَاأُوْحِیَ",
+            nameTransliteration: "Utlu Maa Oohia",
+            startSurah: 29, startAyah: 46,
+            endSurah: 33, endAyah: 30
+        ),
+
+        Juz(id: 22,
+            nameArabic: "وَمَنْ يَّقْنُتْ",
+            nameTransliteration: "Waman Yaqnut",
+            startSurah: 33, startAyah: 31,
+            endSurah: 36, endAyah: 27
+        ),
+
+        Juz(id: 23,
+            nameArabic: "وَمَآ لِي",
+            nameTransliteration: "Wamaa Lee",
+            startSurah: 36, startAyah: 28,
+            endSurah: 39, endAyah: 31
+        ),
+
+        Juz(id: 24,
+            nameArabic: "فَمَنْ أَظْلَمُ",
+            nameTransliteration: "Faman Adhlamu",
+            startSurah: 39, startAyah: 32,
+            endSurah: 41, endAyah: 46
+        ),
+
+        Juz(id: 25,
+            nameArabic: "إِلَيْهِ يُرَدُّ",
+            nameTransliteration: "Ilayhi Yuraddu",
+            startSurah: 41, startAyah: 47,
+            endSurah: 45, endAyah: 37
+        ),
+
+        Juz(id: 26,
+            nameArabic: "حم",
+            nameTransliteration: "Haaa Meem",
+            startSurah: 46, startAyah: 1,
+            endSurah: 51, endAyah: 30
+        ),
+
+        Juz(id: 27,
+            nameArabic: "قَالَ فَمَا خَطْبُكُم",
+            nameTransliteration: "Qaala Famaa Khatbukum",
+            startSurah: 51, startAyah: 31,
+            endSurah: 57, endAyah: 29
+        ),
+
+        Juz(id: 28,
+            nameArabic: "قَدْ سَمِعَ ٱللهُ",
+            nameTransliteration: "Qadd Samia Allahu",
+            startSurah: 58, startAyah: 1,
+            endSurah: 66, endAyah: 12
+        ),
+
+        Juz(id: 29,
+            nameArabic: "تَبَارَكَ ٱلَّذِى",
+            nameTransliteration: "Tabaraka Alladhee",
+            startSurah: 67, startAyah: 1,
+            endSurah: 77, endAyah: 50
+        ),
+
+        Juz(id: 30,
+            nameArabic: "عَمَّ",
+            nameTransliteration: "'Amma",
+            startSurah: 78, startAyah: 1,
+            endSurah: 114, endAyah: 6
+        )
+    ]
 }
 
 extension String {
