@@ -201,11 +201,9 @@ struct Splash3View: View {
                 
                 Toggle("Traveling Mode Turns on Automatically", isOn: $settings.travelAutomatic.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor.color)
                 
                 Toggle("Traveling Mode", isOn: $settings.travelingMode.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor.color)
             }
             .applyConditionalListStyle(defaultView: true)
             
@@ -301,7 +299,6 @@ struct Splash4View: View {
                 VStack(alignment: .leading) {
                     Toggle("Use Hanafi Calculation for Asr", isOn: $settings.hanafiMadhab.animation(.easeInOut))
                         .font(.subheadline)
-                        .tint(settings.accentColor.color)
                     
                     Text("The Hanafi madhab uses later calculations for Asr.")
                         .font(.caption)

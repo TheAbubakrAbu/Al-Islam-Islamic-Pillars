@@ -63,6 +63,7 @@ struct IslamicPillarsApp: App {
             .environmentObject(quranPlayer)
             .environmentObject(namesData)
             .accentColor(settings.accentColor.color)
+            .tint(settings.accentColor.color)
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
             .onAppear {

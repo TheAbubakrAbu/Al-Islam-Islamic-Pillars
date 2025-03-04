@@ -175,7 +175,7 @@ struct PrayerView: View {
             .onAppear {
                 prayerTimeRefresh(force: false)
             }
-            .onChange(of: scenePhase) { newScenePhase in
+            .onChange(of: scenePhase) { _ in
                 prayerTimeRefresh(force: false)
             }
             #if os(watchOS)

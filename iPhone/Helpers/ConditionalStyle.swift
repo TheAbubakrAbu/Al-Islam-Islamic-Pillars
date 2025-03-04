@@ -55,6 +55,7 @@ struct ConditionalListStyle: ViewModifier {
             #endif
         }
         .accentColor(settings.accentColor.color)
+        .tint(settings.accentColor.color)
     }
 }
 

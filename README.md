@@ -8,61 +8,59 @@ I was a **17-year-old** high school student when this app was published on the A
 
 [**Download Al-Islam on the App Store here**](https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone)
 
-## Features  
+## Overview
+Al-Islam | Islamic Pillars is a beautifully designed and feature-rich app that helps Muslims strengthen their faith and seamlessly practice Islam. Whether you’re a lifelong believer, a new convert, or simply exploring Islam, this app provides everything you need—from accurate prayer times to Quranic access and essential Islamic tools.
 
-### Core Islamic Practices  
+## Unique Features
+- **Traveling Mode** – Automatically activates when traveling or can be manually enabled. Adjust settings like prayer calculations, Hanafi madhab, and prayer offsets.
+- **Nagging Mode** – Never miss a prayer! Receive notifications at a chosen start time before each prayer, then reminders every 15 minutes, with final alerts at 10 and 5 minutes remaining.
+- **Arabic Beginner Mode** – Spaces out Arabic letters to help beginners recognize them more easily while learning to read the Quran.
+- **Unique Ayah Sharing** – Share Quranic verses as text or images effortlessly.
 
-- **Prayer Times** – Accurate prayer times based on your location with customizable settings for Madhab and calculation methods.  
-- **Qibla Direction** – Real-time Qibla compass ensures you always face the Kaaba when praying.  
+## Comprehensive Prayer Times
+- Accurate prayer times for any location.
+- Qibla compass with built-in direction finder.
+- Prayer notifications with pre-alerts.
+- View and plan daily and future prayer times.
 
-### Unique Traveling Mode  
+## The Complete Quran
+- View by Surah or Juz, with Juz displaying the starting ayah.
+- Read in Arabic, English transliteration, and translation.
+- Bookmark, favorite, and track last read/listened ayah.
+- Powerful Quran search (e.g., `5:27`).
+- Remove tashkeel (diacritics) for cleaner reading.
+- Listen to recitations from 10+ reciters.
+- Random Surah mode for discovery.
 
-- **Automatic Activation** – Traveling Mode can turn on automatically when you’re over **48 miles (77 km) from home**.  
-- **Manual Control** – Activate Traveling Mode manually to **shorten prayers (Qasr)** and make worship easier while traveling.  
-- **Customizable Settings** – Adjust Traveling Mode settings, including prayer calculations, prayer offsets, and Madhab preferences.  
+## Islamic Calendar and Event Notifications
+- Hijri date displayed in Arabic and English.
+- Islamic calendar with events like Ramadan and Eid.
+- Adjustable Hijri date offset.
+- Notifications for key Islamic dates.
 
-### Beginner-Friendly Arabic Learning  
+## Essential Islamic Tools
+- Common adhkar (remembrances) and duas (supplications).
+- Tasbih counter for dhikr tracking.
+- 99 Names of Allah with meanings and explanations.
+- Hijri calendar converter.
+- Islamic wallpapers for inspiration.
 
-- **Beginner Arabic Mode** – Arabic letters are spaced out to help new learners **recognize and read Arabic** more easily.  
-- **Arabic Alphabet Tutorials** – Learn the **complete Arabic alphabet, special letters, and numbers**, with detailed examples of different letter forms.  
+## Perfect for Converts and Beginners
+- Learn the Five Pillars of Islam and Six Pillars of Faith.
+- Understand Islamic beliefs, the Prophet Muhammad (pbuh), and key teachings.
 
-### Quranic Study Tools  
+## Learn the Arabic Alphabet Easily
+- View Arabic letters, special letters, and numbers.
+- Learn letter forms, diacritics, and Quranic stopping signs for better recitation.
 
-- **Complete Quran Access** – Read the **entire Quran** with **Arabic text, English transliteration, and translations**.  
-- **Listen to Recitations** – Choose from **over 10 reciters**, with options for **Surah and Ayah-by-Ayah playback**.  
-- **Surah & Juz Navigation** – Browse the Quran by **Surah (114 chapters) or Juz**, with Juz showing the **starting Ayah** for each section.  
-- **Powerful Search** – Find any Ayah instantly using **Surah:Ayah format (e.g., 5:27)** or by searching for keywords.  
-- **Ayah Sharing** – Share **Quranic verses as text or images**, making it easier than ever to spread the message of the Quran.  
-- **Customizable Quran Reading**:  
-  - Adjust **Arabic fonts** for readability.  
-  - Enable or disable **tashkeel (diacritics)** for a cleaner reading experience.  
-  - **Bookmark Ayahs and Favorite Surahs** to save and track your progress.  
-  - **Last Read & Last Listened Ayah** keeps track of where you left off.  
-  - **Random Surah Mode** lets you explore new chapters of the Quran.  
+## Fully Customizable and User-Friendly
+- Customize Quran text size, Arabic fonts, accent colors, and prayer settings.
+- Widgets and Apple Watch support for quick prayer time access.
+- Simple and clean interface for effortless navigation.
 
-### Additional Islamic Tools  
-
-- **Adhkar and Duas** – Access **daily supplications and remembrances** to strengthen your spiritual practice.  
-- **Tasbih Counter** – Keep track of your **dhikr** with a built-in counter.  
-- **99 Names of Allah** – Learn and reflect on **Allah’s beautiful names and meanings**.  
-- **Hijri Calendar & Converter** – View **both Hijri and Gregorian dates** and convert between them seamlessly.  
-- **Islamic Event Notifications** – Stay informed about important dates like **Ramadan, Eid, and other Islamic holidays**.  
-
-### Customizable Experience  
-
-- **Personalization Options** – Choose your preferred **Madhab, prayer calculation method, Arabic font size, and accent color**.  
-- **Advanced Settings** – Adjust **Hijri date offset, notification preferences, and more**.  
-
-### Accessibility and Integration  
-
-- **Widgets** – Add **prayer times to your home screen and lock screen** for quick access.  
-- **WatchOS Compatibility** – Stay connected with your **prayers, Quran, and Islamic tools on your wrist**.  
-
-### Privacy and Accessibility  
-
-- **Completely Free** – No fees, no subscriptions, and no in-app purchases.  
-- **Ad-Free** – Enjoy an uninterrupted experience with **no distractions**.  
-- **Privacy-Focused** – Your data **never leaves your device**, ensuring complete security and privacy.  
+## 100% Free, Ad-Free, and Privacy-Focused
+- No ads, fees, or subscriptions.
+- Your data never leaves your device, ensuring complete privacy and security.
 
 ## License
 

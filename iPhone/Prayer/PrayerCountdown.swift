@@ -167,7 +167,6 @@ struct PrayerCountdown: View {
                         #endif
                         
                         ProgressView(value: progressToNextPrayer, total: 1)
-                            .tint(settings.accentColor.color)
                             .onReceive(timer) { _ in
                                 progressToNextPrayer = calculateProgress()
                                 if progressToNextPrayer >= 1 {
@@ -191,10 +190,8 @@ struct PrayerCountdown: View {
             .onAppear {
                 setupTimer()
             }
-            .onChange(of: scenePhase) { newScenePhase in
-                if newScenePhase == .active {
-                    setupTimer()
-                }
+            .onChange(of: scenePhase) { _ in
+                setupTimer()
             }
             .onChange(of: progressToNextPrayer) { value in
                 if value >= 1 {

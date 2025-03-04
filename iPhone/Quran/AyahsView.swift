@@ -634,9 +634,7 @@ struct AyahsView: View {
                     if let firstVisible = visibleAyahs.first {
                         settings.lastReadAyah = firstVisible
                     }
-                }
-                
-                print("Visible Ayahs: \(visibleAyahs)")
+                }                
             }
         }
         #if !os(watchOS)

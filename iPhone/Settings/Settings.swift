@@ -144,31 +144,11 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
         
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
-        if appGroupUserDefaults?.object(forKey: "accentColor") == nil {
-            appGroupUserDefaults?.set("green", forKey: "accentColor")
-        }
-        
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
-        
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
-        if appGroupUserDefaults?.object(forKey: "travelingMode") == nil {
-            appGroupUserDefaults?.set(false, forKey: "travelingMode")
-        }
-        
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
-        if appGroupUserDefaults?.object(forKey: "hanafiMadhab") == nil {
-            appGroupUserDefaults?.set(false, forKey: "hanafiMadhab")
-        }
-        
         self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Muslim World League"
-        if appGroupUserDefaults?.object(forKey: "prayerCalculation") == nil {
-            appGroupUserDefaults?.set("Muslim World League", forKey: "prayerCalculation")
-        }
-        
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
-        if appGroupUserDefaults?.object(forKey: "hijriOffset") == nil {
-            appGroupUserDefaults?.set(0, forKey: "hijriOffset")
-        }
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
             do {
@@ -710,39 +690,56 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func schedulePrayerTimeNotifications() {
         #if !os(watchOS)
-        if let currentLoc = currentLocation, let prayerObject = prayers {
-            let center = UNUserNotificationCenter.current()
-            center.removeAllPendingNotificationRequests()
-            let prayerTimes = prayerObject.prayers
-            print("Scheduling prayer times")
+        guard let currentLoc = currentLocation, let prayerObject = prayers else { return }
+        
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        
+        let prayerTimes = prayerObject.prayers
+        print("Scheduling prayer times")
+        
+        for prayerTime in prayerTimes {
+            var preNotificationTime: Int?
+            var shouldScheduleNotification: Bool
+            var naggingPrayerEnabled = false
+
+            switch prayerTime.nameTransliteration {
+            case "Fajr":
+                preNotificationTime = preNotificationFajr
+                shouldScheduleNotification = notificationFajr
+                naggingPrayerEnabled = naggingFajr
+            case "Shurooq":
+                preNotificationTime = preNotificationSunrise
+                shouldScheduleNotification = notificationSunrise
+                naggingPrayerEnabled = naggingSunrise
+            case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                preNotificationTime = preNotificationDhuhr
+                shouldScheduleNotification = notificationDhuhr
+                naggingPrayerEnabled = naggingDhuhr
+            case "Asr":
+                preNotificationTime = preNotificationAsr
+                shouldScheduleNotification = notificationAsr
+                naggingPrayerEnabled = naggingAsr
+            case "Maghrib", "Maghrib/Isha":
+                preNotificationTime = preNotificationMaghrib
+                shouldScheduleNotification = notificationMaghrib
+                naggingPrayerEnabled = naggingMaghrib
+            case "Isha":
+                preNotificationTime = preNotificationIsha
+                shouldScheduleNotification = notificationIsha
+                naggingPrayerEnabled = naggingIsha
+            default:
+                continue
+            }
             
-            for prayerTime in prayerTimes {
-                var preNotificationTime: Int?
-                var shouldScheduleNotification: Bool
+            if naggingMode && naggingPrayerEnabled {
+                scheduleNotification(for: prayerTime, preNotificationTime: nil, city: currentLoc.city)
                 
-                switch prayerTime.nameTransliteration {
-                case "Fajr":
-                    preNotificationTime = preNotificationFajr
-                    shouldScheduleNotification = notificationFajr
-                case "Shurooq":
-                    preNotificationTime = preNotificationSunrise
-                    shouldScheduleNotification = notificationSunrise
-                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                    preNotificationTime = preNotificationDhuhr
-                    shouldScheduleNotification = notificationDhuhr
-                case "Asr":
-                    preNotificationTime = preNotificationAsr
-                    shouldScheduleNotification = notificationAsr
-                case "Maghrib", "Maghrib/Isha":
-                    preNotificationTime = preNotificationMaghrib
-                    shouldScheduleNotification = notificationMaghrib
-                case "Isha":
-                    preNotificationTime = preNotificationIsha
-                    shouldScheduleNotification = notificationIsha
-                default:
-                    continue
+                let offsets = naggingOffsets(from: naggingStartOffset)
+                for offset in offsets {
+                    scheduleNotification(for: prayerTime, preNotificationTime: offset, city: currentLoc.city)
                 }
-                
+            } else {
                 if shouldScheduleNotification {
                     scheduleNotification(for: prayerTime, preNotificationTime: nil, city: currentLoc.city)
                 }
@@ -751,10 +748,31 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                     scheduleNotification(for: prayerTime, preNotificationTime: preNotificationTime, city: currentLoc.city)
                 }
             }
-            
-            prayers?.setNotification = true
         }
+        
+        prayers?.setNotification = true
         #endif
+    }
+    
+    private func naggingOffsets(from startOffset: Int) -> [Int] {
+        var results = [Int]()
+        var current = startOffset
+        
+        while current > 15 {
+            results.append(current)
+            current -= 15
+        }
+        
+        if current == 15 {
+            results.append(15)
+        } else if current < 15 && current > 5 {
+            results.append(current)
+        }
+        
+        results.append(10)
+        results.append(5)
+        
+        return results
     }
 
     func scheduleNotification(for prayerTime: Prayer, preNotificationTime: Int?, city: String) {
@@ -1139,10 +1157,20 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
     @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false
     
+    @AppStorage("naggingMode") var naggingMode: Bool = false {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("naggingStartOffset") var naggingStartOffset: Int = 30 {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    
     @AppStorage("preNotificationFajr") var preNotificationFajr: Int = 0 {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
     @AppStorage("notificationFajr") var notificationFajr: Bool = true {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("naggingFajr") var naggingFajr: Bool = false {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
     @AppStorage("offsetFajr") var offsetFajr: Int = 0 {
