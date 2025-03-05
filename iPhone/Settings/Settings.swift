@@ -176,11 +176,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.locationManager.delegate = self
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
         
-        #if !os(watchOS)
-        if !firstLaunch { requestLocationAuthorization() }
-        #else
         requestLocationAuthorization()
-        #endif
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -779,35 +775,42 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         let center = UNUserNotificationCenter.current()
         let content = UNMutableNotificationContent()
         content.title = "Al-Islam | Islamic Pillars"
-        
+
         let triggerTime: Date
         if let preNotificationTime = preNotificationTime, preNotificationTime != 0 {
-            triggerTime = Calendar.current.date(byAdding: .minute, value: -preNotificationTime, to: prayerTime.time)!
+            guard let date = Calendar.current.date(byAdding: .minute, value: -preNotificationTime, to: prayerTime.time) else {
+                return
+            }
+            triggerTime = date
             
             if prayerTime.nameTransliteration == "Shurooq" {
-                content.body = "\(prayerTime.nameTransliteration) (\(prayerTime.nameEnglish.lowercased())) in \(preNotificationTime) minutes in \(city)" + (travelingMode ? " (traveling mode)" : "") + " [\(self.formatDate(prayerTime.time))]"
+                let englishPart = showNotificationEnglish ? " (\(prayerTime.nameEnglish.lowercased()))" : ""
+                
+                content.body = "\(preNotificationTime)m until \(prayerTime.nameTransliteration)\(englishPart) in \(city)" + (travelingMode ? " (traveling)" : "") + " [\(self.formatDate(prayerTime.time))]"
             } else {
-                let prayerName = prayerTime.nameEnglish.lowercased() == "friday" ? "Friday" : prayerTime.nameEnglish.lowercased()
-                let contentBody = "\(prayerTime.nameTransliteration) (\(prayerName)) in \(preNotificationTime) minutes in \(city)" + (travelingMode ? " (traveling mode)" : "") + " [\(self.formatDate(prayerTime.time))]"
-                content.body = contentBody
+                let englishPart = showNotificationEnglish ? (prayerTime.nameEnglish.lowercased() == "friday" ? " (Friday)" : " (\(prayerTime.nameEnglish.lowercased()))") : ""
+
+                content.body = "\(preNotificationTime)m until \(prayerTime.nameTransliteration)\(englishPart) in \(city)" + (travelingMode ? " (traveling)" : "") + " [\(self.formatDate(prayerTime.time))]"
             }
+            
         } else {
             triggerTime = prayerTime.time
             
-            if prayerTime.nameTransliteration == "Shurooq" {
-                content.body = "Time for shurooq (sunrise - ending of Fajr) at \(self.formatDate(prayerTime.time)) in \(city)" + (travelingMode ? " (traveling mode)" : "")
-            } else if prayerTime.nameTransliteration == "Fajr" {
+            if prayerTime.nameTransliteration == "Fajr" {
                 content.body = {
                     guard let prayers = self.prayers, prayers.prayers.count > 1 else {
                         return "Error: Not enough prayer times available"
                     }
-                    return "Time to pray \(prayerTime.nameTransliteration) (\(prayerTime.nameEnglish.lowercased())) at \(self.formatDate(prayerTime.time)) in \(city)" + (travelingMode ? " (traveling mode)" : "") + " [ends at \(self.formatDate(prayers.prayers[1].time))]"
+                    let englishPart = showNotificationEnglish ? " (\(prayerTime.nameEnglish.lowercased()))" : ""
+                    
+                    return "Time for \(prayerTime.nameTransliteration)\(englishPart) at \(formatDate(prayerTime.time)) in \(city)" + (travelingMode ? " (traveling)" : "") + " [ends at \(formatDate(prayers.prayers[1].time))]"
                 }()
+                
             } else {
-                let prayerName = prayerTime.nameEnglish.lowercased() == "friday" ? "Friday" : prayerTime.nameEnglish.lowercased()
-                let contentBody = "Time to pray \(prayerTime.nameTransliteration) (\(prayerName)) at \(self.formatDate(prayerTime.time)) in \(city)" + (travelingMode ? " (traveling mode)" : "")
-                content.body = contentBody
-
+                let rawEnglish = prayerTime.nameEnglish.lowercased() == "friday" ? "Friday" : prayerTime.nameEnglish.lowercased()
+                let englishPart = showNotificationEnglish ? " (\(rawEnglish))" : ""
+                
+                content.body = "Time for \(prayerTime.nameTransliteration)\(englishPart) at \(formatDate(prayerTime.time)) in \(city)" + (travelingMode ? " (traveling)" : "")
             }
         }
         
@@ -815,7 +818,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             return
         }
         
-        content.sound = UNNotificationSound.default
+        content.sound = .default
         let dateComponents = Calendar.current.dateComponents([.hour, .minute], from: triggerTime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
@@ -1093,6 +1096,8 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @AppStorage("firstLaunch") var firstLaunch = true
+    
+    @AppStorage("showNotificationEnglish") var showNotificationEnglish = true
     
     @AppStorage("dateNotifications") var dateNotifications = true {
         didSet { self.fetchPrayerTimes(notification: true) }

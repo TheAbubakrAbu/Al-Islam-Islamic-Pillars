@@ -97,32 +97,7 @@ struct SettingsView: View {
                             .multilineTextAlignment(.center)
                     }
                     .sheet(isPresented: $showingCredits) {
-                        NavigationView {
-                            VStack {
-                                Text("Credits")
-                                    .foregroundColor(settings.accentColor.color)
-                                    .font(.title)
-                                    .padding(.top, 20)
-                                    .padding(.bottom, 4)
-                                    .padding(.horizontal)
-                                
-                                CreditsView()
-                                
-                                Button(action: {
-                                    settings.hapticFeedback()
-                                    
-                                    showingCredits = false
-                                }) {
-                                    Text("Done")
-                                        .padding()
-                                        .frame(maxWidth: .infinity)
-                                        .background(settings.accentColor.color)
-                                        .foregroundColor(.primary)
-                                        .cornerRadius(10)
-                                        .padding(.horizontal, 16)
-                                }
-                            }
-                        }
+                        CreditsView()
                     }
                     #endif
                     
@@ -180,6 +155,73 @@ struct NotificationView: View {
     
     @State private var showAlert: Bool = false
     
+    var body: some View {
+        List {
+            Section(header: Text("HIJRI CALENDAR")) {
+                Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
+                    .font(.subheadline)
+            }
+            
+            Section(header: Text("NOTIFICATION PREFERENCES")) {
+                VStack(alignment: .leading) {
+                    Toggle("Include English translations in prayer notifications", isOn: $settings.showNotificationEnglish.animation(.easeInOut))
+                        .font(.subheadline)
+                    
+                    Text("Prayer notifications will include English translations alongside English transliteration when enabled. For example, \"Time for Maghrib (Sunset)\" instead of \"Time for Maghrib.\"")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+                }
+            }
+            
+            NavigationLink(destination: MoreNotificationView()) {
+                Label("More Notification Settings", systemImage: "bell.fill")
+            }
+        }
+        .onAppear {
+            settings.requestNotificationAuthorization()
+            settings.fetchPrayerTimes()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if settings.showNotificationAlert {
+                    showAlert = true
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _ in
+            settings.requestNotificationAuthorization()
+            settings.fetchPrayerTimes()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if settings.showNotificationAlert {
+                    showAlert = true
+                }
+            }
+        }
+        .confirmationDialog("", isPresented: $showAlert, titleVisibility: .visible) {
+            Button("Open Settings") {
+                #if !os(watchOS)
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+                #endif
+            }
+            Button("Ignore", role: .cancel) { }
+        } message: {
+            Text("Please go to Settings and enable notifications to be notified of prayer times.")
+        }
+        .applyConditionalListStyle(defaultView: true)
+        .navigationTitle("Notification Settings")
+    }
+}
+
+struct MoreNotificationView: View {
+    @EnvironmentObject var settings: Settings
+    
+    @Environment(\.scenePhase) private var scenePhase
+    
+    @State private var showAlert: Bool = false
+    
     private func turnOffNaggingModeIfAllOff() {
         if !settings.naggingFajr &&
            !settings.naggingSunrise &&
@@ -196,11 +238,6 @@ struct NotificationView: View {
     
     var body: some View {
         List {
-            Section(header: Text("HIJRI CALENDAR")) {
-                Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
-                    .font(.subheadline)
-            }
-            
             Section(header: Text("NAGGING MODE")) {
                 Text("Nagging mode helps those who struggle to pray on time. Once enabled, you'll get a notification at the chosen start time before each prayer, then another every 15 minutes, plus final reminders at 10 and 5 minutes remaining.")
                     .font(.caption)
@@ -238,6 +275,7 @@ struct NotificationView: View {
                     }
                 ).animation(.easeInOut))
                 .font(.subheadline)
+                .tint(settings.accentColor.color)
                 
                 if settings.naggingMode {
                     Picker("Starting Time", selection: $settings.naggingStartOffset.animation(.easeInOut)) {
@@ -299,6 +337,7 @@ struct NotificationView: View {
                             }
                         ).animation(.easeInOut))
                     }
+                    .tint(settings.accentColor.color)
                 }
             }
             
@@ -325,6 +364,7 @@ struct NotificationView: View {
                         }
                     ).animation(.easeInOut))
                     .font(.subheadline)
+                    .tint(settings.accentColor.color)
                     
                     Stepper(value: Binding(
                         get: { settings.preNotificationFajr },
@@ -410,7 +450,6 @@ struct NotificationView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Notification Settings")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

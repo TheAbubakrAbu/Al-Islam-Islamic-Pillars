@@ -22,8 +22,6 @@ struct IslamicPillarsApp: App {
             Group {
                 if isLaunching {
                     LaunchScreen(isLaunching: $isLaunching)
-                } else if settings.firstLaunch {
-                    SplashScreen()
                 } else {
                     TabView {
                         PrayerView()

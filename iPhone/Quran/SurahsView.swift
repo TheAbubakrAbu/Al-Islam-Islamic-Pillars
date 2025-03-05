@@ -14,15 +14,17 @@ struct SurahsHeader: View {
             Spacer()
             
             NavigationLink {
-                if let randomS = randomSurah {
-                    AyahsView(surah: randomS)
-                        .onDisappear {
-                            withAnimation {
-                                randomSurah = quranData.quran.randomElement()
-                            }
-                        }
-                } else {
-                    Text("No surah found!")
+                Group {
+                    if let randomS = randomSurah {
+                        AyahsView(surah: randomS)
+                    } else {
+                        Text("No surah found!")
+                    }
+                }
+                .onDisappear {
+                    withAnimation {
+                        randomSurah = quranData.quran.randomElement()
+                    }
                 }
             } label: {
                 Image(systemName: "shuffle")
@@ -49,7 +51,7 @@ struct JuzHeader: View {
     
     @State private var randomSurah: Surah?
 
-    private func randomSurah(for juz: Juz) -> Surah? {
+    private func getRandomSurah() -> Surah? {
         let surahsInRange = quranData.quran.filter {
             $0.id >= juz.startSurah && $0.id <= juz.endSurah
         }
@@ -65,7 +67,7 @@ struct JuzHeader: View {
             
             NavigationLink {
                 Group {
-                    if let randomS = randomSurah(for: juz) {
+                    if let randomS = randomSurah {
                         AyahsView(surah: randomS)
                     } else {
                         Text("No surah found in Juz \(juz.id).")
@@ -73,7 +75,9 @@ struct JuzHeader: View {
                 }
                 .onDisappear {
                     withAnimation {
-                        randomSurah = randomSurah(for: juz)
+                        if let randomS = getRandomSurah() {
+                            randomSurah = randomS
+                        }
                     }
                 }
             } label: {
@@ -85,7 +89,9 @@ struct JuzHeader: View {
         .onAppear {
             if randomSurah == nil {
                 withAnimation {
-                    randomSurah = randomSurah(for: juz)
+                    if let randomS = getRandomSurah() {
+                        randomSurah = randomS
+                    }
                 }
             }
         }

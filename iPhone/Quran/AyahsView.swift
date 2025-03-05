@@ -419,6 +419,7 @@ struct AyahsView: View {
     @State private var searchText = ""
     @State private var visibleAyahs: [Int] = []
     @State private var scrollDown: Int? = nil
+    @State private var didScrollDown: Bool = false
     @State private var filteredAyahs: [Ayah] = []
     @State private var showingSettingsSheet = false
     @State private var showAlert = false
@@ -515,7 +516,8 @@ struct AyahsView: View {
                 .applyConditionalListStyle(defaultView: settings.defaultView)
                 .dismissKeyboardOnScroll()
                 .onAppear {
-                    if let selectedAyah = ayah {
+                    if let selectedAyah = ayah, didScrollDown == false {
+                        didScrollDown = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                             withAnimation {
                                 proxy.scrollTo(selectedAyah, anchor: .top)
