@@ -5,34 +5,31 @@ struct LockScreen3EntryView: View {
     var entry: PrayersProvider.Entry
 
     var body: some View {
-        VStack(alignment: .center, spacing: 4) {
+        VStack(alignment: .leading, spacing: 4) {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
-                    .font(.caption)
             } else {
-                let first3Prayers = Array(entry.fullPrayers.prefix(3))
-
-                ForEach(first3Prayers) { prayer in
+                let prayers = Array(entry.fullPrayers.prefix(3))
+                
+                ForEach(prayers) { prayer in
                     HStack {
                         Image(systemName: prayer.image)
                             .font(.caption)
-                            .padding(.trailing, -4)
-
-                        if let currentPrayer = entry.currentPrayer, prayer.nameTransliteration == currentPrayer.nameTransliteration {
-                            Text(prayer.nameTransliteration)
-                                .fontWeight(.bold)
-                        } else {
-                            Text(prayer.nameTransliteration)
-                        }
+                            .frame(width: 10, alignment: .center)
+                        
+                        Text(prayer.nameTransliteration)
+                            .fontWeight(.bold)
                         
                         Spacer()
                         
                         Text(prayer.time, style: .time)
+                            .fontWeight(.bold)
                     }
-                    .font(.subheadline)
+                    .foregroundColor(prayer.nameTransliteration == entry.currentPrayer?.nameTransliteration ? .primary : .secondary)
                 }
             }
         }
+        .font(.caption)
         .multilineTextAlignment(.leading)
         .lineLimit(1)
     }
