@@ -39,14 +39,14 @@ struct LockScreen1Widget: Widget {
             }
             .supportedFamilies([.accessoryCircular])
             .configurationDisplayName("Next Prayer Times")
-            .description("View the upcoming prayer times")
+            .description("Shows the next upcoming prayer time")
         } else {
             return StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
                 LockScreen1EntryView(entry: entry)
             }
             .supportedFamilies([.systemSmall])
             .configurationDisplayName("Next Prayer Times")
-            .description("View the upcoming prayer times")
+            .description("Shows the next upcoming prayer time")
         }
         #endif
     }

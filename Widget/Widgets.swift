@@ -10,6 +10,8 @@ struct Widgets: WidgetBundle {
         if #available(iOS 16.1, *) {
             LockScreen1Widget()
             LockScreen2Widget()
+            LockScreen3Widget()
+            LockScreen4Widget()
         }
         #endif
     }

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7205C1EB2D796DFD001D4979 /* LockScreen3Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EA2D796DFD001D4979 /* LockScreen3Widget.swift */; };
+		7205C1ED2D796E0F001D4979 /* LockScreen4Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EC2D796E0F001D4979 /* LockScreen4Widget.swift */; };
 		720D00832C1A8C7600D00D7E /* CopyAyah.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720D00822C1A8C7600D00D7E /* CopyAyah.swift */; };
 		720D00842C1A8C7600D00D7E /* CopyAyah.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720D00822C1A8C7600D00D7E /* CopyAyah.swift */; };
 		720D00862C1A8C8A00D00D7E /* QuranPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720D00852C1A8C8A00D00D7E /* QuranPlayer.swift */; };
@@ -160,6 +162,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7205C1EA2D796DFD001D4979 /* LockScreen3Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen3Widget.swift; sourceTree = "<group>"; };
+		7205C1EC2D796E0F001D4979 /* LockScreen4Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen4Widget.swift; sourceTree = "<group>"; };
 		720D00822C1A8C7600D00D7E /* CopyAyah.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyAyah.swift; sourceTree = "<group>"; };
 		720D00852C1A8C8A00D00D7E /* QuranPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranPlayer.swift; sourceTree = "<group>"; };
 		720DEC5A2D244EEF006EA342 /* CreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
@@ -290,6 +294,8 @@
 				725B42112AA00639009C8C91 /* PrayersWidget.swift */,
 				725B42152AA00639009C8C91 /* LockScreen1Widget.swift */,
 				725B42142AA00639009C8C91 /* LockScreen2Widget.swift */,
+				7205C1EA2D796DFD001D4979 /* LockScreen3Widget.swift */,
+				7205C1EC2D796E0F001D4979 /* LockScreen4Widget.swift */,
 			);
 			path = Widget;
 			sourceTree = "<group>";
@@ -624,8 +630,10 @@
 				725B422A2AA00660009C8C91 /* CountdownWidget.swift in Sources */,
 				725B422D2AA0066A009C8C91 /* Surah.swift in Sources */,
 				725B42292AA00660009C8C91 /* PrayersWidget.swift in Sources */,
+				7205C1ED2D796E0F001D4979 /* LockScreen4Widget.swift in Sources */,
 				72CCAE972D42DDF100871A6A /* WatchConnectivity.swift in Sources */,
 				725B422C2AA00660009C8C91 /* PrayersProvider.swift in Sources */,
+				7205C1EB2D796DFD001D4979 /* LockScreen3Widget.swift in Sources */,
 				725B42282AA00660009C8C91 /* Widgets.swift in Sources */,
 				725B42262AA00660009C8C91 /* LockScreen2Widget.swift in Sources */,
 				725B422E2AA0066D009C8C91 /* Settings.swift in Sources */,
