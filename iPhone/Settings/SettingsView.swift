@@ -133,19 +133,19 @@ struct SettingsView: View {
     }
 }
 
-let calculationOptions: [(String, String)] = [
-    ("Muslim World League", "Muslim World League"),
-    ("Moonsight Committee", "Moonsight Committee"),
-    ("Umm Al-Qura", "Umm Al-Qura"),
-    ("Egypt", "Egypt"),
-    ("Dubai", "Dubai"),
-    ("Kuwait", "Kuwait"),
-    ("Qatar", "Qatar"),
-    ("Turkey", "Turkey"),
-    ("Tehran", "Tehran"),
-    ("Karachi", "Karachi"),
-    ("Singapore", "Singapore"),
-    ("North America", "North America")
+let calculationOptions: [String] = [
+    "Muslim World League",
+    "Moonsight Committee",
+    "Umm Al-Qura",
+    "Egypt",
+    "Dubai",
+    "Kuwait",
+    "Qatar",
+    "Turkey",
+    "Tehran",
+    "Karachi",
+    "Singapore",
+    "North America"
 ]
 
 struct NotificationView: View {
@@ -516,8 +516,8 @@ struct SettingsPrayerView: View {
             Section(header: Text("PRAYER CALCULATION")) {
                 VStack(alignment: .leading) {
                     Picker("Calculation", selection: $settings.prayerCalculation.animation(.easeInOut)) {
-                        ForEach(calculationOptions, id: \.1) { option in
-                            Text(option.0).tag(option.1)
+                        ForEach(calculationOptions, id: \.self) { option in
+                            Text(option).tag(option)
                         }
                     }
                     
@@ -771,18 +771,34 @@ struct SettingsQuranView: View {
                 }
             }
             
-            Toggle("Use System Font Size", isOn: $settings.useSystemFontSize.animation(.easeInOut))
-                .font(.subheadline)
-                .onChange(of: settings.useSystemFontSize) { useSystemFontSize in
-                    if useSystemFontSize {
-                        settings.englishFontSize = UIFont.preferredFont(forTextStyle: .body).pointSize
+            Toggle("Use System Font Size", isOn: Binding(
+                get: {
+                    let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                    var usesSystemSizes = true
+                    
+                    if settings.showArabicText {
+                        usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
+                    }
+                    
+                    if settings.showTransliteration || settings.showEnglishTranslation {
+                        usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
+                    }
+                    return usesSystemSizes
+                },
+                set: { newValue in
+                    let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                    withAnimation {
+                        if newValue {
+                            settings.fontArabicSize = systemBodySize + 10
+                            settings.englishFontSize = systemBodySize
+                        } else {
+                            settings.fontArabicSize = systemBodySize + 11
+                            settings.englishFontSize = systemBodySize + 1
+                        }
                     }
                 }
-                .onChange(of: settings.englishFontSize) { newValue in
-                    if newValue == UIFont.preferredFont(forTextStyle: .body).pointSize {
-                        settings.useSystemFontSize = true
-                    }
-                }
+            ))
+            .font(.subheadline)
         }
         
         #if !os(watchOS)

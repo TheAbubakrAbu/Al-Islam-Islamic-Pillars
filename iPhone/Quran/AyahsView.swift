@@ -37,7 +37,6 @@ struct SurahSectionHeader: View {
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut)
             .onTapGesture {
                 settings.hapticFeedback()
                 

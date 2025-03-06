@@ -112,7 +112,7 @@ struct SurahRow: View {
                 VStack(alignment: .leading) {
                     HStack {
                         if let ayah = ayah {
-                            if let end = end {
+                            if end != nil {
                                 Text("Ends at \(surah.id):\(ayah)")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
