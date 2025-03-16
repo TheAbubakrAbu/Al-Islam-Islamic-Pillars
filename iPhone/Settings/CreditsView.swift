@@ -44,7 +44,7 @@ struct CreditsView: View {
                         .font(.body)
                         .multilineTextAlignment(.leading)
                     
-                    Link("View the source code on GitHub: github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars", destination: URL(string: "https://github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars")!)
+                    Link("View the source code: github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars", destination: URL(string: "https://github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars")!)
                         .font(.body)
                         .foregroundColor(settings.accentColor.color)
                         .contextMenu {
@@ -60,7 +60,7 @@ struct CreditsView: View {
                 }
                 
                 Section {
-                    Text("Version 3.4.2")
+                    Text("Version 3.5")
                         .font(.caption)
                 }
                 

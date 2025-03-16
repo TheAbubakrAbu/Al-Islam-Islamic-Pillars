@@ -380,11 +380,9 @@ struct PrayerList: View {
                             }
                         }
                     }
-                    .onChange(of: settings.travelingMode) { value in
-                        if value {
-                            withAnimation {
-                                fullPrayers = false
-                            }
+                    .onChange(of: settings.travelingMode) { _ in
+                        withAnimation {
+                            fullPrayers = false
                         }
                     }
                 } else {

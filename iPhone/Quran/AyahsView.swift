@@ -640,7 +640,6 @@ struct AyahsView: View {
         }
         #if !os(watchOS)
         .navigationTitle(surah.nameEnglish)
-        .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(trailing:
             Button(action: {
                 settings.hapticFeedback()
@@ -666,7 +665,6 @@ struct AyahsView: View {
                 .accentColor(settings.accentColor.color)
                 .preferredColorScheme(settings.colorScheme)
                 .navigationTitle("Al-Quran Settings")
-                .navigationBarTitleDisplayMode(.inline)
                 .applyConditionalListStyle(defaultView: true)
             }
         }

@@ -1,26 +1,5 @@
 import SwiftUI
 
-struct LetterSectionHeader: View {
-    @EnvironmentObject var settings: Settings
-    
-    let letterData: LetterData
-    
-    var body: some View {
-        HStack {
-            Text("LETTER")
-                .font(.subheadline)
-            Spacer()
-            Image(systemName: settings.isLetterFavorite(letterData: letterData) ? "star.fill" : "star")
-                .foregroundColor(settings.accentColor.color)
-                .font(.subheadline)
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    settings.toggleLetterFavorite(letterData: letterData)
-                }
-        }
-    }
-}
-
 struct ArabicView: View {
     @EnvironmentObject var settings: Settings
     

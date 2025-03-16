@@ -9,7 +9,9 @@ struct IdentifiableMapItem: Identifiable {
 struct MapView: View {
     @EnvironmentObject var settings: Settings
     
-    @Binding var showingMap: Bool
+    @Environment(\.presentationMode) var presentationMode
+    
+    @State var choosingPrayerTimes: Bool
     
     @State private var showAlert = false
     @State private var searchText = ""
@@ -21,6 +23,28 @@ struct MapView: View {
         center: CLLocationCoordinate2D(latitude: 21.4225, longitude: 39.8262), // Center coordinates of the Kaaba
         span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
     )
+    
+    @Environment(\.colorScheme) var systemColorScheme
+    @Environment(\.customColorScheme) var customColorScheme
+
+    var currentColorScheme: ColorScheme {
+        if let colorScheme = settings.colorScheme {
+            return colorScheme
+        } else {
+            return systemColorScheme
+        }
+    }
+
+    var backgroundColor: Color {
+        switch currentColorScheme {
+        case .light:
+            return Color.white
+        case .dark:
+            return Color.black
+        @unknown default:
+            return Color.white
+        }
+    }
 
     private func fetchCities(searchText: String) {
         let request = MKLocalSearch.Request()
@@ -39,17 +63,6 @@ struct MapView: View {
     var body: some View {
         NavigationView {
             VStack {
-                HStack {
-                    Spacer()
-                    
-                    Text("Home City: \(settings.homeLocation?.city ?? "None")")
-                        .font(.headline)
-                        .foregroundColor(settings.accentColor.color)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                }
-                
                 SearchBar(text: $searchText.animation(.easeInOut))
                     .onChange(of: searchText, perform: { value in
                         fetchCities(searchText: value)
@@ -74,14 +87,12 @@ struct MapView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "mappin.circle.fill")
-                                        .font(.subheadline)
-                                        .foregroundColor(settings.accentColor.color)
                                     
                                     Text((fullCityName) + ", " + (cityItem.placemark.country ?? ""))
-                                        .foregroundColor(settings.accentColor.color)
-                                        .font(.subheadline)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .foregroundColor(settings.accentColor.color)
+                                .font(.subheadline)
                                 .padding()
                             }
                         }
@@ -98,8 +109,23 @@ struct MapView: View {
                 Map(coordinateRegion: $region, annotationItems: [selectedCityItem].compactMap { $0 }) { identifiableMapItem in
                     MapMarker(coordinate: identifiableMapItem.item.placemark.coordinate)
                 }
-                .edgesIgnoringSafeArea(.all)
-                .ignoresSafeArea(.all)
+                .edgesIgnoringSafeArea(.bottom)
+                
+                Spacer()
+                
+                if !choosingPrayerTimes, let homeLocation = settings.homeLocation {
+                    HStack {
+                        Spacer()
+                        
+                        Text("Home City: \(homeLocation.city)")
+                            .font(.headline)
+                            .foregroundColor(settings.accentColor.color)
+                            .lineLimit(1)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                }
                 
                 Button(action: {
                     settings.hapticFeedback()
@@ -128,7 +154,7 @@ struct MapView: View {
             .navigationBarTitle("Select Location", displayMode: .inline)
             .navigationBarItems(trailing: Button(action: {
                 settings.hapticFeedback()
-                self.showingMap = false
+                presentationMode.wrappedValue.dismiss()
             }) {
                 Text("Done")
                     .foregroundColor(settings.accentColor.color)
@@ -164,6 +190,7 @@ struct MapView: View {
             }
         }
         .accentColor(settings.accentColor.color)
+        .tint(settings.accentColor.color)
     }
     
     private func updateRegion(to coordinate: CLLocationCoordinate2D) {

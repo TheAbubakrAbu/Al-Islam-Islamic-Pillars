@@ -6,6 +6,12 @@
 	<array>
 		<string>com.Quran.Elmallah.Islamic-Pillars.fetchPrayerTimes</string>
 	</array>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>PlayLastListenedIntent</string>
+		<string>PlaySurahIntent</string>
+		<string>PlaySurahNumberIntent</string>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Hafs.ttf</string>

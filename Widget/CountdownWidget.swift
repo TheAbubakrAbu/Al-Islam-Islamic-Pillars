@@ -87,9 +87,7 @@ struct CountdownEntryView: View {
                     }
                     
                     if widgetFamily == .systemSmall {
-                        VStack(alignment: .leading) {
-                            Spacer()
-                            
+                        VStack(alignment: .leading, spacing: 1) {
                             HStack {
                                 Spacer()
                                 
@@ -153,8 +151,6 @@ struct CountdownEntryView: View {
                                     Text(entry.currentCity)
                                         .font(.caption)
                                 }
-                                
-                                Spacer()
                             }
                         }
                     } else {

@@ -9,7 +9,12 @@ struct LockScreen3EntryView: View {
             if entry.prayers.isEmpty {
                 Text("Open app to get prayer times")
             } else {
-                let prayers = Array(entry.fullPrayers.prefix(3))
+                let prayers = Array(
+                    entry.prayers
+                        .prefix(Int(floor(Double(
+                            entry.prayers.count / 2
+                        ))))
+                )
                 
                 ForEach(prayers) { prayer in
                     HStack {
@@ -19,13 +24,15 @@ struct LockScreen3EntryView: View {
                         
                         Text(prayer.nameTransliteration)
                             .fontWeight(.bold)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
                         
                         Spacer()
                         
                         Text(prayer.time, style: .time)
                             .fontWeight(.bold)
                     }
-                    .foregroundColor(prayer.nameTransliteration == entry.currentPrayer?.nameTransliteration ? .primary : .secondary)
+                    .foregroundColor((entry.currentPrayer?.nameTransliteration ?? "").contains(prayer.nameTransliteration) ? .primary : .secondary)
                 }
             }
         }

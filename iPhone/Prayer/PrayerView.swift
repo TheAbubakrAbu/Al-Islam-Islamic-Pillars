@@ -96,61 +96,14 @@ struct PrayerView: View {
                         #endif
                     }
                     
-                    VStack {
-                        HStack {
-                            #if !os(watchOS)
-                            if let currentLoc = settings.currentLocation {
-                                let currentCity = currentLoc.city
-                                
-                                Image(systemName: "location.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor.color)
-                                    .padding(.trailing, 8)
-                                
-                                Text(currentCity)
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                            } else {
-                                Image(systemName: "location.slash")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor.color)
-                                    .padding(.trailing, 8)
-                                
-                                Text("No location")
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                            }
-                            #else
-                            if settings.prayers != nil, let currentLoc = settings.currentLocation {
-                                let currentCity = currentLoc.city
-                                Text(currentCity)
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                            } else {
-                                Text("No location")
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                            }
-                            #endif
-                            
-                            Spacer()
-                            
-                            QiblaView()
-                                .padding(.horizontal)
-                        }
-                        .foregroundColor(.primary)
-                        .font(.subheadline)
-                        
-                        #if os(watchOS)
-                        Text("Compass may not be accurate on Apple Watch")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        #endif
+                    CityQiblaView()
+                    /*#if os(watchOS)
+                    CityQiblaView()
+                    #else
+                    NavigationLink(destination: ChoosePrayerView()) {
+                        CityQiblaView()
                     }
+                    #endif*/
                 }
                 
                 #if !os(watchOS)
@@ -246,46 +199,36 @@ struct PrayerView: View {
             .sheet(isPresented: $showingArabicSheet) {
                 NavigationView {
                     ArabicView()
-                        .accentColor(settings.accentColor.color)
                 }
             }
             .sheet(isPresented: $showingAdhkarSheet) {
                 NavigationView {
                     AdhkarView()
-                        .accentColor(settings.accentColor.color)
                 }
             }
             .sheet(isPresented: $showingDuaSheet) {
                 NavigationView {
                     DuaView()
-                        .accentColor(settings.accentColor.color)
                 }
             }
             .sheet(isPresented: $showingTasbihSheet) {
                 NavigationView {
                     TasbihView()
-                        .accentColor(settings.accentColor.color)
                 }
             }
             .sheet(isPresented: $showingNamesSheet) {
                 NavigationView {
-                    NamesView()
-                        .accentColor(settings.accentColor.color)
-                        .environmentObject(namesData)
+                    NamesView().environmentObject(namesData)
                 }
             }
             .sheet(isPresented: $showingDateSheet) {
                 NavigationView {
                     DateView()
-                        .accentColor(settings.accentColor.color)
                 }
             }
             .sheet(isPresented: $showingSettingsSheet) {
                 NavigationView {
                     SettingsPrayerView(showNotifications: true)
-                        .accentColor(settings.accentColor.color)
-                        .preferredColorScheme(settings.colorScheme)
-                        .navigationBarTitleDisplayMode(.inline)
                 }
                 /*
                  SettingsView()
@@ -388,5 +331,67 @@ struct PrayerView: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+}
+
+struct CityQiblaView: View {
+    @EnvironmentObject var settings: Settings
+    
+    var body: some View {
+        VStack {
+            HStack {
+                #if !os(watchOS)
+                if let currentLoc = settings.currentLocation {
+                    let currentCity = currentLoc.city
+                    
+                    Image(systemName: "location.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.trailing, 8)
+                    
+                    Text(currentCity)
+                        .font(.subheadline)
+                        .lineLimit(nil)
+                } else {
+                    Image(systemName: "location.slash")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.trailing, 8)
+                    
+                    Text("No location")
+                        .font(.subheadline)
+                        .lineLimit(nil)
+                }
+                #else
+                if settings.prayers != nil, let currentLoc = settings.currentLocation {
+                    let currentCity = currentLoc.city
+                    Text(currentCity)
+                        .font(.subheadline)
+                        .lineLimit(nil)
+                } else {
+                    Text("No location")
+                        .font(.subheadline)
+                        .lineLimit(nil)
+                }
+                #endif
+                
+                Spacer()
+                
+                QiblaView()
+                    .padding(.horizontal)
+            }
+            .foregroundColor(.primary)
+            .font(.subheadline)
+            
+            #if os(watchOS)
+            Text("Compass may not be accurate on Apple Watch")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            #endif
+        }
     }
 }

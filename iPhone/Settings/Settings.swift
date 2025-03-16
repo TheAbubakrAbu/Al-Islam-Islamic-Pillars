@@ -149,6 +149,8 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
         self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Muslim World League"
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
+        self.reciter = appGroupUserDefaults?.string(forKey: "reciterIslam") ?? "ar.minshawi"
+        self.reciteType = appGroupUserDefaults?.string(forKey: "reciteTypeIslam") ?? "Continue to Next"
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
             do {
@@ -294,7 +296,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func checkIfTraveling() {
-        guard let currentLocation = self.currentLocation, let homeLocation = self.homeLocation else { return }
+        guard self.travelAutomatic == true, let currentLocation = self.currentLocation, let homeLocation = self.homeLocation else { return }
 
         if currentLocation.latitude != 1000 && currentLocation.longitude != 1000 {
             let location = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
@@ -325,7 +327,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 }
             } else {
                 if travelingMode {
-                    print("Traveling off")
+                    print("Traveling: off")
                     withAnimation {
                         travelingMode = false
                     }
@@ -923,6 +925,14 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         didSet { appGroupUserDefaults?.setValue(hijriOffset, forKey: "hijriOffset") }
     }
     
+    @Published var reciter: String {
+        didSet { appGroupUserDefaults?.setValue(reciter, forKey: "reciterIslam") }
+    }
+    
+    @Published var reciteType: String {
+        didSet { appGroupUserDefaults?.setValue(reciteType, forKey: "reciteTypeIslam") }
+    }
+    
     @Published var favoriteSurahsData: Data {
         didSet {
             appGroupUserDefaults?.setValue(favoriteSurahsData, forKey: "favoriteSurahsData")
@@ -954,6 +964,9 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             bookmarkedAyahsData = (try? encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    @AppStorage("showBookmarks") var showBookmarks = true
+    @AppStorage("showFavorites") var showFavorites = true
 
     @Published var favoriteLetterData: Data {
         didSet {
@@ -981,6 +994,8 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             "prayerCalculation": self.prayerCalculation,
             "hijriOffset": self.hijriOffset,
             
+            "reciter": self.reciter,
+            "reciteType": self.reciteType,
             "beginnerMode": self.beginnerMode,
             "lastReadSurah": self.lastReadSurah,
             "lastReadAyah": self.lastReadAyah,
@@ -1045,6 +1060,12 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
         if let hijriOffset = dict["hijriOffset"] as? Int {
             self.hijriOffset = hijriOffset
+        }
+        if let reciter = dict["reciter"] as? String {
+            self.reciter = reciter
+        }
+        if let reciteType = dict["reciteType"] as? String {
+            self.reciteType = reciteType
         }
         if let beginnerMode = dict["beginnerMode"] as? Bool {
             self.beginnerMode = beginnerMode
@@ -1260,17 +1281,13 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @AppStorage("groupBySurah") var groupBySurah: Bool = true
     @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
-
-    @AppStorage("reciter") var reciter: String = "ar.minshawi"
-    @AppStorage("reciteType") var reciteType = "Continue to Next"
     
     @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
     @AppStorage("lastReadAyah") var lastReadAyah: Int = 0
     
-    @AppStorage("lastListenedSurahData") private var lastListenedSurahData: Data?
     var lastListenedSurah: LastListenedSurah? {
         get {
-            guard let data = lastListenedSurahData else { return nil }
+            guard let data = appGroupUserDefaults?.data(forKey: "lastListenedSurahDataIslam") else { return nil }
             do {
                 return try JSONDecoder().decode(LastListenedSurah.self, from: data)
             } catch {
@@ -1281,12 +1298,13 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         set {
             if let newValue = newValue {
                 do {
-                    lastListenedSurahData = try JSONEncoder().encode(newValue)
+                    let data = try JSONEncoder().encode(newValue)
+                    appGroupUserDefaults?.set(data, forKey: "lastListenedSurahDataIslam")
                 } catch {
                     print("Failed to encode last listened surah: \(error)")
                 }
             } else {
-                lastListenedSurahData = nil
+                appGroupUserDefaults?.removeObject(forKey: "lastListenedSurahDataIslam")
             }
         }
     }

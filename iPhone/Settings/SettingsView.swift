@@ -34,7 +34,6 @@ struct SettingsView: View {
                         }
                         .applyConditionalListStyle(defaultView: true)
                         .navigationTitle("Al-Quran Settings")
-                        .navigationBarTitleDisplayMode(.inline)
                     ) {
                         Label("Quran Settings", systemImage: "character.book.closed.ar")
                     }
@@ -67,7 +66,6 @@ struct SettingsView: View {
                         }
                         .applyConditionalListStyle(defaultView: true)
                         .navigationTitle("Manual Offset Settings")
-                        .navigationBarTitleDisplayMode(.inline)
                     }) {
                         Label("Manual Offset Settings", systemImage: "slider.horizontal.3")
                     }
@@ -91,13 +89,34 @@ struct SettingsView: View {
                         
                         showingCredits = true
                     }) {
-                        Text("View Credits")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                            .multilineTextAlignment(.center)
+                        HStack {
+                            Image(systemName: "scroll.fill")
+                            
+                            Text("View Credits")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor.color)
                     }
                     .sheet(isPresented: $showingCredits) {
                         CreditsView()
+                    }
+                    
+                    Button(action: {
+                        if settings.hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                        
+                        withAnimation(.smooth()) {
+                            if let url = URL(string: "itms-apps://itunes.apple.com/app/id6449729655?action=write-review") {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
+                            
+                            Text("Leave a Review")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor.color)
                     }
                     #endif
                     
@@ -558,7 +577,7 @@ struct SettingsPrayerView: View {
                     }
                 }
                 .sheet(isPresented: $showingMap) {
-                    MapView(showingMap: $showingMap)
+                    MapView(choosingPrayerTimes: false)
                         .environmentObject(settings)
                 }
                 
@@ -572,7 +591,7 @@ struct SettingsPrayerView: View {
                         .font(.subheadline)
                         .disabled(settings.travelAutomatic)
                     
-                    Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Al-Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually in settings." : "You can control traveling mode manually in settings.")")
+                    Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Al-Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
@@ -589,7 +608,6 @@ struct SettingsPrayerView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Adhan Settings")
-        .navigationBarTitleDisplayMode(.inline)
         .onChange(of: settings.homeLocation) { _ in
             settings.fetchPrayerTimes()
             

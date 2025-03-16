@@ -24,6 +24,7 @@ struct LockScreen2EntryView: View {
                 
                 Text("\(nextPrayer.nameTransliteration) at \(nextPrayer.time, style: .time)")
                     .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .multilineTextAlignment(.leading)
