@@ -312,7 +312,7 @@ struct SurahsView: View {
                                         HStack {
                                             Text(lastListenedSurah.reciter.name)
                                                 .font(.caption)
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(.secondary)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.5)
                                             
@@ -320,7 +320,7 @@ struct SurahsView: View {
                                             
                                             Text("\(formatTime(lastListenedSurah.currentDuration)) / \(formatTime(lastListenedSurah.fullDuration))")
                                                 .font(.caption2)
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(.secondary)
                                                 .padding(.leading, 4)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.5)
@@ -337,6 +337,20 @@ struct SurahsView: View {
                                         Image(systemName: "play.fill")
                                     }
                                     .tint(settings.accentColor.color)
+                                    
+                                    Button(action: {
+                                        settings.hapticFeedback()
+                                        
+                                        withAnimation {
+                                            searchText = ""
+                                            settings.groupBySurah = true
+                                            scrollToSurahID = surah.id
+                                            self.endEditing()
+                                        }
+                                    }) {
+                                        Image(systemName: "arrow.down.circle")
+                                    }
+                                    .tint(.secondary)
                                 }
                                 .swipeActions(edge: .leading) {
                                     Button(action: {
@@ -465,6 +479,20 @@ struct SurahsView: View {
                                         }) {
                                             Image(systemName: "play.circle")
                                         }
+                                        
+                                        Button(action: {
+                                            settings.hapticFeedback()
+                                            
+                                            withAnimation {
+                                                searchText = ""
+                                                settings.groupBySurah = true
+                                                scrollToSurahID = lastReadSurah.id
+                                                self.endEditing()
+                                            }
+                                        }) {
+                                            Image(systemName: "arrow.down.circle")
+                                        }
+                                        .tint(.secondary)
                                     }
                                     .swipeActions(edge: .leading) {
                                         Button(action: {
@@ -658,6 +686,20 @@ struct SurahsView: View {
                                                 }) {
                                                     Image(systemName: "play.circle")
                                                 }
+                                                
+                                                Button(action: {
+                                                    settings.hapticFeedback()
+                                                    
+                                                    withAnimation {
+                                                        searchText = ""
+                                                        settings.groupBySurah = true
+                                                        scrollToSurahID = surah.id
+                                                        self.endEditing()
+                                                    }
+                                                }) {
+                                                    Image(systemName: "arrow.down.circle")
+                                                }
+                                                .tint(.secondary)
                                             }
                                             .swipeActions(edge: .leading) {
                                                 Button(action: {
@@ -785,6 +827,20 @@ struct SurahsView: View {
                                                     Image(systemName: "play.fill")
                                                 }
                                                 .tint(settings.accentColor.color)
+                                                
+                                                Button(action: {
+                                                    settings.hapticFeedback()
+                                                    
+                                                    withAnimation {
+                                                        searchText = ""
+                                                        settings.groupBySurah = true
+                                                        scrollToSurahID = surah.id
+                                                        self.endEditing()
+                                                    }
+                                                }) {
+                                                    Image(systemName: "arrow.down.circle")
+                                                }
+                                                .tint(.secondary)
                                             }
                                             .swipeActions(edge: .leading) {
                                                 Button(action: {
@@ -892,6 +948,20 @@ struct SurahsView: View {
                                             Image(systemName: "play.fill")
                                         }
                                         .tint(settings.accentColor.color)
+                                        
+                                        Button(action: {
+                                            settings.hapticFeedback()
+                                            
+                                            withAnimation {
+                                                searchText = ""
+                                                settings.groupBySurah = true
+                                                scrollToSurahID = surah.id
+                                                self.endEditing()
+                                            }
+                                        }) {
+                                            Image(systemName: "arrow.down.circle")
+                                        }
+                                        .tint(.secondary)
                                     }
                                     .swipeActions(edge: .leading) {
                                         Button(action: {
@@ -1023,6 +1093,22 @@ struct SurahsView: View {
                                             Image(systemName: "play.fill")
                                         }
                                         .tint(settings.accentColor.color)
+                                        
+                                        if !searchText.isEmpty {
+                                            Button(action: {
+                                                settings.hapticFeedback()
+                                                
+                                                withAnimation {
+                                                    searchText = ""
+                                                    settings.groupBySurah = true
+                                                    scrollToSurahID = surah.id
+                                                    self.endEditing()
+                                                }
+                                            }) {
+                                                Image(systemName: "arrow.down.circle")
+                                            }
+                                            .tint(.secondary)
+                                        }
                                     }
                                     .swipeActions(edge: .leading) {
                                         Button(action: {
@@ -1147,6 +1233,19 @@ struct SurahsView: View {
                                                Image(systemName: "play.fill")
                                            }
                                            .tint(settings.accentColor.color)
+                                           
+                                           Button(action: {
+                                               settings.hapticFeedback()
+                                               withAnimation {
+                                                   searchText = ""
+                                                   settings.groupBySurah = true
+                                                   scrollToSurahID = surah.id
+                                                   self.endEditing()
+                                               }
+                                           }) {
+                                               Image(systemName: "arrow.down.circle")
+                                           }
+                                           .tint(.secondary)
                                        }
                                        .swipeActions(edge: .leading) {
                                            Button(action: {
@@ -1176,19 +1275,17 @@ struct SurahsView: View {
                                                Label("Play Surah", systemImage: "play.fill")
                                            }
                                            
-                                           if !searchText.isEmpty {
-                                               Button(action: {
-                                                   settings.hapticFeedback()
-                                                   withAnimation {
-                                                       searchText = ""
-                                                       settings.groupBySurah = true
-                                                       scrollToSurahID = surah.id
-                                                       self.endEditing()
-                                                   }
-                                               }) {
-                                                   Text("Scroll To Surah")
-                                                   Image(systemName: "arrow.down.circle")
+                                           Button(action: {
+                                               settings.hapticFeedback()
+                                               withAnimation {
+                                                   searchText = ""
+                                                   settings.groupBySurah = true
+                                                   scrollToSurahID = surah.id
+                                                   self.endEditing()
                                                }
+                                           }) {
+                                               Text("Scroll To Surah")
+                                               Image(systemName: "arrow.down.circle")
                                            }
                                        }
                                        #endif

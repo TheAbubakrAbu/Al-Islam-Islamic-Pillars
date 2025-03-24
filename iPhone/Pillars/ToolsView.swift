@@ -136,7 +136,7 @@ struct AdhkarRow: View {
                 .font(.subheadline)
             Text(translation)
                 .font(.subheadline)
-                .foregroundColor(.gray)
+                .foregroundColor(.secondary)
         }
         #if !os(watchOS)
         .contextMenu {
@@ -316,7 +316,7 @@ struct TasbihRow: View {
                     .font(.subheadline)
                 Text(tasbih.translation)
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             }
             
             Spacer()
@@ -489,12 +489,10 @@ struct NamesView : View {
                             
                             if showDescription {
                                 HStack {
-                                    Spacer()
-                                    
                                     Text(name.en.desc)
                                         .font(.footnote)
-                                        .foregroundColor(.gray)
-                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(.secondary)
+                                        .frame(alignment: .leading)
                                         .transition(.opacity)
                                     
                                     Spacer()
@@ -558,7 +556,7 @@ struct NamesView : View {
                                     Spacer()
                                     Text(name.en.desc)
                                         .font(.footnote)
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.secondary)
                                         .multilineTextAlignment(.center)
                                     Spacer()
                                 }

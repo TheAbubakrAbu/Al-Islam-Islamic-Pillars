@@ -102,7 +102,7 @@ struct NowPlayingView: View {
                 if let reciter = quranPlayer.nowPlayingReciter {
                     Text(reciter)
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                 }
