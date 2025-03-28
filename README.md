@@ -9,7 +9,7 @@ I was a **17-year-old** high school student when this app was published on the A
 [**Download Al-Islam on the App Store here**](https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone)
 
 ## Overview
-Al-Islam | Islamic Pillars is a beautifully designed and feature-rich app that helps Muslims strengthen their faith and seamlessly practice Islam. Whether you’re a lifelong believer, a new convert, or simply exploring Islam, this app provides everything you need—from accurate prayer times to Quranic access and essential Islamic tools.
+Al-Islam is a simply designed and feature-rich app that helps Muslims strengthen their faith and seamlessly practice Islam. Whether you’re a lifelong believer, a new convert, or simply exploring Islam, this app provides everything you need—from accurate prayer times to Quranic access and essential Islamic tools.
 
 ## Unique Features
 - **Traveling Mode** – Automatically activates when traveling or can be manually enabled. Adjust settings like prayer calculations, Hanafi madhab, and prayer offsets.

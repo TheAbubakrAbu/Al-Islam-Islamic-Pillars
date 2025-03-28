@@ -85,7 +85,7 @@ struct LaunchScreen: View {
                 triggerHapticFeedback(.soft)
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 triggerHapticFeedback(.soft)
                 
                 withAnimation(.easeOut(duration: 0.5)) {

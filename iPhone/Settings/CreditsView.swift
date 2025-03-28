@@ -9,7 +9,7 @@ struct CreditsView: View {
                 VStack(alignment: .center) {
                     HStack {
                         Spacer()
-                        Text("Al-Islam | Islamic Pillars was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year-old high school student when this app was published on July 26, 2023.")
+                        Text("Al-Islam was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year-old high school student when this app was published on July 26, 2023.")
                             .font(.headline)
                             .padding(.vertical, 4)
                             .multilineTextAlignment(.center)
@@ -60,7 +60,7 @@ struct CreditsView: View {
                 }
                 
                 Section {
-                    Text("Version 3.5.1")
+                    Text("Version 3.5.2")
                         .font(.caption)
                 }
                 

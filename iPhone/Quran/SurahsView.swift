@@ -1403,10 +1403,8 @@ struct SurahsView: View {
                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                 #endif
             }
-            #if os(watchOS)
             .navigationTitle("Al-Quran")
-            #else
-            .navigationTitle("Al-Quran | Beginner Quran")
+            #if !os(watchOS)
             .toolbar {
                 /*ToolbarItem(placement: .navigationBarLeading) {
                     Menu {

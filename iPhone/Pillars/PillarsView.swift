@@ -103,11 +103,7 @@ struct PillarsView: View {
                 #endif
             }
             .applyConditionalListStyle(defaultView: true)
-            #if !os(watchOS)
-            .navigationTitle("Al-Islam | Islamic Pillars")
-            #else
             .navigationTitle("Al-Islam")
-            #endif
             
             AdhkarView()
         }

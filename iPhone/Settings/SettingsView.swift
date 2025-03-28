@@ -16,31 +16,7 @@ struct SettingsView: View {
                     }
                     .accentColor(settings.accentColor.color)
                 }
-                #endif
                 
-                Section(header: Text("AL-ADHAN")) {
-                    NavigationLink(destination: SettingsPrayerView(showNotifications: false)) {
-                        Label("Prayer Settings", systemImage: "safari")
-                    }
-                    .accentColor(settings.accentColor.color)
-                }
-                
-                Section(header: Text("AL-QURAN")) {
-                    NavigationLink(destination:
-                        List {
-                            SettingsQuranView(showEdits: true)
-                                .environmentObject(quranData)
-                                .environmentObject(settings)
-                        }
-                        .applyConditionalListStyle(defaultView: true)
-                        .navigationTitle("Al-Quran Settings")
-                    ) {
-                        Label("Quran Settings", systemImage: "character.book.closed.ar")
-                    }
-                    .accentColor(settings.accentColor.color)
-                }
-                
-                #if !os(watchOS)
                 Section(header: Text("MANUAL OFFSETS")) {
                     NavigationLink(destination: {
                         List {
@@ -72,6 +48,28 @@ struct SettingsView: View {
                     .accentColor(settings.accentColor.color)
                 }
                 #endif
+                
+                Section(header: Text("AL-ADHAN")) {
+                    NavigationLink(destination: SettingsPrayerView(showNotifications: false)) {
+                        Label("Prayer Settings", systemImage: "safari")
+                    }
+                    .accentColor(settings.accentColor.color)
+                }
+                
+                Section(header: Text("AL-QURAN")) {
+                    NavigationLink(destination:
+                        List {
+                            SettingsQuranView(showEdits: true)
+                                .environmentObject(quranData)
+                                .environmentObject(settings)
+                        }
+                        .applyConditionalListStyle(defaultView: true)
+                        .navigationTitle("Al-Quran Settings")
+                    ) {
+                        Label("Quran Settings", systemImage: "character.book.closed.ar")
+                    }
+                    .accentColor(settings.accentColor.color)
+                }
                 
                 Section(header: Text("APPEARANCE")) {
                     SettingsAppearanceView()
@@ -111,12 +109,24 @@ struct SettingsView: View {
                         }
                     }) {
                         HStack {
-                            Image(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
+                            Image(systemName: "star.bubble.fill")
                             
                             Text("Leave a Review")
                         }
                         .font(.subheadline)
                         .foregroundColor(settings.accentColor.color)
+                    }
+                    .contextMenu {
+                        Button(action: {
+                            settings.hapticFeedback()
+                            
+                            UIPasteboard.general.string = "itms-apps://itunes.apple.com/app/id6449729655?action=write-review"
+                        }) {
+                            HStack {
+                                Image(systemName: "doc.on.doc")
+                                Text("Copy Website")
+                            }
+                        }
                     }
                     #endif
                     
