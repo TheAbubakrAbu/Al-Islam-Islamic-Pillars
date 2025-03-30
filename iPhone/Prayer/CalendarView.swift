@@ -128,13 +128,6 @@ struct HijriCalendarView: View {
                                         Label("Copy Gregorian Date", systemImage: "doc.on.doc")
                                     }
                                 }
-                                .onAppear {
-                                    if event.0 == nearestEventId {
-                                        withAnimation {
-                                            proxy.scrollTo(nearestEventId, anchor: .top)
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
