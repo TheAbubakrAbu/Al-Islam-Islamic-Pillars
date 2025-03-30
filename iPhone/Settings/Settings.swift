@@ -643,24 +643,26 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         #endif
     }
 
-    func scheduleNotification(for event: (String, DateComponents, String)) {
-        let (titleText, hijriComps, noteDetail) = event
-
+    func scheduleNotification(for event: (String, DateComponents, String, String)) {
+        let (titleText, hijriComps, eventSubTitle, _) = event
+        
         if let hijriDate = hijriCalendar.date(from: hijriComps) {
             let gregorianCalendar = Calendar(identifier: .gregorian)
             var gregorianComps = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
             gregorianComps.hour = 9
             gregorianComps.minute = 0
             
-            guard let finalDate = gregorianCalendar.date(from: gregorianComps),
-                  finalDate > Date() else {
+            guard
+                let finalDate = gregorianCalendar.date(from: gregorianComps),
+                finalDate > Date()
+            else {
                 return
             }
             
             let content = UNMutableNotificationContent()
             content.title = "Al-Islam"
-            content.body = titleText + " (\(noteDetail))"
-            content.sound = UNNotificationSound.default
+            content.body = "\(titleText) (\(eventSubTitle))"
+            content.sound = .default
             
             let trigger = UNCalendarNotificationTrigger(dateMatching: gregorianComps, repeats: false)
             let request = UNNotificationRequest(
@@ -668,6 +670,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 content: content,
                 trigger: trigger
             )
+            
             UNUserNotificationCenter.current().add(request) { error in
                 if let error = error {
                     print("Failed to schedule special event notification: \(error)")
@@ -675,7 +678,6 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
         }
     }
-
     
     func printAllScheduledNotifications() {
         let center = UNUserNotificationCenter.current()
@@ -1132,23 +1134,23 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         return calendar
     }()
     
-    var specialEvents: [(String, DateComponents, String)] {
+    var specialEvents: [(String, DateComponents, String, String)] {
         let currentHijriYear = hijriCalendar.component(.year, from: Date())
         return [
-            ("Islamic New Year", DateComponents(year: currentHijriYear, month: 1, day: 1), "Not to be celebrated"),
+            ("Islamic New Year", DateComponents(year: currentHijriYear, month: 1, day: 1), "Start of Hijri year", "The first day of the Islamic calendar; no special acts of worship or celebration are prescribed."),
+            ("Day Before Ashura", DateComponents(year: currentHijriYear, month: 1, day: 9), "Recommended to fast", "The Prophet ﷺ intended to fast the 9th to differ from the Jews, making it Sunnah to do so before Ashura."),
+            ("Day of Ashura", DateComponents(year: currentHijriYear, month: 1, day: 10), "Recommended to fast", "Ashura marks the day Allah saved Musa (Moses) and the Israelites from Pharaoh; fasting expiates sins of the previous year."),
             
-            ("Day Before Ashura", DateComponents(year: currentHijriYear, month: 1, day: 9), "Sunnah to fast"),
-            ("Day of Ashura", DateComponents(year: currentHijriYear, month: 1, day: 10), "Sunnah to fast"),
+            ("First Day of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 1), "Begin obligatory fast", "The month of fasting begins; all Muslims must fast from Fajr (dawn) to Maghrib (sunset)."),
+            ("Last 10 Nights of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 21), "Seek Laylatul Qadr", "The most virtuous nights of the year; increase worship as these nights are beloved to Allah and contain Laylatul Qadr."),
+            ("27th Night of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 27), "Likely Laylatul Qadr", "A strong possibility for Laylatul Qadr — the Night of Decree when the Qur’an was sent down — though not confirmed."),
+            ("Eid Al-Fitr", DateComponents(year: currentHijriYear, month: 10, day: 1), "Celebration of ending the fast", "Celebration marking the end of Ramadan; fasting is prohibited on this day."),
             
-            ("First day of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 1), "Fard to fast the whole month"),
-            ("Last 10 Odd Days of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 21), "Best days of Ramadan, one of the nights is laylatul Qadr, the night the Quran was first revealed"),
-            ("Eid al-Fitr", DateComponents(year: currentHijriYear, month: 10, day: 1), "End of Ramadan, Haram to fast, Sunnah to fast 6 days in Shawwal after Eid"),
-            
-            ("First 10 Days of Dhul-Hijjah", DateComponents(year: currentHijriYear, month: 12, day: 1), "The most beloved days to Allah"),
-            ("Beginning of Hajj", DateComponents(year: currentHijriYear, month: 12, day: 8), "Pilgrimage to Mecca"),
-            ("Day of Arafah", DateComponents(year: currentHijriYear, month: 12, day: 9), "Sunnah to fast"),
-            ("Beginning of Eid al-Adha", DateComponents(year: currentHijriYear, month: 12, day: 10), "Lasts three days, Haram to fast"),
-            ("End of Eid al-Adha", DateComponents(year: currentHijriYear, month: 12, day: 13), "End of Hajj"),
+            ("First 10 Days of Dhul-Hijjah", DateComponents(year: currentHijriYear, month: 12, day: 1), "Most beloved days", "The best days for righteous deeds; fasting and dhikr are highly encouraged."),
+            ("Beginning of Hajj", DateComponents(year: currentHijriYear, month: 12, day: 8), "Pilgrimage begins", "Pilgrims begin the rites of Hajj, heading to Mina to start the sacred journey."),
+            ("Day of Arafah", DateComponents(year: currentHijriYear, month: 12, day: 9), "Recommended to fast", "Fasting for non-pilgrims expiates sins of the past and coming year."),
+            ("Eid Al-Adha", DateComponents(year: currentHijriYear, month: 12, day: 10), "Celebration of sacrifice during Hajj", "The day of sacrifice; fasting is not allowed and sacrifice of an animal is offered."),
+            ("End of Eid Al-Adha", DateComponents(year: currentHijriYear, month: 12, day: 13), "Hajj and Eid end", "Final day of Eid Al-Adha; pilgrims and non-pilgrims return to daily life."),
         ]
     }
     

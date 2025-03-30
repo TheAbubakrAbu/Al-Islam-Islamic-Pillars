@@ -59,25 +59,30 @@ struct HijriCalendarView: View {
                             ForEach(settings.specialEvents, id: \.0) { event in
                                 let date = hijriCalendar.date(from: event.1)!
                                 let dateInEnglish = formatter.string(from: date)
+                                let hijriString = "\(event.1.day!) \(monthSymbols[event.1.month! - 1]), \(String(event.1.year!)) AH"
                                 
                                 HStack {
                                     VStack(alignment: .leading) {
                                         Text(event.0)
                                             .font(.headline)
-                                            .lineLimit(nil)
-                                            .multilineTextAlignment(.leading)
                                             .foregroundColor(settings.accentColor.color)
                                         
                                         Text(event.2)
                                             .font(.subheadline)
-                                            .lineLimit(nil)
-                                            .multilineTextAlignment(.leading)
+                                            .foregroundColor(.primary)
+                                        
+                                        Text(event.3)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
                                     }
+                                    .lineLimit(nil)
+                                    .frame(alignment: .leading)
+                                    .multilineTextAlignment(.leading)
                                     
                                     Spacer()
                                     
                                     VStack(alignment: .trailing) {
-                                        Text("\(event.1.day!) \(monthSymbols[event.1.month! - 1]), \(String(event.1.year!)) AH")
+                                        Text(hijriString)
                                             .font(.caption)
                                             .lineLimit(nil)
                                             .multilineTextAlignment(.trailing)
@@ -92,6 +97,37 @@ struct HijriCalendarView: View {
                                 }
                                 .padding(.vertical, 4)
                                 .id(event.0)
+                                .contextMenu {
+                                    Button {
+                                        UIPasteboard.general.string = event.0
+                                    } label: {
+                                        Label("Copy Event Name", systemImage: "doc.on.doc")
+                                    }
+                                    
+                                    Button {
+                                        UIPasteboard.general.string = event.2
+                                    } label: {
+                                        Label("Copy Event Subtitle", systemImage: "doc.on.doc")
+                                    }
+                                    
+                                    Button {
+                                        UIPasteboard.general.string = event.3
+                                    } label: {
+                                        Label("Copy Event Description", systemImage: "doc.on.doc")
+                                    }
+                                    
+                                    Button {
+                                        UIPasteboard.general.string = hijriString
+                                    } label: {
+                                        Label("Copy Hijri Date", systemImage: "doc.on.doc")
+                                    }
+                                    
+                                    Button {
+                                        UIPasteboard.general.string = dateInEnglish
+                                    } label: {
+                                        Label("Copy Gregorian Date", systemImage: "doc.on.doc")
+                                    }
+                                }
                                 .onAppear {
                                     if event.0 == nearestEventId {
                                         withAnimation {
@@ -104,8 +140,16 @@ struct HijriCalendarView: View {
                     }
                     .onAppear {
                         let now = Date()
-                        if let nearestEvent = settings.specialEvents.min(by: { abs(hijriCalendar.date(from: $0.1)!.timeIntervalSince(now)) < abs(hijriCalendar.date(from: $1.1)!.timeIntervalSince(now)) }) {
+                        if let nearestEvent = settings.specialEvents.min(by: {
+                            abs(hijriCalendar.date(from: $0.1)!.timeIntervalSince(now)) <
+                            abs(hijriCalendar.date(from: $1.1)!.timeIntervalSince(now))
+                        }) {
                             nearestEventId = nearestEvent.0
+                        }
+                        DispatchQueue.main.async {
+                            withAnimation {
+                                proxy.scrollTo(nearestEventId, anchor: .top)
+                            }
                         }
                         updateInformation()
                     }
