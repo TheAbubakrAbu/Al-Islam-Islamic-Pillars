@@ -25,7 +25,7 @@ struct PrayersProvider: TimelineProvider {
     private func createPrayersEntry() -> PrayersEntry {
         let appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
 
-        if let data = appGroupUserDefaults?.data(forKey: "prayersData") {
+        if let data = appGroupUserDefaults?.data(forKey: "prayersDataIslam") {
             let decoder = JSONDecoder()
             if let prayers = try? decoder.decode(Prayers.self, from: data) {
                 settings.prayers = prayers
@@ -39,9 +39,9 @@ struct PrayersProvider: TimelineProvider {
         }
         
         let accentColor: AccentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
-        let travelingMode: Bool = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
-        let hanafiMadhab: Bool = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
-        let prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Muslim World League"
+        let travelingMode: Bool = appGroupUserDefaults?.bool(forKey: "travelingModeIslam") ?? false
+        let hanafiMadhab: Bool = appGroupUserDefaults?.bool(forKey: "hanafiMadhabIslam") ?? false
+        let prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculationIslam") ?? "Muslim World League"
         let hijriOffset: Int = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
         
         if let currentLoc = currentLocation {

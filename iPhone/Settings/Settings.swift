@@ -144,10 +144,10 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
         
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
-        self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
-        self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
-        self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
-        self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Muslim World League"
+        self.prayersData = appGroupUserDefaults?.data(forKey: "prayersDataIslam") ?? Data()
+        self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingModeIslam") ?? false
+        self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhabIslam") ?? false
+        self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculationIslam") ?? "Muslim World League"
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
         self.reciter = appGroupUserDefaults?.string(forKey: "reciterIslam") ?? "ar.minshawi"
         self.reciteType = appGroupUserDefaults?.string(forKey: "reciteTypeIslam") ?? "Continue to Next"
@@ -849,7 +849,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var prayersData: Data {
         didSet {
             if !prayersData.isEmpty {
-                appGroupUserDefaults?.setValue(prayersData, forKey: "prayersData")
+                appGroupUserDefaults?.setValue(prayersData, forKey: "prayersDataIslam")
             }
         }
     }
@@ -885,7 +885,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @Published var travelingMode: Bool {
-        didSet { appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingMode") }
+        didSet { appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingModeIslam") }
     }
     
     @Published var currentLocation: Location? {
@@ -916,11 +916,11 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @Published var hanafiMadhab: Bool {
-        didSet { appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhab") }
+        didSet { appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhabIslam") }
     }
     
     @Published var prayerCalculation: String {
-        didSet { appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculation") }
+        didSet { appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculationIslam") }
     }
     
     @Published var hijriOffset: Int {
@@ -1144,7 +1144,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             ("First Day of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 1), "Begin obligatory fast", "The month of fasting begins; all Muslims must fast from Fajr (dawn) to Maghrib (sunset)."),
             ("Last 10 Nights of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 21), "Seek Laylatul Qadr", "The most virtuous nights of the year; increase worship as these nights are beloved to Allah and contain Laylatul Qadr."),
             ("27th Night of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 27), "Likely Laylatul Qadr", "A strong possibility for Laylatul Qadr — the Night of Decree when the Qur’an was sent down — though not confirmed."),
-            ("Eid Al-Fitr", DateComponents(year: currentHijriYear, month: 10, day: 1), "Celebration of ending the fast", "Celebration marking the end of Ramadan; fasting is prohibited on this day."),
+            ("Eid Al-Fitr", DateComponents(year: currentHijriYear, month: 10, day: 1), "Celebration of ending the fast", "Celebration marking the end of Ramadan; fasting is prohibited on this day; encouraged to fast 6 days in Shawwal"),
             
             ("First 10 Days of Dhul-Hijjah", DateComponents(year: currentHijriYear, month: 12, day: 1), "Most beloved days", "The best days for righteous deeds; fasting and dhikr are highly encouraged."),
             ("Beginning of Hajj", DateComponents(year: currentHijriYear, month: 12, day: 8), "Pilgrimage begins", "Pilgrims begin the rites of Hajj, heading to Mina to start the sacred journey."),
