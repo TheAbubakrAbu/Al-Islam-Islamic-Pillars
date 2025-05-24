@@ -76,7 +76,6 @@ struct NowPlayingView: View {
                         settings.hapticFeedback()
                         withAnimation {
                             searchText = ""
-                            settings.groupBySurah = true
                             scrollDown = currentSurahNumber
                             endEditing()
                         }

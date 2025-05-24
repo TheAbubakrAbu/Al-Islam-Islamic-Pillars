@@ -214,7 +214,7 @@ class QuranPlayer: ObservableObject {
         continueRecitationFromAyah = false
         backButtonClickCount = 0
         
-        guard let reciterToUse = reciters.first(where: { $0.ayahIdentifier == settings.reciter }) else { return }
+        guard let reciterToUse = reciters.first(where: { $0.name == settings.reciter }) else { return }
         let finalReciter: Reciter
         if certainReciter, let lastRead = settings.lastListenedSurah?.reciter {
             finalReciter = lastRead
@@ -362,7 +362,7 @@ class QuranPlayer: ObservableObject {
     func playAyah(surahNumber: Int, ayahNumber: Int, isBismillah: Bool = false, continueRecitation: Bool = false) {
         guard let surah = quranData.quran.first(where: { $0.id == surahNumber }),
               (1...surah.numberOfAyahs).contains(ayahNumber),
-              let reciter = reciters.first(where: { $0.ayahIdentifier == settings.reciter })
+              let reciter = reciters.first(where: { $0.name == settings.reciter })
         else { return }
         withAnimation {
             currentSurahNumber = surahNumber
@@ -402,7 +402,7 @@ class QuranPlayer: ObservableObject {
                             } else {
                                 self.nowPlayingTitle = "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
                             }
-                            self.nowPlayingReciter = reciter.name
+                            self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
                             self.updateNowPlayingInfo()
                         } else {
                             self.isLoading = false
@@ -424,11 +424,11 @@ class QuranPlayer: ObservableObject {
                     self.incrementAyahIfNeeded()
                     guard let s = self.currentSurahNumber,
                           let a = self.currentAyahNumber,
-                          let rec = reciters.first(where: { $0.ayahIdentifier == self.settings.reciter }),
+                          let rec = reciters.first(where: { $0.name == self.settings.reciter }),
                           let sur = self.quranData.quran.first(where: { $0.id == s })
                     else { return }
                     self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(a)"
-                    self.nowPlayingReciter = rec.name
+                    self.nowPlayingReciter = rec.ayahIdentifier.contains("minshawi") && !rec.name.contains("Minshawi") ? "Muhammad Al-Minshawi (Murattal)" : rec.name
                     self.updateNowPlayingInfo()
                     if self.continueRecitationFromAyah, a < sur.numberOfAyahs, qPlayer.items().count < 2 {
                         if let nextItm = self.makeItem(forSurah: sur, reciter: rec, ayahNumber: a + 1) {
@@ -606,7 +606,7 @@ class QuranPlayer: ObservableObject {
     func getSurahDuration(surahNumber: Int) -> Double {
         var duration: Double = 0
         let sn = String(format: "%03d", surahNumber)
-        guard let selReciter = reciters.first(where: { $0.ayahIdentifier == settings.reciter }) else {
+        guard let selReciter = reciters.first(where: { $0.name == settings.reciter }) else {
             return duration
         }
         let urlStr = "\(selReciter.surahLink)\(sn).mp3"

@@ -183,6 +183,7 @@ struct SurahsView: View {
     @EnvironmentObject var quranPlayer: QuranPlayer
     @EnvironmentObject var namesData: NamesViewModel
     
+    @State private var createCopies = false
     @State private var searchText = ""
     @State private var scrollToSurahID: Int = -1
     #if !os(watchOS)
@@ -343,7 +344,6 @@ struct SurahsView: View {
                                         
                                         withAnimation {
                                             searchText = ""
-                                            settings.groupBySurah = true
                                             scrollToSurahID = surah.id
                                             self.endEditing()
                                         }
@@ -405,7 +405,6 @@ struct SurahsView: View {
                                         
                                         withAnimation {
                                             searchText = ""
-                                            settings.groupBySurah = true
                                             scrollToSurahID = surah.id
                                             self.endEditing()
                                         }
@@ -485,7 +484,6 @@ struct SurahsView: View {
                                             
                                             withAnimation {
                                                 searchText = ""
-                                                settings.groupBySurah = true
                                                 scrollToSurahID = lastReadSurah.id
                                                 self.endEditing()
                                             }
@@ -582,7 +580,6 @@ struct SurahsView: View {
                                             
                                             withAnimation {
                                                 searchText = ""
-                                                settings.groupBySurah = true
                                                 scrollToSurahID = lastReadSurah.id
                                                 self.endEditing()
                                             }
@@ -692,7 +689,6 @@ struct SurahsView: View {
                                                     
                                                     withAnimation {
                                                         searchText = ""
-                                                        settings.groupBySurah = true
                                                         scrollToSurahID = surah.id
                                                         self.endEditing()
                                                     }
@@ -776,7 +772,6 @@ struct SurahsView: View {
                                                     
                                                     withAnimation {
                                                         searchText = ""
-                                                        settings.groupBySurah = true
                                                         scrollToSurahID = surah.id
                                                         self.endEditing()
                                                     }
@@ -833,7 +828,6 @@ struct SurahsView: View {
                                                     
                                                     withAnimation {
                                                         searchText = ""
-                                                        settings.groupBySurah = true
                                                         scrollToSurahID = surah.id
                                                         self.endEditing()
                                                     }
@@ -874,7 +868,6 @@ struct SurahsView: View {
                                                     
                                                     withAnimation {
                                                         searchText = ""
-                                                        settings.groupBySurah = true
                                                         scrollToSurahID = surah.id
                                                         self.endEditing()
                                                     }
@@ -954,7 +947,6 @@ struct SurahsView: View {
                                             
                                             withAnimation {
                                                 searchText = ""
-                                                settings.groupBySurah = true
                                                 scrollToSurahID = surah.id
                                                 self.endEditing()
                                             }
@@ -1032,7 +1024,6 @@ struct SurahsView: View {
                                             
                                             withAnimation {
                                                 searchText = ""
-                                                settings.groupBySurah = true
                                                 scrollToSurahID = surah.id
                                                 self.endEditing()
                                             }
@@ -1100,7 +1091,6 @@ struct SurahsView: View {
                                                 
                                                 withAnimation {
                                                     searchText = ""
-                                                    settings.groupBySurah = true
                                                     scrollToSurahID = surah.id
                                                     self.endEditing()
                                                 }
@@ -1143,7 +1133,6 @@ struct SurahsView: View {
                                                 
                                                 withAnimation {
                                                     searchText = ""
-                                                    settings.groupBySurah = true
                                                     scrollToSurahID = surah.id
                                                     self.endEditing()
                                                 }
@@ -1224,6 +1213,7 @@ struct SurahsView: View {
                                                }
                                            }
                                        }
+                                       .id("surah_\(surah.id)")
                                        #if !os(watchOS)
                                        .swipeActions(edge: .trailing) {
                                            Button(action: {
@@ -1238,7 +1228,6 @@ struct SurahsView: View {
                                                settings.hapticFeedback()
                                                withAnimation {
                                                    searchText = ""
-                                                   settings.groupBySurah = true
                                                    scrollToSurahID = surah.id
                                                    self.endEditing()
                                                }
@@ -1279,7 +1268,6 @@ struct SurahsView: View {
                                                settings.hapticFeedback()
                                                withAnimation {
                                                    searchText = ""
-                                                   settings.groupBySurah = true
                                                    scrollToSurahID = surah.id
                                                    self.endEditing()
                                                }
@@ -1539,6 +1527,15 @@ struct SurahsView: View {
                 }
             } else {
                 AyahsView(surah: quranData.quran[0])
+            }
+        }
+        .onAppear {
+            withAnimation {
+                if !createCopies {
+                    settings.favoriteSurahsCopy = settings.favoriteSurahs
+                    settings.bookmarkedAyahsCopy = settings.bookmarkedAyahs
+                    createCopies = true
+                }
             }
         }
         .confirmationDialog("Internet Connection Error", isPresented: $quranPlayer.showInternetAlert, titleVisibility: .visible) {

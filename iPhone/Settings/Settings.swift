@@ -111,7 +111,7 @@ struct HijriDate: Identifiable, Codable {
     let date: Date
 }
 
-class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
+final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
     private var appGroupUserDefaults: UserDefaults?
     
@@ -149,7 +149,14 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhabIslam") ?? false
         self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculationIslam") ?? "Muslim World League"
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
-        self.reciter = appGroupUserDefaults?.string(forKey: "reciterIslam") ?? "ar.minshawi"
+        
+        if let reciterID = appGroupUserDefaults?.string(forKey: "reciterIslam"), reciterID.starts(with: "ar"),
+           let reciter = reciters.first(where: { $0.ayahIdentifier == reciterID }) {
+            self.reciter = reciter.name
+        } else {
+            self.reciter = appGroupUserDefaults?.string(forKey: "reciterIslam") ?? "Muhammad Al-Minshawi (Murattal)"
+        }
+        
         self.reciteType = appGroupUserDefaults?.string(forKey: "reciteTypeIslam") ?? "Continue to Next"
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
@@ -950,6 +957,8 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             favoriteSurahsData = (try? encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    @Published var favoriteSurahsCopy: [Int] = []
 
     @Published var bookmarkedAyahsData: Data {
         didSet {
@@ -966,6 +975,8 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             bookmarkedAyahsData = (try? encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    @Published var bookmarkedAyahsCopy: [BookmarkedAyah] = []
     
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
@@ -1144,7 +1155,7 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             ("First Day of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 1), "Begin obligatory fast", "The month of fasting begins; all Muslims must fast from Fajr (dawn) to Maghrib (sunset)."),
             ("Last 10 Nights of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 21), "Seek Laylatul Qadr", "The most virtuous nights of the year; increase worship as these nights are beloved to Allah and contain Laylatul Qadr."),
             ("27th Night of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 27), "Likely Laylatul Qadr", "A strong possibility for Laylatul Qadr — the Night of Decree when the Qur’an was sent down — though not confirmed."),
-            ("Eid Al-Fitr", DateComponents(year: currentHijriYear, month: 10, day: 1), "Celebration of ending the fast", "Celebration marking the end of Ramadan; fasting is prohibited on this day; encouraged to fast 6 days in Shawwal"),
+            ("Eid Al-Fitr", DateComponents(year: currentHijriYear, month: 10, day: 1), "Celebration of ending the fast", "Celebration marking the end of Ramadan; fasting is prohibited on this day; encouraged to fast 6 days in Shawwal."),
             
             ("First 10 Days of Dhul-Hijjah", DateComponents(year: currentHijriYear, month: 12, day: 1), "Most beloved days", "The best days for righteous deeds; fasting and dhikr are highly encouraged."),
             ("Beginning of Hajj", DateComponents(year: currentHijriYear, month: 12, day: 8), "Pilgrimage begins", "Pilgrims begin the rites of Hajj, heading to Mina to start the sacred journey."),
@@ -1394,9 +1405,23 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
         }
     }
+    
+    func toggleSurahFavoriteCopy(surah: Surah) {
+        withAnimation {
+            if isSurahFavoriteCopy(surah: surah) {
+                favoriteSurahsCopy.removeAll(where: { $0 == surah.id })
+            } else {
+                favoriteSurahsCopy.append(surah.id)
+            }
+        }
+    }
 
     func isSurahFavorite(surah: Surah) -> Bool {
         return favoriteSurahs.contains(surah.id)
+    }
+    
+    func isSurahFavoriteCopy(surah: Surah) -> Bool {
+        return favoriteSurahsCopy.contains(surah.id)
     }
 
     func toggleBookmark(surah: Int, ayah: Int) {
@@ -1409,10 +1434,26 @@ class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
         }
     }
+    
+    func toggleBookmarkCopy(surah: Int, ayah: Int) {
+        withAnimation {
+            let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
+            if let index = bookmarkedAyahsCopy.firstIndex(where: {$0.id == bookmark.id}) {
+                bookmarkedAyahsCopy.remove(at: index)
+            } else {
+                bookmarkedAyahsCopy.append(bookmark)
+            }
+        }
+    }
 
     func isBookmarked(surah: Int, ayah: Int) -> Bool {
         let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
         return bookmarkedAyahs.contains(where: {$0.id == bookmark.id})
+    }
+    
+    func isBookmarkedCopy(surah: Int, ayah: Int) -> Bool {
+        let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
+        return bookmarkedAyahsCopy.contains(where: {$0.id == bookmark.id})
     }
 
     func toggleLetterFavorite(letterData: LetterData) {

@@ -701,6 +701,52 @@ struct SettingsPrayerView: View {
     }
 }
 
+struct ReciterListView: View {
+    @EnvironmentObject var settings: Settings
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        List {
+            Section(header: Text("Reciters")) {
+                ForEach(reciters, id: \.self) { reciter in
+                    Button(action: {
+                        settings.hapticFeedback()
+                        
+                        withAnimation {
+                            settings.reciter = reciter.name
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(reciter.name)
+                                    .font(.subheadline)
+                                    .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
+                                    .multilineTextAlignment(.leading)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(settings.accentColor.color)
+                                    .opacity(reciter.name == settings.reciter ? 1 : 0)
+                            }
+                            
+                            if reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
+                                Text("This reciter is only available for surah recitation. Defaults to Minshawi (Murattal) for ayahs.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Select Reciter")
+        .applyConditionalListStyle(defaultView: true)
+    }
+}
+
 struct SettingsQuranView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
@@ -713,12 +759,19 @@ struct SettingsQuranView: View {
     
     var body: some View {
         Section(header: Text("RECITATION")) {
-            Picker("Reciter", selection: $settings.reciter.animation(.easeInOut)) {
-                ForEach(reciters, id: \.ayahIdentifier) { reciter in
-                    Text(reciter.name).tag(reciter.ayahIdentifier)
+            VStack(spacing: 10) {
+                NavigationLink(destination: ReciterListView().environmentObject(settings)) {
+                    Label("Choose Reciter", systemImage: "headphones")
+                }
+                
+                HStack {
+                    Text(settings.reciter)
+                        .foregroundColor(settings.accentColor.color)
+                    
+                    Spacer()
                 }
             }
-            .font(.subheadline)
+            .accentColor(settings.accentColor.color)
             
             Picker("After Surah Recitation Ends", selection: $settings.reciteType.animation(.easeInOut)) {
                 Text("Continue to Next").tag("Continue to Next")
