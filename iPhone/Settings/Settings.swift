@@ -1,185 +1,65 @@
 import SwiftUI
+import os
 import Adhan
 import CoreLocation
 import UserNotifications
 import WidgetKit
 
-struct Location: Codable, Equatable {
-    var city: String
-    let latitude: Double
-    let longitude: Double
-    
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: self.latitude, longitude: self.longitude)
-    }
-}
-
-struct Prayer: Identifiable, Codable, Equatable {
-    var id = UUID()
-    let nameArabic: String
-    let nameTransliteration: String
-    let nameEnglish: String
-    let time: Date
-    let image: String
-    let rakah: String
-    let sunnahBefore: String
-    let sunnahAfter: String
-    
-    static func ==(lhs: Prayer, rhs: Prayer) -> Bool {
-        return lhs.id == rhs.id
-    }
-}
-
-struct Prayers: Identifiable, Codable, Equatable {
-    var id = UUID()
-    let day: Date
-    let city: String
-    let prayers: [Prayer]
-    let fullPrayers: [Prayer]
-    var setNotification: Bool
-}
-
-extension Date {
-    func isSameDay(as date: Date) -> Bool {
-        let calendar = Calendar.current
-        return calendar.isDate(self, inSameDayAs: date)
-    }
-    
-    func addingMinutes(_ minutes: Int) -> Date {
-        self.addingTimeInterval(TimeInterval(minutes * 60))
-    }
-}
-
-struct LetterData: Identifiable, Codable, Equatable, Comparable {
-    let id: Int
-    let letter: String
-    let forms: [String]
-    let name: String
-    let transliteration: String
-    let showTashkeel: Bool
-    let sound: String
-    
-    static func < (lhs: LetterData, rhs: LetterData) -> Bool {
-        return lhs.id < rhs.id
-    }
-}
-
-enum AccentColor: String, CaseIterable, Identifiable {
-    var id: String { self.rawValue }
-
-    case red, orange, yellow, green, blue, indigo, cyan, teal, mint, purple, pink, brown
-
-    var color: Color {
-        switch self {
-        case .red: return .red
-        case .orange: return .orange
-        case .yellow: return .yellow
-        case .green: return .green
-        case .blue: return .blue
-        case .indigo: return .indigo
-        case .cyan: return .cyan
-        case .teal: return .teal
-        case .mint: return .mint
-        case .purple: return .purple
-        case .pink: return .pink
-        case .brown: return .brown
-        }
-    }
-}
-
-let accentColors: [AccentColor] = AccentColor.allCases
-
-extension CLLocationCoordinate2D {
-    var stringRepresentation: String {
-        let lat = String(format: "%.3f", self.latitude)
-        let lon = String(format: "%.3f", self.longitude)
-        return "(\(lat), \(lon))"
-    }
-}
-
-extension Double {
-    var stringRepresentation: String {
-        return String(format: "%.3f", self)
-    }
-}
-
-struct HijriDate: Identifiable, Codable {
-    var id: Date { date }
-    
-    let english: String
-    let arabic: String
-    let date: Date
-}
+let logger = Logger(subsystem: "com.Quran.Elmallah.Islamic-Pillars", category: "Al-Islam")
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
-    private var appGroupUserDefaults: UserDefaults?
+    private let appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
     
-    @AppStorage("hijriDate") private var hijriDateData: String?
-    var hijriDate: HijriDate? {
-        get {
-            guard let hijriDateData = hijriDateData,
-                  let data = hijriDateData.data(using: .utf8) else {
-                return nil
-            }
-            return try? JSONDecoder().decode(HijriDate.self, from: data)
-        }
-        set {
-            if let newValue = newValue {
-                let encoded = try? JSONEncoder().encode(newValue)
-                hijriDateData = encoded.flatMap { String(data: $0, encoding: .utf8) }
-            } else {
-                hijriDateData = nil
-            }
-        }
-    }
+    static let encoder: JSONEncoder = {
+        let enc = JSONEncoder()
+        enc.dateEncodingStrategy = .millisecondsSince1970
+        return enc
+    }()
+
+    static let decoder: JSONDecoder = {
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .millisecondsSince1970
+        return dec
+    }()
     
-    private var locationManager = CLLocationManager()
+    private lazy var locationManager: CLLocationManager = {
+        let lm = CLLocationManager()
+        lm.delegate = self
+        lm.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        lm.distanceFilter = 500
+        return lm
+    }()
     let geocoder = CLGeocoder()
     
-    @Published var qiblaDirection: Double = 0
     private let kaabaCoordinates = Coordinates(latitude: 21.4225, longitude: 39.8262)
+    @Published var qiblaDirection: Double = 0
     
-    override init() {
-        self.appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
-        
+    private override init() {
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
-        self.prayersData = appGroupUserDefaults?.data(forKey: "prayersDataIslam") ?? Data()
-        self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingModeIslam") ?? false
-        self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhabIslam") ?? false
-        self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculationIslam") ?? "Muslim World League"
+        self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
+        self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
+        self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
+        self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Muslim World League"
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
-        
-        if let reciterID = appGroupUserDefaults?.string(forKey: "reciterIslam"), reciterID.starts(with: "ar"),
-           let reciter = reciters.first(where: { $0.ayahIdentifier == reciterID }) {
-            self.reciter = reciter.name
-        } else {
-            self.reciter = appGroupUserDefaults?.string(forKey: "reciterIslam") ?? "Muhammad Al-Minshawi (Murattal)"
-        }
-        
-        self.reciteType = appGroupUserDefaults?.string(forKey: "reciteTypeIslam") ?? "Continue to Next"
         
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
             do {
-                let location = try JSONDecoder().decode(Location.self, from: locationData)
+                let location = try Self.decoder.decode(Location.self, from: locationData)
                 currentLocation = location
             } catch {
-                print("Failed to decode location: \(error)")
+                logger.debug("Failed to decode location: \(error)")
             }
         }
         
         if let homeLocationData = appGroupUserDefaults?.data(forKey: "homeLocationData") {
             do {
-                let homeLocation = try JSONDecoder().decode(Location.self, from: homeLocationData)
+                let homeLocation = try Self.decoder.decode(Location.self, from: homeLocationData)
                 self.homeLocation = homeLocation
             } catch {
-                print("Failed to decode home location: \(error)")
+                logger.debug("Failed to decode home location: \(error)")
             }
         }
-        
-        self.favoriteSurahsData = appGroupUserDefaults?.data(forKey: "favoriteSurahsData") ?? Data()
-        self.bookmarkedAyahsData = appGroupUserDefaults?.data(forKey: "bookmarkedAyahsData") ?? Data()
-        self.favoriteLetterData = appGroupUserDefaults?.data(forKey: "favoriteLetterData") ?? Data()
         
         super.init()
         self.locationManager.delegate = self
@@ -188,501 +68,480 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         requestLocationAuthorization()
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        
-        print("Location Manager Before: \(location.coordinate.latitude), \(location.coordinate.longitude) at \(location.timestamp)")
-        
-        if let currentLocation = self.currentLocation {
-            let previousLocation = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
-            let newLocation = CLLocation(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
-            
-            let distanceInMeters = previousLocation.distance(from: newLocation)
-            let distanceInMiles = distanceInMeters / 1609.34
-            
-            if distanceInMiles < 1 {
-                return
-            }
+    private static let oneMile: CLLocationDistance = 1_609.344 // m
+    private static let minAcc: CLLocationAccuracy = 100        // m
+    private static let maxAge: TimeInterval = 60               // s
+    private static let headingΔ: Double = 1.0                  // deg – ignore jitter
+
+    /// MAIN LOCATION CALLBACK
+    func locationManager(_ mgr: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
+        guard let loc = locs.last, loc.horizontalAccuracy > 0, loc.horizontalAccuracy <= Self.minAcc, abs(loc.timestamp.timeIntervalSinceNow) <= Self.maxAge
+        else { return }
+
+        if let cur = currentLocation {
+            let prev = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
+            guard loc.distance(from: prev) >= Self.oneMile else { return }
         }
-        
-        print("Location Manager After: \(location.coordinate.latitude), \(location.coordinate.longitude) at \(location.timestamp)")
-        
-        updateCity(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude) {
-            self.fetchPrayerTimes()
+
+        Task { @MainActor in
+            await updateCity(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude)
+            fetchPrayerTimes(force: true)
         }
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        guard let currentLocation = self.currentLocation else { return }
-        
-        let coordinates = Coordinates(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
-        let qibla = Qibla(coordinates: coordinates)
-        let angle = qibla.direction - newHeading.trueHeading
-        
-        self.qiblaDirection = angle
     }
 
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+    /// COMPASS / QIBLA
+    func locationManager(_ mgr: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        guard newHeading.headingAccuracy >= 0, let cur = currentLocation
+        else { return }
+
+        let target = Qibla(coordinates: Coordinates(latitude: cur.latitude, longitude: cur.longitude)).direction
+        var delta = target - newHeading.trueHeading
+        delta = delta.truncatingRemainder(dividingBy: 360)
+        if delta < 0 { delta += 360 }
+
+        if abs(delta - qiblaDirection) >= Self.headingΔ {
+            qiblaDirection = delta
+        }
+    }
+
+    /// AUTHORIZATION CHANGES
+    func locationManager(_ mgr: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         switch status {
-        case .denied:
-            print("Location authorization denied.")
-            if !locationNeverAskAgain {
-                withAnimation {
-                    showLocationAlert = true
-                }
-            }
         case .authorizedAlways, .authorizedWhenInUse:
-            withAnimation {
-                showLocationAlert = false
+            showLocationAlert = false
+            mgr.requestLocation()
+            
+            if CLLocationManager.headingAvailable() {
+                mgr.startUpdatingHeading()
             }
+            #if !os(watchOS)
+            mgr.startMonitoringSignificantLocationChanges()
+            #else
+            mgr.startUpdatingLocation()
+            #endif
+
+        case .denied where !locationNeverAskAgain:
+            showLocationAlert = true
+
         case .restricted, .notDetermined:
-            print("Location authorization is restricted or not determined.")
-        @unknown default:
+            break
+
+        default: break
+        }
+    }
+
+    /// ERROR HANDLER
+    func locationManager(_ mgr: CLLocationManager, didFailWithError err: Error) {
+        logger.error("CLLocationManager failed: \(err.localizedDescription)")
+    }
+
+    /// PERMISSION REQUEST
+    func requestLocationAuthorization() {
+        switch locationManager.authorizationStatus {
+        case .notDetermined:
+            locationManager.requestAlwaysAuthorization()
+        case .authorizedAlways, .authorizedWhenInUse:
+            locationManager(_ : locationManager, didChangeAuthorization: locationManager.authorizationStatus)
+        default:
             break
         }
     }
-
     
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location Manager Error: \(error.localizedDescription)")
+    actor GeocodeActor {
+        private let gc = CLGeocoder()
+        func placemark(for location: CLLocation) async throws -> CLPlacemark? {
+            try await gc.reverseGeocodeLocation(location).first
+        }
     }
     
-    func requestLocationAuthorization() {
-        locationManager.requestAlwaysAuthorization()
-        
-        locationManager.startUpdatingHeading()
+    /// Remember the most recent geocode to short‑circuit duplicates
+    private var cachedPlacemark: (coord: CLLocationCoordinate2D, city: String)?
+    private let geocodeActor = GeocodeActor()
+    
+    /// Reverse‑geocode utilities
+    @MainActor
+    func updateCity(latitude: Double, longitude: Double, attempt: Int = 0, maxAttempts: Int = 3) async {
+        let coord = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+
+        if let cached = cachedPlacemark,
+           CLLocation(latitude: cached.coord.latitude, longitude: cached.coord.longitude)
+               .distance(from: CLLocation(latitude: coord.latitude, longitude: coord.longitude)) < 100,
+           cached.city == currentLocation?.city {
+            return
+        }
+
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+
+        do {
+            guard let placemark = try await geocodeActor.placemark(for: location) else {
+                throw CLError(.geocodeFoundNoResult)
+            }
+
+            let newCity: String = {
+                if let city = placemark.locality {
+                    let region = placemark.administrativeArea ?? placemark.country ?? ""
+                    return "\(city), \(region)"
+                } else {
+                    return "\(latitude.stringRepresentation), \(longitude.stringRepresentation)"
+                }
+            }()
+
+            if newCity != currentLocation?.city {
+                withAnimation {
+                    currentLocation = Location(city: newCity, latitude: latitude, longitude: longitude)
+                }
+            }
+
+            cachedPlacemark = (coord, newCity)
+
+        } catch {
+            logger.warning("Geocode attempt \(attempt+1) failed: \(error.localizedDescription)")
+            guard attempt + 1 < maxAttempts else {
+                // Fall‑back to raw coordinates
+                currentLocation = Location(city: "\(latitude.stringRepresentation), \(longitude.stringRepresentation)", latitude: latitude, longitude: longitude)
+                return
+            }
+
+            // Exponential back‑off:  2s → 4s → 8s
+            let delay = UInt64(pow(2.0, Double(attempt)) * 2_000_000_000) // ns
+            try? await Task.sleep(nanoseconds: delay)
+            await updateCity(latitude: latitude, longitude: longitude, attempt: attempt + 1, maxAttempts: maxAttempts)
+        }
+    }
+    
+    private static let travelThresholdM: CLLocationDistance = 48 * oneMile   // ≈ 77 112 m
+
+    func checkIfTraveling() {
+        guard travelAutomatic, let here = currentLocation, let home = homeLocation, here.latitude != 1000, here.longitude != 1000
+        else { return }
+
+        let distance = CLLocation(latitude: here.latitude, longitude: here.longitude)
+                       .distance(from: CLLocation(latitude: home.latitude, longitude: home.longitude))
+
+        let isAway = distance >= Self.travelThresholdM
+        guard isAway != travelingMode else { return }
+
+        withAnimation { travelingMode = isAway }
+        travelTurnOnAutomatic = isAway
+        travelTurnOffAutomatic = !isAway
+        logger.debug("Traveling mode \(isAway ? "enabled" : "disabled") – distance \(Int(distance)) m")
+
         #if !os(watchOS)
-        locationManager.startMonitoringSignificantLocationChanges()
-        #else
-        locationManager.startUpdatingLocation()
+        scheduleTravelNotification(turnedOn: !isAway, city: here.city)
         #endif
     }
+
+    #if !os(watchOS)
+    private func scheduleTravelNotification(turnedOn: Bool, city: String) {
+        let center  = UNUserNotificationCenter.current()
+        let content = UNMutableNotificationContent()
+        content.title = "Al‑Islam"
+        content.body  = "Traveling mode automatically turned \(turnedOn ? "on" : "off") at \(city)"
+        content.sound = .default
+
+        let trigger  = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger))
+    }
+    #endif
     
-    func updateCity(latitude: Double, longitude: Double, completion: (() -> Void)? = nil) {
-        let location = CLLocation(latitude: latitude, longitude: longitude)
-        print("Updating city...")
-
-        geocoder.reverseGeocodeLocation(location) { (placemarks, error) in
-            DispatchQueue.main.async {
-                if let placemark = placemarks?.first {
-                    self.updateCurrentLocation(from: placemark, latitude: latitude, longitude: longitude)
-                } else if let error = error {
-                    print("Geocoding Error: \(error.localizedDescription)")
-                    self.retryUpdateCity(latitude: latitude, longitude: longitude, completion: completion)
-                }
-                WidgetCenter.shared.reloadAllTimelines()
-                completion?()
+    @inline(__always)
+    func arabicNumberString<S: StringProtocol>(from ascii: S) -> String {
+        var out = String();  out.reserveCapacity(ascii.count)
+        for ch in ascii {
+            if let d = ch.asciiDigitValue {
+                out.unicodeScalars.append(UnicodeScalar(0x0660 + d)!)   // ٠…٩
+            } else {
+                out.append(ch)
             }
         }
+        return out
     }
 
-    func updateCurrentLocation(from placemark: CLPlacemark, latitude: Double, longitude: Double) {
-        if let city = placemark.locality {
-            let region = placemark.administrativeArea ?? placemark.country ?? ""
-            withAnimation {
-                self.currentLocation = Location(city: "\(city), \(region)", latitude: latitude, longitude: longitude)
+    func formatArabicDate(_ date: Date) -> String {
+        arabicNumberString(from: DateFormatter.timeAR.string(from: date))
+    }
+
+    func formatDate(_ date: Date) -> String {
+        DateFormatter.timeEN.string(from: date)
+    }
+
+    private static let hijriCalendarAR: Calendar = {
+        var c = Calendar(identifier: .islamicUmmAlQura)
+        c.locale = Locale(identifier: "ar")
+        return c
+    }()
+
+    private static let hijriFormatterAR: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = hijriCalendarAR
+        f.locale   = Locale(identifier: "ar")
+        f.dateFormat = "d MMMM، yyyy"
+        return f
+    }()
+
+    private static let hijriFormatterEN: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = hijriCalendarAR
+        f.locale   = Locale(identifier: "en")
+        f.dateStyle = .long
+        return f
+    }()
+    
+    func updateDates() {
+        let now = Date()
+        guard hijriDate?.date.isSameDay(as: now) == false else { return }
+
+        let base = Self.hijriCalendarAR.date(byAdding: .day, value: hijriOffset, to: now) ?? now
+        let arabic  = arabicNumberString(from: Self.hijriFormatterAR.string(from: base)) + " هـ"
+        let english = Self.hijriFormatterEN.string(from: base)
+
+        withAnimation {
+            hijriDate = HijriDate(english: english, arabic: arabic, date: now)
+        }
+    }
+    
+    private static let gregorian: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.locale = .current
+        return c
+    }()
+
+    private static let calcParams: [String: CalculationParameters] = {
+        let map: [(String, CalculationMethod)] = [
+            ("Muslim World League", .muslimWorldLeague),
+            ("Moonsight Committee", .moonsightingCommittee),
+            ("Umm Al-Qura",         .ummAlQura),
+            ("Egypt",               .egyptian),
+            ("Dubai",               .dubai),
+            ("Kuwait",              .kuwait),
+            ("Qatar",               .qatar),
+            ("Turkey",              .turkey),
+            ("Tehran",              .tehran),
+            ("Karachi",             .karachi),
+            ("Singapore",           .singapore),
+            ("North America",       .northAmerica)
+        ]
+        return Dictionary(uniqueKeysWithValues: map.map { ($0.0, $0.1.params) })
+    }()
+    
+    private struct Proto {
+        let ar, tr, en, img, rakah, sunnahB, sunnahA: String
+    }
+
+    private static let prayerProtos: [String: Proto] = [
+        "Fajr":      .init(ar:"الفَجْر",  tr:"Fajr",   en:"Dawn",     img:"sunrise",       rakah:"2", sunnahB:"2", sunnahA:"0"),
+        "Sunrise":   .init(ar:"الشُرُوق", tr:"Shurooq",en:"Sunrise",  img:"sunrise.fill",  rakah:"0", sunnahB:"0", sunnahA:"0"),
+        "Dhuhr":     .init(ar:"الظُهْر",  tr:"Dhuhr",  en:"Noon",     img:"sun.max",       rakah:"4", sunnahB:"2 and 2", sunnahA:"2"),
+        "Asr":       .init(ar:"العَصْر",  tr:"Asr",    en:"Afternoon",img:"sun.min",       rakah:"4", sunnahB:"0", sunnahA:"0"),
+        "Maghrib":   .init(ar:"المَغْرِب",tr:"Maghrib",en:"Sunset",   img:"sunset",        rakah:"3", sunnahB:"0", sunnahA:"2"),
+        "Isha":      .init(ar:"العِشَاء", tr:"Isha",   en:"Night",    img:"moon",          rakah:"4", sunnahB:"0", sunnahA:"2"),
+        // grouped (travel) variants
+        "Dh/As":     .init(ar:"الظُهْر وَالْعَصْر", tr:"Dhuhr/Asr",   en:"Daytime",   img:"sun.max", rakah:"2 and 2", sunnahB:"0", sunnahA:"0"),
+        "Mg/Ij":     .init(ar:"المَغْرِب وَالْعِشَاء", tr:"Maghrib/Isha", en:"Nighttime", img:"sunset", rakah:"3 and 2",sunnahB:"0", sunnahA:"0")
+    ]
+    
+    @inline(__always)
+    private func prayer(from key: String, time: Date) -> Prayer {
+        let p = Self.prayerProtos[key]!
+        return Prayer(
+            nameArabic: p.ar,
+            nameTransliteration: p.tr,
+            nameEnglish: p.en,
+            time: time,
+            image: p.img,
+            rakah: p.rakah,
+            sunnahBefore: p.sunnahB,
+            sunnahAfter: p.sunnahA
+        )
+    }
+    
+    /// Ultra‑fast prayer generator. Returns `nil` if location is not valid.
+    func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
+        guard let here = currentLocation, here.latitude != 1000, here.longitude != 1000 else { return nil }
+
+        var params = Self.calcParams[prayerCalculation] ?? Self.calcParams["Muslim World League"]!
+        params.madhab = hanafiMadhab ? Madhab.hanafi : Madhab.shafi
+
+        let comps = Self.gregorian.dateComponents([.year, .month, .day], from: date)
+
+        guard let raw = PrayerTimes(
+                coordinates: Coordinates(latitude: here.latitude, longitude: here.longitude),
+                date: comps,
+                calculationParameters: params
+        )
+        else { return nil }
+
+        @inline(__always) func off(_ d: Date, by m: Int) -> Date {
+            d.addingTimeInterval(Double(m) * 60)
+        }
+
+        let fajr     = off(raw.fajr,     by: offsetFajr)
+        let sunrise  = off(raw.sunrise,  by: offsetSunrise)
+        let dhuhr    = off(raw.dhuhr,    by: offsetDhuhr)
+        let asr      = off(raw.asr,      by: offsetAsr)
+        let maghrib  = off(raw.maghrib,  by: offsetMaghrib)
+        let isha     = off(raw.isha,     by: offsetIsha)
+        let dhAsr    = off(raw.dhuhr,    by: offsetDhurhAsr)
+        let mgIsha   = off(raw.maghrib,  by: offsetMaghribIsha)
+
+        let isFriday = Self.gregorian.component(.weekday, from: date) == 6
+
+        if fullPrayers || !travelingMode {
+            var list: [Prayer] = [
+                prayer(from: "Fajr",    time: fajr),
+                prayer(from: "Sunrise", time: sunrise)
+            ]
+
+            // Dhuhr / Jumuah switch
+            if isFriday {
+                list.append(
+                    Prayer(nameArabic: "الجُمُعَة",
+                           nameTransliteration: "Jummuah",
+                           nameEnglish: "Friday",
+                           time: dhuhr,
+                           image: "sun.max.fill",
+                           rakah: "2",
+                           sunnahBefore: "0",
+                           sunnahAfter: "2 and 2")
+                )
+            } else {
+                list.append(prayer(from: "Dhuhr", time: dhuhr))
             }
+
+            list += [
+                prayer(from: "Asr",     time: asr),
+                prayer(from: "Maghrib", time: maghrib),
+                prayer(from: "Isha",    time: isha)
+            ]
+            return list
         } else {
-            withAnimation {
-                self.currentLocation = Location(city: "\(latitude.stringRepresentation), \(longitude.stringRepresentation)", latitude: latitude, longitude: longitude)
-            }
+            return [
+                prayer(from: "Fajr",    time: fajr),
+                prayer(from: "Sunrise", time: sunrise),
+                prayer(from: "Dh/As",   time: dhAsr),
+                prayer(from: "Mg/Ij",   time: mgIsha)
+            ]
         }
     }
 
-    func retryUpdateCity(latitude: Double, longitude: Double, retries: Int = 3, completion: (() -> Void)? = nil) {
-        guard retries > 0 else {
-            self.currentLocation = Location(city: "\(latitude.stringRepresentation), \(longitude.stringRepresentation)", latitude: latitude, longitude: longitude)
+    func fetchPrayerTimes(force: Bool = false, notification: Bool = false, calledFrom: StaticString = #function, completion: (() -> Void)? = nil) {
+        updateDates()
+
+        guard let loc = currentLocation, loc.latitude  != 1000, loc.longitude != 1000 else {
+            logger.debug("No valid location – skip refresh")
             completion?()
             return
         }
 
-        let delaySeconds = Double(4 - retries)
-        DispatchQueue.main.asyncAfter(deadline: .now() + delaySeconds) {
-            self.updateCity(latitude: latitude, longitude: longitude, completion: completion)
-        }
-    }
-    
-    func checkIfTraveling() {
-        guard self.travelAutomatic == true, let currentLocation = self.currentLocation, let homeLocation = self.homeLocation else { return }
-
-        if currentLocation.latitude != 1000 && currentLocation.longitude != 1000 {
-            let location = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
-            let homeCLLocation = CLLocation(latitude: homeLocation.latitude, longitude: homeLocation.longitude)
-            let distanceInMeters = location.distance(from: homeCLLocation) // this is in meters
-            let distanceInMiles = distanceInMeters / 1609.34 // convert to miles
-            
-            if distanceInMiles >= 48 {
-                if !travelingMode {
-                    print("Traveling: on")
-                    withAnimation {
-                        travelingMode = true
-                    }
-                    DispatchQueue.main.async {
-                        self.travelTurnOffAutomatic = false
-                        self.travelTurnOnAutomatic = true
-                        
-                        #if !os(watchOS)
-                        let content = UNMutableNotificationContent()
-                        content.title = "Al-Islam"
-                        content.body = "Traveling mode automatically turned on at \(currentLocation.city)"
-                        content.sound = UNNotificationSound.default
-                        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-                        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-                        UNUserNotificationCenter.current().add(request)
-                        #endif
-                    }
-                }
-            } else {
-                if travelingMode {
-                    print("Traveling: off")
-                    withAnimation {
-                        travelingMode = false
-                    }
-                    DispatchQueue.main.async {
-                        self.travelTurnOnAutomatic = false
-                        self.travelTurnOffAutomatic = true
-                        
-                        #if !os(watchOS)
-                        let content = UNMutableNotificationContent()
-                        content.title = "Al-Islam"
-                        content.body = "Traveling mode automatically turned off at \(currentLocation.city)"
-                        content.sound = UNNotificationSound.default
-                        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-                        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-                        UNUserNotificationCenter.current().add(request)
-                        #endif
-                    }
-                }
+        if loc.city.contains("(") {
+            Task { @MainActor in
+                await updateCity(latitude: loc.latitude, longitude: loc.longitude)
             }
         }
-    }
-    
-    func arabicNumberString(from numberString: String) -> String {
-        let arabicNumbers = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
 
-        var arabicNumberString = ""
-        for character in numberString {
-            if let digit = Int(String(character)) {
-                arabicNumberString += arabicNumbers[digit]
-            } else {
-                arabicNumberString += String(character)
-            }
-        }
-        return arabicNumberString
-    }
-    
-    func formatArabicDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.timeZone = TimeZone.current
-        formatter.locale = Locale(identifier: "ar")
-        let dateInEnglish = formatter.string(from: date)
-        return arabicNumberString(from: dateInEnglish)
-    }
-    
-    private let hijriDateFormatterArabic: DateFormatter = {
-        let formatter = DateFormatter()
-        var hijriCalendar = Calendar(identifier: .islamicUmmAlQura)
-        hijriCalendar.locale = Locale(identifier: "ar")
-        formatter.calendar = hijriCalendar
-        formatter.dateFormat = "d MMMM، yyyy"
-        formatter.locale = Locale(identifier: "ar")
-        return formatter
-    }()
-
-    private let hijriDateFormatterEnglish: DateFormatter = {
-        let formatter = DateFormatter()
-        var hijriCalendar = Calendar(identifier: .islamicUmmAlQura)
-        hijriCalendar.locale = Locale(identifier: "ar")
-        formatter.calendar = hijriCalendar
-        formatter.dateStyle = .long
-        formatter.locale = Locale(identifier: "en")
-        return formatter
-    }()
-    
-    func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
-    }
-    
-    func updateDates() {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-
-        let currentDateString = dateFormatter.string(from: Date())
-        let currentDateInRiyadh = dateFormatter.date(from: currentDateString) ?? Date()
-
-        var hijriCalendar = Calendar(identifier: .islamicUmmAlQura)
-        hijriCalendar.locale = Locale(identifier: "ar")
-        
-        let offsetDate = hijriCalendar.date(byAdding: .day, value: hijriOffset, to: currentDateInRiyadh) ?? currentDateInRiyadh
-
-        let hijriComponents = hijriCalendar.dateComponents([.year, .month, .day], from: offsetDate)
-        let hijriDateArabicValue = hijriCalendar.date(from: hijriComponents)
-
-        withAnimation {
-            let currentDate = Date()
-            let arabicFormattedDate = hijriDateFormatterArabic.string(from: hijriDateArabicValue ?? offsetDate)
-            let hijriArabic = arabicNumberString(from: arabicFormattedDate) + " هـ"
-            let hijriEnglish = hijriDateFormatterEnglish.string(from: hijriDateArabicValue ?? offsetDate)
-            
-            self.hijriDate = HijriDate(english: hijriEnglish, arabic: hijriArabic, date: currentDate)
-        }
-    }
-    
-    func updateCurrentAndNextPrayer() {
-        if let prayersObject = prayers {
-            let prayersToday = prayersObject.prayers
-            
-            let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-            let prayersTomorrow = getPrayerTimes(for: tomorrow) ?? []
-            
-            let now = Date()
-            
-            let current = prayersToday.last(where: { $0.time <= now })
-            let next = prayersToday.first(where: { $0.time > now })
-            
-            if let next = next {
-                nextPrayer = next
-            } else if let firstTomorrowPrayer = prayersTomorrow.first, now < firstTomorrowPrayer.time {
-                nextPrayer = firstTomorrowPrayer
-            }
-            
-            currentPrayer = current ?? prayersToday.last
-        } else {
-            print("Failed to get today's prayer times")
-        }
-    }
-
-    func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
-        guard let currentLoc = currentLocation,
-              currentLoc.latitude != 1000,
-              currentLoc.longitude != 1000 else {
-            return nil
+        if travelAutomatic, homeLocation != nil {
+            checkIfTraveling()
         }
 
-        let coordinates = Coordinates(latitude: currentLoc.latitude, longitude: currentLoc.longitude)
-        let cal = Calendar(identifier: .gregorian)
-        let dateComponents = cal.dateComponents([.year, .month, .day], from: date)
-        let weekday = Calendar.current.component(.weekday, from: date)
-        let isFriday = (weekday == 6)
+        // Decide if we need fresh prayers
+        let today      = Date()
+        let stored     = prayers
+        let staleCity  = stored?.city != currentLocation?.city
+        let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
+        let emptyList  = stored?.prayers.isEmpty ?? true
+        let needsFetch = force || stored == nil || staleCity || staleDate || emptyList
 
-        var params = CalculationMethod.muslimWorldLeague.params
-        if prayerCalculation == "Muslim World League" { params = CalculationMethod.muslimWorldLeague.params }
-        else if prayerCalculation == "Moonsight Committee" { params = CalculationMethod.moonsightingCommittee.params }
-        else if prayerCalculation == "Umm Al-Qura" { params = CalculationMethod.ummAlQura.params }
-        else if prayerCalculation == "Egypt" { params = CalculationMethod.egyptian.params }
-        else if prayerCalculation == "Dubai" { params = CalculationMethod.dubai.params }
-        else if prayerCalculation == "Kuwait" { params = CalculationMethod.kuwait.params }
-        else if prayerCalculation == "Qatar" { params = CalculationMethod.qatar.params }
-        else if prayerCalculation == "Turkey" { params = CalculationMethod.turkey.params }
-        else if prayerCalculation == "Tehran" { params = CalculationMethod.tehran.params }
-        else if prayerCalculation == "Karachi" { params = CalculationMethod.karachi.params }
-        else if prayerCalculation == "Singapore" { params = CalculationMethod.singapore.params }
-        else if prayerCalculation == "North America" { params = CalculationMethod.northAmerica.params }
+        if needsFetch {
+            logger.debug("Fetching prayer times – caller: \(calledFrom)")
 
-        params.madhab = hanafiMadhab ? .hanafi : .shafi
+            let todayPrayers  = getPrayerTimes(for: today) ?? []
+            let fullPrayers   = getPrayerTimes(for: today, fullPrayers: true) ?? []
 
-        guard let rawPrayers = PrayerTimes(coordinates: coordinates, date: dateComponents, calculationParameters: params) else {
-            return nil
+            prayers = Prayers(
+                day: today,
+                city: currentLocation!.city,
+                prayers: todayPrayers,
+                fullPrayers: fullPrayers,
+                setNotification: false
+            )
+
+            schedulePrayerTimeNotifications()
+            printAllScheduledNotifications()
+            WidgetCenter.shared.reloadAllTimelines()
+        } else if notification && !(stored?.setNotification ?? false) {
+            schedulePrayerTimeNotifications()
+            printAllScheduledNotifications()
         }
 
-        let offsetFajrTime = rawPrayers.fajr.addingMinutes(offsetFajr)
-        let offsetSunriseTime = rawPrayers.sunrise.addingMinutes(offsetSunrise)
-        let offsetDhuhrTime = rawPrayers.dhuhr.addingMinutes(offsetDhuhr)
-        let offsetAsrTime = rawPrayers.asr.addingMinutes(offsetAsr)
-        let offsetMaghribTime = rawPrayers.maghrib.addingMinutes(offsetMaghrib)
-        let offsetIshaTime = rawPrayers.isha.addingMinutes(offsetIsha)
-        let offsetDhuhrAsrTime = rawPrayers.dhuhr.addingMinutes(offsetDhurhAsr)
-        let offsetMaghribIshaTime = rawPrayers.maghrib.addingMinutes(offsetMaghribIsha)
-
-        if fullPrayers || !travelingMode {
-            return [
-                Prayer(nameArabic: "الفَجْر", nameTransliteration: "Fajr", nameEnglish: "Dawn", time: offsetFajrTime, image: "sunrise", rakah: "2", sunnahBefore: "2", sunnahAfter: "0"),
-                Prayer(nameArabic: "الشُرُوق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise", time: offsetSunriseTime, image: "sunrise.fill", rakah: "0", sunnahBefore: "0", sunnahAfter: "0"),
-                Prayer(nameArabic: isFriday ? "الجُمُعَة" : "الظُهْر", nameTransliteration: isFriday ? "Jummuah" : "Dhuhr", nameEnglish: isFriday ? "Friday" : "Noon", time: offsetDhuhrTime, image: "sun.max\(isFriday ? ".fill" : "")", rakah: isFriday ? "2" : "4", sunnahBefore: isFriday ? "0" : "2 and 2", sunnahAfter: isFriday ? "2 and 2" : "2"),
-                Prayer(nameArabic: "العَصْر", nameTransliteration: "Asr", nameEnglish: "Afternoon", time: offsetAsrTime, image: "sun.min", rakah: "4", sunnahBefore: "0", sunnahAfter: "0"),
-                Prayer(nameArabic: "المَغْرِب", nameTransliteration: "Maghrib", nameEnglish: "Sunset", time: offsetMaghribTime, image: "sunset", rakah: "3", sunnahBefore: "0", sunnahAfter: "2"),
-                Prayer(nameArabic: "العِشَاء", nameTransliteration: "Isha", nameEnglish: "Night", time: offsetIshaTime, image: "moon", rakah: "4", sunnahBefore: "0", sunnahAfter: "2")
-            ]
-        } else {
-            return [
-                Prayer(nameArabic: "الفَجْر", nameTransliteration: "Fajr", nameEnglish: "Dawn", time: offsetFajrTime, image: "sunrise", rakah: "2", sunnahBefore: "2", sunnahAfter: "0"),
-                Prayer(nameArabic: "الشُرُوق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise", time: offsetSunriseTime, image: "sunrise.fill", rakah: "0", sunnahBefore: "0", sunnahAfter: "0"),
-                Prayer(nameArabic: "الظُهْر وَالْعَصْر", nameTransliteration: "Dhuhr/Asr", nameEnglish: "Daytime", time: offsetDhuhrAsrTime, image: "sun.max", rakah: "2 and 2", sunnahBefore: "0", sunnahAfter: "0"),
-                Prayer(nameArabic: "المَغْرِب وَالْعِشَاء", nameTransliteration: "Maghrib/Isha", nameEnglish: "Nighttime", time: offsetMaghribIshaTime, image: "sunset", rakah: "3 and 2", sunnahBefore: "0", sunnahAfter: "0")
-            ]
-        }
+        updateCurrentAndNextPrayer()
+        completion?()
     }
     
-    func fetchPrayerTimes(force: Bool = false, notification: Bool = false, isRecursiveCall: Bool = false, calledFrom: String = #function) {
-        var hasUpdatedNotifications = false
-        
-        let currentDate = Date()
-        let currentHijriYear = hijriCalendar.component(.year, from: Date())
-        
-        if hijriDate == nil { updateDates() }
-        
-        if let hijriDate = self.hijriDate, !(hijriDate.date.isSameDay(as: currentDate)) {
-            updateDates()
-        }
-        
-        guard let currentLoc = self.currentLocation,
-              currentLoc.latitude != 1000,
-              currentLoc.longitude != 1000 else {
-            print("No location set")
+    private func updateCurrentAndNextPrayer() {
+        guard let p = prayers?.prayers, !p.isEmpty else {
+            logger.debug("No prayer list to compute current/next")
             return
         }
-        
-        if currentLoc.city.contains("(") && !isRecursiveCall {
-            updateCity(latitude: currentLoc.latitude, longitude: currentLoc.longitude) {
-                self.fetchPrayerTimes(force: force, notification: notification, isRecursiveCall: true, calledFrom: calledFrom)
-                return
+
+        let now = Date()
+
+        let nextIdx = p.firstIndex { $0.time > now }
+
+        if let i = nextIdx {
+            nextPrayer = p[i]
+            currentPrayer = i == 0 ? p.last : p[i-1]
+        } else {
+            // past last prayer – peek at tomorrow for “next”
+            currentPrayer = p.last
+            if let tmr = Calendar.current.date(byAdding: .day, value: 1, to: now),
+               let firstTomorrow = getPrayerTimes(for: tmr)?.first {
+                nextPrayer = firstTomorrow
+            } else {
+                nextPrayer = nil
             }
         }
-        
-        if travelAutomatic && homeLocation != nil { checkIfTraveling() }
-        
-        let prayersObject = self.prayers
-        if force || prayersObject == nil || (prayersObject?.prayers.isEmpty ?? true) || !(prayersObject?.day.isSameDay(as: currentDate) ?? false) || (prayersObject?.city != currentLoc.city) {
-            print("Fetching normal prayer times. Called from \(calledFrom)")
-            
-            let prayers = getPrayerTimes(for: currentDate) ?? []
-            let fullPrayers = getPrayerTimes(for: currentDate, fullPrayers: true) ?? []
-            
-            withAnimation {
-                self.prayers = Prayers(day: currentDate, city: currentLoc.city, prayers: prayers, fullPrayers: fullPrayers, setNotification: false)
+    }
+    
+    @MainActor
+    func requestNotificationAuthorization() async -> Bool {
+        #if os(watchOS)
+        return true
+        #else
+        let center = UNUserNotificationCenter.current()
+        let status = await center.notificationSettings().authorizationStatus
+
+        switch status {
+        case .authorized:
+            showNotificationAlert = false
+            return true
+
+        case .denied:
+            showNotificationAlert = !notificationNeverAskAgain
+            logger.debug("Notification permission denied")
+            return false
+
+        case .notDetermined:
+            do {
+                let granted = try await center.requestAuthorization(options: [.alert, .sound])
+                showNotificationAlert = !granted && !notificationNeverAskAgain
+                if granted { fetchPrayerTimes(notification: true) }
+                return granted
+            } catch {
+                logger.error("Notification request failed: \(error.localizedDescription)")
+                showNotificationAlert = !notificationNeverAskAgain
+                return false
             }
-            
-            schedulePrayerTimeNotifications()
-            hasUpdatedNotifications = true
-            
-            #if !os(watchOS)
-            if dateNotifications || currentHijriYear != lastScheduledHijriYear {
-                for event in specialEvents {
-                    scheduleNotification(for: event)
-                }
-                lastScheduledHijriYear = currentHijriYear
-            }
-            #endif
-            
-            printAllScheduledNotifications()
-            
-            WidgetCenter.shared.reloadAllTimelines()
+
+        default:
+            return false
         }
-            
-        if let prayersObject = prayers, !prayersObject.setNotification || (notification && !hasUpdatedNotifications) {
-            schedulePrayerTimeNotifications()
-            
-            #if !os(watchOS)
-            if dateNotifications || currentHijriYear != lastScheduledHijriYear {
-                for event in specialEvents {
-                    scheduleNotification(for: event)
-                }
-                lastScheduledHijriYear = currentHijriYear
-            }
-            #endif
-            
-            printAllScheduledNotifications()
-        }
-            
-        updateCurrentAndNextPrayer()
+        #endif
     }
     
     func requestNotificationAuthorization(completion: (() -> Void)? = nil) {
-        #if !os(watchOS)
-        let center = UNUserNotificationCenter.current()
-
-        center.getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .notDetermined:
-                center.requestAuthorization(options: [.alert, .sound]) { (granted, error) in
-                    DispatchQueue.main.async {
-                        if granted {
-                            if self.showNotificationAlert {
-                                self.fetchPrayerTimes(notification: true)
-                            }
-                            withAnimation {
-                                self.showNotificationAlert = false
-                            }
-                        } else {
-                            if !self.notificationNeverAskAgain {
-                                withAnimation {
-                                    self.showNotificationAlert = true
-                                }
-                            }
-                        }
-                        completion?()
-                    }
-                }
-            case .authorized:
-                DispatchQueue.main.async {
-                    if self.showNotificationAlert {
-                        self.fetchPrayerTimes(notification: true)
-                    }
-                    withAnimation {
-                        self.showNotificationAlert = false
-                    }
-                    completion?()
-                }
-            case .denied:
-                DispatchQueue.main.async {
-                    withAnimation {
-                        self.showNotificationAlert = true
-                    }
-                    print("Permission denied")
-                    if !self.notificationNeverAskAgain {
-                        withAnimation {
-                            self.showNotificationAlert = true
-                        }
-                    }
-                    completion?()
-                }
-            default:
-                completion?()
-                break
-            }
-        }
-        #else
-        completion?()
-        #endif
-    }
-
-    func scheduleNotification(for event: (String, DateComponents, String, String)) {
-        let (titleText, hijriComps, eventSubTitle, _) = event
-        
-        if let hijriDate = hijriCalendar.date(from: hijriComps) {
-            let gregorianCalendar = Calendar(identifier: .gregorian)
-            var gregorianComps = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
-            gregorianComps.hour = 9
-            gregorianComps.minute = 0
-            
-            guard
-                let finalDate = gregorianCalendar.date(from: gregorianComps),
-                finalDate > Date()
-            else {
-                return
-            }
-            
-            let content = UNMutableNotificationContent()
-            content.title = "Al-Islam"
-            content.body = "\(titleText) (\(eventSubTitle))"
-            content.sound = .default
-            
-            let trigger = UNCalendarNotificationTrigger(dateMatching: gregorianComps, repeats: false)
-            let request = UNNotificationRequest(
-                identifier: UUID().uuidString,
-                content: content,
-                trigger: trigger
-            )
-            
-            UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("Failed to schedule special event notification: \(error)")
-                }
-            }
+        Task { @MainActor in
+            _ = await requestNotificationAuthorization()
+            completion?()
         }
     }
     
@@ -690,156 +549,142 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         let center = UNUserNotificationCenter.current()
         center.getPendingNotificationRequests { (requests) in
             for request in requests {
-                print(request.content.body)
+                logger.debug("\(request.content.body)")
             }
         }
     }
     
+    private struct NotifPrefs {
+        let enabled: ReferenceWritableKeyPath<Settings, Bool>
+        let preMinutes: ReferenceWritableKeyPath<Settings, Int>
+        let nagging: ReferenceWritableKeyPath<Settings, Bool>
+    }
+
+    /// Static lookup table
+    private static let notifTable: [String: NotifPrefs] = [
+        "Fajr":          .init(enabled: \.notificationFajr,  preMinutes: \.preNotificationFajr,  nagging: \.naggingFajr),
+        "Shurooq":       .init(enabled: \.notificationSunrise, preMinutes: \.preNotificationSunrise, nagging: \.naggingSunrise),
+        "Dhuhr":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
+        "Dhuhr/Asr":     .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
+        "Jummuah":       .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
+        "Asr":           .init(enabled: \.notificationAsr,   preMinutes: \.preNotificationAsr,   nagging: \.naggingAsr),
+        "Maghrib":       .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
+        "Maghrib/Isha":  .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
+        "Isha":          .init(enabled: \.notificationIsha,  preMinutes: \.preNotificationIsha,  nagging: \.naggingIsha)
+    ]
+
+    /// Pre‑computes the full list of minutes‑before offsets for a prayer.
+    private func offsets(for prefs: NotifPrefs) -> [Int] {
+        var result: [Int] = []
+
+        // “at time” alert
+        if self[keyPath: prefs.enabled] { result.append(0) }
+
+        // user‑defined single offset
+        let minutes = self[keyPath: prefs.preMinutes]
+        if minutes > 0 { result.append(minutes) }
+
+        // nagging offsets (if globally on *and* per‑prayer nagging on)
+        if naggingMode && self[keyPath: prefs.nagging] {
+            result += naggingCascade(start: naggingStartOffset)
+        }
+        return result
+    }
+
+    /// Generates exponential‑type cascade: 30,15,10,5 (by default)
+    private func naggingCascade(start: Int) -> [Int] {
+        guard start > 0 else { return [] }
+        var m = start
+        var out: [Int] = []
+        while m > 15 { out.append(m); m -= 15 }
+        if m >= 5  { out.append(m) }
+        out += [10,5].filter { $0 < start }
+        return out
+    }
+
     func schedulePrayerTimeNotifications() {
-        #if !os(watchOS)
-        guard let currentLoc = currentLocation, let prayerObject = prayers else { return }
-        
+        #if os(watchOS)
+        return
+        #else
+        guard
+            let city = currentLocation?.city,
+            let prayerObj = prayers
+        else { return }
+
+        logger.debug("Scheduling prayer time notifications")
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
-        
-        let prayerTimes = prayerObject.prayers
-        print("Scheduling prayer times")
-        
-        for prayerTime in prayerTimes {
-            var preNotificationTime: Int?
-            var shouldScheduleNotification: Bool
-            var naggingPrayerEnabled = false
 
-            switch prayerTime.nameTransliteration {
-            case "Fajr":
-                preNotificationTime = preNotificationFajr
-                shouldScheduleNotification = notificationFajr
-                naggingPrayerEnabled = naggingFajr
-            case "Shurooq":
-                preNotificationTime = preNotificationSunrise
-                shouldScheduleNotification = notificationSunrise
-                naggingPrayerEnabled = naggingSunrise
-            case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                preNotificationTime = preNotificationDhuhr
-                shouldScheduleNotification = notificationDhuhr
-                naggingPrayerEnabled = naggingDhuhr
-            case "Asr":
-                preNotificationTime = preNotificationAsr
-                shouldScheduleNotification = notificationAsr
-                naggingPrayerEnabled = naggingAsr
-            case "Maghrib", "Maghrib/Isha":
-                preNotificationTime = preNotificationMaghrib
-                shouldScheduleNotification = notificationMaghrib
-                naggingPrayerEnabled = naggingMaghrib
-            case "Isha":
-                preNotificationTime = preNotificationIsha
-                shouldScheduleNotification = notificationIsha
-                naggingPrayerEnabled = naggingIsha
-            default:
-                continue
-            }
-            
-            if naggingMode && naggingPrayerEnabled {
-                scheduleNotification(for: prayerTime, preNotificationTime: nil, city: currentLoc.city)
-                
-                let offsets = naggingOffsets(from: naggingStartOffset)
-                for offset in offsets {
-                    scheduleNotification(for: prayerTime, preNotificationTime: offset, city: currentLoc.city)
-                }
-            } else {
-                if shouldScheduleNotification {
-                    scheduleNotification(for: prayerTime, preNotificationTime: nil, city: currentLoc.city)
-                }
-                
-                if let preNotificationTime = preNotificationTime, preNotificationTime > 0 {
-                    scheduleNotification(for: prayerTime, preNotificationTime: preNotificationTime, city: currentLoc.city)
-                }
+        for prayer in prayerObj.prayers {
+            guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
+
+            for minutes in offsets(for: prefs) {
+                scheduleNotification(
+                    for: prayer,
+                    preNotificationTime: minutes == 0 ? nil : minutes,
+                    city: city
+                )
             }
         }
-        
+
         prayers?.setNotification = true
         #endif
     }
     
-    private func naggingOffsets(from startOffset: Int) -> [Int] {
-        var results = [Int]()
-        var current = startOffset
-        
-        if startOffset > 10 {
-            while current > 15 {
-                results.append(current)
-                current -= 15
+    private func buildBody(prayer: Prayer, minutesBefore: Int?, city: String) -> String {
+        let englishPart: String = {
+            switch prayer.nameTransliteration {
+            case "Shurooq":
+                return " (end of Fajr)"
+            case "Jummuah":
+                return " (Friday)"
+            default:
+                return ""
             }
-            
-            if current == 15 {
-                results.append(15)
-            } else if current < 15 && current > 5 {
-                results.append(current)
-            }
+        }()
+
+        if let m = minutesBefore {
+            // “n m until …”
+            return "\(m)m until \(prayer.nameTransliteration)\(englishPart) in \(city)"
+                 + (travelingMode ? " (traveling)" : "")
+                 + " [\(formatDate(prayer.time))]"
+        } else if prayer.nameTransliteration == "Fajr",
+                  let list = prayers?.prayers, list.count > 1 {
+            // Special Fajr “ends at …” text
+            return "Time for \(prayer.nameTransliteration)\(englishPart)"
+                 + " at \(formatDate(prayer.time)) in \(city)"
+                 + (travelingMode ? " (traveling)" : "")
+                 + " [ends at \(formatDate(list[1].time))]"
+        } else {
+            return "Time for \(prayer.nameTransliteration)\(englishPart)"
+                 + " at \(formatDate(prayer.time)) in \(city)"
+                 + (travelingMode ? " (traveling)" : "")
         }
-        
-        results.append(10)
-        results.append(5)
-        
-        return results
     }
 
-    func scheduleNotification(for prayerTime: Prayer, preNotificationTime: Int?, city: String) {
-        let center = UNUserNotificationCenter.current()
+    func scheduleNotification(for prayer: Prayer, preNotificationTime minutes: Int?, city: String, using center: UNUserNotificationCenter = .current()) {
+        let triggerTime: Date = {
+            if let m = minutes, m != 0 {
+                return Calendar.current.date(byAdding: .minute, value: -m, to: prayer.time) ?? prayer.time
+            }
+            return prayer.time
+        }()
+
+        guard triggerTime > Date() else { return }
+
         let content = UNMutableNotificationContent()
-        content.title = "Al-Islam"
-
-        let triggerTime: Date
-        if let preNotificationTime = preNotificationTime, preNotificationTime != 0 {
-            guard let date = Calendar.current.date(byAdding: .minute, value: -preNotificationTime, to: prayerTime.time) else {
-                return
-            }
-            triggerTime = date
-            
-            if prayerTime.nameTransliteration == "Shurooq" {
-                let englishPart = showNotificationEnglish ? " (\(prayerTime.nameEnglish.lowercased()))" : ""
-                
-                content.body = "\(preNotificationTime)m until \(prayerTime.nameTransliteration)\(englishPart) in \(city)" + (travelingMode ? " (traveling)" : "") + " [\(self.formatDate(prayerTime.time))]"
-            } else {
-                let englishPart = showNotificationEnglish ? (prayerTime.nameEnglish.lowercased() == "friday" ? " (Friday)" : " (\(prayerTime.nameEnglish.lowercased()))") : ""
-
-                content.body = "\(preNotificationTime)m until \(prayerTime.nameTransliteration)\(englishPart) in \(city)" + (travelingMode ? " (traveling)" : "") + " [\(self.formatDate(prayerTime.time))]"
-            }
-            
-        } else {
-            triggerTime = prayerTime.time
-            
-            if prayerTime.nameTransliteration == "Fajr" {
-                content.body = {
-                    guard let prayers = self.prayers, prayers.prayers.count > 1 else {
-                        return "Error: Not enough prayer times available"
-                    }
-                    let englishPart = showNotificationEnglish ? " (\(prayerTime.nameEnglish.lowercased()))" : ""
-                    
-                    return "Time for \(prayerTime.nameTransliteration)\(englishPart) at \(formatDate(prayerTime.time)) in \(city)" + (travelingMode ? " (traveling)" : "") + " [ends at \(formatDate(prayers.prayers[1].time))]"
-                }()
-                
-            } else {
-                let rawEnglish = prayerTime.nameEnglish.lowercased() == "friday" ? "Friday" : prayerTime.nameEnglish.lowercased()
-                let englishPart = showNotificationEnglish ? " (\(rawEnglish))" : ""
-                
-                content.body = "Time for \(prayerTime.nameTransliteration)\(englishPart) at \(formatDate(prayerTime.time)) in \(city)" + (travelingMode ? " (traveling)" : "")
-            }
-        }
-        
-        guard triggerTime > Date() else {
-            return
-        }
-        
+        content.title = "Al‑Islam"
+        content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = .default
-        let dateComponents = Calendar.current.dateComponents([.hour, .minute], from: triggerTime)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        
-        center.add(request) { (error) in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            }
+
+        let comps = Calendar.current.dateComponents([.hour, .minute, .second], from: triggerTime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+
+        let id = "\(prayer.nameTransliteration)-\(minutes ?? 0)"
+        let req  = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+
+        center.add(req) { error in
+            if let error { logger.debug("Notification add failed: \(error.localizedDescription)") }
         }
     }
     
@@ -853,37 +698,52 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         #endif
     }
     
+    @AppStorage("hijriDate") private var hijriDateData: String?
+    var hijriDate: HijriDate? {
+        get {
+            guard let hijriDateData = hijriDateData,
+                  let data = hijriDateData.data(using: .utf8) else {
+                return nil
+            }
+            return try? Self.decoder.decode(HijriDate.self, from: data)
+        }
+        set {
+            if let newValue = newValue {
+                let encoded = try? Self.encoder.encode(newValue)
+                hijriDateData = encoded.flatMap { String(data: $0, encoding: .utf8) }
+            } else {
+                hijriDateData = nil
+            }
+        }
+    }
+    
     @Published var prayersData: Data {
         didSet {
             if !prayersData.isEmpty {
-                appGroupUserDefaults?.setValue(prayersData, forKey: "prayersDataIslam")
+                appGroupUserDefaults?.setValue(prayersData, forKey: "prayersData")
             }
         }
     }
     var prayers: Prayers? {
         get {
-            let decoder = JSONDecoder()
-            return try? decoder.decode(Prayers.self, from: prayersData)
+            return try? Self.decoder.decode(Prayers.self, from: prayersData)
         }
         set {
-            let encoder = JSONEncoder()
-            prayersData = (try? encoder.encode(newValue)) ?? Data()
+            prayersData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
     
     @AppStorage("currentPrayerData") var currentPrayerData: Data?
     @Published var currentPrayer: Prayer? {
         didSet {
-            let encoder = JSONEncoder()
-            currentPrayerData = try? encoder.encode(currentPrayer)
+            currentPrayerData = try? Self.encoder.encode(currentPrayer)
         }
     }
 
     @AppStorage("nextPrayerData") var nextPrayerData: Data?
     @Published var nextPrayer: Prayer? {
         didSet {
-            let encoder = JSONEncoder()
-            nextPrayerData = try? encoder.encode(nextPrayer)
+            nextPrayerData = try? Self.encoder.encode(nextPrayer)
         }
     }
     
@@ -892,17 +752,17 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @Published var travelingMode: Bool {
-        didSet { appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingModeIslam") }
+        didSet { appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingMode") }
     }
     
     @Published var currentLocation: Location? {
         didSet {
             guard let location = currentLocation else { return }
             do {
-                let locationData = try JSONEncoder().encode(location)
+                let locationData = try Self.encoder.encode(location)
                 appGroupUserDefaults?.setValue(locationData, forKey: "currentLocation")
             } catch {
-                print("Failed to encode location: \(error)")
+                logger.debug("Failed to encode location: \(error)")
             }
         }
     }
@@ -914,91 +774,67 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 return
             }
             do {
-                let homeLocationData = try JSONEncoder().encode(homeLocation)
+                let homeLocationData = try Self.encoder.encode(homeLocation)
                 appGroupUserDefaults?.set(homeLocationData, forKey: "homeLocationData")
             } catch {
-                print("Failed to encode home location: \(error)")
+                logger.debug("Failed to encode home location: \(error)")
             }
         }
     }
     
     @Published var hanafiMadhab: Bool {
-        didSet { appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhabIslam") }
+        didSet { appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhab") }
     }
     
     @Published var prayerCalculation: String {
-        didSet { appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculationIslam") }
+        didSet { appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculation") }
     }
     
     @Published var hijriOffset: Int {
         didSet { appGroupUserDefaults?.setValue(hijriOffset, forKey: "hijriOffset") }
     }
     
-    @Published var reciter: String {
-        didSet { appGroupUserDefaults?.setValue(reciter, forKey: "reciterIslam") }
-    }
+    @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
     
-    @Published var reciteType: String {
-        didSet { appGroupUserDefaults?.setValue(reciteType, forKey: "reciteTypeIslam") }
-    }
+    @AppStorage("reciteType") var reciteType: String = "Continue to Next"
     
-    @Published var favoriteSurahsData: Data {
-        didSet {
-            appGroupUserDefaults?.setValue(favoriteSurahsData, forKey: "favoriteSurahsData")
-        }
-    }
+    @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
     var favoriteSurahs: [Int] {
         get {
-            let decoder = JSONDecoder()
-            return (try? decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
+            (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
         }
         set {
-            let encoder = JSONEncoder()
-            favoriteSurahsData = (try? encoder.encode(newValue)) ?? Data()
+            favoriteSurahsData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
     
-    @Published var favoriteSurahsCopy: [Int] = []
-
-    @Published var bookmarkedAyahsData: Data {
-        didSet {
-            appGroupUserDefaults?.setValue(bookmarkedAyahsData, forKey: "bookmarkedAyahsData")
-        }
-    }
+    @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
     var bookmarkedAyahs: [BookmarkedAyah] {
         get {
-            let decoder = JSONDecoder()
-            return (try? decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
+            (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
         }
         set {
-            let encoder = JSONEncoder()
-            bookmarkedAyahsData = (try? encoder.encode(newValue)) ?? Data()
+            bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
-    
-    @Published var bookmarkedAyahsCopy: [BookmarkedAyah] = []
+     
+    @AppStorage("showCurrentInfo") var showCurrentInfo: Bool = false
+    @AppStorage("showNextInfo") var showNextInfo: Bool = false
     
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
 
-    @Published var favoriteLetterData: Data {
-        didSet {
-            appGroupUserDefaults?.setValue(favoriteLetterData, forKey: "favoriteLetterData")
-        }
-    }
+    @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
     var favoriteLetters: [LetterData] {
         get {
-            let decoder = JSONDecoder()
-            return (try? decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
+            (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
         }
         set {
-            let encoder = JSONEncoder()
-            favoriteLetterData = (try? encoder.encode(newValue)) ?? Data()
+            favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
     
     func dictionaryRepresentation() -> [String: Any] {
-        let encoder = JSONEncoder()
         var dict: [String: Any] = [
             "accentColor": self.accentColor.rawValue,
             
@@ -1023,41 +859,40 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             "offsetMaghribIsha": self.offsetMaghribIsha,
         ]
         
-        if let currentLocationData = try? encoder.encode(self.currentLocation) {
+        if let currentLocationData = try? Self.encoder.encode(self.currentLocation) {
             dict["currentLocation"] = String(data: currentLocationData, encoding: .utf8)
         } else {
             dict["currentLocation"] = NSNull()
         }
         
         do {
-            dict["homeLocationData"] = try encoder.encode(self.homeLocation)
+            dict["homeLocationData"] = try Self.encoder.encode(self.homeLocation)
         } catch {
-            print("Error encoding homeLocation: \(error)")
+            logger.debug("Error encoding homeLocation: \(error)")
         }
         
         do {
-            dict["favoriteSurahsData"] = try encoder.encode(self.favoriteSurahs)
+            dict["favoriteSurahsData"] = try Self.encoder.encode(self.favoriteSurahs)
         } catch {
-            print("Error encoding favoriteSurahs: \(error)")
+            logger.debug("Error encoding favoriteSurahs: \(error)")
         }
 
         do {
-            dict["bookmarkedAyahsData"] = try encoder.encode(self.bookmarkedAyahs)
+            dict["bookmarkedAyahsData"] = try Self.encoder.encode(self.bookmarkedAyahs)
         } catch {
-            print("Error encoding bookmarkedAyahs: \(error)")
+            logger.debug("Error encoding bookmarkedAyahs: \(error)")
         }
 
         do {
-            dict["favoriteLetterData"] = try encoder.encode(self.favoriteLetters)
+            dict["favoriteLetterData"] = try Self.encoder.encode(self.favoriteLetters)
         } catch {
-            print("Error encoding favoriteLetters: \(error)")
+            logger.debug("Error encoding favoriteLetters: \(error)")
         }
         
         return dict
     }
 
     func update(from dict: [String: Any]) {
-        let decoder = JSONDecoder()
         if let accentColor = dict["accentColor"] as? String,
            let accentColorValue = AccentColor(rawValue: accentColor) {
             self.accentColor = accentColorValue
@@ -1091,19 +926,19 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
         if let currentLocationString = dict["currentLocation"] as? String,
            let currentLocationData = currentLocationString.data(using: .utf8) {
-            self.currentLocation = try? decoder.decode(Location.self, from: currentLocationData)
+            self.currentLocation = try? Self.decoder.decode(Location.self, from: currentLocationData)
         }
         if let homeLocationData = dict["homeLocationData"] as? Data {
-            self.homeLocation = (try? decoder.decode(Location.self, from: homeLocationData)) ?? nil
+            self.homeLocation = (try? Self.decoder.decode(Location.self, from: homeLocationData)) ?? nil
         }
         if let favoriteSurahsData = dict["favoriteSurahsData"] as? Data {
-            self.favoriteSurahs = (try? decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
+            self.favoriteSurahs = (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
         }
         if let bookmarkedAyahsData = dict["bookmarkedAyahsData"] as? Data {
-            self.bookmarkedAyahs = (try? decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
+            self.bookmarkedAyahs = (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
         }
         if let favoriteLetterData = dict["favoriteLetterData"] as? Data {
-            self.favoriteLetters = (try? decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
+            self.favoriteLetters = (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
         }
         if let offsetFajr = dict["offsetFajr"] as? Int {
             self.offsetFajr = offsetFajr
@@ -1188,15 +1023,13 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("travelTurnOffAutomatic") var travelTurnOffAutomatic: Bool = false
     @AppStorage("travelTurnOnAutomatic") var travelTurnOnAutomatic: Bool = false
     
-    @AppStorage("showLocationAlert") var showLocationAlert: Bool = false
+    @AppStorage("showLocationAlert") var showLocationAlert: Bool = false {
+        willSet { objectWillChange.send() }
+    }
     @AppStorage("showNotificationAlert") var showNotificationAlert: Bool = false
     
     @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
     @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false
-    
-    @AppStorage("showNotificationEnglish") var showNotificationEnglish = true {
-        didSet { self.fetchPrayerTimes(notification: true) }
-    }
     
     @AppStorage("naggingMode") var naggingMode: Bool = false {
         didSet { self.fetchPrayerTimes(notification: true) }
@@ -1300,24 +1133,24 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     var lastListenedSurah: LastListenedSurah? {
         get {
-            guard let data = appGroupUserDefaults?.data(forKey: "lastListenedSurahDataIslam") else { return nil }
+            guard let data = appGroupUserDefaults?.data(forKey: "lastListenedSurahData") else { return nil }
             do {
-                return try JSONDecoder().decode(LastListenedSurah.self, from: data)
+                return try Self.decoder.decode(LastListenedSurah.self, from: data)
             } catch {
-                print("Failed to decode last listened surah: \(error)")
+                logger.debug("Failed to decode last listened surah: \(error)")
                 return nil
             }
         }
         set {
             if let newValue = newValue {
                 do {
-                    let data = try JSONEncoder().encode(newValue)
-                    appGroupUserDefaults?.set(data, forKey: "lastListenedSurahDataIslam")
+                    let data = try Self.encoder.encode(newValue)
+                    appGroupUserDefaults?.set(data, forKey: "lastListenedSurahData")
                 } catch {
-                    print("Failed to encode last listened surah: \(error)")
+                    logger.debug("Failed to encode last listened surah: \(error)")
                 }
             } else {
-                appGroupUserDefaults?.removeObject(forKey: "lastListenedSurahDataIslam")
+                appGroupUserDefaults?.removeObject(forKey: "lastListenedSurahData")
             }
         }
     }
@@ -1334,94 +1167,50 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
     
+    @inline(__always)
+    private func binding<T>(_ key: ReferenceWritableKeyPath<Settings, T>, default value: T) -> Binding<T> {
+        Binding(
+            get: { self[keyPath: key] },
+            set: { self[keyPath: key] = $0 }
+        )
+    }
+
     func currentNotification(prayerTime: Prayer) -> Binding<Bool> {
-        switch prayerTime.nameTransliteration {
-        case "Fajr": return $notificationFajr
-        case "Shurooq": return $notificationSunrise
-        case "Dhuhr", "Dhuhr/Asr", "Jummuah": return $notificationDhuhr
-        case "Asr": return $notificationAsr
-        case "Maghrib", "Maghrib/Isha": return $notificationMaghrib
-        case "Isha": return $notificationIsha
-        default: return .constant(false)
+        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else {
+            return .constant(false)
         }
+        return binding(prefs.enabled, default: false)
     }
 
     func currentPreNotification(prayerTime: Prayer) -> Binding<Int> {
-        switch prayerTime.nameTransliteration {
-        case "Fajr": return $preNotificationFajr
-        case "Shurooq": return $preNotificationSunrise
-        case "Dhuhr", "Dhuhr/Asr", "Jummuah": return $preNotificationDhuhr
-        case "Asr": return $preNotificationAsr
-        case "Maghrib", "Maghrib/Isha": return $preNotificationMaghrib
-        case "Isha": return $preNotificationIsha
-        default: return .constant(0)
+        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else {
+            return .constant(0)
         }
+        return binding(prefs.preMinutes, default: 0)
     }
-    
+
     func shouldShowFilledBell(prayerTime: Prayer) -> Bool {
-        switch prayerTime.nameTransliteration {
-        case "Fajr":
-            return notificationFajr && preNotificationFajr > 0
-        case "Shurooq":
-            return notificationSunrise && preNotificationSunrise > 0
-        case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-            return notificationDhuhr && preNotificationDhuhr > 0
-        case "Asr":
-            return notificationAsr && preNotificationAsr > 0
-        case "Maghrib", "Maghrib/Isha":
-            return notificationMaghrib && preNotificationMaghrib > 0
-        case "Isha":
-            return notificationIsha && preNotificationIsha > 0
-        default:
-            return false
-        }
+        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
+        return self[keyPath: prefs.enabled] && self[keyPath: prefs.preMinutes] > 0
     }
 
     func shouldShowOutlinedBell(prayerTime: Prayer) -> Bool {
-        switch prayerTime.nameTransliteration {
-        case "Fajr":
-            return notificationFajr && preNotificationFajr == 0
-        case "Shurooq":
-            return notificationSunrise && preNotificationSunrise == 0
-        case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-            return notificationDhuhr && preNotificationDhuhr == 0
-        case "Asr":
-            return notificationAsr && preNotificationAsr == 0
-        case "Maghrib", "Maghrib/Isha":
-            return notificationMaghrib && preNotificationMaghrib == 0
-        case "Isha":
-            return notificationIsha && preNotificationIsha == 0
-        default:
-            return false
-        }
+        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
+        return self[keyPath: prefs.enabled] && self[keyPath: prefs.preMinutes] == 0
     }
     
-    func toggleSurahFavorite(surah: Surah) {
+    func toggleSurahFavorite(surah: Int) {
         withAnimation {
             if isSurahFavorite(surah: surah) {
-                favoriteSurahs.removeAll(where: { $0 == surah.id })
+                favoriteSurahs.removeAll(where: { $0 == surah })
             } else {
-                favoriteSurahs.append(surah.id)
-            }
-        }
-    }
-    
-    func toggleSurahFavoriteCopy(surah: Surah) {
-        withAnimation {
-            if isSurahFavoriteCopy(surah: surah) {
-                favoriteSurahsCopy.removeAll(where: { $0 == surah.id })
-            } else {
-                favoriteSurahsCopy.append(surah.id)
+                favoriteSurahs.append(surah)
             }
         }
     }
 
-    func isSurahFavorite(surah: Surah) -> Bool {
-        return favoriteSurahs.contains(surah.id)
-    }
-    
-    func isSurahFavoriteCopy(surah: Surah) -> Bool {
-        return favoriteSurahsCopy.contains(surah.id)
+    func isSurahFavorite(surah: Int) -> Bool {
+        return favoriteSurahs.contains(surah)
     }
 
     func toggleBookmark(surah: Int, ayah: Int) {
@@ -1434,26 +1223,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
         }
     }
-    
-    func toggleBookmarkCopy(surah: Int, ayah: Int) {
-        withAnimation {
-            let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
-            if let index = bookmarkedAyahsCopy.firstIndex(where: {$0.id == bookmark.id}) {
-                bookmarkedAyahsCopy.remove(at: index)
-            } else {
-                bookmarkedAyahsCopy.append(bookmark)
-            }
-        }
-    }
 
     func isBookmarked(surah: Int, ayah: Int) -> Bool {
         let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
         return bookmarkedAyahs.contains(where: {$0.id == bookmark.id})
-    }
-    
-    func isBookmarkedCopy(surah: Int, ayah: Int) -> Bool {
-        let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
-        return bookmarkedAyahsCopy.contains(where: {$0.id == bookmark.id})
     }
 
     func toggleLetterFavorite(letterData: LetterData) {
@@ -1468,6 +1241,22 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func isLetterFavorite(letterData: LetterData) -> Bool {
         return favoriteLetters.contains(where: {$0.id == letterData.id})
+    }
+    
+    private static let unwantedCharSet: CharacterSet = {
+        CharacterSet(charactersIn: "-[]()'\"").union(.nonBaseCharacters)
+    }()
+
+    func cleanSearch(_ text: String, whitespace: Bool = false) -> String {
+        var cleaned = String(text.unicodeScalars
+            .filter { !Self.unwantedCharSet.contains($0) }
+        ).lowercased()
+
+        if whitespace {
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return cleaned
     }
     
     func colorSchemeFromString(_ colorScheme: String) -> ColorScheme? {
@@ -1491,28 +1280,4 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             return "system"
         }
     }
-}
-
-struct CustomColorSchemeKey: EnvironmentKey {
-    static let defaultValue: ColorScheme? = nil
-}
-
-extension EnvironmentValues {
-    var customColorScheme: ColorScheme? {
-        get { self[CustomColorSchemeKey.self] }
-        set { self[CustomColorSchemeKey.self] = newValue }
-    }
-}
-
-func arabicNumberString(from number: Int) -> String {
-    let arabicNumbers = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
-    let numberString = String(number)
-    
-    var arabicNumberString = ""
-    for character in numberString {
-        if let digit = Int(String(character)) {
-            arabicNumberString += arabicNumbers[digit]
-        }
-    }
-    return arabicNumberString
 }

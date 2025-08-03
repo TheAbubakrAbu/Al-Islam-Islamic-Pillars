@@ -44,12 +44,12 @@ struct ShahaadahView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("The Shahaadah, derived from the Arabic word 'الشَّهَادَة' (Ash-Shahaadah), meaning 'testimony' or 'witnessing,' is the first and most fundamental pillar of Islam. By uttering it with sincerity, a person declares belief in the Oneness of Allah (Glorified and Exalted be He) and acknowledges Muhammad (peace and blessings be upon him) as His final Prophet.")
+                Text("The Shahaadah, derived from the Arabic word “الشَّهَادَة“ (Ash-Shahaadah), meaning “testimony“ or “witnessing,“ is the first and most fundamental pillar of Islam. By uttering it with sincerity, a person declares belief in the Oneness of Allah (Glorified and Exalted be He) and acknowledges Muhammad (peace and blessings be upon him) as His final Prophet.")
                     .font(.body)
                 
                 Text("This simple yet profound statement encapsulates the essence of Islam: the worship of Allah alone and adherence to the teachings of His messenger. Allah (Glorified and Exalted be He) says in the Quran:")
                     .font(.body)
-                Text("“And We sent not before you any messenger except that We revealed to him that, 'There is no deity except Me, so worship Me.'” (Quran 21:25)")
+                Text("“And We sent not before you any messenger except that We revealed to him that, “There is no deity except Me, so worship Me“” (Quran 21:25).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -104,7 +104,7 @@ struct ShahaadahView: View {
             Section(header: Text("SIGNIFICANCE")) {
                 Text("Pronouncing the Shahaadah with sincere faith confirms Tawheed (absolute monotheism) and the acceptance of Muhammad (peace and blessings be upon him) as the final Prophet. Allah (Glorified and Exalted be He) says in the Quran:")
                     .font(.body)
-                Text("“So know [O Muhammad], that there is no deity except Allah.” (Quran 47:19)")
+                Text("“So know [O Muhammad], that there is no deity except Allah” (Quran 47:19).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -123,11 +123,11 @@ struct SalahView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Salah, derived from the Arabic word 'صَلَاة' (Salah), meaning 'prayer' or 'connection,' is the second pillar of Islam. It is an act of worship that establishes a direct link between a Muslim and Allah (Glorified and Exalted be He). Salah is performed five times daily at prescribed times, serving as a constant reminder of a Muslim’s submission and gratitude to Allah.")
+                Text("Salah, derived from the Arabic word “صَلَاة“ (Salah), meaning “prayer“ or “connection,“ is the second pillar of Islam. It is an act of worship that establishes a direct link between a Muslim and Allah (Glorified and Exalted be He). Salah is performed five times daily at prescribed times, serving as a constant reminder of a Muslim’s submission and gratitude to Allah.")
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“Indeed, I am Allah. There is no deity except Me, so worship Me and establish prayer for My remembrance.” (Quran 20:14)")
+                Text("“Indeed, I am Allah. There is no deity except Me, so worship Me and establish prayer for My remembrance” (Quran 20:14).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -141,17 +141,17 @@ struct SalahView: View {
                 Text("5. **Isha (Night):** Performed in the late evening.").font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“Indeed, prayer has been decreed upon the believers a decree of specified times.” (Quran 4:103)")
+                Text("“Indeed, prayer has been decreed upon the believers a decree of specified times” (Quran 4:103).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("METHOD")) {
                 Text("Salah involves a sequence of physical movements—standing, bowing, prostrating, and sitting—accompanied by Quranic recitations and supplications.").font(.body)
-                Text("It begins with **Takbir** ('Allahu Akbar' – Allah is the Greatest) and ends with **Taslim** ('Assalamu Alaikum wa Rahmatullah' – Peace be upon you and the mercy of Allah).").font(.body)
+                Text("It begins with **Takbir** (Allahu Akbar – Allah is the Greatest) and ends with **Taslim** (Assalamu Alaikum wa Rahmatullah – Peace be upon you and the mercy of Allah).").font(.body)
                 
                 Text("The Prophet Muhammad (peace and blessings be upon him) instructed:").font(.body)
-                Text("“Pray as you have seen me praying.” (Sahih al-Bukhari 631)")
+                Text("“Pray as you have seen me praying” (Sahih al-Bukhari 631).")
                     .font(.body).foregroundColor(settings.accentColor.color)
             }
             
@@ -160,15 +160,15 @@ struct SalahView: View {
                     .font(.body)
                 
                 Text("Salah also serves as a means of expiation for minor sins. The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“The five daily prayers and Friday to Friday are an expiation for what is between them, so long as major sins are avoided.” (Sahih Muslim 233c)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“The five daily prayers and Friday to Friday are an expiation for what is between them, so long as major sins are avoided” (Sahih Muslim 233c).").font(.body).foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("IMPORTANCE OF SALAH")) {
                 Text("Salah is the first deed for which a person will be held accountable on the Day of Judgment. The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“The first action for which a servant of Allah will be held accountable on the Day of Resurrection will be his prayers. If they are in order, he will have prospered and succeeded. If they are lacking, he will have failed and lost. If there is something defective in his obligatory prayers, then the Almighty Lord will say: See if My servant has any voluntary prayers that can complete what is insufficient in his obligatory prayers. The rest of his deeds will be judged the same way.” (Sunan al-Tirmidhi 413)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“The first action for which a servant of Allah will be held accountable on the Day of Resurrection will be his prayers. If they are in order, he will have prospered and succeeded. If they are lacking, he will have failed and lost. If there is something defective in his obligatory prayers, then the Almighty Lord will say: See if My servant has any voluntary prayers that can complete what is insufficient in his obligatory prayers. The rest of his deeds will be judged the same way” (Sunan al-Tirmidhi 413).").font(.body).foregroundColor(settings.accentColor.color)
                 
                 Text("It is also a key to success in this life and the Hereafter. Allah (Glorified and Exalted be He) says:").font(.body)
-                Text("“Successful indeed are the believers. Those who humble themselves in their prayer.” (Quran 23:1-2)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“Successful indeed are the believers. Those who humble themselves in their prayer” (Quran 23:1-2).").font(.body).foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("LEARN MORE")) {
@@ -187,12 +187,12 @@ struct SawmView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Sawm, derived from the Arabic word 'صَوْم' (Sawm), meaning 'abstention' or 'refraining,' is the next pillar of Islam. It refers to fasting, during which Muslims abstain from food, drink, and marital relations from dawn (Fajr) until sunset (Maghrib) with the intention of seeking Allah’s pleasure.")
+                Text("Sawm, derived from the Arabic word “صَوْم“ (Sawm), meaning “abstention“ or “refraining,“ is the next pillar of Islam. It refers to fasting, during which Muslims abstain from food, drink, and marital relations from dawn (Fajr) until sunset (Maghrib) with the intention of seeking Allah’s pleasure.")
                     .font(.body)
                 
                 Text("Fasting during the sacred month of Ramadan is obligatory for all adult Muslims who are physically and mentally capable. Allah (Glorified and Exalted be He) says in the Quran:")
                     .font(.body)
-                Text("“The month of Ramadan [is that] in which was revealed the Quran, a guidance for the people and clear proofs of guidance and criterion.” (Quran 2:185)")
+                Text("“The month of Ramadan [is that] in which was revealed the Quran, a guidance for the people and clear proofs of guidance and criterion” (Quran 2:185).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -202,7 +202,7 @@ struct SawmView: View {
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“O you who have believed, decreed upon you is fasting as it was decreed upon those before you that you may become righteous.” (Quran 2:183)")
+                Text("“O you who have believed, decreed upon you is fasting as it was decreed upon those before you that you may become righteous” (Quran 2:183).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -229,14 +229,14 @@ struct SawmView: View {
                 Text("Sawm is a means of spiritual growth and self-discipline. It helps Muslims focus on worship, gratitude, and reliance on Allah (Glorified and Exalted be He). It also fosters empathy for the less fortunate and strengthens the sense of community. Prophet Muhammad (peace and blessings be upon him) said: ")
                     .font(.body)
                 
-                Text("\"Verily, the smell of the mouth of a fasting person is better to Allah than the smell of musk.\" (Sahih al-Bukhari 5927)")
+                Text("“Verily, the smell of the mouth of a fasting person is better to Allah than the smell of musk.“ (Sahih al-Bukhari 5927)")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("REWARDS OF FASTING")) {
                 Text("The Prophet Muhammad (peace and blessings be upon him) also said:").font(.body)
-                Text("“Whoever observes fasts during the month of Ramadan out of sincere faith, and hoping to attain Allah's rewards, then all his past sins will be forgiven.” (Sahih al-Bukhari 38)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“Whoever observes fasts during the month of Ramadan out of sincere faith, and hoping to attain Allah's rewards, then all his past sins will be forgiven” (Sahih al-Bukhari 38).").font(.body).foregroundColor(settings.accentColor.color)
                 
                 Text("Fasting is an act of worship that purifies the heart and brings immense spiritual rewards from Allah.")
                     .font(.body)
@@ -247,7 +247,7 @@ struct SawmView: View {
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“Indeed, We sent the Quran down during the Night of Decree. And what can make you know what is the Night of Decree? The Night of Decree is better than a thousand months.” (Quran 97:1-3)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“Indeed, We sent the Quran down during the Night of Decree. And what can make you know what is the Night of Decree? The Night of Decree is better than a thousand months” (Quran 97:1-3).").font(.body).foregroundColor(settings.accentColor.color)
             }
         }
         .applyConditionalListStyle(defaultView: true)
@@ -261,11 +261,11 @@ struct ZakahView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Zakah, derived from the Arabic word 'زَكَاة' (Zakah), meaning 'purification' or 'growth,' is another pillar of Islam. It is an obligatory form of charity prescribed by Allah (Glorified and Exalted be He) to purify wealth and foster compassion. By giving Zakah, Muslims purify their wealth, acknowledge Allah’s blessings, and help build a more just and equitable society.")
+                Text("Zakah, derived from the Arabic word “زَكَاة“ (Zakah), meaning “purification“ or “growth,“ is another pillar of Islam. It is an obligatory form of charity prescribed by Allah (Glorified and Exalted be He) to purify wealth and foster compassion. By giving Zakah, Muslims purify their wealth, acknowledge Allah’s blessings, and help build a more just and equitable society.")
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“Take, [O Muhammad], from their wealth a charity by which you purify them and cause them to increase, and invoke [Allah’s blessings] upon them. Indeed, your invocations are reassurance for them. And Allah is Hearing and Knowing.” (Quran 9:103)")
+                Text("“Take, [O Muhammad], from their wealth a charity by which you purify them and cause them to increase, and invoke [Allah’s blessings] upon them. Indeed, your invocations are reassurance for them. And Allah is Hearing and Knowing” (Quran 9:103).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -282,7 +282,7 @@ struct ZakahView: View {
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) specifies eight categories of Zakah recipients in the Quran:").font(.body)
-                Text("“Zakah expenditures are only for the poor, the needy, those employed to collect it, for bringing hearts together, for freeing captives [or slaves], for those in debt, for the cause of Allah, and for the traveler [in need].” (Quran 9:60)")
+                Text("“Zakah expenditures are only for the poor, the needy, those employed to collect it, for bringing hearts together, for freeing captives [or slaves], for those in debt, for the cause of Allah, and for the traveler [in need]” (Quran 9:60).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -296,10 +296,10 @@ struct ZakahView: View {
             
             Section(header: Text("REWARDS OF ZAKAH")) {
                 Text("The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“Charity does not decrease wealth, no one forgives another except that Allah increases his honor, and no one humbles himself for the sake of Allah except that Allah raises his status.” (Sahih Muslim 2588)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“Charity does not decrease wealth, no one forgives another except that Allah increases his honor, and no one humbles himself for the sake of Allah except that Allah raises his status” (Sahih Muslim 2588).").font(.body).foregroundColor(settings.accentColor.color)
                 
                 Text("He also said:").font(.body)
-                Text("“Protect yourself from Hellfire even with half a date [in charity].” (Sahih al-Bukhari 1417)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“Protect yourself from Hellfire even with half a date [in charity]” (Sahih al-Bukhari 1417).").font(.body).foregroundColor(settings.accentColor.color)
                 
                 Text("Fulfilling the obligation of Zakah not only earns Allah’s pleasure but also protects one’s soul and wealth from harm.")
                     .font(.body)
@@ -316,7 +316,7 @@ struct HajjView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Hajj, derived from the Arabic word 'حَجّ' (Hajj), meaning 'to intend a journey' or to 'to make a pilgrimage,' is the fifth and final pillar of Islam. It is an obligatory pilgrimage to the Kaaba in Mecca, the Qibla (direction of prayer) for Muslims worldwide. Hajj takes place annually in the last and twelfth Islamic month of Dhul-Hijjah and serves as a profound act of worship and submission to Allah (Glorified and Exalted be He).")
+                Text("Hajj, derived from the Arabic word “حَجّ“ (Hajj), meaning “to intend a journey“ or to “to make a pilgrimage,“ is the fifth and final pillar of Islam. It is an obligatory pilgrimage to the Kaaba in Mecca, the Qibla (direction of prayer) for Muslims worldwide. Hajj takes place annually in the last and twelfth Islamic month of Dhul-Hijjah and serves as a profound act of worship and submission to Allah (Glorified and Exalted be He).")
                     .font(.body)
                 
                 Text("Hajj is a journey of spiritual renewal, forgiveness, and unity among Muslims, symbolizing submission to Allah and the equality of all believers.")
@@ -326,7 +326,7 @@ struct HajjView: View {
             Section(header: Text("OBLIGATION")) {
                 Text("Hajj is mandatory for every Muslim who is physically and financially capable at least once in their lifetime. Allah (Glorified and Exalted be He) says in the Quran:")
                     .font(.body)
-                Text("“And [due] to Allah from the people is a pilgrimage to the House – for whoever is able to find thereto a way. But whoever disbelieves – then indeed, Allah is free from need of the worlds.” (Quran 3:97)")
+                Text("“And [due] to Allah from the people is a pilgrimage to the House – for whoever is able to find thereto a way. But whoever disbelieves – then indeed, Allah is free from need of the worlds” (Quran 3:97).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -340,7 +340,7 @@ struct HajjView: View {
                 
                 Text("Prophet Ibrahim (peace be upon him) and Prophet Ismail (peace be upon him) were commanded by Allah to build the Kaaba, the sacred House of Allah. Allah says in the Quran:")
                     .font(.body)
-                Text("“And [mention] when Ibrahim was raising the foundations of the House and [with him] Ismail, [saying], 'Our Lord, accept [this] from us. Indeed You are the Hearing, the Knowing.'” (Quran 2:127)")
+                Text("“And [mention] when Ibrahim was raising the foundations of the House and [with him] Ismail, [saying], 'Our Lord, accept [this] from us. Indeed You are the Hearing, the Knowing'” (Quran 2:127).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -364,7 +364,7 @@ struct HajjView: View {
                     .font(.body)
                 
                 Text("The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“Whoever performs Hajj (pilgrimage) and does not have sexual relations (with his wife), nor commits sin, nor disputes unjustly (during Hajj), then he returns from Hajj as pure and free from sins as on the day on which his mother gave birth to him.” (Riyad as-Salihin 1274)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“Whoever performs Hajj (pilgrimage) and does not have sexual relations (with his wife), nor commits sin, nor disputes unjustly (during Hajj), then he returns from Hajj as pure and free from sins as on the day on which his mother gave birth to him” (Riyad as-Salihin 1274).").font(.body).foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("CONCLUSION")) {
@@ -372,7 +372,7 @@ struct HajjView: View {
                     .font(.body)
                 
                 Text("Allah says in the Quran:").font(.body)
-                Text("“And proclaim to the people the Hajj [pilgrimage]; they will come to you on foot and on every lean camel; they will come from every distant pass.” (Quran 22:27)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“And proclaim to the people the Hajj [pilgrimage]; they will come to you on foot and on every lean camel; they will come from every distant pass” (Quran 22:27).").font(.body).foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("LEARN MORE")) {

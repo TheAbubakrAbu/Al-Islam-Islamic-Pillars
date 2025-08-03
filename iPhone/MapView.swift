@@ -1,199 +1,263 @@
 import SwiftUI
 import MapKit
 
-struct IdentifiableMapItem: Identifiable {
-    let id = UUID()
-    let item: MKMapItem
+extension MKMapItem: @retroactive Identifiable {
+    public var id: UUID { placemark.uuid }
+}
+
+private extension CLPlacemark {
+    var uuid: UUID {
+        guard let loc = location else { return UUID() }
+
+        let key = "\(loc.coordinate.latitude),\(loc.coordinate.longitude)-" +
+                  "\(name ?? "")-\(locality ?? "")-\(administrativeArea ?? "")-\(isoCountryCode ?? "")"
+
+        let hex = key.utf8.map { String(format: "%02hhx", $0) }.joined()
+        return UUID(uuidString: hex) ?? UUID()
+    }
 }
 
 struct MapView: View {
-    @EnvironmentObject var settings: Settings
-    
-    @Environment(\.presentationMode) var presentationMode
-    
-    @State var choosingPrayerTimes: Bool
-    
-    @State private var showAlert = false
+    @EnvironmentObject private var settings: Settings
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var sysScheme
+    @Environment(\.customColorScheme) private var customScheme
+
     @State private var searchText = ""
     @State private var cityItems = [MKMapItem]()
-    @State private var selectedCityItem: IdentifiableMapItem?
-    @State private var selectedCityPlacemark: MKPlacemark?
-    
+    @State private var selectedItem: MKMapItem?
+    @State private var showAlert = false
+    @State var choosingPrayerTimes: Bool
+
     @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 21.4225, longitude: 39.8262), // Center coordinates of the Kaaba
-        span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+        // Kaaba
+        center: .init(latitude: 21.4225, longitude: 39.8262),
+        span: .init(latitudeDelta: 0.5, longitudeDelta: 0.5)
     )
+
+    private var scheme: ColorScheme { settings.colorScheme ?? sysScheme }
     
-    @Environment(\.colorScheme) var systemColorScheme
-    @Environment(\.customColorScheme) var customColorScheme
+    init(choosingPrayerTimes: Bool) {
+        _choosingPrayerTimes = State(initialValue: choosingPrayerTimes)
 
-    var currentColorScheme: ColorScheme {
-        if let colorScheme = settings.colorScheme {
-            return colorScheme
-        } else {
-            return systemColorScheme
-        }
-    }
-
-    var backgroundColor: Color {
-        switch currentColorScheme {
-        case .light:
-            return Color.white
-        case .dark:
-            return Color.black
-        @unknown default:
-            return Color.white
-        }
-    }
-
-    private func fetchCities(searchText: String) {
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = searchText
-        let search = MKLocalSearch(request: request)
-        search.start { (response, error) in
-            guard let response = response, error == nil else {
-                return
+        let coord: CLLocationCoordinate2D = {
+            let s = Settings.shared
+            if let home = s.homeLocation {
+                return home.coordinate
             }
-            DispatchQueue.main.async {
-                self.cityItems = response.mapItems
+            if let cur  = s.currentLocation, cur.latitude != 1000, cur.longitude != 1000 {
+                return cur.coordinate
             }
-        }
+            return .init(latitude: 21.4225, longitude: 39.8262)   // Kaaba fallback
+        }()
+
+        _region = State(initialValue:
+            MKCoordinateRegion(center: coord, span: .init(latitudeDelta: 0.5, longitudeDelta: 0.5))
+        )
+    }
+    
+    private var distanceString: String? {
+        guard
+            let cur  = settings.currentLocation,
+            let home = settings.homeLocation,
+            cur.latitude  != 1000, cur.longitude  != 1000
+        else { return nil }
+
+        let here   = CLLocation(latitude: cur.latitude,  longitude: cur.longitude)
+        let there  = CLLocation(latitude: home.latitude, longitude: home.longitude)
+        let meters = here.distance(from: there)
+
+        let km    = meters / 1_000
+        let miles = meters / 1_609.344
+
+        let nf = NumberFormatter()
+        nf.maximumFractionDigits = 1
+
+        guard
+            let kmStr   = nf.string(from: km as NSNumber),
+            let miStr   = nf.string(from: miles as NSNumber)
+        else { return nil }
+
+        return "\(miStr) mi / \(kmStr) km"
     }
 
     var body: some View {
         NavigationView {
-            VStack {
-                SearchBar(text: $searchText.animation(.easeInOut))
-                    .onChange(of: searchText, perform: { value in
-                        fetchCities(searchText: value)
-                    })
-                
-                if !searchText.isEmpty && !cityItems.isEmpty {
-                    ScrollView {
-                        ForEach(cityItems, id: \.placemark.name) { cityItem in
-                            let city = (cityItem.placemark.locality ?? cityItem.placemark.name ?? "")
-                            let state = cityItem.placemark.administrativeArea ?? ""
-                            let fullCityName = !state.isEmpty ? "\(city), \(state)" : city
-                            
-                            Button(action: {
-                                settings.hapticFeedback()
-                                withAnimation {
-                                    selectedCityItem = IdentifiableMapItem(item: cityItem)
-                                    settings.homeLocation = Location(city: fullCityName, latitude: cityItem.placemark.coordinate.latitude, longitude: cityItem.placemark.coordinate.longitude)
-                                    updateRegion(to: settings.homeLocation!.coordinate)
-                                    searchText = ""
-                                    self.endEditing()
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: "mappin.circle.fill")
-                                    
-                                    Text((fullCityName) + ", " + (cityItem.placemark.country ?? ""))
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .foregroundColor(settings.accentColor.color)
-                                .font(.subheadline)
-                                .padding()
-                            }
-                        }
-                        if !searchText.isEmpty && cityItems.isEmpty {
-                            Text("No matches found")
-                                .font(.subheadline)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+            VStack(spacing: 0) {
+                resultsList
+                    .animation(.easeInOut, value: cityItems)
+
+                let markers: [MKMapItem] = {
+                    var items = [MKMapItem]()
+                    
+                    if let home = settings.homeLocation {
+                        let pm = MKPlacemark(coordinate: home.coordinate)
+                        items.append(MKMapItem(placemark: pm))
                     }
-                    .frame(maxHeight: min(CGFloat(cityItems.count) * 50, 132))
-                }
-                
-                Map(coordinateRegion: $region, annotationItems: [selectedCityItem].compactMap { $0 }) { identifiableMapItem in
-                    MapMarker(coordinate: identifiableMapItem.item.placemark.coordinate)
+                    if let sel = selectedItem { items.append(sel) }
+
+                    return items
+                }()
+
+                Map(coordinateRegion: $region, annotationItems: markers) {
+                    MapMarker(coordinate: $0.placemark.coordinate)
                 }
                 .edgesIgnoringSafeArea(.bottom)
-                
-                Spacer()
-                
-                if !choosingPrayerTimes, let homeLocation = settings.homeLocation {
-                    HStack {
-                        Spacer()
-                        
-                        Text("Home City: \(homeLocation.city)")
+
+                if !choosingPrayerTimes, let home = settings.homeLocation {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Home: \(home.city)", systemImage: "house.fill")
                             .font(.headline)
                             .foregroundColor(settings.accentColor.color)
-                            .lineLimit(1)
                         
-                        Spacer()
-                    }
-                    .padding(.top, 4)
-                }
-                
-                Button(action: {
-                    settings.hapticFeedback()
-                    if let currentLoc = settings.currentLocation {
-                        let currentLocation = CLLocation(latitude: currentLoc.latitude, longitude: currentLoc.longitude)
-                        withAnimation {
-                            updateRegion(to: currentLocation.coordinate)
-                            selectedCityItem = IdentifiableMapItem(item: MKMapItem(placemark: MKPlacemark(coordinate: currentLocation.coordinate)))
-                            settings.homeLocation = Location(city: currentLoc.city, latitude: currentLoc.latitude, longitude: currentLoc.longitude)
+                        if let current = settings.currentLocation {
+                            Label("Current: \(current.city)", systemImage: "location.fill")
+                                .font(.headline)
+                                .foregroundColor(settings.accentColor.color)
+                            
+                            if let distance = distanceString {
+                                Label(distance, systemImage: "arrow.right.arrow.left")
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                            }
                         }
-                        settings.fetchPrayerTimes()
+
+                        Text("• Must be at least 48 miles (≈ 77 km) from home to be considered traveling")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                            .multilineTextAlignment(.leading)
                     }
-                    if (!settings.locationNeverAskAgain && settings.showLocationAlert) {
-                        showAlert = true
-                    }
-                }) {
-                    Text("Automatically Use Current Location")
+                    .padding(.vertical)
                 }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(settings.accentColor.color)
-                .foregroundColor(Color.white)
-                .cornerRadius(10)
-                .padding(.horizontal, 16)
+
+                useCurrentButton
             }
-            .navigationBarTitle("Select Location", displayMode: .inline)
-            .navigationBarItems(trailing: Button(action: {
-                settings.hapticFeedback()
-                presentationMode.wrappedValue.dismiss()
-            }) {
-                Text("Done")
-                    .foregroundColor(settings.accentColor.color)
-            })
-            .confirmationDialog("Location Access Denied", isPresented: $showAlert, titleVisibility: .visible) {
-                Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                    }
-                }
-                Button("Never Ask Again", role: .destructive) {
-                    settings.locationNeverAskAgain = true
-                }
+            .navigationTitle("Select Location")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") { settings.hapticFeedback(); dismiss() }
+                                    .foregroundColor(settings.accentColor.color))
+            .confirmationDialog(
+                "Location Access Denied",
+                isPresented: $showAlert
+            ) {
+                Button("Open Settings")  { openSettings() }
+                Button("Never Ask Again", role: .destructive) { settings.locationNeverAskAgain = true }
                 Button("Ignore", role: .cancel) { }
             } message: {
-                Text("Please go to Settings and enable location services to accurately determine prayer times.")
+                Text("Please enable location services to accurately determine prayer times.")
             }
-            .onAppear {
-                DispatchQueue.main.async {
-                    if let homeLocation = settings.homeLocation {
-                        updateRegion(to: homeLocation.coordinate)
-                        selectedCityPlacemark = MKPlacemark(coordinate: homeLocation.coordinate)
-                        print("Home location set: \(homeLocation.city)")
-                    } else if let currentLoc = settings.currentLocation {
-                        let currentLocation = CLLocation(latitude: currentLoc.latitude, longitude: currentLoc.longitude)
-                        updateRegion(to: currentLocation.coordinate)
-                        selectedCityPlacemark = MKPlacemark(coordinate: currentLocation.coordinate)
-                        print("Current location set: \(currentLoc.city)")
-                    } else {
-                        print("Defaulting to Mecca")
-                    }
-                }
-            }
+            .task(id: searchText) { await search(for: searchText) }   // debounce built‑in
+            .onAppear { configureInitialRegion() }
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+            .preferredColorScheme(scheme)
         }
         .accentColor(settings.accentColor.color)
         .tint(settings.accentColor.color)
     }
-    
-    private func updateRegion(to coordinate: CLLocationCoordinate2D) {
-        region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
+
+    private var resultsList: some View {
+        Group {
+            if !searchText.isEmpty {
+                if cityItems.isEmpty {
+                    Text("No matches found")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .font(.subheadline)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(cityItems) { item in
+                                Button { select(item) } label: {
+                                    HStack {
+                                        Image(systemName: "mappin.circle.fill")
+                                        Text(formattedName(for: item))
+                                        Spacer()
+                                    }
+                                    .foregroundColor(settings.accentColor.color)
+                                    .padding()
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: min(CGFloat(cityItems.count) * 48, 300))
+                }
+            }
+        }
+    }
+
+    private var useCurrentButton: some View {
+        Button("Automatically Use Current Location") {
+            settings.hapticFeedback()
+            guard let cur = settings.currentLocation else { return }
+
+            withAnimation {
+                let coord = CLLocationCoordinate2D(latitude: cur.latitude, longitude: cur.longitude)
+                updateRegion(to: coord)
+                let placemark = MKPlacemark(coordinate: coord)
+                selectedItem  = MKMapItem(placemark: placemark)
+                settings.homeLocation = Location(city: cur.city, latitude: cur.latitude, longitude: cur.longitude)
+            }
+            settings.fetchPrayerTimes() {
+                if !settings.locationNeverAskAgain && settings.showLocationAlert { showAlert = true }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(settings.accentColor.color)
+        .foregroundColor(.white)
+        .cornerRadius(12)
+        .padding(.horizontal, 16)
+    }
+
+    private func select(_ item: MKMapItem) {
+        settings.hapticFeedback()
+        let city  = item.placemark.locality ?? item.placemark.name ?? "Unknown"
+        let state = item.placemark.administrativeArea ?? ""
+        let full  = state.isEmpty ? city : "\(city), \(state)"
+
+        withAnimation {
+            selectedItem = item
+            settings.homeLocation = Location(city: full, latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude)
+            updateRegion(to: item.placemark.coordinate)
+            searchText = ""
+        }
+    }
+
+    private func formattedName(for item: MKMapItem) -> String {
+        let city  = item.placemark.locality ?? item.placemark.name ?? ""
+        let state = item.placemark.administrativeArea ?? ""
+        let name  = state.isEmpty ? city : "\(city), \(state)"
+        return name + ", " + (item.placemark.country ?? "")
+    }
+
+    private func updateRegion(to coord: CLLocationCoordinate2D) {
+        region = .init(center: coord, span: .init(latitudeDelta: 0.5, longitudeDelta: 0.5))
+    }
+
+    private func configureInitialRegion() {
+        if let home = settings.homeLocation {
+            updateRegion(to: home.coordinate)
+        } else if let cur = settings.currentLocation {
+            updateRegion(to: .init(latitude: cur.latitude, longitude: cur.longitude))
+        }
+    }
+
+    private func search(for text: String) async {
+        guard !text.isEmpty else { cityItems = []; return }
+
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = text
+        
+        request.resultTypes = .address
+        request.region = region
+
+        let response = try? await MKLocalSearch(request: request).start()
+        await MainActor.run { cityItems = response?.mapItems ?? [] }
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }

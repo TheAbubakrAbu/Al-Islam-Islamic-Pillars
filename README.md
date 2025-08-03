@@ -4,9 +4,21 @@
 
 Explore Islam with **Al-Islam**! Perfect for converts & all Muslims, featuring Traveling Mode & Beginner Quran Mode. Dive deeper, anywhere, anytime.
 
-I was a **17-year-old** high school student when this app was published on the App Store on **July 26, 2023**.
+Created by **Abubakr Elmallah**, who was a **17-year-old** high school student when this app was published on the App Store on **July 26, 2023**.
+
+🏆 **Winner of the Congressional App Challenge 2023 – Best Original Idea**  
+I received a **Certificate of Congressional Recognition** from U.S. Representative **Young Kim** for my work on Al-Islam, which I began after completing my AP and IB exams. The app was recognized for its originality and impact, especially for its **Arabic Beginner Mode** and **Traveling Mode** designed to support new Muslims and Arabic learners.
 
 [**Download Al-Islam on the App Store here**](https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone)
+
+<a href="https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone">
+  <img src="Resources/Logo.jpg" alt="Logo" width="120" style="border-radius:10px;"/>
+</a>
+
+### 📂 Related Projects on GitHub
+
+- [**Al-Adhan | Prayer Times**](https://github.com/TheAbubakrAbu/Al-Adhan-Prayer-Times)
+- [**Al-Quran | Beginner Quran**](https://github.com/TheAbubakrAbu/Al-Quran-Beginner-Quran)
 
 ## Overview
 Al-Islam is a simply designed and feature-rich app that helps Muslims strengthen their faith and seamlessly practice Islam. Whether you’re a lifelong believer, a new convert, or simply exploring Islam, this app provides everything you need—from accurate prayer times to Quranic access and essential Islamic tools.

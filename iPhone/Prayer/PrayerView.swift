@@ -20,27 +20,23 @@ struct PrayerView: View {
         }
     }
     
-    @State private var showingArabicSheet = false
-    @State private var showingAdhkarSheet = false
-    @State private var showingDuaSheet = false
-    @State private var showingTasbihSheet = false
-    @State private var showingNamesSheet = false
-    @State private var showingDateSheet = false
     @State private var showingSettingsSheet = false
     
     func prayerTimeRefresh(force: Bool) {
-        settings.requestNotificationAuthorization()
-        settings.fetchPrayerTimes(force: force)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            if settings.travelTurnOnAutomatic {
-                showAlert = .travelTurnOnAutomatic
-            } else if settings.travelTurnOffAutomatic {
-                showAlert = .travelTurnOffAutomatic
-            } else if !settings.locationNeverAskAgain && settings.showLocationAlert {
-                showAlert = .locationAlert
-            } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
-                showAlert = .notificationAlert
+        settings.requestNotificationAuthorization {
+            settings.fetchPrayerTimes(force: force) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if settings.travelTurnOnAutomatic {
+                        showAlert = .travelTurnOnAutomatic
+                    } else if settings.travelTurnOffAutomatic {
+                        showAlert = .travelTurnOffAutomatic
+                    } else if !settings.locationNeverAskAgain && settings.showLocationAlert {
+                        showAlert = .locationAlert
+                    } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
+                        showAlert = .notificationAlert
+                    }
+                }
             }
         }
     }
@@ -51,15 +47,13 @@ struct PrayerView: View {
                 Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
                     if let hijriDate = settings.hijriDate {
                         #if !os(watchOS)
-                        NavigationLink(destination: HijriCalendarView()) {
-                            HStack {
-                                Text(hijriDate.english)
-                                    .multilineTextAlignment(.center)
-                                
-                                Spacer()
-                                
-                                Text(hijriDate.arabic)
-                            }
+                        HStack {
+                            Text(hijriDate.english)
+                                .multilineTextAlignment(.center)
+                            
+                            Spacer()
+                            
+                            Text(hijriDate.arabic)
                         }
                         .font(.footnote)
                         .foregroundColor(settings.accentColor.color)
@@ -96,14 +90,61 @@ struct PrayerView: View {
                         #endif
                     }
                     
-                    CityQiblaView()
-                    /*#if os(watchOS)
-                    CityQiblaView()
-                    #else
-                    NavigationLink(destination: ChoosePrayerView()) {
-                        CityQiblaView()
+                    VStack {
+                        HStack {
+                            #if !os(watchOS)
+                            if let currentLoc = settings.currentLocation {
+                                let currentCity = currentLoc.city
+                                
+                                Image(systemName: "location.fill")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 18, height: 18)
+                                    .foregroundColor(settings.accentColor.color)
+                                    .padding(.trailing, 8)
+                                
+                                Text(currentCity)
+                                    .font(.subheadline)
+                                    .lineLimit(nil)
+                            } else {
+                                Image(systemName: "location.slash")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 18, height: 18)
+                                    .foregroundColor(settings.accentColor.color)
+                                    .padding(.trailing, 8)
+                                
+                                Text("No location")
+                                    .font(.subheadline)
+                                    .lineLimit(nil)
+                            }
+                            #else
+                            if settings.prayers != nil, let currentLoc = settings.currentLocation {
+                                let currentCity = currentLoc.city
+                                Text(currentCity)
+                                    .font(.subheadline)
+                                    .lineLimit(nil)
+                            } else {
+                                Text("No location")
+                                    .font(.subheadline)
+                                    .lineLimit(nil)
+                            }
+                            #endif
+                            
+                            Spacer()
+                            
+                            QiblaView()
+                                .padding(.horizontal)
+                        }
+                        .foregroundColor(.primary)
+                        .font(.subheadline)
+                        
+                        #if os(watchOS)
+                        Text("Compass may not be accurate on Apple Watch")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        #endif
                     }
-                    #endif*/
                 }
                 
                 #if !os(watchOS)
@@ -128,61 +169,12 @@ struct PrayerView: View {
             .onAppear {
                 prayerTimeRefresh(force: false)
             }
-            .onChange(of: scenePhase) { _ in
+            .onChange(of: scenePhase) { newScenePhase in
                 prayerTimeRefresh(force: false)
             }
             .navigationTitle("Al-Adhan")
             #if !os(watchOS)
             .toolbar {
-                /*ToolbarItem(placement: .navigationBarLeading) {
-                    Menu {
-                        Button(action: {
-                            showingArabicSheet = true
-                        }) {
-                            Image(systemName: "textformat.size.ar")
-                            Text("Arabic Alphabet")
-                        }
-                        
-                        Button(action: {
-                            showingAdhkarSheet = true
-                        }) {
-                            Image(systemName: "book.closed")
-                            Text("Common Adhkar")
-                        }
-                        
-                        Button(action: {
-                            showingDuaSheet = true
-                        }) {
-                            Image(systemName: "text.book.closed")
-                            Text("Common Duas")
-                        }
-                        
-                        Button(action: {
-                            showingTasbihSheet = true
-                        }) {
-                            Image(systemName: "circles.hexagonpath.fill")
-                            Text("Tasbih Counter")
-                        }
-                        
-                        Button(action: {
-                            showingNamesSheet = true
-                        }) {
-                            Image(systemName: "signature")
-                            Text("99 Names of Allah")
-                        }
-                        
-                        Button(action: {
-                            showingDateSheet = true
-                        }) {
-                            Image(systemName: "calendar")
-                            Text("Hijri Calendar Converter")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                    .padding(.leading, settings.defaultView ? 6 : 0)
-                }*/
-
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         settings.hapticFeedback()
@@ -194,46 +186,10 @@ struct PrayerView: View {
                     .padding(.trailing, settings.defaultView ? 6 : 0)
                 }
             }
-            .sheet(isPresented: $showingArabicSheet) {
-                NavigationView {
-                    ArabicView()
-                }
-            }
-            .sheet(isPresented: $showingAdhkarSheet) {
-                NavigationView {
-                    AdhkarView()
-                }
-            }
-            .sheet(isPresented: $showingDuaSheet) {
-                NavigationView {
-                    DuaView()
-                }
-            }
-            .sheet(isPresented: $showingTasbihSheet) {
-                NavigationView {
-                    TasbihView()
-                }
-            }
-            .sheet(isPresented: $showingNamesSheet) {
-                NavigationView {
-                    NamesView().environmentObject(namesData)
-                }
-            }
-            .sheet(isPresented: $showingDateSheet) {
-                NavigationView {
-                    DateView()
-                }
-            }
             .sheet(isPresented: $showingSettingsSheet) {
                 NavigationView {
                     SettingsPrayerView(showNotifications: true)
                 }
-                /*
-                 SettingsView()
-                     .accentColor(settings.accentColor.color)
-                     .preferredColorScheme(settings.colorScheme)
-                     .navigationBarTitleDisplayMode(.inline)
-                 */
             }
             #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)
@@ -329,67 +285,5 @@ struct PrayerView: View {
             }
         }
         .navigationViewStyle(.stack)
-    }
-}
-
-struct CityQiblaView: View {
-    @EnvironmentObject var settings: Settings
-    
-    var body: some View {
-        VStack {
-            HStack {
-                #if !os(watchOS)
-                if let currentLoc = settings.currentLocation {
-                    let currentCity = currentLoc.city
-                    
-                    Image(systemName: "location.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 18, height: 18)
-                        .foregroundColor(settings.accentColor.color)
-                        .padding(.trailing, 8)
-                    
-                    Text(currentCity)
-                        .font(.subheadline)
-                        .lineLimit(nil)
-                } else {
-                    Image(systemName: "location.slash")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 18, height: 18)
-                        .foregroundColor(settings.accentColor.color)
-                        .padding(.trailing, 8)
-                    
-                    Text("No location")
-                        .font(.subheadline)
-                        .lineLimit(nil)
-                }
-                #else
-                if settings.prayers != nil, let currentLoc = settings.currentLocation {
-                    let currentCity = currentLoc.city
-                    Text(currentCity)
-                        .font(.subheadline)
-                        .lineLimit(nil)
-                } else {
-                    Text("No location")
-                        .font(.subheadline)
-                        .lineLimit(nil)
-                }
-                #endif
-                
-                Spacer()
-                
-                QiblaView()
-                    .padding(.horizontal)
-            }
-            .foregroundColor(.primary)
-            .font(.subheadline)
-            
-            #if os(watchOS)
-            Text("Compass may not be accurate on Apple Watch")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-            #endif
-        }
     }
 }

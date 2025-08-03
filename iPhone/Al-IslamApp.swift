@@ -10,6 +10,8 @@ struct AlIslamApp: App {
     @StateObject private var quranPlayer = QuranPlayer.shared
     @StateObject private var namesData = NamesViewModel.shared
     
+    @Environment(\.scenePhase) private var scenePhase
+    
     @State private var isLaunching = true
     
     @AppStorage("timeSpent") private var timeSpent: Double = 0
@@ -35,7 +37,7 @@ struct AlIslamApp: App {
                                 Text("Adhan")
                             }
                         
-                        SurahsView()
+                        QuranView()
                             .tabItem {
                                 Image(systemName: "character.book.closed.ar")
                                 Text("Quran")
@@ -69,6 +71,7 @@ struct AlIslamApp: App {
             .tint(settings.accentColor.color)
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
+            .animation(.easeInOut, value: isLaunching)
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
@@ -109,10 +112,10 @@ struct AlIslamApp: App {
         .onChange(of: settings.lastReadAyah) { _ in
             sendMessageToWatch()
         }
-        .onChange(of: settings.favoriteSurahs) { _ in
+        .onChange(of: settings.favoriteSurahs) { newSurahs in
             sendMessageToWatch()
         }
-        .onChange(of: settings.bookmarkedAyahs) { _ in
+        .onChange(of: settings.bookmarkedAyahs) { newBookmarks in
             sendMessageToWatch()
         }
         .onChange(of: settings.favoriteLetters) { _ in
@@ -123,27 +126,33 @@ struct AlIslamApp: App {
             WidgetCenter.shared.reloadAllTimelines()
         }
         .onChange(of: settings.prayerCalculation) { _ in
-            settings.fetchPrayerTimes(force: true)
-            sendMessageToWatch()
+            settings.fetchPrayerTimes(force: true) {
+                sendMessageToWatch()
+            }
         }
         .onChange(of: settings.hanafiMadhab) { _ in
-            settings.fetchPrayerTimes(force: true)
-            sendMessageToWatch()
+            settings.fetchPrayerTimes(force: true) {
+                sendMessageToWatch()
+            }
         }
         .onChange(of: settings.travelingMode) { _ in
-            settings.fetchPrayerTimes(force: true)
-            sendMessageToWatch()
+            settings.fetchPrayerTimes(force: true) {
+                sendMessageToWatch()
+            }
         }
         .onChange(of: settings.hijriOffset) { _ in
             settings.updateDates()
             sendMessageToWatch()
             WidgetCenter.shared.reloadAllTimelines()
         }
+        .onChange(of: scenePhase) { _ in
+            quranPlayer.saveLastListenedSurah()
+        }
     }
     
     private func sendMessageToWatch() {
         guard WCSession.default.isPaired else {
-            print("No Apple Watch is paired")
+            logger.debug("No Apple Watch is paired")
             return
         }
         
@@ -151,13 +160,13 @@ struct AlIslamApp: App {
         let message = ["settings": settingsData]
 
         if WCSession.default.isReachable {
-            print("Watch is reachable. Sending message to watch: \(message)")
+            logger.debug("Watch is reachable. Sending message to watch: \(message)")
 
             WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                print("Error sending message to watch: \(error.localizedDescription)")
+                logger.debug("Error sending message to watch: \(error.localizedDescription)")
             }
         } else {
-            print("Watch is not reachable. Transferring user info to watch: \(message)")
+            logger.debug("Watch is not reachable. Transferring user info to watch: \(message)")
             WCSession.default.transferUserInfo(message)
         }
     }

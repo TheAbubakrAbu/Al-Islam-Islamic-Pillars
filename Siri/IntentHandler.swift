@@ -49,7 +49,7 @@ class PlaySurahIntentHandler: NSObject, PlaySurahIntentHandling {
         }
 
         if let surah = foundSurah {
-            print("✅ Found Surah: \(surah.nameTransliteration)")
+            logger.debug("✅ Found Surah: \(surah.nameTransliteration)")
             
             completion(
                 PlaySurahIntentResponse.success(surah: "Surah \(surah.id): \(surah.nameTransliteration)")
@@ -57,10 +57,10 @@ class PlaySurahIntentHandler: NSObject, PlaySurahIntentHandling {
             
             DispatchQueue.main.async {
                 quranPlayer.playSurah(surahNumber: surah.id, surahName: surah.nameTransliteration)
-                settings.toggleSurahFavorite(surah: surah)
+                settings.toggleSurahFavorite(surah: surah.id)
             }
         } else {
-            print("⚠️ Surah not found")
+            logger.debug("⚠️ Surah not found")
             completion(PlaySurahIntentResponse.failure(surah: "Unknown"))
         }
     }
@@ -84,7 +84,7 @@ class PlayLastListenedSurahIntentHandler: NSObject, PlayLastListenedSurahIntentH
     ) {
         if let lastListenedSurah = settings.lastListenedSurah, let surah = quranData.quran.first(where: { $0.id == lastListenedSurah.surahNumber }) {
             
-            print("✅ Found Surah: \(surah.nameTransliteration)")
+            logger.debug("✅ Found Surah: \(surah.nameTransliteration)")
             
             completion(
                 PlayLastListenedSurahIntentResponse.success(surah: "Surah \(lastListenedSurah.surahNumber): \(lastListenedSurah.surahName)")
@@ -92,10 +92,10 @@ class PlayLastListenedSurahIntentHandler: NSObject, PlayLastListenedSurahIntentH
             
             DispatchQueue.main.async {
                 quranPlayer.playSurah(surahNumber: lastListenedSurah.surahNumber, surahName: lastListenedSurah.surahName, certainReciter: true)
-                settings.toggleSurahFavorite(surah: surah)
+                settings.toggleSurahFavorite(surah: surah.id)
             }
         } else {
-            print("⚠️ Surah not found")
+            logger.debug("⚠️ Surah not found")
             completion(PlayLastListenedSurahIntentResponse.failure(surah: "Unknown"))
         }
     }
@@ -107,7 +107,7 @@ class PlayRandomSurahIntentHandler: NSObject, PlayRandomSurahIntentHandling {
         completion: @escaping (PlayRandomSurahIntentResponse) -> Void
     ) {
         if let randomSurah = quranData.quran.randomElement() {
-            print("✅ Found Surah: \(randomSurah.nameTransliteration)")
+            logger.debug("✅ Found Surah: \(randomSurah.nameTransliteration)")
             
             completion(
                 PlayRandomSurahIntentResponse.success(surah: "Surah \(randomSurah.id): \(randomSurah.nameTransliteration)")
@@ -115,10 +115,10 @@ class PlayRandomSurahIntentHandler: NSObject, PlayRandomSurahIntentHandling {
             
             DispatchQueue.main.async {
                 quranPlayer.playSurah(surahNumber: randomSurah.id, surahName: randomSurah.nameTransliteration)
-                settings.toggleSurahFavorite(surah: randomSurah)
+                settings.toggleSurahFavorite(surah: randomSurah.id)
             }
         } else {
-            print("⚠️ Surah not found")
+            logger.debug("⚠️ Surah not found")
             completion(PlayRandomSurahIntentResponse.failure(surah: "Unknown"))
         }
     }

@@ -74,11 +74,11 @@ struct GodView: View {
             Section(header: Text("QURANIC EVIDENCE")) {
                 Text("Allah (Glorified and Exalted be He) repeatedly emphasizes His Oneness and supremacy in the Quran. He says:")
                     .font(.body)
-                Text("“Allah – there is no deity except Him, the Ever-Living, the Sustainer of [all] existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth.” (Quran 2:255, Ayah al-Kursi)")
+                Text("“Allah – there is no deity except Him, the Ever-Living, the Sustainer of [all] existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth” (Quran 2:255, Ayah al-Kursi).")
                     .foregroundColor(settings.accentColor.color)
                     .font(.body)
                 
-                Text("“And your god is one God. There is no deity [worthy of worship] except Him, the Most Compassionate, the Most Merciful.” (Quran 2:163)")
+                Text("“And your god is one God. There is no deity [worthy of worship] except Him, the Most Compassionate, the Most Merciful” (Quran 2:163).")
                     .foregroundColor(settings.accentColor.color)
                     .font(.body)
             }
@@ -86,7 +86,7 @@ struct GodView: View {
             Section(header: Text("HADITH ON BELIEF IN ALLAH")) {
                 Text("The Prophet Muhammad (peace and blessings be upon him) explained the essence of belief in Allah. He said:")
                     .font(.body)
-                Text("“[Iman is] that you affirm your faith in Allah, in His angels, in His Books, in His Messengers, in the Day of Judgment, and you affirm your faith in the Divine Decree (Qadr) about good and evil.” (Sahih Muslim 8a)")
+                Text("“[Iman is] that you affirm your faith in Allah, in His angels, in His Books, in His Messengers, in the Day of Judgment, and you affirm your faith in the Divine Decree (Qadr) about good and evil” (Sahih Muslim 8a).")
                     .foregroundColor(settings.accentColor.color)
                     .font(.body)
             }
@@ -114,7 +114,7 @@ struct AngelsView: View {
                     .font(.body)
                 
                 Text("The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“The angels were created from light.” (Sahih Muslim 2996)").font(.body).foregroundColor(settings.accentColor.color)
+                Text("“The angels were created from light” (Sahih Muslim 2996).").font(.body).foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("CHARACTERISTICS OF ANGELS")) {
@@ -125,7 +125,7 @@ struct AngelsView: View {
                     .font(.body)
                 Text("2. **Infallible Obedience**: They never disobey Allah and do exactly as commanded. Allah says in the Quran:")
                     .font(.body)
-                Text("“They do not disobey Allah in what He commands them but do whatever they are commanded.” (Quran 66:6)")
+                Text("“They do not disobey Allah in what He commands them but do whatever they are commanded” (Quran 66:6).")
                     .foregroundColor(settings.accentColor.color)
                     .font(.body)
                 Text("3. **Invisible to Humans**: Although normally unseen, they can appear in human form, as Angel Jibreel (Gabriel) did when he visited the Prophet Muhammad (peace and blessings be upon him).")
@@ -158,7 +158,7 @@ struct AngelsView: View {
                 
                 Text("5. **Kiraman Katibin**: Angels who record every deed:")
                     .font(.body)
-                Text("“Man does not utter any word except that with him is an observer prepared [to record].” (Quran 50:18)")
+                Text("“Man does not utter any word except that with him is an observer prepared [to record]” (Quran 50:18).")
                     .foregroundColor(settings.accentColor.color)
                     .font(.body)
                 
@@ -183,7 +183,7 @@ struct AngelsView: View {
             
             Section(header: Text("HADITH ON ANGELS")) {
                 Text("The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“When Allah loves a servant, He calls Jibreel and says: ‘I love so-and-so; therefore, love him.’ So Jibreel loves him. Then Jibreel announces to the inhabitants of the heavens: ‘Allah loves so-and-so; therefore, love him.’ So the inhabitants of the heavens love him. Then he is granted acceptance among the people of the earth.” (Sahih al-Bukhari 7485)")
+                Text("“When Allah loves a servant, He calls Jibreel and says: ‘I love so-and-so; therefore, love him.’ So Jibreel loves him. Then Jibreel announces to the inhabitants of the heavens: ‘Allah loves so-and-so; therefore, love him.’ So the inhabitants of the heavens love him. Then he is granted acceptance among the people of the earth” (Sahih al-Bukhari 7485).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -208,7 +208,7 @@ struct BooksView: View {
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“Indeed, We sent down the Torah, in which was guidance and light.” (Quran 5:44)")
+                Text("“Indeed, We sent down the Torah, in which was guidance and light” (Quran 5:44).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -217,9 +217,9 @@ struct BooksView: View {
             }
             
             Section(header: Text("THE QURAN")) {
-                Text("The Quran (الْقُرْآن), meaning 'The Recitation,' is the final and complete revelation from Allah, sent to all of humanity through the Prophet Muhammad (peace and blessings be upon him). It is preserved word for word, as Allah has promised:")
+                Text("The Quran (الْقُرْآن), meaning “The Recitation,“ is the final and complete revelation from Allah, sent to all of humanity through the Prophet Muhammad (peace and blessings be upon him). It is preserved word for word, as Allah has promised:")
                     .font(.body)
-                Text("“Indeed, it is We who sent down the Quran and indeed, We will be its guardian.” (Quran 15:9)")
+                Text("“Indeed, it is We who sent down the Quran and indeed, We will be its guardian” (Quran 15:9).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -241,14 +241,14 @@ struct BooksView: View {
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says:").font(.body)
-                Text("“Indeed, this is in the former scriptures, the scriptures of Abraham and Moses.” (Quran 87:18-19)")
+                Text("“Indeed, this is in the former scriptures, the scriptures of Abraham and Moses” (Quran 87:18-19).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
             
             Section(header: Text("IMPORTANCE OF BELIEVING IN THE BOOKS")) {
                 Text("Belief in Allah’s books is a fundamental pillar of Iman (faith). The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“[Iman is] that you affirm your faith in Allah, in His angels, in His Books, in His Messengers, in the Day of Judgment, and you affirm your faith in the Divine Decree (Qadr) about good and evil.” (Sahih Muslim 8a)")
+                Text("“[Iman is] that you affirm your faith in Allah, in His angels, in His Books, in His Messengers, in the Day of Judgment, and you affirm your faith in the Divine Decree (Qadr) about good and evil” (Sahih Muslim 8a).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -310,12 +310,12 @@ struct ProphetsView: View {
                 .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“And We gave to Abraham, Isaac and Jacob—all [of them] We guided. And Noah We guided before; and among his descendants, David and Solomon and Job and Joseph and Moses and Aaron. Thus do We reward the doers of good. And Zechariah and John and Jesus and Elias—and all were of the righteous.” (Quran 6:84-85)")
+                Text("“And We gave to Abraham, Isaac and Jacob—all [of them] We guided. And Noah We guided before; and among his descendants, David and Solomon and Job and Joseph and Moses and Aaron. Thus do We reward the doers of good. And Zechariah and John and Jesus and Elias—and all were of the righteous” (Quran 6:84-85).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("Muslims believe that each prophet conveyed Allah’s guidance and served as role models for their people. While all prophets were sent to specific nations and times, Prophet Muhammad was sent as the final messenger for all of humanity. Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“Muhammad is not the father of [any] one of your men, but [he is] the Messenger of Allah and the seal of the prophets.” (Quran 33:40)")
+                Text("“Muhammad is not the father of [any] one of your men, but [he is] the Messenger of Allah and the seal of the prophets” (Quran 33:40).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -334,12 +334,12 @@ struct ProphetsView: View {
             
             Section(header: Text("IMPORTANCE OF BELIEF IN PROPHETS")) {
                 Text("Belief in the prophets is a pillar of Iman (Faith). The Prophet Muhammad said:").font(.body)
-                Text("“[Iman is] that you affirm your faith in Allah, in His angels, in His Books, in His Messengers, in the Day of Judgment, and you affirm your faith in the Divine Decree (Qadr) about good and evil.” (Sahih Muslim 8a)")
+                Text("“[Iman is] that you affirm your faith in Allah, in His angels, in His Books, in His Messengers, in the Day of Judgment, and you affirm your faith in the Divine Decree (Qadr) about good and evil” (Sahih Muslim 8a).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("Muslims respect and honor all prophets equally, as they all conveyed the same message: to worship Allah alone. Allah (Glorified and Exalted be He) says:").font(.body)
-                Text("“The Messenger has believed in what was revealed to him from his Lord, and [so have] the believers. All of them have believed in Allah, His angels, His books, His messengers.” (Quran 2:285)")
+                Text("“The Messenger has believed in what was revealed to him from his Lord, and [so have] the believers. All of them have believed in Allah, His angels, His books, His messengers” (Quran 2:285).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -372,7 +372,7 @@ struct DayView: View {
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“So whoever does an atom’s weight of good will see it, And whoever does an atom’s weight of evil will see it.” (Quran 99:7-8)")
+                Text("“So whoever does an atom’s weight of good will see it, And whoever does an atom’s weight of evil will see it” (Quran 99:7-8).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -381,19 +381,19 @@ struct DayView: View {
                 Text("The Day of Judgment will unfold in stages, including:").font(.body)
                 
                 Text("1. **The Blowing of the Trumpet**: The angel Israfil will blow the trumpet twice—first to end all life and then to resurrect everyone. Allah says:").font(.body)
-                Text("“And the Horn will be blown, and whoever is in the heavens and whoever is on the earth will fall dead except whom Allah wills. Then it will be blown again, and at once they will be standing, looking on.” (Quran 39:68)")
+                Text("“And the Horn will be blown, and whoever is in the heavens and whoever is on the earth will fall dead except whom Allah wills. Then it will be blown again, and at once they will be standing, looking on” (Quran 39:68).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("2. **Resurrection**: All people will rise from their graves to face their Lord. Allah says:").font(.body)
-                Text("“And the Horn will be blown, and at once from the graves to their Lord they will hasten.” (Quran 36:51)")
+                Text("“And the Horn will be blown, and at once from the graves to their Lord they will hasten” (Quran 36:51).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("3. **The Reckoning (Hisab)**: Every individual’s deeds will be reviewed, and their record of actions will be presented to them. Those who receive their record in their right hand will rejoice, while those who receive it in their left will despair.").font(.body)
                 
                 Text("4. **The Scale (Mizan)**: Deeds will be weighed on a divine scale. Good deeds that outweigh bad deeds will lead to Paradise. Allah says:").font(.body)
-                Text("“And the weighing [of deeds] that Day will be the truth. So those whose scales are heavy—it is they who will be successful.” (Quran 7:8)")
+                Text("“And the weighing [of deeds] that Day will be the truth. So those whose scales are heavy—it is they who will be successful” (Quran 7:8).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -406,7 +406,7 @@ struct DayView: View {
                 Text("2. **Moral Uprightness**: Encourages Muslims to lead righteous lives, avoid sin, and fulfill their obligations to Allah and others.").font(.body)
                 
                 Text("3. **Justice and Fairness**: The Day of Judgment is the ultimate manifestation of Allah’s justice. Every wrong will be rectified, and no one will be wronged. Allah says:").font(.body)
-                Text("“Indeed, Allah does not wrong the people at all, but it is the people who are wronging themselves.” (Quran 10:44)")
+                Text("“Indeed, Allah does not wrong the people at all, but it is the people who are wronging themselves” (Quran 10:44).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -416,17 +416,17 @@ struct DayView: View {
             Section(header: Text("QURANIC EMPHASIS")) {
                 Text("Allah (Glorified and Exalted be He) repeatedly emphasizes the Day of Judgment in the Quran as a reminder of the ultimate return to Him. He says:")
                     .font(.body)
-                Text("“The Day they come forth, nothing concerning them will be concealed from Allah. To whom belongs [all] sovereignty this Day? To Allah, the One, the Prevailing.” (Quran 40:16)")
+                Text("“The Day they come forth, nothing concerning them will be concealed from Allah. To whom belongs [all] sovereignty this Day? To Allah, the One, the Prevailing” (Quran 40:16).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("In Surah Al-Qariah, Allah vividly describes the weighing of deeds:").font(.body)
-                Text("“Then as for one whose scales are heavy [with good deeds], he will be in a pleasant life. But as for one whose scales are light, his refuge will be an abyss.” (Quran 101:6-9)")
+                Text("“Then as for one whose scales are heavy [with good deeds], he will be in a pleasant life. But as for one whose scales are light, his refuge will be an abyss” (Quran 101:6-9).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("The Prophet Muhammad (peace and blessings be upon him) said about the Day of Judgment:").font(.body)
-                Text("“The rights of justice will surely be restored to their people on the Day of Resurrection, even the hornless sheep will lay claim to the horned sheep.” (Sahih Muslim 2582)")
+                Text("“The rights of justice will surely be restored to their people on the Day of Resurrection, even the hornless sheep will lay claim to the horned sheep” (Sahih Muslim 2582).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -449,7 +449,7 @@ struct QadrView: View {
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
-                Text("“No disaster strikes upon the earth or among yourselves except that it is in a register before We bring it into being—indeed that, for Allah, is easy.” (Quran 57:22)")
+                Text("“No disaster strikes upon the earth or among yourselves except that it is in a register before We bring it into being—indeed that, for Allah, is easy” (Quran 57:22).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
@@ -461,22 +461,22 @@ struct QadrView: View {
                 Text("Scholars identify four essential components of Qadr:").font(.body)
                 
                 Text("1. **Allah’s Knowledge (علم, `Ilm)**: Allah’s knowledge is infinite and perfect. He knows everything that has happened, is happening, and will happen. Allah says:").font(.body)
-                Text("“And with Him are the keys of the unseen; none knows them except Him. And He knows what is on the land and in the sea. Not a leaf falls but that He knows it.” (Quran 6:59)")
+                Text("“And with Him are the keys of the unseen; none knows them except Him. And He knows what is on the land and in the sea. Not a leaf falls but that He knows it” (Quran 6:59).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("2. **Allah’s Writing (كتابة, Kitabah)**: All things are written in **Al-Lawh Al-Mahfuz** (The Preserved Tablet), where every event, action, and outcome is recorded. Allah says:").font(.body)
-                Text("“Do you not know that Allah knows what is in the heaven and earth? Indeed, it is all in a record. Indeed that, for Allah, is easy.” (Quran 22:70)")
+                Text("“Do you not know that Allah knows what is in the heaven and earth? Indeed, it is all in a record. Indeed that, for Allah, is easy” (Quran 22:70).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("3. **Allah’s Will (مشيئة, Mashi’ah)**: Whatever Allah wills happens, and whatever He does not will does not happen. Allah says:").font(.body)
-                Text("“And they plan, and Allah plans. And Allah is the best of planners.” (Quran 3:54)")
+                Text("“And they plan, and Allah plans. And Allah is the best of planners” (Quran 3:54).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
                 Text("4. **Allah’s Creation (خلق, Khalq)**: Allah is the Creator of all things, including actions, circumstances, and outcomes. Allah says:").font(.body)
-                Text("“Allah is the Creator of all things, and He is, over all things, Disposer of affairs.” (Quran 39:62)")
+                Text("“Allah is the Creator of all things, and He is, over all things, Disposer of affairs” (Quran 39:62).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -486,7 +486,7 @@ struct QadrView: View {
                     .font(.body)
                 
                 Text("The Prophet Muhammad (peace and blessings be upon him) said:").font(.body)
-                Text("“Strive for that which will benefit you, seek help from Allah, and do not give up. If something befalls you, do not say, ‘If only I had done such and such,’ but say, ‘Allah decreed it, and what He willed has happened.’ For saying ‘if’ opens the door to Shaytaan’s (Satan’s) work.” (Sunan Ibn Majah 79)")
+                Text("“Strive for that which will benefit you, seek help from Allah, and do not give up. If something befalls you, do not say, ‘If only I had done such and such,’ but say, ‘Allah decreed it, and what He willed has happened.’ For saying ‘if’ opens the door to Shaytaan’s (Satan’s) work” (Sunan Ibn Majah 79).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }

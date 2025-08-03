@@ -2,7 +2,6 @@ import SwiftUI
 
 struct LetterSectionHeader: View {
     @EnvironmentObject var settings: Settings
-    
     let letterData: LetterData
     
     var body: some View {
@@ -25,8 +24,10 @@ struct LetterSectionHeader: View {
 struct ArabicLetterView: View {
     @EnvironmentObject var settings: Settings
     
+    @Environment(\.scenePhase) private var scenePhase
+    
     let letterData: LetterData
-        
+            
     var body: some View {
         VStack {
             List {
@@ -41,7 +42,11 @@ struct ArabicLetterView: View {
                             Spacer()
                             
                             Text(letterData.name)
-                                .font(settings.useFontArabic ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize) : .title)
+                                .font(
+                                    settings.useFontArabic
+                                    ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
+                                    : .title2
+                                )
                             
                             Spacer()
                         }
@@ -58,7 +63,11 @@ struct ArabicLetterView: View {
                             ForEach(0..<3, id: \.self) { index in
                                 Spacer()
                                 Text(letterData.forms[index])
-                                    .font(settings.useFontArabic ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize) : .title)
+                                    .font(
+                                        settings.useFontArabic
+                                        ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
+                                        : .title2
+                                    )
                                 Spacer()
                             }
                         }
@@ -69,7 +78,7 @@ struct ArabicLetterView: View {
                     .padding(.vertical, settings.useFontArabic ? 0 : 2)
                 }
                 
-                if letterData.transliteration == "alif" || letterData.transliteration == "waw" || letterData.transliteration == "yaa" {
+                if ["alif", "waw", "yaa"].contains(letterData.transliteration) {
                     Section(header: Text("SPECIAL ROLE OF VOWEL LETTERS")) {
                         Text("In Arabic, three letters (Alif, Waw, and Yaa) have a special dual role:")
                             .font(.body)
@@ -80,12 +89,12 @@ struct ArabicLetterView: View {
                         }
                         
                         if letterData.transliteration == "waw" {
-                            Text("- **Waw (و)**: Functions as a long vowel 'uu' when used after a letter with a damma, like in رَسُول (rasool - messenger). As a consonant, it makes the 'w' sound, like in وَقَفَ (waqafa - stood).")
+                            Text("- **Waw (و)**: Functions as a long vowel 'uu' when used after a letter with a damma, like in رَسُول (rasool - messenger). As a consonant, it makes the 'w' sound, like in وَقَفَ (waqafa - stood).")
                                 .font(.body)
                         }
                         
                         if letterData.transliteration == "yaa" {
-                            Text("- **Yaa (ي): Functions as a long vowel 'ii' when used after a letter with a kasra, like in كِتَابِي (kitaabi - my book). As a consonant, it makes the 'y' sound, like in يَد (yad - hand).")
+                            Text("- **Yaa (ي)**: Functions as a long vowel 'ii' when used after a letter with a kasra, like in كِتَابِي (kitaabi - my book). As a consonant, it makes the 'y' sound, like in يَد (yad - hand).")
                                 .font(.body)
                         }
                         
@@ -97,21 +106,17 @@ struct ArabicLetterView: View {
                 if letterData.showTashkeel {
                     Section(header: Text("DIFFERENT HARAKAAT (VOWELS)")) {
                         let chunks = tashkeels.chunked(into: 3)
-                        ForEach(0..<chunks.count, id: \.self) { index in
+                        ForEach(chunks.indices, id: \.self) { idx in
                             VStack {
                                 #if !os(watchOS)
-                                if index > 0 {
-                                    Divider()
-                                        .padding(.trailing, -100)
+                                if idx > 0 {
+                                    Divider().padding(.trailing, -100)
                                 }
                                 #endif
                                 
-                                TashkeelRow(
-                                    letterData: letterData,
-                                    tashkeels: chunks[index]
-                                )
-                                .padding(.top, 14)
-                                .padding(.bottom, index == chunks.count - 1 ? 14 : 0)
+                                TashkeelRow(letterData: letterData, tashkeels: chunks[idx])
+                                    .padding(.top, 14)
+                                    .padding(.bottom, idx == chunks.count - 1 ? 14 : 0)
                             }
                             #if !os(watchOS)
                             .listRowSeparator(.hidden, edges: .bottom)
@@ -119,60 +124,17 @@ struct ArabicLetterView: View {
                         }
                     }
                 }
-                if (!letterData.showTashkeel && letterData.transliteration != "alif") || letterData.transliteration == "yaa" {
+                
+                if (!letterData.showTashkeel && letterData.transliteration != "alif")
+                    || letterData.transliteration == "yaa" {
+                    
                     Section(header: Text("PURPOSE")) {
-                        if letterData.transliteration == "yaa" {
-                            Text("In the Uthmani script of the Quran, when 'yaa' is written at the end of a word (or by itself), it is usually written without the two dots underneath.")
-                                .font(.body)
-                        } else if letterData.transliteration == "taa marbuuTa" {
-                            Text("\"Taa marbuuTa\" means \"tied taa\" and is used to indicate the feminine gender in Arabic.")
-                                .font(.body)
-                            Text("It is typically added to the end of a noun to show that the noun is feminine. For example, the Arabic word for teacher is \"معلم\" (mu'allim) for a male and \"معلمة\" (mu'allima) for a female.")
-                                .font(.body)
-                            Text("Taa marbuuTa is pronounced as a \"t\" sound in certain cases, such as when the word is in the construct state or has a suffix. Otherwise, it is often silent but affects the preceding vowel, usually creating a short \"ah\" sound, similar to 'ه' (as in \"mu'allimah\").")
-                                .font(.body)
-                        } else if letterData.transliteration == "hamzatul waSl" {
-                            Text("The term \"hamzatul waSl\" translates to \"connecting hamza\" or \"hamza of connection.\"")
-                                .font(.body)
-                            Text("Hamzatul waSl is always written as an Alif (ا) and is pronounced only if it begins a word at the start of speech. When the word follows another in a sentence, the hamzatul waSl is not pronounced, creating a smooth connection between words.")
-                                .font(.body)
-                            Text("If a word starts with hamzatul waSl, its pronunciation depends on the third letter of the word. For verbs: if the third letter has a damma, pronounce it with a damma (أُ); if it has a kasra or fatha, pronounce it with a kasra (إِ).")
-                                .font(.body)
-                            Text("In the Quran, there are seven nouns that start with hamzatul waSl. These nouns always begin with a kasra when pronounced in isolation.")
-                                .font(.body)
-                            Text("Hamzatul waSl is usually not written with diacritics, but in learner texts or the Quran, it may be marked with a small ص above the Alif, indicating waSl.")
-                                .font(.body)
-                        } else if letterData.transliteration.contains("hamza") {
-                            Text("The letter Hamza has multiple forms, depending on its position and the surrounding vowels or diacritics (tashkeel):")
-                                .font(.body)
-                            Text("Hamza on its own (ء): Used when Hamza appears in the middle or end of a word without a preceding vowel.")
-                                .font(.body)
-                            Text("Hamza on an Alif (أ or إ): When Hamza begins a word, it is written on an Alif. A fatha or damma places it above (أ), while a kasra places it below (إ).")
-                                .font(.body)
-                            Text("Hamza on a Waw (ؤ): Appears after a damma or following a Waw.")
-                                .font(.body)
-                            Text("Hamza on a Yaa (ئ): Appears after a kasra or following a Yaa.")
-                                .font(.body)
-                            Text("Although Hamza takes different forms, it represents the same sound ('ah'). These forms are based on Arabic orthography (spelling conventions) rather than phonetics.")
-                                .font(.body)
-                        } else if letterData.transliteration.contains("mad") {
-                            Text("The wavy line above a vowel letter is called a 'mad'. It elongates the vowel sound, typically lasting 4 counts.")
-                                .font(.body)
-                            
-                            if letterData.transliteration.contains("alif") {
-                                Text("If an Alif Mad is followed by a letter with a shaddah, the elongation extends to 6 counts.")
-                                    .font(.body)
-                            }
-                        } else if letterData.transliteration == "alif maqSoorah" {
-                            Text("Alif maqSoorah resembles a Yaa without dots and usually replaces a regular Alif at the end of a word. It is used in certain cases, including some Quranic words and non-Arabic proper nouns. It is the exact same and sounds the same as alif.")
-                                .font(.body)
-                        } else if letterData.transliteration == "laa" {
-                            Text("The combination of ل and ا forms a unique shape: لا.")
-                                .font(.body)
-                        }
+                        purposeSection(for: letterData)
                     }
                 }
             }
+            .applyConditionalListStyle(defaultView: true)
+            .dismissKeyboardOnScroll()
             
             #if !os(watchOS)
             Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
@@ -180,13 +142,63 @@ struct ArabicLetterView: View {
                 Text("Basic Font").tag(false)
             }
             .pickerStyle(SegmentedPickerStyle())
-            .padding(.horizontal)
-            .padding(.bottom, 12)
+            .padding([.horizontal, .bottom], 12)
             #endif
         }
-        .applyConditionalListStyle(defaultView: true)
-        .dismissKeyboardOnScroll()
         .navigationTitle(letterData.letter)
+    }
+    
+    @ViewBuilder
+    private func purposeSection(for data: LetterData) -> some View {
+        switch data.transliteration {
+        case "yaa":
+            Text("In the Uthmani script of the Quran, when 'yaa' is written at the end of a word (or by itself), it is usually written without the two dots underneath.")
+                .font(.body)
+        case "taa marbuuTa":
+            Group {
+                Text("\"Taa marbuuTa\" means \"tied taa\" and is used to indicate the feminine gender in Arabic.")
+                Text("It is typically added to the end of a noun to show that the noun is feminine. For example, the Arabic word for teacher is \"معلم\" (mu'allim) for a male and \"معلمة\" (mu'allima) for a female.")
+                Text("Taa marbuuTa is pronounced as a \"t\" sound in certain cases, such as when the word is in the construct state or has a suffix. Otherwise, it is often silent but affects the preceding vowel, usually creating a short \"ah\" sound, similar to 'ه' (as in \"mu'allimah\").")
+            }
+            .font(.body)
+        case "hamzatul waSl":
+            Group {
+                Text("The term \"hamzatul waSl\" translates to \"connecting hamza\" or \"hamza of connection.\"")
+                Text("Hamzatul waSl is always written as an Alif (ا) and is pronounced only if it begins a word at the start of speech. When the word follows another in a sentence, the hamzatul waSl is not pronounced, creating a smooth connection between words.")
+                Text("If a word starts with hamzatul waSl, its pronunciation depends on the third letter of the word. For verbs: if the third letter has a damma, pronounce it with a damma (أُ); if it has a kasra or fatha, pronounce it with a kasra (إِ).")
+                Text("In the Quran, there are seven nouns that start with hamzatul waSl. These nouns always begin with a kasra when pronounced in isolation.")
+                Text("Hamzatul waSl is usually not written with diacritics, but in learner texts or the Quran, it may be marked with a small ص above the Alif, indicating waSl.")
+            }
+            .font(.body)
+        default:
+            if data.transliteration.contains("hamza") {
+                Group {
+                    Text("The letter Hamza has multiple forms, depending on its position and the surrounding vowels or diacritics (tashkeel):")
+                    Text("Hamza on its own (ء): Used when Hamza appears in the middle or end of a word without a preceding vowel.")
+                    Text("Hamza on an Alif (أ or إ): When Hamza begins a word, it is written on an Alif. A fatha or damma places it above (أ), while a kasra places it below (إ).")
+                    Text("Hamza on a Waw (ؤ): Appears after a damma or following a Waw.")
+                    Text("Hamza on a Yaa (ئ): Appears after a kasra or following a Yaa.")
+                    Text("Although Hamza takes different forms, it represents the same sound ('ah'). These forms are based on Arabic orthography (spelling conventions) rather than phonetics.")
+                }
+                .font(.body)
+            } else if data.transliteration.contains("mad") {
+                Group {
+                    Text("The wavy line above a vowel letter is called a 'mad'. It elongates the vowel sound, typically lasting 4 counts.")
+                    + (
+                        data.transliteration.contains("alif")
+                        ? Text("\nIf an Alif Mad is followed by a letter with a shaddah, the elongation extends to 6 counts.")
+                        : Text("")
+                    )
+                }
+                    .font(.body)
+            } else if data.transliteration == "alif maqSoorah" {
+                Text("Alif maqSoorah resembles a Yaa without dots and usually replaces a regular Alif at the end of a word. It is used in certain cases, including some Quranic words and non-Arabic proper nouns. It is the exact same and sounds the same as alif.")
+                    .font(.body)
+            } else if data.transliteration == "laa" {
+                Text("The combination of ل and ا forms a unique shape: لا.")
+                    .font(.body)
+            }
+        }
     }
 }
 
@@ -200,34 +212,39 @@ extension Array {
 
 struct TashkeelRow: View {
     @EnvironmentObject var settings: Settings
+    
     let letterData: LetterData
     let tashkeels: [Tashkeel]
 
     var body: some View {
         HStack(spacing: 20) {
-            ForEach(tashkeels, id: \.english) { tashkeel in
-                VStack(alignment: .center) {
-                    if !tashkeel.transliteration.isEmpty {
-                        Text(letterData.sound + tashkeel.transliteration)
+            ForEach(tashkeels, id: \.english) { tk in
+                VStack {
+                    if !tk.transliteration.isEmpty {
+                        Text(letterData.sound + tk.transliteration)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                    } else if tashkeel.english == "Shaddah" {
+                    } else if tk.english == "Shaddah" {
                         Text(letterData.sound + letterData.sound)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                    } else if tashkeel.english == "Sukoon" {
+                    } else if tk.english == "Sukoon" {
                         Text(letterData.sound)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     
-                    Text(letterData.letter + tashkeel.tashkeelMark)
-                        .font(settings.useFontArabic ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize) : .title)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    Text(letterData.letter + tk.tashkeelMark)
+                        .font(
+                            settings.useFontArabic
+                            ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
+                            : .title
+                        )
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, settings.useFontArabic ? 0 : 8)
                     
                     #if !os(watchOS)
-                    Text(tashkeel.english)
+                    Text(tk.english)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     #endif

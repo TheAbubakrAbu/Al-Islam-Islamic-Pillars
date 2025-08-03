@@ -2,88 +2,63 @@ import SwiftUI
 import WidgetKit
 
 struct PrayersProvider: TimelineProvider {
-    var settings = Settings.shared
+    private let store   = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
+    private let settings = Settings.shared
 
-    func placeholder(in context: Context) -> PrayersEntry {
-        return createPrayersEntry()
+    func placeholder(in context: Context) -> PrayersEntry { makeEntry() }
+
+    func getSnapshot(in ctx: Context, completion: @escaping (PrayersEntry)->Void) {
+        completion(makeEntry())
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (PrayersEntry) -> Void) {
-        let entry = createPrayersEntry()
-        completion(entry)
+    func getTimeline(in ctx: Context, completion: @escaping (Timeline<PrayersEntry>)->Void) {
+        let entry = makeEntry()
+        let refresh = entry.nextPrayer?.time ?? Date().addingTimeInterval(30 * 60)
+        completion(Timeline(entries: [entry], policy: .after(refresh)))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<PrayersEntry>) -> ()) {
-        var entries: [PrayersEntry] = []
-        let entry = createPrayersEntry()
-        entries.append(entry)
-        
-        let timeline = Timeline(entries: entries, policy: .after(entries.last?.date ?? Date()))
-        completion(timeline)
-    }
+    private func makeEntry() -> PrayersEntry {
+        if let data = store?.data(forKey: "prayersData"),
+           let prayers = try? Settings.decoder.decode(Prayers.self, from: data) {
+            settings.prayers = prayers
+        }
 
-    private func createPrayersEntry() -> PrayersEntry {
-        let appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
+        if let locData = store?.data(forKey: "currentLocation"),
+           let loc = try? Settings.decoder.decode(Location.self, from: locData) {
+            settings.currentLocation = loc
+        }
 
-        if let data = appGroupUserDefaults?.data(forKey: "prayersDataIslam") {
-            let decoder = JSONDecoder()
-            if let prayers = try? decoder.decode(Prayers.self, from: data) {
-                settings.prayers = prayers
-            }
-        }
-        
-        var currentLocation: Location? = nil
-        if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
-            let decoder = JSONDecoder()
-            currentLocation = try? decoder.decode(Location.self, from: locationData)
-        }
-        
-        let accentColor: AccentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
-        let travelingMode: Bool = appGroupUserDefaults?.bool(forKey: "travelingModeIslam") ?? false
-        let hanafiMadhab: Bool = appGroupUserDefaults?.bool(forKey: "hanafiMadhabIslam") ?? false
-        let prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculationIslam") ?? "Muslim World League"
-        let hijriOffset: Int = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
-        
-        if let currentLoc = currentLocation {
-            settings.currentLocation = currentLoc
-        }
-        
-        settings.travelingMode = travelingMode
-        settings.hanafiMadhab = hanafiMadhab
-        settings.prayerCalculation = prayerCalculation
-        
+        settings.accentColor      = AccentColor(rawValue: store?.string(forKey: "accentColor") ?? "") ?? .green
+        settings.travelingMode    = store?.bool(forKey: "travelingMode") ?? false
+        settings.hanafiMadhab     = store?.bool(forKey: "hanafiMadhab") ?? false
+        settings.prayerCalculation = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"
+        settings.hijriOffset       = store?.integer(forKey: "hijriOffset") ?? 0
+
         settings.fetchPrayerTimes()
-        
-        if let prayersObject = settings.prayers {
-            let prayers = prayersObject.prayers
-            let fullPrayers = prayersObject.fullPrayers
-            let current = settings.currentPrayer
-            let next = settings.nextPrayer
-            
-            let currentCity = currentLocation?.city ?? ""
-            
-            return PrayersEntry(
-                date: Date(),
-                accentColor: accentColor,
-                currentCity: currentCity,
-                prayers: prayers,
-                fullPrayers: fullPrayers,
-                currentPrayer: current,
-                nextPrayer: next,
-                hijriOffset: hijriOffset
-            )
+
+        guard let obj = settings.prayers else {
+            return emptyEntry(accent: settings.accentColor)
         }
-        
+
         return PrayersEntry(
-            date: Date(),
-            accentColor: .green,
-            currentCity: "",
-            prayers: [],
-            fullPrayers: [],
-            currentPrayer: nil,
-            nextPrayer: nil,
-            hijriOffset: 0
+            date:           Date(),
+            accentColor:    settings.accentColor,
+            currentCity:    settings.currentLocation?.city ?? "",
+            prayers:        obj.prayers,
+            fullPrayers:    obj.fullPrayers,
+            currentPrayer:  settings.currentPrayer,
+            nextPrayer:     settings.nextPrayer,
+            hijriOffset:    settings.hijriOffset
         )
+    }
+
+    private func emptyEntry(accent: AccentColor) -> PrayersEntry {
+        .init(date: Date(),
+              accentColor: accent,
+              currentCity: "",
+              prayers: [], fullPrayers: [],
+              currentPrayer: nil, nextPrayer: nil,
+              hijriOffset: 0)
     }
 }
 
@@ -91,11 +66,9 @@ struct PrayersEntry: TimelineEntry {
     let date: Date
     let accentColor: AccentColor
     let currentCity: String
-    
     let prayers: [Prayer]
     let fullPrayers: [Prayer]
     let currentPrayer: Prayer?
     let nextPrayer: Prayer?
-    
     let hijriOffset: Int
 }

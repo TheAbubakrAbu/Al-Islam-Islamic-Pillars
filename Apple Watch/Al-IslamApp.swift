@@ -24,7 +24,7 @@ struct AlIslamApp: App {
                     TabView {
                         PrayerView()
                         
-                        SurahsView()
+                        QuranView()
                         
                         PillarsView()
                         
@@ -42,6 +42,7 @@ struct AlIslamApp: App {
             .tint(settings.accentColor.color)
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
+            .animation(.easeInOut, value: isLaunching)
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
@@ -54,10 +55,10 @@ struct AlIslamApp: App {
         .onChange(of: settings.lastReadAyah) { _ in
             sendMessageToPhone()
         }
-        .onChange(of: settings.favoriteSurahs) { _ in
+        .onChange(of: settings.favoriteSurahs) { newSurahs in
             sendMessageToPhone()
         }
-        .onChange(of: settings.bookmarkedAyahs) { _ in
+        .onChange(of: settings.bookmarkedAyahs) { newBookmarks in
             sendMessageToPhone()
         }
         .onChange(of: settings.favoriteLetters) { _ in
@@ -68,16 +69,19 @@ struct AlIslamApp: App {
             WidgetCenter.shared.reloadAllTimelines()
         }
         .onChange(of: settings.prayerCalculation) { _ in
-            sendMessageToPhone()
-            settings.fetchPrayerTimes(force: true)
+            settings.fetchPrayerTimes(force: true) {
+                sendMessageToPhone()
+            }
         }
         .onChange(of: settings.hanafiMadhab) { _ in
-            sendMessageToPhone()
-            settings.fetchPrayerTimes(force: true)
+            settings.fetchPrayerTimes(force: true) {
+                sendMessageToPhone()
+            }
         }
         .onChange(of: settings.travelingMode) { _ in
-            sendMessageToPhone()
-            settings.fetchPrayerTimes(force: true)
+            settings.fetchPrayerTimes(force: true) {
+                sendMessageToPhone()
+            }
         }
         .onChange(of: settings.hijriOffset) { _ in
             settings.updateDates()
@@ -91,12 +95,12 @@ struct AlIslamApp: App {
         let message = ["settings": settingsData]
 
         if WCSession.default.isReachable {
-            print("Phone is reachable. Sending message to phone: \(message)")
+            logger.debug("Phone is reachable. Sending message to phone: \(message)")
             WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                print("Error sending message to phone: \(error.localizedDescription)")
+                logger.debug("Error sending message to phone: \(error.localizedDescription)")
             }
         } else {
-            print("Phone is not reachable. Transferring user info to phone: \(message)")
+            logger.debug("Phone is not reachable. Transferring user info to phone: \(message)")
             WCSession.default.transferUserInfo(message)
         }
     }

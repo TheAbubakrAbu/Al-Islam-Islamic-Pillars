@@ -4,97 +4,57 @@ struct NowPlayingView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranPlayer: QuranPlayer
     
-    @State var surahsView: Bool
-    @Binding var scrollDown: Int
-    @Binding var searchText: String
+    @State private var quranView: Bool
+    @Binding private var scrollDown: Int
+    @Binding private var searchText: String
     
-    init(surahsView: Bool, scrollDown: Binding<Int> = .constant(-1), searchText: Binding<String> = .constant("")) {
-        _surahsView = State(initialValue: surahsView)
-        _scrollDown = scrollDown
-        _searchText = searchText
+    init(
+        quranView: Bool,
+        scrollDown: Binding<Int> = .constant(-1),
+        searchText: Binding<String> = .constant("")
+    ) {
+        self.quranView = quranView
+        self._scrollDown = scrollDown
+        self._searchText = searchText
     }
     
     var body: some View {
-        if let currentSurahNumber = quranPlayer.currentSurahNumber,
-           let currentSurah = quranPlayer.quranData.quran.first(where: { $0.id == currentSurahNumber }) {
+        guard
+            let surahNum = quranPlayer.currentSurahNumber,
+            let surah = quranPlayer.quranData.quran.first(where: { $0.id == surahNum })
+        else { return AnyView(EmptyView()) }
+        
+        let ayahNum = quranPlayer.currentAyahNumber ?? 1
+        let isPlaying = quranPlayer.isPlaying
+        
+        return AnyView(
             VStack(spacing: 8) {
-                if surahsView {
-                    NavigationLink(
-                        destination: quranPlayer.isPlayingSurah
-                            ? AyahsView(surah: currentSurah)
-                                .transition(.opacity)
-                                .animation(.easeInOut, value: quranPlayer.currentSurahNumber)
-                            : AyahsView(surah: currentSurah, ayah: quranPlayer.currentAyahNumber ?? 1)
-                                .transition(.opacity)
-                                .animation(.easeInOut, value: quranPlayer.currentSurahNumber)
-                    ) {
-                        content
-                    }
-                } else {
-                    content
-                }
-            }
-            .contextMenu {
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playSurah(
-                        surahNumber: currentSurahNumber,
-                        surahName: currentSurah.nameTransliteration
-                    )
-                } label: {
-                    Label("Play from Beginning", systemImage: "memories")
-                }
-                
-                Divider()
-                
-                Button {
-                    settings.hapticFeedback()
-                    settings.toggleSurahFavorite(surah: currentSurah)
-                } label: {
-                    Label(
-                        settings.isSurahFavorite(surah: currentSurah) ? "Unfavorite Surah" : "Favorite Surah",
-                        systemImage: settings.isSurahFavorite(surah: currentSurah) ? "star.fill" : "star"
-                    )
-                }
-                
-                if let ayah = quranPlayer.currentAyahNumber {
-                    Button {
-                        settings.hapticFeedback()
-                        settings.toggleBookmark(surah: currentSurah.id, ayah: ayah)
-                    } label: {
-                        Label(
-                            settings.isBookmarked(surah: currentSurah.id, ayah: ayah) ? "Unbookmark Ayah" : "Bookmark Ayah",
-                            systemImage: settings.isBookmarked(surah: currentSurah.id, ayah: ayah) ? "bookmark.fill" : "bookmark"
-                        )
-                    }
-                }
-                
-                Divider()
-                
-                if surahsView {
-                    Button {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            searchText = ""
-                            scrollDown = currentSurahNumber
-                            endEditing()
+                if quranView {
+                    NavigationLink {
+                        if quranPlayer.isPlayingSurah {
+                            AyahsView(surah: surah)
+                        } else {
+                            AyahsView(surah: surah, ayah: ayahNum)
                         }
                     } label: {
-                        Label("Scroll To Surah", systemImage: "arrow.down.circle")
+                        playerRow(isPlaying: isPlaying)
                     }
+                } else {
+                    playerRow(isPlaying: isPlaying)
                 }
             }
-        }
+            .contextMenu { contextMenu(for: surah, ayah: ayahNum) }
+        )
     }
     
-    var content: some View {
+    @ViewBuilder
+    private func playerRow(isPlaying: Bool) -> some View {
         HStack {
             VStack(alignment: .leading) {
                 if let title = quranPlayer.nowPlayingTitle {
                     Text(title)
                         .foregroundColor(.primary)
-                        .font(.headline)
-                        .fontWeight(.bold)
+                        .font(.headline.bold())
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                 }
@@ -106,7 +66,9 @@ struct NowPlayingView: View {
                         .minimumScaleFactor(0.5)
                 }
             }
-            Spacer()
+            
+            Spacer(minLength: 12)
+            
             HStack(spacing: 16) {
                 Image(systemName: "backward.fill")
                     .font(.body)
@@ -115,27 +77,17 @@ struct NowPlayingView: View {
                         settings.hapticFeedback()
                         quranPlayer.skipBackward()
                     }
-                if quranPlayer.isPlaying {
-                    Image(systemName: "pause.fill")
-                        .font(.title2)
-                        .foregroundColor(settings.accentColor.color)
-                        .onTapGesture {
-                            settings.hapticFeedback()
-                            withAnimation {
-                                quranPlayer.pause()
-                            }
+                
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.title2)
+                    .foregroundColor(settings.accentColor.color)
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            isPlaying ? quranPlayer.pause() : quranPlayer.resume()
                         }
-                } else {
-                    Image(systemName: "play.fill")
-                        .font(.title2)
-                        .foregroundColor(settings.accentColor.color)
-                        .onTapGesture {
-                            settings.hapticFeedback()
-                            withAnimation {
-                                quranPlayer.resume()
-                            }
-                        }
-                }
+                    }
+                
                 Image(systemName: "forward.fill")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
@@ -155,8 +107,54 @@ struct NowPlayingView: View {
         .animation(.easeInOut, value: quranPlayer.isPlaying)
     }
     
-    private func endEditing() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
-                                        to: nil, from: nil, for: nil)
+    @ViewBuilder
+    private func contextMenu(for surah: Surah, ayah: Int) -> some View {
+        let isFav = settings.isSurahFavorite(surah: surah.id)
+        let isBm = settings.isBookmarked(surah: surah.id, ayah: ayah)
+        
+        Button {
+            settings.hapticFeedback()
+            quranPlayer.playSurah(surahNumber: surah.id, surahName: surah.nameTransliteration)
+        } label: {
+            Label("Play from Beginning", systemImage: "memories")
+        }
+        
+        Divider()
+        
+        Button {
+            settings.hapticFeedback()
+            settings.toggleSurahFavorite(surah: surah.id)
+        } label: {
+            Label(
+                isFav ? "Unfavorite Surah" : "Favorite Surah",
+                systemImage: isFav ? "star.fill" : "star"
+            )
+        }
+        
+        Button {
+            settings.hapticFeedback()
+            settings.toggleBookmark(surah: surah.id, ayah: ayah)
+        } label: {
+            Label(
+                isBm ? "Unbookmark Ayah" : "Bookmark Ayah",
+                systemImage: isBm ? "bookmark.fill" : "bookmark"
+            )
+        }
+        
+        Divider()
+        
+        if quranView {
+            Button {
+                settings.hapticFeedback()
+                withAnimation {
+                    searchText = ""
+                    scrollDown = surah.id
+                    self.endEditing()
+                }
+            } label: {
+                Label("Scroll To Surah", systemImage: "arrow.down.circle")
+            }
+        }
     }
+
 }

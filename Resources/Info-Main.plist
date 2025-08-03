@@ -24,5 +24,13 @@
 		<string>location</string>
 		<string>processing</string>
 	</array>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Used to save wallpapers you choose to your Photo Library.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Needed to accurately determine prayer times based on where you are (your location stays on your device).</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Needed to accurately determine prayer times based on where you are (your location stays on your device).</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Needed to accurately determine prayer times based on where you are (your location stays on your device).</string>
 </dict>
 </plist>
