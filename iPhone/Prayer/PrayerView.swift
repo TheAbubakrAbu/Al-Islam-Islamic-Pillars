@@ -23,7 +23,6 @@ struct PrayerView: View {
     @State private var showingSettingsSheet = false
     
     func prayerTimeRefresh(force: Bool) {
-        
         settings.requestNotificationAuthorization {
             settings.fetchPrayerTimes(force: force) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -193,16 +192,6 @@ struct PrayerView: View {
             }
             #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)
-        }
-        .onChange(of: settings.selectedDate) { value in
-            settings.datePrayers = settings.getPrayerTimes(for: value) ?? []
-            settings.dateFullPrayers = settings.getPrayerTimes(for: value, fullPrayers: true) ?? []
-            
-            let calendar = Calendar.current
-            
-            if !calendar.isDate(value, inSameDayAs: Date()) {
-                settings.changedDate = true
-            }
         }
         .confirmationDialog("", isPresented: Binding(
             get: { showAlert != nil },

@@ -66,13 +66,20 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
         
         requestLocationAuthorization()
+        
+        if let loc = currentLocation, loc.latitude != 1000, loc.longitude != 1000 {
+            Task { @MainActor in
+                await updateCity(latitude: loc.latitude, longitude: loc.longitude)
+                fetchPrayerTimes(force: true)
+            }
+        }
     }
     
     private static let oneMile: CLLocationDistance = 1_609.344 // m
     private static let minAcc: CLLocationAccuracy = 100        // m
     private static let maxAge: TimeInterval = 60               // s
     private static let headingΔ: Double = 1.0                  // deg – ignore jitter
-
+    
     /// MAIN LOCATION CALLBACK
     func locationManager(_ mgr: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
         guard let loc = locs.last, loc.horizontalAccuracy > 0, loc.horizontalAccuracy <= Self.minAcc, abs(loc.timestamp.timeIntervalSinceNow) <= Self.maxAge
@@ -182,7 +189,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                     let region = placemark.administrativeArea ?? placemark.country ?? ""
                     return "\(city), \(region)"
                 } else {
-                    return "\(latitude.stringRepresentation), \(longitude.stringRepresentation)"
+                    return "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))"
                 }
             }()
 
@@ -190,6 +197,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 withAnimation {
                     currentLocation = Location(city: newCity, latitude: latitude, longitude: longitude)
                 }
+                WidgetCenter.shared.reloadAllTimelines()
             }
 
             cachedPlacemark = (coord, newCity)
@@ -433,7 +441,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             return
         }
 
-        if loc.city.contains("(") {
+        if force || loc.city.contains("(") {
             Task { @MainActor in
                 await updateCity(latitude: loc.latitude, longitude: loc.longitude)
             }
@@ -471,6 +479,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         } else if notification && !(stored?.setNotification ?? false) {
             schedulePrayerTimeNotifications()
             printAllScheduledNotifications()
+            WidgetCenter.shared.reloadAllTimelines()
         }
 
         updateCurrentAndNextPrayer()
@@ -1002,7 +1011,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @Published var datePrayers: [Prayer]?
     @Published var dateFullPrayers: [Prayer]?
-    @Published var selectedDate = Date()
     @Published var changedDate = false
     
     @AppStorage("hapticOn") var hapticOn: Bool = true
@@ -1131,9 +1139,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
     @AppStorage("lastReadAyah") var lastReadAyah: Int = 0
     
+    @AppStorage("lastListenedSurahData") private var lastListenedSurahData: Data?
     var lastListenedSurah: LastListenedSurah? {
         get {
-            guard let data = appGroupUserDefaults?.data(forKey: "lastListenedSurahData") else { return nil }
+            guard let data = lastListenedSurahData else { return nil }
             do {
                 return try Self.decoder.decode(LastListenedSurah.self, from: data)
             } catch {
@@ -1144,13 +1153,12 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         set {
             if let newValue = newValue {
                 do {
-                    let data = try Self.encoder.encode(newValue)
-                    appGroupUserDefaults?.set(data, forKey: "lastListenedSurahData")
+                    lastListenedSurahData = try Self.encoder.encode(newValue)
                 } catch {
                     logger.debug("Failed to encode last listened surah: \(error)")
                 }
             } else {
-                appGroupUserDefaults?.removeObject(forKey: "lastListenedSurahData")
+                lastListenedSurahData = nil
             }
         }
     }

@@ -31,74 +31,72 @@ struct ArabicView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack {
-                List {
-                    if searchText.isEmpty, !settings.favoriteLetters.isEmpty {
-                        Section("FAVORITE LETTERS") {
-                            ForEach(settings.favoriteLetters.sorted(), id: \.id) {
-                                ArabicLetterRow(letterData: $0)
-                            }
+        VStack {
+            List {
+                if searchText.isEmpty, !settings.favoriteLetters.isEmpty {
+                    Section("FAVORITE LETTERS") {
+                        ForEach(settings.favoriteLetters.sorted(), id: \.id) {
+                            ArabicLetterRow(letterData: $0)
                         }
                     }
-                    
-                    if searchText.isEmpty {
-                        if groupingType == "normal" {
-                            Section("STANDARD ARABIC LETTERS") {
-                                ForEach(standardArabicLetters, id: \.letter) {
-                                    ArabicLetterRow(letterData: $0)
-                                }
-                            }
-                        } else {
-                            ForEach(similarityGroups.indices, id: \.self) { idx in
-                                let group = similarityGroups[idx]
-                                let header = idx == 0 ? "VOWEL LETTERS" : group.joined(separator: " AND")
-                                Section(header) {
-                                    ForEach(group, id: \.self) { ch in
-                                        letterData(for: ch).map(ArabicLetterRow.init)
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Section("SPECIAL ARABIC LETTERS") {
-                            ForEach(otherArabicLetters, id: \.letter) {
+                }
+
+                if searchText.isEmpty {
+                    if groupingType == "normal" {
+                        Section("STANDARD ARABIC LETTERS") {
+                            ForEach(standardArabicLetters, id: \.letter) {
                                 ArabicLetterRow(letterData: $0)
                             }
                         }
-                        
-                        Section("ARABIC NUMBERS") {
-                            ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
-                        }
-                        
-                        tajweedSection
                     } else {
-                        Section("SEARCH RESULTS") {
-                            ForEach(filteredStandard) { ArabicLetterRow(letterData: $0) }
-                            ForEach(filteredOther)   { ArabicLetterRow(letterData: $0) }
+                        ForEach(similarityGroups.indices, id: \.self) { idx in
+                            let group = similarityGroups[idx]
+                            let header = idx == 0 ? "VOWEL LETTERS" : group.joined(separator: " AND")
+                            Section(header) {
+                                ForEach(group, id: \.self) { ch in
+                                    letterData(for: ch).map(ArabicLetterRow.init)
+                                }
+                            }
                         }
                     }
+
+                    Section("SPECIAL ARABIC LETTERS") {
+                        ForEach(otherArabicLetters, id: \.letter) {
+                            ArabicLetterRow(letterData: $0)
+                        }
+                    }
+
+                    Section("ARABIC NUMBERS") {
+                        ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
+                    }
+
+                    tajweedSection
+                } else {
+                    Section("SEARCH RESULTS") {
+                        ForEach(filteredStandard) { ArabicLetterRow(letterData: $0) }
+                        ForEach(filteredOther)   { ArabicLetterRow(letterData: $0) }
+                    }
                 }
-                #if os(watchOS)
-                .searchable(text: $searchText)
-                #endif
-                .applyConditionalListStyle(defaultView: true)
-                .dismissKeyboardOnScroll()
-                
-                #if !os(watchOS)
-                Picker("Grouping", selection: $groupingType.animation(.easeInOut)) {
-                    Text("Normal Grouping").tag("normal")
-                    Text("Group by Similarity").tag("similarity")
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                
-                SearchBar(text: $searchText.animation(.easeInOut))
-                    .padding(.horizontal, 8)
-                #endif
             }
-            .navigationTitle("Arabic Alphabet")
+            #if os(watchOS)
+            .searchable(text: $searchText)
+            #endif
+            .applyConditionalListStyle(defaultView: true)
+            .dismissKeyboardOnScroll()
+
+            #if !os(watchOS)
+            Picker("Grouping", selection: $groupingType.animation(.easeInOut)) {
+                Text("Normal Grouping").tag("normal")
+                Text("Group by Similarity").tag("similarity")
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+
+            SearchBar(text: $searchText.animation(.easeInOut))
+                .padding(.horizontal, 8)
+            #endif
         }
+        .navigationTitle("Arabic Alphabet")
     }
 
     private func letterData(for glyph: String) -> LetterData? {

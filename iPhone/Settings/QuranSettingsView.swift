@@ -235,7 +235,7 @@ struct FavoritesView: View {
                 } else {
                     ForEach(settings.favoriteSurahs.sorted(), id: \.self) { surahId in
                         if let surah = quranData.quran.first(where: { $0.id == surahId }) {
-                            SurahRow(surah: surah, favoriteSurahs: Set())
+                            SurahRow(surah: surah)
                         }
                     }
                     .onDelete(perform: removeSurahs)

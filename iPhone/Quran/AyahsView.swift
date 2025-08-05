@@ -154,8 +154,7 @@ struct AyahsView: View {
                 VStack {
                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                         NowPlayingView(quranView: false)
-                            .padding(.horizontal, 8)
-                            .transition(.opacity)
+                            .animation(.easeInOut, value: quranPlayer.isPlaying)
                     }
                     
                     HStack {
@@ -193,42 +192,66 @@ struct AyahsView: View {
     #if !os(watchOS)
     @ViewBuilder
     private func playButton(proxy: ScrollViewProxy) -> some View {
-        if let last = settings.lastListenedSurah,
-           last.surahNumber == surah.id,
-           !quranPlayer.isPlaying,
-           !quranPlayer.isPaused {
+        let playerIdle = !quranPlayer.isLoading && !quranPlayer.isPlaying && !quranPlayer.isPaused
+        let canResumeLast = settings.lastListenedSurah?.surahNumber == surah.id
+        let repeatCounts  = [2, 3, 5, 10]
+
+        if playerIdle {
             Menu {
+                if canResumeLast, let last = settings.lastListenedSurah {
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playSurah(
+                            surahNumber: last.surahNumber,
+                            surahName:   last.surahName,
+                            certainReciter: true
+                        )
+                    } label: {
+                        Label("Play Last Listened", systemImage: "play.fill")
+                    }
+                }
+
                 Button {
                     settings.hapticFeedback()
                     quranPlayer.playSurah(
-                        surahNumber: last.surahNumber,
-                        surahName: last.surahName,
-                        certainReciter: true
+                        surahNumber: surah.id,
+                        surahName:   surah.nameTransliteration
                     )
                 } label: {
-                    Label("Play from Last Listened", systemImage: "play.fill")
+                    Label("Play from Beginning", systemImage: "memories")
                 }
                 
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playSurah(surahNumber: surah.id, surahName: surah.nameTransliteration)
+                Menu {
+                    ForEach(repeatCounts, id: \.self) { n in
+                        Button {
+                            settings.hapticFeedback()
+                            quranPlayer.playSurah(
+                                surahNumber: surah.id,
+                                surahName: surah.nameTransliteration,
+                                repeatCount: n
+                            )
+                        } label: {
+                            Label("Repeat \(n)×", systemImage: "\(n).circle")
+                        }
+                    }
                 } label: {
-                    Label("Play from Beginning", systemImage: "memories")
+                    Label("Repeat Surah", systemImage: "repeat")
                 }
             } label: {
                 playIcon()
             }
             .padding(.trailing, 28)
+
         } else {
             Button {
                 settings.hapticFeedback()
+
                 if quranPlayer.isLoading {
                     quranPlayer.isLoading = false
                     quranPlayer.pause(saveInfo: false)
+
                 } else if quranPlayer.isPlaying || quranPlayer.isPaused {
                     quranPlayer.stop()
-                } else {
-                    quranPlayer.playSurah(surahNumber: surah.id, surahName: surah.nameTransliteration)
                 }
             } label: {
                 playIcon()

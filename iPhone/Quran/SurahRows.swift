@@ -6,105 +6,78 @@ struct SurahRow: View {
     let surah: Surah
     var ayah: Int?
     var end: Bool?
-    var favoriteSurahs: Set<Int>?
     
     var body: some View {
-        ZStack {
-            if let favoriteSurahs = favoriteSurahs {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(favoriteSurahs.contains(surah.id)
-                          ? settings.accentColor.color.opacity(settings.defaultView ? 0.15 : 0.25)
-                          : .white.opacity(0.0001))
-                    #if !os(watchOS)
-                    .padding(.leading, 19)
-                    .padding(.horizontal, settings.defaultView ? -31 : -26)
-                    #else
-                    .padding(.horizontal, -8)
-                    .padding(.vertical, -3)
-                    #endif
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(settings.accentColor.color.opacity(settings.defaultView ? 0.15 : 0.25))
-                    #if !os(watchOS)
-                    .padding(.leading, 19)
-                    .padding(.horizontal, settings.defaultView ? -31 : -26)
-                    #else
-                    .padding(.horizontal, -8)
-                    .padding(.vertical, -3)
-                    #endif
-            }
-                
-            #if !os(watchOS)
-            VStack {
-                HStack {
-                    VStack(alignment: .leading) {
-                        HStack {
-                            if let ayah = ayah {
-                                if end != nil {
-                                    Text("Ends at \(surah.id):\(ayah)")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                } else {
-                                    Text("Starts at \(surah.id):\(ayah)")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                            } else {
-                                Text("\(surah.numberOfAyahs) Ayahs")
+        #if !os(watchOS)
+        VStack {
+            HStack {
+                VStack(alignment: .leading) {
+                    HStack {
+                        if let ayah = ayah {
+                            if end != nil {
+                                Text("Ends at \(surah.id):\(ayah)")
                                     .font(.subheadline)
-                                    .multilineTextAlignment(.leading)
                                     .foregroundColor(.secondary)
-                                
-                                Text(surah.type == "meccan" ? "🕋" : "🕌")
-                                    .font(.caption2)
-                                    .multilineTextAlignment(.leading)
-                                    .foregroundColor(settings.accentColor.color)
+                            } else {
+                                Text("Starts at \(surah.id):\(ayah)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
+                        } else {
+                            Text("\(surah.numberOfAyahs) Ayahs")
+                                .font(.subheadline)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(.secondary)
+                            
+                            Text(surah.type == "meccan" ? "🕋" : "🕌")
+                                .font(.caption2)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(settings.accentColor.color)
                         }
-                        
-                        Text(surah.nameEnglish)
-                            .font(.subheadline)
-                            .multilineTextAlignment(.leading)
                     }
                     
-                    Spacer()
-                    
-                    VStack(alignment: .trailing) {
-                        Text("\(surah.nameArabic) - \(arabicNumberString(from: surah.id))")
-                            .font(.headline)
-                            .multilineTextAlignment(.trailing)
-                            .foregroundColor(settings.accentColor.color)
-                        
-                        Text("\(surah.nameTransliteration) - \(surah.id)")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    .padding(.vertical, 8)
+                    Text(surah.nameEnglish)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.leading)
                 }
-            }
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-            #else
-            VStack {
-                HStack {
-                    Spacer()
-                    
+                
+                Spacer()
+                
+                VStack(alignment: .trailing) {
                     Text("\(surah.nameArabic) - \(arabicNumberString(from: surah.id))")
                         .font(.headline)
+                        .multilineTextAlignment(.trailing)
                         .foregroundColor(settings.accentColor.color)
-                }
-                
-                HStack {
-                    Text("\(surah.id) - \(surah.nameTransliteration)")
-                        .font(.subheadline)
                     
-                    Spacer()
+                    Text("\(surah.nameTransliteration) - \(surah.id)")
+                        .font(.subheadline)
+                        .multilineTextAlignment(.trailing)
                 }
+                .padding(.vertical, 8)
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-            #endif
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        #else
+        VStack {
+            HStack {
+                Spacer()
+                
+                Text("\(surah.nameArabic) - \(arabicNumberString(from: surah.id))")
+                    .font(.headline)
+                    .foregroundColor(settings.accentColor.color)
+            }
+            
+            HStack {
+                Text("\(surah.id) - \(surah.nameTransliteration)")
+                    .font(.subheadline)
+                
+                Spacer()
+            }
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        #endif
     }
 }
 
@@ -113,68 +86,50 @@ struct SurahAyahRow: View {
     
     var surah: Surah
     var ayah: Ayah
-    
-    var favoriteSurahs: Set<Int>?
-    
+        
     var body: some View {
-        ZStack {
-            if let favoriteSurahs = favoriteSurahs {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(favoriteSurahs.contains(surah.id)
-                          ? settings.accentColor.color.opacity(settings.defaultView ? 0.15 : 0.25)
-                          : .white.opacity(0.0001))
-                    #if !os(watchOS)
-                    .padding(.leading, 19)
-                    .padding(.horizontal, settings.defaultView ? -31 : -26)
-                    #else
-                    .padding(.horizontal, -8)
-                    .padding(.vertical, 3)
-                    #endif
-            }
-            
-            HStack {
-                VStack {
-                    Text("\(surah.id):\(ayah.id)")
-                        .font(.headline)
-                    
-                    Text(surah.nameTransliteration)
-                        .font(.caption)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                #if !os(watchOS)
-                .frame(width: 65, alignment: .center)
-                #else
-                .frame(width: 40, alignment: .center)
-                #endif
-                .foregroundColor(settings.accentColor.color)
-                .padding(.trailing, 8)
+        HStack {
+            VStack {
+                Text("\(surah.id):\(ayah.id)")
+                    .font(.headline)
                 
-                VStack {
-                    if(settings.showArabicText) {
-                        let text = settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic
-                        
-                        Text(settings.beginnerMode ? text.map { "\($0) " }.joined() : text)
-                            .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                    
-                    if(settings.showTransliteration) {
-                        Text(ayah.textTransliteration)
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    
-                    if(settings.showEnglishTranslation) {
-                        Text(ayah.textEnglish)
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .lineLimit(1)
+                Text(surah.nameTransliteration)
+                    .font(.caption)
             }
-            .padding(.vertical, 2)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            #if !os(watchOS)
+            .frame(width: 65, alignment: .center)
+            #else
+            .frame(width: 40, alignment: .center)
+            #endif
+            .foregroundColor(settings.accentColor.color)
+            .padding(.trailing, 8)
+            
+            VStack {
+                if(settings.showArabicText) {
+                    let text = settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic
+                    
+                    Text(settings.beginnerMode ? text.map { "\($0) " }.joined() : text)
+                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                
+                if(settings.showTransliteration) {
+                    Text(ayah.textTransliteration)
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                
+                if(settings.showEnglishTranslation) {
+                    Text(ayah.textEnglish)
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .lineLimit(1)
         }
+        .padding(.vertical, 2)
     }
 }
 
@@ -518,35 +473,37 @@ struct LastListenedSurahRow: View {
 
                             Spacer()
 
-                            if !quranPlayer.isPlaying && !quranPlayer.isPaused {
-                                Menu {
-                                    Button {
-                                        settings.hapticFeedback()
-                                        quranPlayer.playSurah(
-                                            surahNumber: lastListenedSurah.surahNumber,
-                                            surahName: lastListenedSurah.surahName,
-                                            certainReciter: true)
-                                    } label: {
-                                        Label("Play from Last Listened", systemImage: "play.fill")
-                                    }
-
-                                    Button {
-                                        settings.hapticFeedback()
-                                        quranPlayer.playSurah(
-                                            surahNumber: lastListenedSurah.surahNumber,
-                                            surahName: surah.nameTransliteration)
-                                    } label: {
-                                        Label("Play from Beginning", systemImage: "memories")
-                                    }
+                            Menu {
+                                Button {
+                                    settings.hapticFeedback()
+                                    quranPlayer.playSurah(
+                                        surahNumber: lastListenedSurah.surahNumber,
+                                        surahName: lastListenedSurah.surahName,
+                                        certainReciter: true)
                                 } label: {
-                                    Image(systemName: "play.fill")
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 22, height: 22)
-                                        .foregroundColor(settings.accentColor.color)
-                                        .minimumScaleFactor(0.75)
-                                        .transition(.opacity)
+                                    Label("Play Last Listened", systemImage: "play.fill")
                                 }
+
+                                Button {
+                                    settings.hapticFeedback()
+                                    quranPlayer.playSurah(
+                                        surahNumber: lastListenedSurah.surahNumber,
+                                        surahName: surah.nameTransliteration)
+                                } label: {
+                                    Label("Play from Beginning", systemImage: "memories")
+                                }
+                            } label: {
+                                Image(systemName: "play.fill")
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 22, height: 22)
+                                    .foregroundColor(settings.accentColor.color)
+                                    .minimumScaleFactor(0.75)
+                                    .transition(.opacity)
+                                    .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0)
+                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
+                                    .animation(.easeInOut, value: quranPlayer.isPaused)
                             }
+                            .disabled(quranPlayer.isPlaying || quranPlayer.isPaused)
                         }
                     }
                     .padding(.bottom, 1)
@@ -606,7 +563,7 @@ struct LastListenedSurahRow: View {
                         certainReciter: true
                     )
                 } label: {
-                    Label("Play from Last Listened", systemImage: "play.fill")
+                    Label("Play Last Listened", systemImage: "play.fill")
                 }
 
                 Button {
@@ -657,7 +614,7 @@ struct LastReadAyahRow: View {
     var body: some View {
         Section(header: Text("LAST READ AYAH")) {
             NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                SurahAyahRow(surah: surah, ayah: ayah, favoriteSurahs: favoriteSurahs)
+                SurahAyahRow(surah: surah, ayah: ayah)
             }
             .swipeActions(edge: .trailing) {
                 RightSwipeActions(
@@ -715,7 +672,7 @@ struct BookmarkAyahRow: View {
 
         return AnyView(
             NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                SurahAyahRow(surah: surah, ayah: ayah, favoriteSurahs: favoriteSurahs)
+                SurahAyahRow(surah: surah, ayah: ayah)
             }
             .swipeActions(edge: .trailing) {
                 RightSwipeActions(
@@ -816,7 +773,7 @@ struct AyahSearchResultRow: View {
     var body: some View {
         Section(header: Text("AYAH SEARCH RESULT")) {
             NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                SurahAyahRow(surah: surah, ayah: ayah, favoriteSurahs: favoriteSurahs)
+                SurahAyahRow(surah: surah, ayah: ayah)
             }
             .swipeActions(edge: .trailing) {
                 RightSwipeActions(
@@ -877,7 +834,6 @@ struct AyahSearchRow: View {
                     font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                     accent: settings.accentColor.color,
                     fg: .primary,
-                    selectable: false
                 )
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
@@ -891,7 +847,6 @@ struct AyahSearchRow: View {
                     font: .subheadline,
                     accent: settings.accentColor.color,
                     fg: .secondary,
-                    selectable: false
                 )
             }
             
@@ -903,7 +858,6 @@ struct AyahSearchRow: View {
                     font: .footnote,
                     accent: settings.accentColor.color,
                     fg: .secondary,
-                    selectable: false
                 )
             }
         }

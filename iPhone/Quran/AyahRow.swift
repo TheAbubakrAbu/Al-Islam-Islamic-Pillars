@@ -179,6 +179,8 @@ struct AyahRow: View {
     @ViewBuilder
     private func menuBlock(isBookmarked: Bool) -> some View {
         #if !os(watchOS)
+        let repeatOptions = [2, 3, 5, 10]
+
         VStack(alignment: .leading) {
             Button(role: isBookmarked ? .destructive : nil) {
                 settings.hapticFeedback()
@@ -205,6 +207,19 @@ struct AyahRow: View {
             }
             
             Divider()
+            
+            Menu {
+                ForEach(repeatOptions, id: \.self) { count in
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: count)
+                    } label: {
+                        Label("Repeat \(count)×", systemImage: "repeat")
+                    }
+                }
+            } label: {
+                Label("Repeat Ayah", systemImage: "repeat")
+            }
             
             Button {
                 settings.hapticFeedback()

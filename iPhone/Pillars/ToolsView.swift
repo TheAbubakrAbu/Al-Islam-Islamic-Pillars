@@ -9,6 +9,15 @@ struct ToolsView: View {
             
     var body: some View {
         Section(header: Text("ISLAMIC RESOURCES")) {
+            NavigationLink(destination: ArabicView()) {
+                Label(
+                    title: { Text("Arabic Alphabet") },
+                    icon: { Image(systemName: "textformat.size.ar") }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor.color)
+            }
+            
             NavigationLink(destination: AdhkarView()) {
                 Label(
                     title: { Text("Common Adhkar") },

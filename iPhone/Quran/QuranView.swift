@@ -186,7 +186,7 @@ struct QuranView: View {
                                            settings.cleanSearch(arabicNumberString(from: surah.id)).contains(cleanedSearch)
                                 }) { surah in
                                     NavigationLink(destination: AyahsView(surah: surah)) {
-                                        SurahRow(surah: surah, favoriteSurahs: favoriteSurahs)
+                                        SurahRow(surah: surah)
                                     }
                                     .id("surah_\(surah.id)")
                                     .onAppear { if surah.id == scrollToSurahID { scrollToSurahID = -1 } }
@@ -230,49 +230,49 @@ struct QuranView: View {
                                             if singleSurah {
                                                 if startAyah > 1 {
                                                     NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
-                                                        SurahRow(surah: surah, ayah: startAyah, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah, ayah: startAyah)
                                                     }
                                                 } else {
                                                     NavigationLink(destination: AyahsView(surah: surah)) {
-                                                        SurahRow(surah: surah, ayah: startAyah, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah, ayah: startAyah)
                                                     }
                                                 }
                                                 if endAyah < surah.numberOfAyahs {
                                                     NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
-                                                        SurahRow(surah: surah, ayah: endAyah, end: true, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah, ayah: endAyah, end: true)
                                                     }
                                                 } else {
                                                     NavigationLink(destination: AyahsView(surah: surah)) {
-                                                        SurahRow(surah: surah, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah)
                                                     }
                                                 }
                                             } else if surah.id == juz.startSurah {
                                                 if startAyah > 1 {
                                                     NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
-                                                        SurahRow(surah: surah, ayah: startAyah, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah, ayah: startAyah)
                                                     }
                                                 } else {
                                                     NavigationLink(destination: AyahsView(surah: surah)) {
-                                                        SurahRow(surah: surah, ayah: startAyah, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah, ayah: startAyah)
                                                     }
                                                 }
                                             } else if surah.id == juz.endSurah {
                                                 if surah.id == 114 {
                                                     NavigationLink(destination: AyahsView(surah: surah)) {
-                                                        SurahRow(surah: surah, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah)
                                                     }
                                                 } else if endAyah < surah.numberOfAyahs {
                                                     NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
-                                                        SurahRow(surah: surah, ayah: endAyah, end: true, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah, ayah: endAyah, end: true)
                                                     }
                                                 } else {
                                                     NavigationLink(destination: AyahsView(surah: surah)) {
-                                                        SurahRow(surah: surah, favoriteSurahs: favoriteSurahs)
+                                                        SurahRow(surah: surah)
                                                     }
                                                 }
                                             } else {
                                                 NavigationLink(destination: AyahsView(surah: surah)) {
-                                                    SurahRow(surah: surah, favoriteSurahs: favoriteSurahs)
+                                                    SurahRow(surah: surah)
                                                 }
                                             }
                                         }
@@ -405,8 +405,6 @@ struct QuranView: View {
                 VStack {
                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                         NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
-                            .padding(.horizontal, 8)
-                            .transition(.opacity)
                             .animation(.easeInOut, value: quranPlayer.isPlaying)
                     }
                     

@@ -27,7 +27,9 @@ struct ArabicLetterView: View {
     @Environment(\.scenePhase) private var scenePhase
     
     let letterData: LetterData
-            
+    
+    @State private var tempArabicFont = false
+        
     var body: some View {
         VStack {
             List {
@@ -43,7 +45,7 @@ struct ArabicLetterView: View {
                             
                             Text(letterData.name)
                                 .font(
-                                    settings.useFontArabic
+                                    tempArabicFont
                                     ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                                     : .title2
                                 )
@@ -54,7 +56,7 @@ struct ArabicLetterView: View {
                     #if !os(watchOS)
                     .listRowSeparator(.hidden, edges: .bottom)
                     #endif
-                    .padding(.vertical, settings.useFontArabic ? 0 : 2)
+                    .padding(.vertical, tempArabicFont ? 0 : 2)
                 }
                 
                 Section(header: Text("DIFFERENT FORMS")) {
@@ -64,7 +66,7 @@ struct ArabicLetterView: View {
                                 Spacer()
                                 Text(letterData.forms[index])
                                     .font(
-                                        settings.useFontArabic
+                                        tempArabicFont
                                         ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                                         : .title2
                                     )
@@ -75,7 +77,7 @@ struct ArabicLetterView: View {
                     #if !os(watchOS)
                     .listRowSeparator(.hidden, edges: .bottom)
                     #endif
-                    .padding(.vertical, settings.useFontArabic ? 0 : 2)
+                    .padding(.vertical, tempArabicFont ? 0 : 2)
                 }
                 
                 if ["alif", "waw", "yaa"].contains(letterData.transliteration) {
@@ -114,7 +116,7 @@ struct ArabicLetterView: View {
                                 }
                                 #endif
                                 
-                                TashkeelRow(letterData: letterData, tashkeels: chunks[idx])
+                                TashkeelRow(letterData: letterData, tashkeels: chunks[idx], tempArabicFont: tempArabicFont)
                                     .padding(.top, 14)
                                     .padding(.bottom, idx == chunks.count - 1 ? 14 : 0)
                             }
@@ -137,7 +139,7 @@ struct ArabicLetterView: View {
             .dismissKeyboardOnScroll()
             
             #if !os(watchOS)
-            Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
+            Picker("Arabic Font", selection: $tempArabicFont.animation(.easeInOut)) {
                 Text("Quranic Font").tag(true)
                 Text("Basic Font").tag(false)
             }
@@ -146,6 +148,15 @@ struct ArabicLetterView: View {
             #endif
         }
         .navigationTitle(letterData.letter)
+        .onAppear {
+            withAnimation {
+                tempArabicFont = settings.useFontArabic
+            }
+        }
+        .onDisappear { settings.useFontArabic = tempArabicFont }
+        .onChange(of: scenePhase) { _ in
+            settings.useFontArabic = tempArabicFont
+        }
     }
     
     @ViewBuilder
@@ -215,6 +226,7 @@ struct TashkeelRow: View {
     
     let letterData: LetterData
     let tashkeels: [Tashkeel]
+    let tempArabicFont: Bool
 
     var body: some View {
         HStack(spacing: 20) {
@@ -236,12 +248,12 @@ struct TashkeelRow: View {
                     
                     Text(letterData.letter + tk.tashkeelMark)
                         .font(
-                            settings.useFontArabic
+                            tempArabicFont
                             ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                             : .title
                         )
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, settings.useFontArabic ? 0 : 8)
+                        .padding(.vertical, tempArabicFont ? 0 : 8)
                     
                     #if !os(watchOS)
                     Text(tk.english)

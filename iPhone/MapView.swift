@@ -1,20 +1,37 @@
 import SwiftUI
 import MapKit
+import CryptoKit
+import ObjectiveC.runtime
 
-extension MKMapItem: @retroactive Identifiable {
-    public var id: UUID { placemark.uuid }
-}
+private var placemarkUUIDKey: UInt8 = 0
 
 private extension CLPlacemark {
     var uuid: UUID {
-        guard let loc = location else { return UUID() }
+        if let existing = objc_getAssociatedObject(self, &placemarkUUIDKey) as? UUID {
+            return existing
+        }
 
-        let key = "\(loc.coordinate.latitude),\(loc.coordinate.longitude)-" +
+        let key = "\(location?.coordinate.latitude ?? 0),\(location?.coordinate.longitude ?? 0)-" +
                   "\(name ?? "")-\(locality ?? "")-\(administrativeArea ?? "")-\(isoCountryCode ?? "")"
 
-        let hex = key.utf8.map { String(format: "%02hhx", $0) }.joined()
-        return UUID(uuidString: hex) ?? UUID()
+        let digest = Insecure.MD5.hash(data: Data(key.utf8))
+        let uuid: UUID = digest.withUnsafeBytes { rawBuffer in
+            let bytes = rawBuffer.bindMemory(to: UInt8.self)
+            return UUID(uuid: (
+                bytes[0], bytes[1], bytes[2], bytes[3],
+                bytes[4], bytes[5], bytes[6], bytes[7],
+                bytes[8], bytes[9], bytes[10], bytes[11],
+                bytes[12], bytes[13], bytes[14], bytes[15]
+            ))
+        }
+
+        objc_setAssociatedObject(self, &placemarkUUIDKey, uuid, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        return uuid
     }
+}
+
+extension MKMapItem: @retroactive Identifiable {
+    public var id: UUID { placemark.uuid }
 }
 
 struct MapView: View {

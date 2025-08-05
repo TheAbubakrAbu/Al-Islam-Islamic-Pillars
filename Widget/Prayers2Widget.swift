@@ -50,8 +50,6 @@ struct Prayers2EntryView: View {
                     .foregroundColor(entry.accentColor.color)
             } else {
                 if let currentPrayer = entry.currentPrayer, let nextPrayer = entry.nextPrayer {
-                    Spacer()
-                    
                     HStack {
                         Image(systemName: currentPrayer.image)
                             .foregroundColor(entry.accentColor.color)
@@ -71,7 +69,8 @@ struct Prayers2EntryView: View {
                                 .multilineTextAlignment(.trailing)
                         }
                     }
-                    .font(.title3)
+                    .font(.headline)
+                    .padding(.vertical, 4)
                 }
                 
                 Spacer()
@@ -82,7 +81,7 @@ struct Prayers2EntryView: View {
                             entry.prayers.count / 2
                         )))))
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         ForEach(first3Prayers) { prayer in
                             HStack {
                                 Image(systemName: prayer.image)
@@ -90,17 +89,16 @@ struct Prayers2EntryView: View {
                                 
                                 Text(prayer.nameTransliteration)
                                     .fontWeight(.bold)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.5)
                                 
                                 Spacer()
                                 
                                 Text(prayer.time, style: .time)
                                     .fontWeight(.bold)
-                                    .minimumScaleFactor(1)
                             }
                             .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                             .font(.caption)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
                         }
                     }
                     
@@ -114,7 +112,7 @@ struct Prayers2EntryView: View {
                             entry.prayers.count / 2
                         )))))
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         ForEach(last3Prayers) { prayer in
                             HStack {
                                 Image(systemName: prayer.image)
@@ -122,21 +120,43 @@ struct Prayers2EntryView: View {
                                 
                                 Text(prayer.nameTransliteration)
                                     .fontWeight(.bold)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.5)
                                 
                                 Spacer()
                                 
                                 Text(prayer.time, style: .time)
                                     .fontWeight(.bold)
-                                    .minimumScaleFactor(1)
                             }
                             .foregroundColor(getPrayerColor(for: prayer, in: entry.prayers))
                             .font(.caption)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
                         }
                     }
                 }
-                .padding(.bottom, 4)
+                .frame(maxHeight: .infinity)
+                
+                Spacer()
+                
+                HStack {
+                    if !entry.currentCity.isEmpty && !entry.currentCity.isEmpty {
+                        Image(systemName: "location.fill")
+                            .font(.caption2)
+                            .foregroundColor(entry.accentColor.color)
+                            .padding(.horizontal, 3)
+                        
+                        Text(entry.currentCity)
+                            .font(.caption2)
+                    }
+                    
+                    Spacer()
+                    
+                    Image("Al-Islam")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 15, height: 15)
+                        .cornerRadius(2)
+                }
+                .padding(.vertical, 4)
             }
         }
         .lineLimit(1)

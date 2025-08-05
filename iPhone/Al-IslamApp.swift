@@ -31,11 +31,16 @@ struct AlIslamApp: App {
                     LaunchScreen(isLaunching: $isLaunching)
                 } else {
                     TabView {
-                        PrayerView()
-                            .tabItem {
-                                Image(systemName: "safari")
-                                Text("Adhan")
-                            }
+                        VStack {
+                            PrayerView()
+                            
+                            NowPlayingView(quranView: false)
+                                .padding(.bottom, 9)
+                        }
+                        .tabItem {
+                            Image(systemName: "safari")
+                            Text("Adhan")
+                        }
                         
                         QuranView()
                             .tabItem {
@@ -43,23 +48,27 @@ struct AlIslamApp: App {
                                 Text("Quran")
                             }
                         
-                        PillarsView()
-                            .tabItem {
-                                Image(systemName: "moon.stars")
-                                Text("Islam")
-                            }
+                        VStack {
+                            PillarsView()
+                            
+                            NowPlayingView(quranView: false)
+                                .padding(.bottom, 9)
+                        }
+                        .tabItem {
+                            Image(systemName: "moon.stars")
+                            Text("Islam")
+                        }
                         
-                        ArabicView()
-                            .tabItem {
-                                Image(systemName: "textformat.size.ar")
-                                Text("Arabic")
-                            }
-                        
-                        SettingsView()
-                            .tabItem {
-                                Image(systemName: "gearshape")
-                                Text("Settings")
-                            }
+                        VStack {
+                            SettingsView()
+                            
+                            NowPlayingView(quranView: false)
+                                .padding(.bottom, 9)
+                        }
+                        .tabItem {
+                            Image(systemName: "gearshape")
+                            Text("Settings")
+                        }
                     }
                 }
             }

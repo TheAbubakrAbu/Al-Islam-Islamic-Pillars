@@ -27,9 +27,7 @@ struct AlIslamApp: App {
                         QuranView()
                         
                         PillarsView()
-                        
-                        ArabicView()
-                        
+                                                
                         SettingsView()
                     }
                 }

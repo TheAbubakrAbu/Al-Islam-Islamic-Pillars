@@ -21,9 +21,11 @@ struct NowPlayingView: View {
     var body: some View {
         guard
             let surahNum = quranPlayer.currentSurahNumber,
-            let surah = quranPlayer.quranData.quran.first(where: { $0.id == surahNum })
+            let surah = quranPlayer.quranData.quran.first(where: { $0.id == surahNum }),
+            (quranPlayer.isPlaying || quranPlayer.isPaused)
         else { return AnyView(EmptyView()) }
         
+        #if !os(watchOS)
         let ayahNum = quranPlayer.currentAyahNumber ?? 1
         let isPlaying = quranPlayer.isPlaying
         
@@ -44,7 +46,12 @@ struct NowPlayingView: View {
                 }
             }
             .contextMenu { contextMenu(for: surah, ayah: ayahNum) }
+            .padding(.horizontal, 8)
+            .transition(.opacity)
         )
+        #else
+        return AnyView(EmptyView())
+        #endif
     }
     
     @ViewBuilder
@@ -100,7 +107,9 @@ struct NowPlayingView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
+        #if !os(watchOS)
         .background(Color(UIColor.secondarySystemBackground))
+        #endif
         .cornerRadius(10)
         .padding(.horizontal, 8)
         .transition(.opacity)

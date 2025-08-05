@@ -7,6 +7,8 @@ struct PrayerList: View {
     @State private var fullPrayers: Bool = false
     
     @AppStorage("prayerDisplayMode") private var prayerDisplayModeRawValue: String = PrayerDisplayMode.list.rawValue
+    
+    @State private var selectedDate = Date()
 
     enum PrayerDisplayMode: String, CaseIterable, Identifiable {
         case list = "Prayer List"
@@ -142,76 +144,74 @@ struct PrayerList: View {
                                         .onTapGesture {
                                             settings.hapticFeedback()
                                             
-                                            withAnimation {
-                                                if settings.shouldShowOutlinedBell(prayerTime: prayerTime) {
-                                                    switch prayerTime.nameTransliteration {
-                                                    case "Fajr":
-                                                        settings.preNotificationFajr = 15
-                                                        settings.notificationFajr = true
-                                                    case "Shurooq":
-                                                        settings.preNotificationSunrise = 15
-                                                        settings.notificationSunrise = true
-                                                    case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                                                        settings.preNotificationDhuhr = 15
-                                                        settings.notificationDhuhr = true
-                                                    case "Asr":
-                                                        settings.preNotificationAsr = 15
-                                                        settings.notificationAsr = true
-                                                    case "Maghrib", "Maghrib/Isha":
-                                                        settings.preNotificationMaghrib = 15
-                                                        settings.notificationMaghrib = true
-                                                    case "Isha":
-                                                        settings.preNotificationIsha = 15
-                                                        settings.notificationIsha = true
-                                                    default:
-                                                        break
-                                                    }
-                                                } else if settings.shouldShowFilledBell(prayerTime: prayerTime) {
-                                                    switch prayerTime.nameTransliteration {
-                                                    case "Fajr":
-                                                        settings.preNotificationFajr = 0
-                                                        settings.notificationFajr = false
-                                                    case "Shurooq":
-                                                        settings.preNotificationSunrise = 0
-                                                        settings.notificationSunrise = false
-                                                    case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                                                        settings.preNotificationDhuhr = 0
-                                                        settings.notificationDhuhr = false
-                                                    case "Asr":
-                                                        settings.preNotificationAsr = 0
-                                                        settings.notificationAsr = false
-                                                    case "Maghrib", "Maghrib/Isha":
-                                                        settings.preNotificationMaghrib = 0
-                                                        settings.notificationMaghrib = false
-                                                    case "Isha":
-                                                        settings.preNotificationIsha = 0
-                                                        settings.notificationIsha = false
-                                                    default:
-                                                        break
-                                                    }
-                                                } else {
-                                                    switch prayerTime.nameTransliteration {
-                                                    case "Fajr":
-                                                        settings.preNotificationFajr = 0
-                                                        settings.notificationFajr = true
-                                                    case "Shurooq":
-                                                        settings.preNotificationSunrise = 0
-                                                        settings.notificationSunrise = true
-                                                    case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                                                        settings.preNotificationDhuhr = 0
-                                                        settings.notificationDhuhr = true
-                                                    case "Asr":
-                                                        settings.preNotificationAsr = 0
-                                                        settings.notificationAsr = true
-                                                    case "Maghrib", "Maghrib/Isha":
-                                                        settings.preNotificationMaghrib = 0
-                                                        settings.notificationMaghrib = true
-                                                    case "Isha":
-                                                        settings.preNotificationIsha = 0
-                                                        settings.notificationIsha = true
-                                                    default:
-                                                        break
-                                                    }
+                                            if settings.shouldShowOutlinedBell(prayerTime: prayerTime) {
+                                                switch prayerTime.nameTransliteration {
+                                                case "Fajr":
+                                                    settings.preNotificationFajr = 15
+                                                    settings.notificationFajr = true
+                                                case "Shurooq":
+                                                    settings.preNotificationSunrise = 15
+                                                    settings.notificationSunrise = true
+                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                    settings.preNotificationDhuhr = 15
+                                                    settings.notificationDhuhr = true
+                                                case "Asr":
+                                                    settings.preNotificationAsr = 15
+                                                    settings.notificationAsr = true
+                                                case "Maghrib", "Maghrib/Isha":
+                                                    settings.preNotificationMaghrib = 15
+                                                    settings.notificationMaghrib = true
+                                                case "Isha":
+                                                    settings.preNotificationIsha = 15
+                                                    settings.notificationIsha = true
+                                                default:
+                                                    break
+                                                }
+                                            } else if settings.shouldShowFilledBell(prayerTime: prayerTime) {
+                                                switch prayerTime.nameTransliteration {
+                                                case "Fajr":
+                                                    settings.preNotificationFajr = 0
+                                                    settings.notificationFajr = false
+                                                case "Shurooq":
+                                                    settings.preNotificationSunrise = 0
+                                                    settings.notificationSunrise = false
+                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                    settings.preNotificationDhuhr = 0
+                                                    settings.notificationDhuhr = false
+                                                case "Asr":
+                                                    settings.preNotificationAsr = 0
+                                                    settings.notificationAsr = false
+                                                case "Maghrib", "Maghrib/Isha":
+                                                    settings.preNotificationMaghrib = 0
+                                                    settings.notificationMaghrib = false
+                                                case "Isha":
+                                                    settings.preNotificationIsha = 0
+                                                    settings.notificationIsha = false
+                                                default:
+                                                    break
+                                                }
+                                            } else {
+                                                switch prayerTime.nameTransliteration {
+                                                case "Fajr":
+                                                    settings.preNotificationFajr = 0
+                                                    settings.notificationFajr = true
+                                                case "Shurooq":
+                                                    settings.preNotificationSunrise = 0
+                                                    settings.notificationSunrise = true
+                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                    settings.preNotificationDhuhr = 0
+                                                    settings.notificationDhuhr = true
+                                                case "Asr":
+                                                    settings.preNotificationAsr = 0
+                                                    settings.notificationAsr = true
+                                                case "Maghrib", "Maghrib/Isha":
+                                                    settings.preNotificationMaghrib = 0
+                                                    settings.notificationMaghrib = true
+                                                case "Isha":
+                                                    settings.preNotificationIsha = 0
+                                                    settings.notificationIsha = true
+                                                default:
+                                                    break
                                                 }
                                             }
                                         }
@@ -225,29 +225,27 @@ struct PrayerList: View {
                                             Button(action: {
                                                 settings.hapticFeedback()
                                                 
-                                                withAnimation {
-                                                    switch prayerTime.nameTransliteration {
-                                                    case "Fajr":
-                                                        settings.preNotificationFajr = 15
-                                                        settings.notificationFajr = true
-                                                    case "Shurooq":
-                                                        settings.preNotificationSunrise = 15
-                                                        settings.notificationSunrise = true
-                                                    case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                                                        settings.preNotificationDhuhr = 15
-                                                        settings.notificationDhuhr = true
-                                                    case "Asr":
-                                                        settings.preNotificationAsr = 15
-                                                        settings.notificationAsr = true
-                                                    case "Maghrib", "Maghrib/Isha":
-                                                        settings.preNotificationMaghrib = 15
-                                                        settings.notificationMaghrib = true
-                                                    case "Isha":
-                                                        settings.preNotificationIsha = 15
-                                                        settings.notificationIsha = true
-                                                    default:
-                                                        break
-                                                    }
+                                                switch prayerTime.nameTransliteration {
+                                                case "Fajr":
+                                                    settings.preNotificationFajr = 15
+                                                    settings.notificationFajr = true
+                                                case "Shurooq":
+                                                    settings.preNotificationSunrise = 15
+                                                    settings.notificationSunrise = true
+                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                    settings.preNotificationDhuhr = 15
+                                                    settings.notificationDhuhr = true
+                                                case "Asr":
+                                                    settings.preNotificationAsr = 15
+                                                    settings.notificationAsr = true
+                                                case "Maghrib", "Maghrib/Isha":
+                                                    settings.preNotificationMaghrib = 15
+                                                    settings.notificationMaghrib = true
+                                                case "Isha":
+                                                    settings.preNotificationIsha = 15
+                                                    settings.notificationIsha = true
+                                                default:
+                                                    break
                                                 }
                                             }) {
                                                 Label("Prenotification", systemImage: "bell.fill")
@@ -256,29 +254,27 @@ struct PrayerList: View {
                                             Button(action: {
                                                 settings.hapticFeedback()
                                                 
-                                                withAnimation {
-                                                    switch prayerTime.nameTransliteration {
-                                                    case "Fajr":
-                                                        settings.preNotificationFajr = 0
-                                                        settings.notificationFajr = true
-                                                    case "Shurooq":
-                                                        settings.preNotificationSunrise = 0
-                                                        settings.notificationSunrise = true
-                                                    case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                                                        settings.preNotificationDhuhr = 0
-                                                        settings.notificationDhuhr = true
-                                                    case "Asr":
-                                                        settings.preNotificationAsr = 0
-                                                        settings.notificationAsr = true
-                                                    case "Maghrib", "Maghrib/Isha":
-                                                        settings.preNotificationMaghrib = 0
-                                                        settings.notificationMaghrib = true
-                                                    case "Isha":
-                                                        settings.preNotificationIsha = 0
-                                                        settings.notificationIsha = true
-                                                    default:
-                                                        break
-                                                    }
+                                                switch prayerTime.nameTransliteration {
+                                                case "Fajr":
+                                                    settings.preNotificationFajr = 0
+                                                    settings.notificationFajr = true
+                                                case "Shurooq":
+                                                    settings.preNotificationSunrise = 0
+                                                    settings.notificationSunrise = true
+                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                    settings.preNotificationDhuhr = 0
+                                                    settings.notificationDhuhr = true
+                                                case "Asr":
+                                                    settings.preNotificationAsr = 0
+                                                    settings.notificationAsr = true
+                                                case "Maghrib", "Maghrib/Isha":
+                                                    settings.preNotificationMaghrib = 0
+                                                    settings.notificationMaghrib = true
+                                                case "Isha":
+                                                    settings.preNotificationIsha = 0
+                                                    settings.notificationIsha = true
+                                                default:
+                                                    break
                                                 }
                                             }) {
                                                 Label("Notification", systemImage: "bell")
@@ -287,29 +283,27 @@ struct PrayerList: View {
                                             Button(action: {
                                                 settings.hapticFeedback()
                                                 
-                                                withAnimation {
-                                                    switch prayerTime.nameTransliteration {
-                                                    case "Fajr":
-                                                        settings.preNotificationFajr = 0
-                                                        settings.notificationFajr = false
-                                                    case "Shurooq":
-                                                        settings.preNotificationSunrise = 0
-                                                        settings.notificationSunrise = false
-                                                    case "Dhuhr", "Dhuhr/Asr", "Jummuah":
-                                                        settings.preNotificationDhuhr = 0
-                                                        settings.notificationDhuhr = false
-                                                    case "Asr":
-                                                        settings.preNotificationAsr = 0
-                                                        settings.notificationAsr = false
-                                                    case "Maghrib", "Maghrib/Isha":
-                                                        settings.preNotificationMaghrib = 0
-                                                        settings.notificationMaghrib = false
-                                                    case "Isha":
-                                                        settings.preNotificationIsha = 0
-                                                        settings.notificationIsha = false
-                                                    default:
-                                                        break
-                                                    }
+                                                switch prayerTime.nameTransliteration {
+                                                case "Fajr":
+                                                    settings.preNotificationFajr = 0
+                                                    settings.notificationFajr = false
+                                                case "Shurooq":
+                                                    settings.preNotificationSunrise = 0
+                                                    settings.notificationSunrise = false
+                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                    settings.preNotificationDhuhr = 0
+                                                    settings.notificationDhuhr = false
+                                                case "Asr":
+                                                    settings.preNotificationAsr = 0
+                                                    settings.notificationAsr = false
+                                                case "Maghrib", "Maghrib/Isha":
+                                                    settings.preNotificationMaghrib = 0
+                                                    settings.notificationMaghrib = false
+                                                case "Isha":
+                                                    settings.preNotificationIsha = 0
+                                                    settings.notificationIsha = false
+                                                default:
+                                                    break
                                                 }
                                             }) {
                                                 Label("No Notification", systemImage: "bell.slash")
@@ -461,11 +455,11 @@ struct PrayerList: View {
                 
                 #if !os(watchOS)
                 VStack {
-                    DatePicker("Showing prayers for", selection: $settings.selectedDate.animation(.easeInOut), displayedComponents: .date)
+                    DatePicker("Showing prayers for", selection: $selectedDate.animation(.easeInOut), displayedComponents: .date)
                         .datePickerStyle(DefaultDatePickerStyle())
                         .padding(4)
                     
-                    if !calendar.isDate(settings.selectedDate, inSameDayAs: Date()) {
+                    if !calendar.isDate(selectedDate, inSameDayAs: Date()) {
                         Text("Show prayers for today")
                             .font(.subheadline)
                             .foregroundColor(settings.accentColor.color)
@@ -473,9 +467,19 @@ struct PrayerList: View {
                             .onTapGesture {
                                 settings.hapticFeedback()
                                 withAnimation {
-                                    settings.selectedDate = Date()
+                                    selectedDate = Date()
                                 }
                             }
+                    }
+                }
+                .onChange(of: selectedDate) { value in
+                    settings.datePrayers = settings.getPrayerTimes(for: value) ?? []
+                    settings.dateFullPrayers = settings.getPrayerTimes(for: value, fullPrayers: true) ?? []
+                    
+                    let calendar = Calendar.current
+                    
+                    if !calendar.isDate(value, inSameDayAs: Date()) {
+                        settings.changedDate = true
                     }
                 }
                 #endif
