@@ -1,6 +1,6 @@
 import AppIntents
 
-@available(iOS 16.0, *)
+@available(iOS 16.0, watchOS 9.0, *)
 struct AppShortcutsRoot: AppShortcutsProvider {
     @AppShortcutsBuilder
     static var appShortcuts: [AppShortcut] {
@@ -17,13 +17,6 @@ struct AppShortcutsRoot: AppShortcutsProvider {
                 "\(.applicationName), recite surah",
                 "شغّل سورة في \(.applicationName)",
                 "اقرأ سورة في \(.applicationName)",
-
-                "Play a surah",
-                "Recite a surah",
-                "Play surah",
-                "Recite surah",
-                "شغّل سورة",
-                "اقرأ سورة"
             ],
             shortTitle: "Play Surah",
             systemImageName: "book"
@@ -44,15 +37,6 @@ struct AppShortcutsRoot: AppShortcutsProvider {
                 "\(.applicationName), recite random",
                 "شغّل سورة عشوائية في \(.applicationName)",
                 "اقرأ سورة عشوائية في \(.applicationName)",
-
-                "Play a random surah",
-                "Recite a random surah",
-                "Play random surah",
-                "Recite random surah",
-                "Play random",
-                "Recite random",
-                "شغّل سورة عشوائية",
-                "اقرأ سورة عشوائية"
             ],
             shortTitle: "Random Surah",
             systemImageName: "shuffle"
@@ -79,17 +63,6 @@ struct AppShortcutsRoot: AppShortcutsProvider {
                 "\(.applicationName), recite last surah",
                 "شغّل آخر سورة تم الاستماع إليها في \(.applicationName)",
                 "اقرأ آخر سورة تم الاستماع إليها في \(.applicationName)",
-
-                "Play last listened surah",
-                "Recite last listened surah",
-                "Play last listened",
-                "Recite last listened",
-                "Play last",
-                "Recite last",
-                "Play last surah",
-                "Recite last surah",
-                "شغّل آخر سورة تم الاستماع إليها",
-                "اقرأ آخر سورة تم الاستماع إليها"
             ],
             shortTitle: "Last Listened Surah",
             systemImageName: "gobackward"
@@ -109,18 +82,6 @@ struct AppShortcutsRoot: AppShortcutsProvider {
                 "وقت \(\.$prayer) في \(.applicationName)",
                 "متى \(\.$prayer) في \(.applicationName)",
                 "ما وقت \(\.$prayer) في \(.applicationName)",
-
-                "When is \(\.$prayer)",
-                "What time is \(\.$prayer)",
-                "What is the time for \(\.$prayer)",
-                "When does \(\.$prayer) start",
-                "Time for \(\.$prayer)",
-                "Prayer time for \(\.$prayer)",
-                "When is \(\.$prayer) prayer",
-                "What time is \(\.$prayer) prayer",
-                "وقت \(\.$prayer)",
-                "متى \(\.$prayer)",
-                "ما وقت \(\.$prayer)"
             ],
             shortTitle: "When is Prayer",
             systemImageName: "clock"
@@ -137,15 +98,6 @@ struct AppShortcutsRoot: AppShortcutsProvider {
                 "ما هي الصلاة الحالية في \(.applicationName)",
                 "ما هي الصلاة الآن في \(.applicationName)",
                 "ما الصلاة الآن في \(.applicationName)",
-
-                "What is the current prayer",
-                "Current prayer",
-                "What prayer is it now",
-                "Which prayer is now",
-                "What prayer time is it",
-                "ما هي الصلاة الحالية",
-                "ما هي الصلاة الآن",
-                "ما الصلاة الآن"
             ],
             shortTitle: "Current Prayer",
             systemImageName: "clock.badge.checkmark"
@@ -166,19 +118,6 @@ struct AppShortcutsRoot: AppShortcutsProvider {
                 "متى الصلاة القادمة في \(.applicationName)",
                 "ما وقت الصلاة القادمة في \(.applicationName)",
                 "وقت الصلاة القادمة في \(.applicationName)",
-
-                "What is the next prayer",
-                "When is the next prayer",
-                "What is the next prayer time",
-                "When is the next prayer time",
-                "Next prayer",
-                "Next prayer time",
-                "Time of the next prayer",
-                "Which prayer is next",
-                "ما هي الصلاة القادمة",
-                "متى الصلاة القادمة",
-                "ما وقت الصلاة القادمة",
-                "وقت الصلاة القادمة"
             ],
             shortTitle: "Next Prayer",
             systemImageName: "forward.end"
