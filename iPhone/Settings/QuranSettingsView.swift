@@ -170,8 +170,6 @@ struct SettingsQuranView: View {
 struct ReciterListView: View {
     @EnvironmentObject var settings: Settings
     
-    @Environment(\.presentationMode) var presentationMode
-
     var body: some View {
         List {
             Section(header: Text("Reciters")) {

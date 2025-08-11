@@ -5,7 +5,10 @@ struct PrayerView: View {
     @EnvironmentObject var namesData: NamesViewModel
     
     @Environment(\.scenePhase) private var scenePhase
-        
+    
+    @State private var showingSettingsSheet = false
+    @State private var showBigQibla = false
+    
     @State private var showAlert: AlertType?
     enum AlertType: Identifiable {
         case travelTurnOnAutomatic, travelTurnOffAutomatic, locationAlert, notificationAlert
@@ -19,8 +22,6 @@ struct PrayerView: View {
             }
         }
     }
-    
-    @State private var showingSettingsSheet = false
     
     func prayerTimeRefresh(force: Bool) {
         settings.requestNotificationAuthorization {
@@ -46,33 +47,35 @@ struct PrayerView: View {
                 Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
                     if let hijriDate = settings.hijriDate {
                         #if !os(watchOS)
-                        HStack {
-                            Text(hijriDate.english)
-                                .multilineTextAlignment(.center)
-                            
-                            Spacer()
-                            
-                            Text(hijriDate.arabic)
-                        }
-                        .font(.footnote)
-                        .foregroundColor(settings.accentColor.color)
-                        .contextMenu {
-                            Button(action: {
-                                settings.hapticFeedback()
+                        NavigationLink(destination: HijriCalendarView()) {
+                            HStack {
+                                Text(hijriDate.english)
+                                    .multilineTextAlignment(.center)
                                 
-                                UIPasteboard.general.string = hijriDate.english
-                            }) {
-                                Text("Copy English Date")
-                                Image(systemName: "doc.on.doc")
+                                Spacer()
+                                
+                                Text(hijriDate.arabic)
                             }
-                            
-                            Button(action: {
-                                settings.hapticFeedback()
+                            .font(.footnote)
+                            .foregroundColor(settings.accentColor.color)
+                            .contextMenu {
+                                Button(action: {
+                                    settings.hapticFeedback()
+                                    
+                                    UIPasteboard.general.string = hijriDate.english
+                                }) {
+                                    Text("Copy English Date")
+                                    Image(systemName: "doc.on.doc")
+                                }
                                 
-                                UIPasteboard.general.string = hijriDate.arabic
-                            }) {
-                                Text("Copy Arabic Date")
-                                Image(systemName: "doc.on.doc")
+                                Button(action: {
+                                    settings.hapticFeedback()
+                                    
+                                    UIPasteboard.general.string = hijriDate.arabic
+                                }) {
+                                    Text("Copy Arabic Date")
+                                    Image(systemName: "doc.on.doc")
+                                }
                             }
                         }
                         #else
@@ -94,14 +97,14 @@ struct PrayerView: View {
                             #if !os(watchOS)
                             if let currentLoc = settings.currentLocation {
                                 let currentCity = currentLoc.city
-                                
+
                                 Image(systemName: "location.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 18, height: 18)
                                     .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
-                                
+
                                 Text(currentCity)
                                     .font(.subheadline)
                                     .lineLimit(nil)
@@ -112,7 +115,7 @@ struct PrayerView: View {
                                     .frame(width: 18, height: 18)
                                     .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
-                                
+
                                 Text("No location")
                                     .font(.subheadline)
                                     .lineLimit(nil)
@@ -129,19 +132,29 @@ struct PrayerView: View {
                                     .lineLimit(nil)
                             }
                             #endif
-                            
+
                             Spacer()
-                            
-                            QiblaView()
+
+                            QiblaView(size: showBigQibla ? 100 : 50)
                                 .padding(.horizontal)
                         }
                         .foregroundColor(.primary)
                         .font(.subheadline)
-                        
+                        .contentShape(Rectangle())
+
                         #if os(watchOS)
                         Text("Compass may not be accurate on Apple Watch")
                             .font(.caption2)
                             .foregroundColor(.secondary)
+                        #endif
+                    }
+                    .animation(.easeInOut, value: showBigQibla)
+                    .onTapGesture {
+                        #if !os(watchOS)
+                        withAnimation {
+                            settings.hapticFeedback()
+                            showBigQibla.toggle()
+                        }
                         #endif
                     }
                 }

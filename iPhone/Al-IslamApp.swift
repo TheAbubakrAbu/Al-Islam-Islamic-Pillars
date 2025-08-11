@@ -9,6 +9,8 @@ struct AlIslamApp: App {
     @StateObject private var quranData = QuranData.shared
     @StateObject private var quranPlayer = QuranPlayer.shared
     @StateObject private var namesData = NamesViewModel.shared
+        
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     @Environment(\.scenePhase) private var scenePhase
     
@@ -17,8 +19,6 @@ struct AlIslamApp: App {
     @AppStorage("timeSpent") private var timeSpent: Double = 0
     @AppStorage("shouldShowRateAlert") private var shouldShowRateAlert: Bool = true
     @State private var startTime: Date?
-    
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
         _ = WatchConnectivityManager.shared
@@ -34,8 +34,10 @@ struct AlIslamApp: App {
                         VStack {
                             PrayerView()
                             
-                            NowPlayingView(quranView: false)
-                                .padding(.bottom, 9)
+                            if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                NowPlayingView(quranView: false)
+                                    .padding(.bottom, 9)
+                            }
                         }
                         .tabItem {
                             Image(systemName: "safari")

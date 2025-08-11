@@ -218,11 +218,11 @@ private struct UpcomingPrayerCell: View {
     private var timeInfo: some View {
         HStack {
             Text("Time Left: \(prayer.time, style: .timer)")
-                .fontWeight(.bold)
+            
             Spacer(minLength: 12)
+            
             Text("Starts at \(prayer.time, style: .time)")
-                .fontWeight(.bold)
         }
-        .font(.subheadline)
+        .font(.headline)
     }
 }

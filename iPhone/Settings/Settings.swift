@@ -67,29 +67,31 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         requestLocationAuthorization()
         
-        if let loc = currentLocation, loc.latitude != 1000, loc.longitude != 1000 {
-            Task { @MainActor in
-                await updateCity(latitude: loc.latitude, longitude: loc.longitude)
-                fetchPrayerTimes(force: true)
+        if self.reciter.starts(with: "ar") {
+            if let match = reciters.first(where: { $0.ayahIdentifier == self.reciter }) {
+                self.reciter = match.name
+            } else {
+                self.reciter = "Muhammad Al-Minshawi (Murattal)"
             }
         }
     }
     
-    private static let oneMile: CLLocationDistance = 1_609.344 // m
+    private static let oneMile: CLLocationDistance = 1609.34   // m
     private static let minAcc: CLLocationAccuracy = 100        // m
     private static let maxAge: TimeInterval = 60               // s
     private static let headingΔ: Double = 1.0                  // deg – ignore jitter
     
+    var acceptStaleOnce = true
+    
     /// MAIN LOCATION CALLBACK
     func locationManager(_ mgr: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
-        guard let loc = locs.last, loc.horizontalAccuracy > 0, loc.horizontalAccuracy <= Self.minAcc, abs(loc.timestamp.timeIntervalSinceNow) <= Self.maxAge
-        else { return }
-
+        guard let loc = locs.last, loc.horizontalAccuracy > 0, loc.horizontalAccuracy <= Self.minAcc else { return }
+        if abs(loc.timestamp.timeIntervalSinceNow) > Self.maxAge, !acceptStaleOnce { return }
+        acceptStaleOnce = false
         if let cur = currentLocation {
             let prev = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
             guard loc.distance(from: prev) >= Self.oneMile else { return }
         }
-
         Task { @MainActor in
             await updateCity(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude)
             fetchPrayerTimes(force: true)
@@ -279,7 +281,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         return c
     }()
 
-    private static let hijriFormatterAR: DateFormatter = {
+    static let hijriFormatterAR: DateFormatter = {
         let f = DateFormatter()
         f.calendar = hijriCalendarAR
         f.locale   = Locale(identifier: "ar")
@@ -287,7 +289,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         return f
     }()
 
-    private static let hijriFormatterEN: DateFormatter = {
+    static let hijriFormatterEN: DateFormatter = {
         let f = DateFormatter()
         f.calendar = hijriCalendarAR
         f.locale   = Locale(identifier: "en")
@@ -297,7 +299,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func updateDates() {
         let now = Date()
-        guard hijriDate?.date.isSameDay(as: now) == false else { return }
+        if let h = hijriDate, h.date.isSameDay(as: now) {
+            return
+        }
 
         let base = Self.hijriCalendarAR.date(byAdding: .day, value: hijriOffset, to: now) ?? now
         let arabic  = arabicNumberString(from: Self.hijriFormatterAR.string(from: base)) + " هـ"
@@ -611,18 +615,52 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         return out
     }
 
+    private func scheduleRefreshNag(
+        inDays offset: Int = 2,
+        hour: Int = 12,
+        minute: Int = 0,
+        using center: UNUserNotificationCenter = .current()
+    ) {
+        guard let day = Calendar.current.date(byAdding: .day, value: offset, to: Date()) else { return }
+
+        var comps = Calendar.current.dateComponents([.year, .month, .day], from: day)
+        comps.hour = hour
+        comps.minute = minute
+
+        guard (Calendar.current.date(from: comps) ?? Date.distantPast) > Date() else { return }
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+
+        let content = UNMutableNotificationContent()
+        content.title = "Al-Islam"
+        content.body  = "Please open the app to refresh today’s prayer times and notifications."
+        content.sound = .default
+
+        // Unique per-day id so we don’t collide across days
+        let id = String(format: "RefreshReminder-%04d-%02d-%02d", comps.year ?? 0, comps.month ?? 0, comps.day ?? 0)
+
+        let req = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        center.add(req) { error in
+            if let error { logger.debug("Refresh reminder add failed: \(error.localizedDescription)") }
+        }
+    }
+
     func schedulePrayerTimeNotifications() {
         #if os(watchOS)
         return
         #else
-        guard
-            let city = currentLocation?.city,
-            let prayerObj = prayers
+        guard let city = currentLocation?.city, let prayerObj = prayers
         else { return }
 
         logger.debug("Scheduling prayer time notifications")
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
+        
+        if dateNotifications {
+            for event in specialEvents {
+                scheduleNotification(for: event)
+            }
+        }
 
         for prayer in prayerObj.prayers {
             guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
@@ -635,7 +673,28 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 )
             }
         }
+        
+        // Schedule for the next 3 days
+        for dayOffset in 1..<4 {
+            let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? Date()
+            guard let list = getPrayerTimes(for: date) else { continue }
 
+            for prayer in list {
+                guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
+
+                for minutes in offsets(for: prefs) {
+                    scheduleNotification(
+                        for: prayer,
+                        preNotificationTime: minutes == 0 ? nil : minutes,
+                        city: city
+                    )
+                }
+            }
+        }
+
+        scheduleRefreshNag(inDays: 2, using: center)
+        scheduleRefreshNag(inDays: 3, using: center)
+        
         prayers?.setNotification = true
         #endif
     }
@@ -686,14 +745,50 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = .default
 
-        let comps = Calendar.current.dateComponents([.hour, .minute, .second], from: triggerTime)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+        let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
 
-        let id = "\(prayer.nameTransliteration)-\(minutes ?? 0)"
+        let id = "\(prayer.nameTransliteration)-\(minutes ?? 0)-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)"
         let req  = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
 
         center.add(req) { error in
             if let error { logger.debug("Notification add failed: \(error.localizedDescription)") }
+        }
+    }
+    
+    func scheduleNotification(for event: (String, DateComponents, String, String)) {
+        let (titleText, hijriComps, eventSubTitle, _) = event
+        
+        if let hijriDate = hijriCalendar.date(from: hijriComps) {
+            let gregorianCalendar = Calendar(identifier: .gregorian)
+            var gregorianComps = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
+            gregorianComps.hour = 9
+            gregorianComps.minute = 0
+            
+            guard
+                let finalDate = gregorianCalendar.date(from: gregorianComps),
+                finalDate > Date()
+            else {
+                return
+            }
+            
+            let content = UNMutableNotificationContent()
+            content.title = "Al-Islam"
+            content.body = "\(titleText) (\(eventSubTitle))"
+            content.sound = .default
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: gregorianComps, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: UUID().uuidString,
+                content: content,
+                trigger: trigger
+            )
+            
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    logger.debug("Failed to schedule special event notification: \(error)")
+                }
+            }
         }
     }
     

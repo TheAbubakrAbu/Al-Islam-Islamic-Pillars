@@ -405,7 +405,6 @@ struct QuranView: View {
                 VStack {
                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                         NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
-                            .animation(.easeInOut, value: quranPlayer.isPlaying)
                     }
                     
                     Picker("Sort Type", selection: $settings.groupBySurah.animation(.easeInOut)) {

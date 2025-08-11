@@ -105,15 +105,19 @@ struct MapView: View {
                     .animation(.easeInOut, value: cityItems)
 
                 let markers: [MKMapItem] = {
-                    var items = [MKMapItem]()
-                    
+                    if let sel = selectedItem {
+                        return [sel]
+                    }
                     if let home = settings.homeLocation {
                         let pm = MKPlacemark(coordinate: home.coordinate)
-                        items.append(MKMapItem(placemark: pm))
+                        return [MKMapItem(placemark: pm)]
                     }
-                    if let sel = selectedItem { items.append(sel) }
-
-                    return items
+                    if let cur = settings.currentLocation,
+                       cur.latitude != 1000, cur.longitude != 1000 {
+                        let pm = MKPlacemark(coordinate: .init(latitude: cur.latitude, longitude: cur.longitude))
+                        return [MKMapItem(placemark: pm)]
+                    }
+                    return []
                 }()
 
                 Map(coordinateRegion: $region, annotationItems: markers) {
@@ -184,7 +188,7 @@ struct MapView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 0) {
-                            ForEach(cityItems) { item in
+                            ForEach(Array(cityItems.enumerated()), id: \.offset) { _, item in
                                 Button { select(item) } label: {
                                     HStack {
                                         Image(systemName: "mappin.circle.fill")
@@ -212,7 +216,8 @@ struct MapView: View {
                 let coord = CLLocationCoordinate2D(latitude: cur.latitude, longitude: cur.longitude)
                 updateRegion(to: coord)
                 let placemark = MKPlacemark(coordinate: coord)
-                selectedItem  = MKMapItem(placemark: placemark)
+                let mapItem = MKMapItem(placemark: placemark)
+                selectedItem = mapItem
                 settings.homeLocation = Location(city: cur.city, latitude: cur.latitude, longitude: cur.longitude)
             }
             settings.fetchPrayerTimes() {

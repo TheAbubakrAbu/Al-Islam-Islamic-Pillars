@@ -144,18 +144,32 @@ final class QuranPlayer: ObservableObject {
         repeatRemaining = 1
         ayahRepeatCount = 1
         ayahRepeatRemaining = 1
-        
+
         saveLastListenedSurah()
-        player?.pause(); removeAllObservers()
+        
+        player?.currentItem?.cancelPendingSeeks()
+        player?.currentItem?.asset.cancelLoading()
+
+        player?.pause()
+        removeAllObservers()
+
         withAnimation {
-            player = nil; currentSurahNumber = nil; currentAyahNumber = nil
-            isPlayingSurah = false; isPlaying = false; isPaused = false
+            player = nil
+            queuePlayer = nil
+            currentSurahNumber = nil
+            currentAyahNumber = nil
+            isPlayingSurah = false
+            isPlaying = false
+            isPaused = false
         }
+
         updateNowPlayingInfo(clear: true)
-        deactivateAudioSession()
-        #if !os(watchOS)
-        UIApplication.shared.isIdleTimerDisabled = false
-        #endif
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.deactivateAudioSession()
+        }
+
+        self.idleTimerSet(false)
     }
     
     private func removeAllObservers() {
@@ -222,9 +236,7 @@ final class QuranPlayer: ObservableObject {
                     self.nowPlayingReciter = reciter.name
                     self.updateNowPlayingInfo()
 
-                    #if !os(watchOS)
-                    UIApplication.shared.isIdleTimerDisabled = true
-                    #endif
+                    self.idleTimerSet(true)
 
                     var didResume = false
                     if certainReciter,
@@ -396,9 +408,7 @@ final class QuranPlayer: ObservableObject {
                 guard let self = self else { return }
                 DispatchQueue.main.async {
                     self.isLoading = false
-                    #if !os(watchOS)
-                    UIApplication.shared.isIdleTimerDisabled = true
-                    #endif
+                    self.idleTimerSet(true)
                     if itm.status == .readyToPlay {
                         self.queuePlayer?.play()
                         self.isPlaying = true; self.isPaused = false
@@ -574,7 +584,7 @@ final class QuranPlayer: ObservableObject {
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
-    
+
     func saveLastListenedSurah() {
         guard
             nowPlayingTitle != nil,
@@ -582,21 +592,19 @@ final class QuranPlayer: ObservableObject {
             let rec = reciters.first(where: { $0.name == nowPlayingReciter }),
             let p = player
         else { return }
-        
+
         let currDur = CMTimeGetSeconds(p.currentTime())
         let fullDur = CMTimeGetSeconds(p.currentItem?.duration ?? .zero)
-        
-        if isPlayingSurah,
-           let sur = quranData.quran.first(where: { $0.id == num }) {
+
+        if isPlayingSurah, let sur = quranData.quran.first(where: { $0.id == num }) {
             let endReached = currDur == fullDur
             let nextSurahNumber: Int? = endReached
                 ? (settings.reciteType == "Continue to Previous" ? (num > 1 ? num - 1 : nil)
                    : settings.reciteType == "End Recitation"     ? nil
                    : (num < 114 ? num + 1 : nil))
                 : nil
-            
-            if let nxt = nextSurahNumber,
-               let nSur = quranData.quran.first(where: { $0.id == nxt }) {
+
+            if let nxt = nextSurahNumber, let nSur = quranData.quran.first(where: { $0.id == nxt }) {
                 withAnimation {
                     settings.lastListenedSurah = LastListenedSurah(
                         surahNumber: nxt,
@@ -619,6 +627,7 @@ final class QuranPlayer: ObservableObject {
             }
         }
     }
+
     
     func getSurahDuration(surahNumber: Int) -> Double {
         #if os(watchOS)
@@ -631,6 +640,12 @@ final class QuranPlayer: ObservableObject {
         else { return 0 }
 
         return CMTimeGetSeconds(AVURLAsset(url: url).duration)
+        #endif
+    }
+    
+    func idleTimerSet(_ disabled: Bool) {
+        #if !os(watchOS)
+        UIApplication.shared.isIdleTimerDisabled = disabled
         #endif
     }
 }
