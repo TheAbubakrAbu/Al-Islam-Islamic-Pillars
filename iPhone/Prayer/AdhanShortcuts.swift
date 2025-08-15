@@ -27,12 +27,12 @@ struct WhenIsPrayerIntent: AppIntent {
 
         let keys: [String]
         switch prayer {
-        case .fajr:    keys = ["Fajr"]
+        case .fajr:    keys = ["Fajr", "Fajer", "Dawn"]
         case .sunrise: keys = ["Shurooq", "Sunrise"]
-        case .dhuhr:   keys = ["Dhuhr", "Jummuah"]
-        case .asr:     keys = ["Asr"]
-        case .maghrib: keys = ["Maghrib"]
-        case .isha:    keys = ["Isha"]
+        case .dhuhr:   keys = ["Dhuhr", "Thuhr", "Dhuhur", "Thuhur", "Jummuah", "Noon"]
+        case .asr:     keys = ["Asr", "Aser", "Afternoon"]
+        case .maghrib: keys = ["Maghrib", "Magrib", "Maghreb", "Magreb", "Sunset"]
+        case .isha:    keys = ["Isha", "Ishaa", "Esha", "Eshaa", "Night"]
         }
 
         if let p = list.first(where: { keys.contains($0.nameTransliteration) || keys.contains($0.nameEnglish) }) {

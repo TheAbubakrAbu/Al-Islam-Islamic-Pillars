@@ -182,7 +182,9 @@ struct PrayerView: View {
                 prayerTimeRefresh(force: false)
             }
             .onChange(of: scenePhase) { newScenePhase in
-                prayerTimeRefresh(force: false)
+                if newScenePhase == .active {
+                    prayerTimeRefresh(force: false)
+                }
             }
             .navigationTitle("Al-Adhan")
             #if !os(watchOS)

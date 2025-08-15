@@ -30,12 +30,16 @@ struct PlaySurahAppIntent: AppIntent {
             return .result(dialog: "Please provide a surah name or number.")
         }
 
+        // Numbered query
         if let n = Int(q), (1...114).contains(n),
            let s = QuranData.shared.quran.first(where: { $0.id == n }) {
-            QuranPlaybackRouter.play(surahID: s.id, name: s.nameTransliteration)
-            return .result(dialog: "Playing \(s.nameTransliteration).")
+            let ok = await QuranPlaybackRouter.play(surahID: s.id, name: s.nameTransliteration)
+            return .result(dialog: ok
+                ? IntentDialog("Playing Surah \(s.id): \(s.nameTransliteration).")
+                : IntentDialog("Sorry, there was a problem starting playback."))
         }
 
+        // Name-based query (fuzzy)
         if let s = QuranData.shared.quran.first(where: { surah in
             let names = [
                 surah.nameTransliteration,
@@ -46,13 +50,16 @@ struct PlaySurahAppIntent: AppIntent {
                      .lowercased() }
             return names.contains(where: { $0.contains(q) })
         }) {
-            QuranPlaybackRouter.play(surahID: s.id, name: s.nameTransliteration)
-            return .result(dialog: "Playing \(s.nameTransliteration).")
+            let ok = await QuranPlaybackRouter.play(surahID: s.id, name: s.nameTransliteration)
+            return .result(dialog: ok
+                ? IntentDialog("Playing Surah \(s.id): \(s.nameTransliteration).")
+                : IntentDialog("Sorry, there was a problem starting playback."))
         }
 
         return .result(dialog: "Sorry, I couldn't find a match for “\(query)”.")
     }
 }
+
 
 @available(iOS 16.0, watchOS 9.0, *)
 struct PlayRandomSurahAppIntent: AppIntent {
@@ -61,9 +68,13 @@ struct PlayRandomSurahAppIntent: AppIntent {
     static var openAppWhenRun = true
 
     @MainActor
-    func perform() async throws -> some IntentResult {
-        QuranPlaybackRouter.playRandom()
-        return .result()
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let res = await QuranPlaybackRouter.playRandom() else {
+            return .result(dialog: "Sorry, I couldn’t choose a surah right now.")
+        }
+        return .result(dialog: res.ok
+            ? IntentDialog("Playing Surah \(res.id): \(res.name).")
+            : IntentDialog("Sorry, there was a problem starting playback."))
     }
 }
 
@@ -74,9 +85,13 @@ struct PlayLastListenedSurahAppIntent: AppIntent {
     static var openAppWhenRun = true
 
     @MainActor
-    func perform() async throws -> some IntentResult {
-        QuranPlaybackRouter.playLast()
-        return .result()
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let res = await QuranPlaybackRouter.playLast() else {
+            return .result(dialog: "Sorry, I don’t have a last listened surah yet.")
+        }
+        return .result(dialog: res.ok
+            ? IntentDialog("Playing Surah \(res.id): \(res.name).")
+            : IntentDialog("Sorry, there was a problem starting playback."))
     }
 }
 
@@ -84,27 +99,43 @@ enum QuranPlaybackRouter {
     private static let data = QuranData.shared
     private static let player = QuranPlayer.shared
     private static let settings = Settings.shared
-
-    static func play(surahID: Int, name: String) {
-        player.playSurah(surahNumber: surahID, surahName: name)
+    
+    @MainActor
+    private static func confirmStart(surahID: Int, timeout: UInt64 = 600_000_000) async -> Bool {
+        try? await Task.sleep(nanoseconds: timeout / 3)
+        if player.isPlaying, player.currentSurahNumber == surahID { return true }
+        try? await Task.sleep(nanoseconds: timeout / 3)
+        return player.isPlaying && player.currentSurahNumber == surahID
     }
 
-    static func playLast() {
+    @MainActor
+    static func play(surahID: Int, name: String) async -> Bool {
+        player.playSurah(surahNumber: surahID, surahName: name)
+        return await confirmStart(surahID: surahID)
+    }
+
+    @MainActor
+    static func playLast() async -> (id: Int, name: String, ok: Bool)? {
         guard
             let last = settings.lastListenedSurah,
             let surah = data.quran.first(where: { $0.id == last.surahNumber })
-        else { return }
+        else { return nil }
 
         player.playSurah(
             surahNumber: surah.id,
             surahName: surah.nameTransliteration,
             certainReciter: true
         )
+        let ok = await confirmStart(surahID: surah.id)
+        return (surah.id, surah.nameTransliteration, ok)
     }
 
-    static func playRandom() {
-        guard let s = data.quran.randomElement() else { return }
+    @MainActor
+    static func playRandom() async -> (id: Int, name: String, ok: Bool)? {
+        guard let s = data.quran.randomElement() else { return nil }
         player.playSurah(surahNumber: s.id, surahName: s.nameTransliteration)
+        let ok = await confirmStart(surahID: s.id)
+        return (s.id, s.nameTransliteration, ok)
     }
 }
 

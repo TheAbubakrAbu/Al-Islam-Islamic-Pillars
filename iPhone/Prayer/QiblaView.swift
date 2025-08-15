@@ -8,10 +8,11 @@ struct QiblaView: View {
     @EnvironmentObject var settings: Settings
     var size: CGFloat = 50
 
-    private var direction: Double { settings.qiblaDirection } // degrees: target at 0
-    private var accent: Color  { settings.accentColor.color }
-    private var arrowColour: Color { abs(direction) <=  5 ? accent : .primary }
-    private var ringColour:  Color { abs(direction) <= 20 ? accent : .primary }
+    private var direction: Double { settings.qiblaDirection } // 0 means aligned
+    private var distToQibla: Double { angularDistance(direction, 0) }
+
+    private var arrowColour: Color { distToQibla <=  5 ? settings.accentColor.color : .primary }
+    private var ringColour:  Color { distToQibla <= 20 ? settings.accentColor.color : .primary }
 
     #if os(iOS)
     @State private var lastAngle: Double = 0
@@ -19,6 +20,14 @@ struct QiblaView: View {
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
     private let notify = UINotificationFeedbackGenerator()
     #endif
+    
+    // Smallest absolute angle between two headings (degrees), always 0…180
+    private func angularDistance(_ a: Double, _ b: Double) -> Double {
+        var d = (a - b).truncatingRemainder(dividingBy: 360)
+        if d < -180 { d += 360 }
+        if d >  180 { d -= 360 }
+        return abs(d)
+    }
 
     var body: some View {
         let arrowW = max(10, size * 0.18)
@@ -61,7 +70,7 @@ struct QiblaView: View {
             let absDelta = abs(delta)
 
             // Distance from Qibla (0 is perfect)
-            let dist = min(180.0, abs(newAngle))
+            let dist = angularDistance(newAngle, 0)
 
             // Adaptive step: bigger movements required when far; more sensitive near target
             let step = max(3.0, min(12.0, dist / 2.0)) // 3°…12°

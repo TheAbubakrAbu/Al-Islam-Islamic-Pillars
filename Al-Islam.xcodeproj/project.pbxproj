@@ -390,8 +390,6 @@
 				7260F9162A8715D600E8FF87 /* Settings.swift */,
 				720CCE222E39439E002DD82E /* Globals.swift */,
 				72574CC82E49EE7F00BFF138 /* AppIntents.swift */,
-				72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */,
-				72574CC52E49EDDE00BFF138 /* AdhanShortcuts.swift */,
 				72CCAE962D42DDF100871A6A /* WatchConnectivity.swift */,
 			);
 			path = Settings;
@@ -405,6 +403,7 @@
 				7260F91C2A8715D600E8FF87 /* PrayerCountdown.swift */,
 				7260F91D2A8715D600E8FF87 /* PrayerList.swift */,
 				7260F91E2A8715D600E8FF87 /* CalendarView.swift */,
+				72574CC52E49EDDE00BFF138 /* AdhanShortcuts.swift */,
 			);
 			path = Prayer;
 			sourceTree = "<group>";
@@ -422,6 +421,7 @@
 				720CCE0B2E394375002DD82E /* NowPlayingView.swift */,
 				720CCE0C2E394375002DD82E /* ShareAyah.swift */,
 				720CCE0D2E394375002DD82E /* Highlighted.swift */,
+				72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */,
 			);
 			path = Quran;
 			sourceTree = "<group>";

@@ -25,10 +25,10 @@ struct NowPlayingView: View {
             (quranPlayer.isPlaying || quranPlayer.isPaused)
         else { return AnyView(EmptyView()) }
         
-        #if !os(watchOS)
         let ayahNum = quranPlayer.currentAyahNumber ?? 1
         let isPlaying = quranPlayer.isPlaying
         
+        #if !os(watchOS)
         return AnyView(
             VStack(spacing: 8) {
                 if quranView {
@@ -50,12 +50,86 @@ struct NowPlayingView: View {
             .transition(.opacity)
         )
         #else
-        return AnyView(EmptyView())
+        return AnyView(
+            Section(header: Text("NOW PLAYING")) {
+                VStack(spacing: 8) {
+                    playerRow(isPlaying: isPlaying)
+                }
+                .transition(.opacity)
+            }
+        )
         #endif
     }
     
     @ViewBuilder
+    private func transportButtons(isPlaying: Bool) -> some View {
+        Image(systemName: "backward.fill")
+            .foregroundColor(settings.accentColor.color)
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.skipBackward()
+            }
+
+        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+            .font(.title2)
+            .foregroundColor(settings.accentColor.color)
+            .onTapGesture {
+                settings.hapticFeedback()
+                withAnimation {
+                    isPlaying ? quranPlayer.pause() : quranPlayer.resume()
+                }
+            }
+
+        Image(systemName: "forward.fill")
+            .foregroundColor(settings.accentColor.color)
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.skipForward()
+            }
+    }
+
+    @ViewBuilder
     private func playerRow(isPlaying: Bool) -> some View {
+        #if os(watchOS)
+        VStack(alignment: .center, spacing: 6) {
+            if let title = quranPlayer.nowPlayingTitle {
+                Text(title)
+                    .foregroundColor(.primary)
+                    .font(.caption)
+                    .lineLimit(2)
+            }
+            if let reciter = quranPlayer.nowPlayingReciter {
+                Text(reciter)
+                    .foregroundColor(.secondary)
+                    .font(.caption2)
+                    .lineLimit(1)
+            }
+
+            HStack(spacing: 12) {
+                transportButtons(isPlaying: isPlaying)
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 2)
+        }
+        .padding(4)
+        .overlay(alignment: .bottomTrailing) {
+            Button {
+                settings.hapticFeedback()
+                withAnimation { quranPlayer.stop() }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .imageScale(.large)
+            }
+            .tint(.secondary)
+            .padding(.vertical, 4)
+            .padding(.trailing, -2)
+        }
+        .transition(.opacity)
+        .animation(.easeInOut, value: quranPlayer.isPlaying)
+
+        #else
+        let spacing: CGFloat = 16
         HStack {
             VStack(alignment: .leading) {
                 if let title = quranPlayer.nowPlayingTitle {
@@ -73,47 +147,22 @@ struct NowPlayingView: View {
                         .minimumScaleFactor(0.5)
                 }
             }
-            
-            Spacer(minLength: 12)
-            
-            HStack(spacing: 16) {
-                Image(systemName: "backward.fill")
-                    .font(.body)
-                    .foregroundColor(settings.accentColor.color)
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        quranPlayer.skipBackward()
-                    }
-                
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    .font(.title2)
-                    .foregroundColor(settings.accentColor.color)
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            isPlaying ? quranPlayer.pause() : quranPlayer.resume()
-                        }
-                    }
-                
-                Image(systemName: "forward.fill")
-                    .font(.body)
-                    .foregroundColor(settings.accentColor.color)
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        quranPlayer.skipForward()
-                    }
+
+            Spacer()
+
+            HStack(spacing: spacing) {
+                transportButtons(isPlaying: isPlaying)
             }
+            .font(.body)
             .padding(.horizontal)
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
-        #if !os(watchOS)
         .background(Color(UIColor.secondarySystemBackground))
-        #endif
         .cornerRadius(10)
-        .padding(.horizontal, 8)
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying)
+        #endif
     }
     
     @ViewBuilder

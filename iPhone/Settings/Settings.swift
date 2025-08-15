@@ -23,18 +23,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         return dec
     }()
     
-    private lazy var locationManager: CLLocationManager = {
-        let lm = CLLocationManager()
-        lm.delegate = self
-        lm.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        lm.distanceFilter = 500
-        return lm
-    }()
-    let geocoder = CLGeocoder()
-    
-    private let kaabaCoordinates = Coordinates(latitude: 21.4225, longitude: 39.8262)
-    @Published var qiblaDirection: Double = 0
-    
     private override init() {
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
@@ -62,9 +50,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
         
         super.init()
-        self.locationManager.delegate = self
-        self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        
         requestLocationAuthorization()
         
         if self.reciter.starts(with: "ar") {
@@ -76,22 +61,41 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
-    private static let oneMile: CLLocationDistance = 1609.34   // m
-    private static let minAcc: CLLocationAccuracy = 100        // m
-    private static let maxAge: TimeInterval = 60               // s
-    private static let headingΔ: Double = 1.0                  // deg – ignore jitter
+    private lazy var locationManager: CLLocationManager = {
+        let lm = CLLocationManager()
+        lm.delegate = self
+        lm.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        lm.distanceFilter = 500
+        return lm
+    }()
+    let geocoder = CLGeocoder()
     
-    var acceptStaleOnce = true
+    private let kaabaCoordinates = Coordinates(latitude: 21.4225, longitude: 39.8262)
+    @Published var qiblaDirection: Double = 0
+    
+    private static let oneMile: CLLocationDistance = 1609.34   // m (almost half a mile)
+    private static let halfMile: CLLocationDistance = 750      // m
+    private static let minAcc: CLLocationAccuracy = 300        // m
+    private static let maxAge: TimeInterval = 180              // s
+    private static let headingΔ: Double = 1.0                  // deg – ignore jitter
     
     /// MAIN LOCATION CALLBACK
     func locationManager(_ mgr: CLLocationManager, didUpdateLocations locs: [CLLocation]) {
-        guard let loc = locs.last, loc.horizontalAccuracy > 0, loc.horizontalAccuracy <= Self.minAcc else { return }
-        if abs(loc.timestamp.timeIntervalSinceNow) > Self.maxAge, !acceptStaleOnce { return }
-        acceptStaleOnce = false
+        guard let loc = locs.last else { return }
+
+        // Accept “good enough” fixes like old code (don’t be too strict)
+        let goodAccuracy = (loc.horizontalAccuracy > 0 && loc.horizontalAccuracy <= Self.minAcc)
+        let freshEnough  = abs(loc.timestamp.timeIntervalSinceNow) <= Self.maxAge
+        if !(goodAccuracy && freshEnough) { return }
+
+        // Old behavior: if we have a previous point and distance < ~1 mile, skip
         if let cur = currentLocation {
             let prev = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
-            guard loc.distance(from: prev) >= Self.oneMile else { return }
+            let distance = prev.distance(from: loc)
+            if distance < Self.halfMile { return }
         }
+
+        // Old behavior order: updateCity -> fetchPrayerTimes
         Task { @MainActor in
             await updateCity(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude)
             fetchPrayerTimes(force: true)
@@ -100,12 +104,12 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     /// COMPASS / QIBLA
     func locationManager(_ mgr: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        guard newHeading.headingAccuracy >= 0, let cur = currentLocation
-        else { return }
+        guard newHeading.headingAccuracy >= 0, let cur = currentLocation else { return }
 
         let target = Qibla(coordinates: Coordinates(latitude: cur.latitude, longitude: cur.longitude)).direction
-        var delta = target - newHeading.trueHeading
-        delta = delta.truncatingRemainder(dividingBy: 360)
+        let heading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magneticHeading
+        var delta = target - heading
+        delta.formTruncatingRemainder(dividingBy: 360)
         if delta < 0 { delta += 360 }
 
         if abs(delta - qiblaDirection) >= Self.headingΔ {
@@ -128,6 +132,12 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             #else
             mgr.startUpdatingLocation()
             #endif
+            
+            if let cur = currentLocation {
+                Task { @MainActor in
+                    await updateCity(latitude: cur.latitude, longitude: cur.longitude)
+                }
+            }
 
         case .denied where !locationNeverAskAgain:
             showLocationAlert = true
@@ -150,7 +160,16 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         case .notDetermined:
             locationManager.requestAlwaysAuthorization()
         case .authorizedAlways, .authorizedWhenInUse:
-            locationManager(_ : locationManager, didChangeAuthorization: locationManager.authorizationStatus)
+            if CLLocationManager.headingAvailable() {
+                locationManager.startUpdatingHeading()
+            }
+            #if !os(watchOS)
+            locationManager.startMonitoringSignificantLocationChanges()
+            #else
+            locationManager.startUpdatingLocation()
+            #endif
+
+            locationManager.requestLocation()
         default:
             break
         }
@@ -159,7 +178,8 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     actor GeocodeActor {
         private let gc = CLGeocoder()
         func placemark(for location: CLLocation) async throws -> CLPlacemark? {
-            try await gc.reverseGeocodeLocation(location).first
+            if gc.isGeocoding { gc.cancelGeocode() }
+            return try await gc.reverseGeocodeLocation(location).first
         }
     }
     
@@ -174,7 +194,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
         if let cached = cachedPlacemark,
            CLLocation(latitude: cached.coord.latitude, longitude: cached.coord.longitude)
-               .distance(from: CLLocation(latitude: coord.latitude, longitude: coord.longitude)) < 100,
+             .distance(from: CLLocation(latitude: coord.latitude, longitude: coord.longitude)) < 100,
            cached.city == currentLocation?.city {
             return
         }
@@ -187,19 +207,22 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
 
             let newCity: String = {
-                if let city = placemark.locality {
-                    let region = placemark.administrativeArea ?? placemark.country ?? ""
-                    return "\(city), \(region)"
-                } else {
-                    return "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))"
-                }
+                let cityLike = placemark.locality
+                           ?? placemark.subLocality
+                           ?? placemark.subAdministrativeArea
+                           ?? placemark.name
+                let region = placemark.administrativeArea ?? placemark.country
+                if let c = cityLike, let r = region { return "\(c), \(r)" }
+                if let c = cityLike { return c }
+                if let r = region { return r }
+                return "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))"
             }()
 
             if newCity != currentLocation?.city {
                 withAnimation {
                     currentLocation = Location(city: newCity, latitude: latitude, longitude: longitude)
+                    WidgetCenter.shared.reloadAllTimelines()
                 }
-                WidgetCenter.shared.reloadAllTimelines()
             }
 
             cachedPlacemark = (coord, newCity)
@@ -207,13 +230,14 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         } catch {
             logger.warning("Geocode attempt \(attempt+1) failed: \(error.localizedDescription)")
             guard attempt + 1 < maxAttempts else {
-                // Fall‑back to raw coordinates
-                currentLocation = Location(city: "\(latitude.stringRepresentation), \(longitude.stringRepresentation)", latitude: latitude, longitude: longitude)
+                withAnimation {
+                    currentLocation = Location(city: "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))",
+                                               latitude: latitude, longitude: longitude)
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
                 return
             }
-
-            // Exponential back‑off:  2s → 4s → 8s
-            let delay = UInt64(pow(2.0, Double(attempt)) * 2_000_000_000) // ns
+            let delay = UInt64(pow(2.0, Double(attempt)) * 2_000_000_000)
             try? await Task.sleep(nanoseconds: delay)
             await updateCity(latitude: latitude, longitude: longitude, attempt: attempt + 1, maxAttempts: maxAttempts)
         }

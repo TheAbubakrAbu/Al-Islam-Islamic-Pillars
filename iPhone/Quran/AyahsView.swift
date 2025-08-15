@@ -12,6 +12,7 @@ struct AyahsView: View {
     @State private var scrollDown: Int? = nil
     @State private var didScrollDown = false
     @State private var showingSettingsSheet = false
+    @State private var showFloatingHeader = false
     @State private var showAlert = false
     
     let surah: Surah
@@ -38,8 +39,20 @@ struct AyahsView: View {
                 }
                 
                 List {
-                    Section(header: SurahSectionHeader(surah: surah)) {
-                        if searchText.isEmpty {
+                    if searchText.isEmpty {
+                        Section(header:
+                            SurahSectionHeader(surah: surah)
+                                .onAppear {
+                                    withAnimation {
+                                        showFloatingHeader = false
+                                    }
+                                }
+                                .onDisappear {
+                                    withAnimation {
+                                        showFloatingHeader = true
+                                    }
+                                }
+                        ) {
                             VStack {
                                 if surah.id == 1 || surah.id == 9 {
                                     HeaderRow(
@@ -67,10 +80,10 @@ struct AyahsView: View {
                                 #endif
                             }
                         }
+                        #if !os(watchOS)
+                        .listRowSeparator(.hidden, edges: .bottom)
+                        #endif
                     }
-                    #if !os(watchOS)
-                    .listRowSeparator(.hidden, edges: .bottom)
-                    #endif
                     
                     ForEach(filteredAyahs, id: \.id) { ayah in
                         Group {
@@ -135,7 +148,6 @@ struct AyahsView: View {
                 }
                 .applyConditionalListStyle(defaultView: settings.defaultView)
                 .dismissKeyboardOnScroll()
-                
                 .onAppear {
                     if let sel = ayah, !didScrollDown {
                         didScrollDown = true
@@ -171,15 +183,30 @@ struct AyahsView: View {
         .environmentObject(quranPlayer)
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { _ in saveLastRead() }
-        
         #if !os(watchOS)
+        .overlay {
+            VStack {
+                SurahSectionHeader(surah: surah)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial)
+                    .overlay(Divider(), alignment: .bottom)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(radius: 2)
+                    .padding(.top, 6)
+                    .padding(.horizontal, settings.defaultView == true ? 20 : 16)
+                    .background(Color.clear)
+                    .opacity(showFloatingHeader ? 1 : 0)
+                    .zIndex(1)
+                
+                Spacer()
+            }
+        }
         .navigationTitle(surah.nameEnglish)
         .navigationBarItems(trailing: navBarTitle)
         .sheet(isPresented: $showingSettingsSheet) { settingsSheet }
         .onChange(of: quranPlayer.showInternetAlert) { if $0 { showAlert = true; quranPlayer.showInternetAlert = false } }
-        .confirmationDialog("Internet Connection Error",
-                            isPresented: $showAlert,
-                            titleVisibility: .visible) {
+        .confirmationDialog("Internet Connection Error", isPresented: $showAlert, titleVisibility: .visible) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Unable to load the recitation due to an internet connection issue. Please check your connection and try again.")
