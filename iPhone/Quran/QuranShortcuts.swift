@@ -101,11 +101,21 @@ enum QuranPlaybackRouter {
     private static let settings = Settings.shared
     
     @MainActor
-    private static func confirmStart(surahID: Int, timeout: UInt64 = 600_000_000) async -> Bool {
-        try? await Task.sleep(nanoseconds: timeout / 3)
+    private static func confirmStart(
+        surahID: Int,
+        timeout: UInt64 = 2_000_000_000,
+        interval: UInt64 = 100_000_000
+    ) async -> Bool {
         if player.isPlaying, player.currentSurahNumber == surahID { return true }
-        try? await Task.sleep(nanoseconds: timeout / 3)
-        return player.isPlaying && player.currentSurahNumber == surahID
+
+        var waited: UInt64 = 0
+        while waited < timeout {
+            try? await Task.sleep(nanoseconds: interval)
+            waited += interval
+            if player.isPlaying, player.currentSurahNumber == surahID { return true }
+            if (player.player?.rate ?? 0) > 0, player.currentSurahNumber == surahID { return true }
+        }
+        return false
     }
 
     @MainActor

@@ -32,7 +32,8 @@ struct AyahsView: View {
                     return rawArabic.contains(cleanQuery)
                         || clearArabic.contains(cleanQuery)
                         || settings.cleanSearch(a.textTransliteration).contains(cleanQuery)
-                        || settings.cleanSearch(a.textEnglish).contains(cleanQuery)
+                        || settings.cleanSearch(a.textEnglishSaheeh).contains(cleanQuery)
+                        || settings.cleanSearch(a.textEnglishMustafa).contains(cleanQuery)
                         || settings.cleanSearch(String(a.id)).contains(cleanQuery)
                         || settings.cleanSearch(arabicNumberString(from: a.id)).contains(cleanQuery)
                         || Int(cleanQuery) == a.id
@@ -167,6 +168,27 @@ struct AyahsView: View {
                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                         NowPlayingView(quranView: false)
                             .animation(.easeInOut, value: quranPlayer.isPlaying)
+                            .onTapGesture {
+                                guard
+                                    let curSurah = quranPlayer.currentSurahNumber,
+                                    let curAyah  = quranPlayer.currentAyahNumber,
+                                    curSurah == surah.id
+                                else { return }
+
+                                settings.hapticFeedback()
+
+                                if !searchText.isEmpty {
+                                    withAnimation {
+                                        searchText = ""
+                                        self.endEditing()
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        withAnimation { proxy.scrollTo(curAyah, anchor: .top) }
+                                    }
+                                } else {
+                                    withAnimation { proxy.scrollTo(curAyah, anchor: .top) }
+                                }
+                            }
                     }
                     
                     HStack {
@@ -184,23 +206,25 @@ struct AyahsView: View {
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { _ in saveLastRead() }
         #if !os(watchOS)
-        .overlay {
-            VStack {
-                SurahSectionHeader(surah: surah)
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial)
-                    .overlay(Divider(), alignment: .bottom)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(radius: 2)
-                    .padding(.top, 6)
-                    .padding(.horizontal, settings.defaultView == true ? 20 : 16)
-                    .background(Color.clear)
-                    .opacity(showFloatingHeader ? 1 : 0)
-                    .zIndex(1)
-                
-                Spacer()
-            }
+        .overlay(alignment: .top) {
+            SurahSectionHeader(surah: surah)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.clear.background(.ultraThinMaterial))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                #if !os(watchOS)
+                .padding(.top, 6)
+                .padding(.horizontal, settings.defaultView == true ? 20 : 16)
+                #endif
+                .background(Color.clear)
+                .opacity(showFloatingHeader ? 1 : 0)
+                .padding(.horizontal, 55)
+                .zIndex(1)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .offset(y: showFloatingHeader ? 0 : -80)
+                .opacity(showFloatingHeader ? 1 : 0)
+                .animation(.easeInOut(duration: 0.35), value: showFloatingHeader)
         }
         .navigationTitle(surah.nameEnglish)
         .navigationBarItems(trailing: navBarTitle)
@@ -264,6 +288,20 @@ struct AyahsView: View {
                 } label: {
                     Label("Repeat Surah", systemImage: "repeat")
                 }
+                
+                Button {
+                    settings.hapticFeedback()
+                    
+                    if let randomAyah = surah.ayahs.randomElement() {
+                        quranPlayer.playAyah(
+                            surahNumber: surah.id,
+                            ayahNumber: randomAyah.id,
+                            continueRecitation: true
+                        )
+                    }
+                } label: {
+                    Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
+                }
             } label: {
                 playIcon()
             }
@@ -323,16 +361,7 @@ struct AyahsView: View {
     }
     
     private var settingsSheet: some View {
-        NavigationView {
-            List {
-                SettingsQuranView(showEdits: false)
-                    .environmentObject(quranData)
-            }
-            .accentColor(settings.accentColor.color)
-            .preferredColorScheme(settings.colorScheme)
-            .navigationTitle("Al-Quran Settings")
-            .applyConditionalListStyle(defaultView: true)
-        }
+        NavigationView { SettingsQuranView(showEdits: false) }
     }
     #endif
     
@@ -353,21 +382,12 @@ struct RotatingGearView: View {
     @State private var rotation: Double = 0
     
     var body: some View {
-        #if !os(watchOS)
         Image(systemName: "gear")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 25, height: 25)
-            .foregroundColor(.secondary)
-            .rotationEffect(.degrees(rotation))
-            .onAppear {
-                withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
-            }
-        #else
-        Image(systemName: "gear")
+            #if !os(watchOS)
+            .font(.title3)
+            #else
             .font(.subheadline)
+            #endif
             .foregroundColor(.secondary)
             .rotationEffect(.degrees(rotation))
             .onAppear {
@@ -375,6 +395,5 @@ struct RotatingGearView: View {
                     rotation = 360
                 }
             }
-        #endif
     }
 }

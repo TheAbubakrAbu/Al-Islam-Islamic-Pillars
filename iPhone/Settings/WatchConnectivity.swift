@@ -69,6 +69,6 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
     private func applyIfSettings(_ dict: [String:Any]) {
         guard let s = dict["settings"] as? [String:Any] else { return }
-        Task { @MainActor in Settings.shared.update(from: s) }
+//        Task { @MainActor in Settings.shared.update(from: s) }
     }
 }

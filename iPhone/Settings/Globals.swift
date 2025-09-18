@@ -72,7 +72,8 @@ let accentColors: [AccentColor] = AccentColor.allCases
 struct ShareSettings: Equatable {
     var arabic = false
     var transliteration = false
-    var translation = false
+    var englishSaheeh = false
+    var englishMustafa = false
     var showFooter = false
 }
 

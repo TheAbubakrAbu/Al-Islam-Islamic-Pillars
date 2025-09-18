@@ -1,5 +1,4 @@
 import SwiftUI
-import WatchConnectivity
 import WidgetKit
 import StoreKit
 
@@ -20,10 +19,6 @@ struct AlIslamApp: App {
     @AppStorage("shouldShowRateAlert") private var shouldShowRateAlert: Bool = true
     @State private var startTime: Date?
     
-    init() {
-        _ = WatchConnectivityManager.shared
-    }
-    
     var body: some Scene {
         WindowGroup {
             Group {
@@ -32,10 +27,11 @@ struct AlIslamApp: App {
                 } else {
                     TabView {
                         VStack {
-                            PrayerView()
+                            AdhanView()
                             
                             if quranPlayer.isPlaying || quranPlayer.isPaused {
                                 NowPlayingView(quranView: false)
+                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
                                     .padding(.bottom, 9)
                             }
                         }
@@ -51,9 +47,10 @@ struct AlIslamApp: App {
                             }
                         
                         VStack {
-                            PillarsView()
+                            IslamView()
                             
                             NowPlayingView(quranView: false)
+                                .animation(.easeInOut, value: quranPlayer.isPlaying)
                                 .padding(.bottom, 9)
                         }
                         .tabItem {
@@ -65,6 +62,7 @@ struct AlIslamApp: App {
                             SettingsView()
                             
                             NowPlayingView(quranView: false)
+                                .animation(.easeInOut, value: quranPlayer.isPlaying)
                                 .padding(.bottom, 9)
                         }
                         .tabItem {
@@ -83,6 +81,7 @@ struct AlIslamApp: App {
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
             .animation(.easeInOut, value: isLaunching)
+            .animation(.easeInOut, value: settings.firstLaunch)
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
@@ -117,68 +116,24 @@ struct AlIslamApp: App {
                 }
             }
         }
-        .onChange(of: settings.lastReadSurah) { _ in
-            sendMessageToWatch()
-        }
-        .onChange(of: settings.lastReadAyah) { _ in
-            sendMessageToWatch()
-        }
-        .onChange(of: settings.favoriteSurahs) { newSurahs in
-            sendMessageToWatch()
-        }
-        .onChange(of: settings.bookmarkedAyahs) { newBookmarks in
-            sendMessageToWatch()
-        }
-        .onChange(of: settings.favoriteLetters) { _ in
-            sendMessageToWatch()
-        }
         .onChange(of: settings.accentColor) { _ in
-            sendMessageToWatch()
             WidgetCenter.shared.reloadAllTimelines()
         }
         .onChange(of: settings.prayerCalculation) { _ in
-            settings.fetchPrayerTimes(force: true) {
-                sendMessageToWatch()
-            }
+            settings.fetchPrayerTimes(force: true)
         }
         .onChange(of: settings.hanafiMadhab) { _ in
-            settings.fetchPrayerTimes(force: true) {
-                sendMessageToWatch()
-            }
+            settings.fetchPrayerTimes(force: true)
         }
         .onChange(of: settings.travelingMode) { _ in
-            settings.fetchPrayerTimes(force: true) {
-                sendMessageToWatch()
-            }
+            settings.fetchPrayerTimes(force: true)
         }
         .onChange(of: settings.hijriOffset) { _ in
             settings.updateDates()
-            sendMessageToWatch()
             WidgetCenter.shared.reloadAllTimelines()
         }
         .onChange(of: scenePhase) { _ in
             quranPlayer.saveLastListenedSurah()
-        }
-    }
-    
-    private func sendMessageToWatch() {
-        guard WCSession.default.isPaired else {
-            logger.debug("No Apple Watch is paired")
-            return
-        }
-        
-        let settingsData = settings.dictionaryRepresentation()
-        let message = ["settings": settingsData]
-
-        if WCSession.default.isReachable {
-            logger.debug("Watch is reachable. Sending message to watch: \(message)")
-
-            WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                logger.debug("Error sending message to watch: \(error.localizedDescription)")
-            }
-        } else {
-            logger.debug("Watch is not reachable. Transferring user info to watch: \(message)")
-            WCSession.default.transferUserInfo(message)
         }
     }
 }

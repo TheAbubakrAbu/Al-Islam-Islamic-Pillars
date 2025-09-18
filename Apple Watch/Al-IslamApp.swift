@@ -1,5 +1,4 @@
 import SwiftUI
-import WatchConnectivity
 import WidgetKit
 
 @main
@@ -11,10 +10,6 @@ struct AlIslamApp: App {
         
     @State private var isLaunching = true
     
-    init() {
-        _ = WatchConnectivityManager.shared
-    }
-    
     var body: some Scene {
         WindowGroup {
             Group {
@@ -22,11 +17,11 @@ struct AlIslamApp: App {
                     LaunchScreen(isLaunching: $isLaunching)
                 } else {
                     TabView {
-                        PrayerView()
+                        AdhanView()
                         
                         QuranView()
                         
-                        PillarsView()
+                        IslamView()
                                                 
                         SettingsView()
                     }
@@ -47,59 +42,21 @@ struct AlIslamApp: App {
                 }
             }
         }
-        .onChange(of: settings.lastReadSurah) { _ in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.lastReadAyah) { _ in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.favoriteSurahs) { newSurahs in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.bookmarkedAyahs) { newBookmarks in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.favoriteLetters) { _ in
-            sendMessageToPhone()
-        }
         .onChange(of: settings.accentColor) { _ in
-            sendMessageToPhone()
             WidgetCenter.shared.reloadAllTimelines()
         }
         .onChange(of: settings.prayerCalculation) { _ in
-            settings.fetchPrayerTimes(force: true) {
-                sendMessageToPhone()
-            }
+            settings.fetchPrayerTimes(force: true)
         }
         .onChange(of: settings.hanafiMadhab) { _ in
-            settings.fetchPrayerTimes(force: true) {
-                sendMessageToPhone()
-            }
+            settings.fetchPrayerTimes(force: true)
         }
         .onChange(of: settings.travelingMode) { _ in
-            settings.fetchPrayerTimes(force: true) {
-                sendMessageToPhone()
-            }
+            settings.fetchPrayerTimes(force: true)
         }
         .onChange(of: settings.hijriOffset) { _ in
             settings.updateDates()
-            sendMessageToPhone()
             WidgetCenter.shared.reloadAllTimelines()
-        }
-    }
-    
-    func sendMessageToPhone() {
-        let settingsData = settings.dictionaryRepresentation()
-        let message = ["settings": settingsData]
-
-        if WCSession.default.isReachable {
-            logger.debug("Phone is reachable. Sending message to phone: \(message)")
-            WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                logger.debug("Error sending message to phone: \(error.localizedDescription)")
-            }
-        } else {
-            logger.debug("Phone is not reachable. Transferring user info to phone: \(message)")
-            WCSession.default.transferUserInfo(message)
         }
     }
 }

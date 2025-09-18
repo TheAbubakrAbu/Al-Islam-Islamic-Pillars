@@ -50,7 +50,7 @@ struct SettingsView: View {
                 #endif
                 
                 Section(header: Text("AL-ADHAN")) {
-                    NavigationLink(destination: SettingsPrayerView(showNotifications: false)) {
+                    NavigationLink(destination: SettingsAdhanView(showNotifications: false)) {
                         Label("Prayer Settings", systemImage: "safari")
                     }
                     .accentColor(settings.accentColor.color)
@@ -58,13 +58,7 @@ struct SettingsView: View {
                 
                 Section(header: Text("AL-QURAN")) {
                     NavigationLink(destination:
-                        List {
-                            SettingsQuranView(showEdits: true)
-                                .environmentObject(quranData)
-                                .environmentObject(settings)
-                        }
-                        .applyConditionalListStyle(defaultView: true)
-                        .navigationTitle("Al-Quran Settings")
+                        SettingsQuranView(showEdits: true)
                     ) {
                         Label("Quran Settings", systemImage: "character.book.closed.ar")
                     }
@@ -268,7 +262,7 @@ struct SettingsAppearanceView: View {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)
             
-            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting only applies to Al-Adhan and Al-Quran.")
+            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting applies everywhere in the app except here in Settings.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
@@ -296,7 +290,7 @@ struct VersionNumber: View {
                 Text("Version")
             }
             
-            Text("3.5.7")
+            Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
                 .foregroundColor(settings.accentColor.color)
                 .padding(.leading, -4)
         }

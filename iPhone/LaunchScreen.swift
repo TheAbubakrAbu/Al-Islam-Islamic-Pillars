@@ -59,7 +59,7 @@ struct LaunchScreen: View {
                     Image("Al-Islam")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .cornerRadius(10)
+                        .cornerRadius(15)
                         .frame(maxWidth: 150, maxHeight: 150)
                         .padding()
 

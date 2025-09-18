@@ -116,12 +116,12 @@ struct SurahSectionHeader: View {
                 } else if quranPlayer.isPlaying {
                     Image(systemName: "pause.fill")
                         .foregroundColor(settings.accentColor.color)
-                        .font(.subheadline)
+                        .font(.title3)
                         .transition(.opacity)
                 } else {
                     Image(systemName: "play.fill")
                         .foregroundColor(settings.accentColor.color)
-                        .font(.subheadline)
+                        .font(.title3)
                         .transition(.opacity)
                 }
             }
@@ -143,7 +143,11 @@ struct SurahSectionHeader: View {
             
             Image(systemName: settings.isSurahFavorite(surah: surah.id) ? "star.fill" : "star")
                 .foregroundColor(settings.accentColor.color)
+                #if !os(watchOS)
                 .font(.subheadline)
+                #else
+                .font(.title3)
+                #endif
                 .onTapGesture {
                     settings.hapticFeedback()
 
@@ -190,7 +194,7 @@ struct HeaderRow: View {
                     .padding(.vertical, 4)
             }
 
-            if settings.showEnglishTranslation {
+            if settings.showEnglishSaheeh || settings.showEnglishMustafa {
                 Text(englishTranslation)
                     .foregroundColor(settings.accentColor.color)
                     .font(.system(size: settings.englishFontSize))

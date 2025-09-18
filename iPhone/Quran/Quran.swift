@@ -16,6 +16,9 @@ struct BookmarkedAyah: Codable, Identifiable, Equatable, Hashable {
     var id: String { "\(surah)-\(ayah)" }
     var surah: Int
     var ayah: Int
+    
+    var note: String? = nil
+    var hasNote: Bool { !(note?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) }
 }
 
 struct LastListenedSurah: Identifiable, Codable {
@@ -103,7 +106,8 @@ struct Ayah: Codable, Identifiable {
     let textArabic: String
     var textClearArabic: String { textArabic.removingArabicDiacriticsAndSigns }
     let textTransliteration: String
-    var textEnglish: String
+    let textEnglishSaheeh: String
+    let textEnglishMustafa: String
 }
 
 final class QuranData: ObservableObject {
@@ -371,7 +375,8 @@ final class QuranData: ObservableObject {
                 let blob = [
                     ayah.textArabic,
                     ayah.textClearArabic,
-                    ayah.textEnglish,
+                    ayah.textEnglishSaheeh,
+                    ayah.textEnglishMustafa,
                     ayah.textTransliteration
                 ]
                 .map { settings.cleanSearch($0) }
@@ -390,9 +395,19 @@ final class QuranData: ObservableObject {
     func searchVerses(term raw: String, limit: Int = 10, offset: Int = 0) -> [VerseIndexEntry] {
         let cleanedSearch = settings.cleanSearch(raw, whitespace: true)
         guard !cleanedSearch.isEmpty else { return [] }
+        if cleanedSearch.rangeOfCharacter(from: .decimalDigits) != nil { return [] }
 
-        let hits  = verseIndex.filter { $0.searchBlob.contains(cleanedSearch) }
-        return Array(hits.dropFirst(offset).prefix(limit))
+        let hits = verseIndex.filter { $0.searchBlob.contains(cleanedSearch) }
+
+        if limit == .max {
+            return Array(hits.dropFirst(offset))
+        } else {
+            return Array(hits.dropFirst(offset).prefix(limit))
+        }
+    }
+    
+    func searchVersesAll(term raw: String) -> [VerseIndexEntry] {
+        searchVerses(term: raw, limit: .max, offset: 0)
     }
 }
 

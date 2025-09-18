@@ -162,13 +162,67 @@ struct NowPlayingView: View {
         .cornerRadius(10)
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying)
+        .confirmationDialog("Remove bookmark and delete note?", isPresented: $confirmRemoveNote, titleVisibility: .visible) {
+            Button("Remove", role: .destructive) {
+                let surah = quranPlayer.currentSurahNumber ?? 1
+                let ayah = quranPlayer.currentAyahNumber ?? 1
+                
+                settings.hapticFeedback()
+                settings.toggleBookmark(surah: surah, ayah: ayah)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This ayah has a note. Unbookmarking will delete the note.")
+        }
         #endif
+    }
+    
+    private var bookmarkIndex: Int? {
+        let surah = quranPlayer.currentSurahNumber ?? 1
+        let ayah = quranPlayer.currentAyahNumber ?? 1
+        
+        return settings.bookmarkedAyahs.firstIndex { $0.surah == surah && $0.ayah == ayah }
+    }
+    
+    private var bookmark: BookmarkedAyah? {
+        bookmarkIndex.flatMap { settings.bookmarkedAyahs[$0] }
+    }
+    
+    private var isBookmarkedHere: Bool { bookmarkIndex != nil }
+    
+    private var currentNote: String {
+        (bookmark?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    @State private var confirmRemoveNote = false
+
+    private func toggleBookmarkWithNoteGuard() {
+        let surah = quranPlayer.currentSurahNumber ?? 1
+        let ayah = quranPlayer.currentAyahNumber ?? 1
+        
+        if isBookmarkedHere, !currentNote.isEmpty {
+            confirmRemoveNote = true
+        } else {
+            settings.hapticFeedback()
+            settings.toggleBookmark(surah: surah, ayah: ayah)
+        }
     }
     
     @ViewBuilder
     private func contextMenu(for surah: Surah, ayah: Int) -> some View {
         let isFav = settings.isSurahFavorite(surah: surah.id)
         let isBm = settings.isBookmarked(surah: surah.id, ayah: ayah)
+        
+        Button(role: .destructive) {
+            settings.hapticFeedback()
+            withAnimation {
+                quranPlayer.stop()
+            }
+        } label: {
+            Label("Stop Playing", systemImage: "xmark.circle.fill")
+        }
+        
+        Divider()
         
         Button {
             settings.hapticFeedback()
@@ -191,7 +245,7 @@ struct NowPlayingView: View {
         
         Button {
             settings.hapticFeedback()
-            settings.toggleBookmark(surah: surah.id, ayah: ayah)
+            toggleBookmarkWithNoteGuard()
         } label: {
             Label(
                 isBm ? "Unbookmark Ayah" : "Bookmark Ayah",

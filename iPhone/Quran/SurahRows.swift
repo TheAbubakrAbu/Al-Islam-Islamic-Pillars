@@ -37,6 +37,7 @@ struct SurahRow: View {
                     }
                     
                     Text(surah.nameEnglish)
+                        .foregroundColor(.primary)
                         .font(.subheadline)
                         .multilineTextAlignment(.leading)
                 }
@@ -50,6 +51,7 @@ struct SurahRow: View {
                         .foregroundColor(settings.accentColor.color)
                     
                     Text("\(surah.nameTransliteration) - \(surah.id)")
+                        .foregroundColor(.primary)
                         .font(.subheadline)
                         .multilineTextAlignment(.trailing)
                 }
@@ -86,7 +88,16 @@ struct SurahAyahRow: View {
     
     var surah: Surah
     var ayah: Ayah
-        
+    var note: String? = nil
+
+    private var visibleLineCount: Int {
+        var lines = 0
+        if settings.showArabicText { lines += 1 }
+        if settings.showTransliteration { lines += 1 }
+        if settings.showEnglishSaheeh || settings.showEnglishMustafa { lines += 1 }
+        return max(lines, 1)
+    }
+    
     var body: some View {
         HStack {
             VStack {
@@ -106,28 +117,42 @@ struct SurahAyahRow: View {
             .foregroundColor(settings.accentColor.color)
             .padding(.trailing, 8)
             
-            VStack {
-                if(settings.showArabicText) {
-                    let text = settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic
+            if let note = note {
+                Text(note)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(visibleLineCount)
+            } else {
+                VStack {
+                    if settings.showArabicText {
+                        let text = settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic
+                        
+                        Text(settings.beginnerMode ? text.map { "\($0) " }.joined() : text)
+                            .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                     
-                    Text(settings.beginnerMode ? text.map { "\($0) " }.joined() : text)
-                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    if settings.showTransliteration {
+                        Text(ayah.textTransliteration)
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    if settings.showEnglishSaheeh {
+                        Text(ayah.textEnglishSaheeh)
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else if settings.showEnglishMustafa {
+                        Text(ayah.textEnglishMustafa)
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
-                
-                if(settings.showTransliteration) {
-                    Text(ayah.textTransliteration)
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                
-                if(settings.showEnglishTranslation) {
-                    Text(ayah.textEnglish)
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                .foregroundColor(.primary)
+                .lineLimit(1)
             }
-            .lineLimit(1)
         }
         .padding(.vertical, 2)
     }
@@ -145,299 +170,6 @@ private enum _FmtCache {
 @inline(__always)
 func formatMMSS(_ seconds: Double) -> String {
     _FmtCache.mmss.string(from: seconds) ?? "00:00"
-}
-
-struct LeftSwipeActions: View {
-    @EnvironmentObject private var settings: Settings
-
-    let surah: Int
-    let favoriteSurahs: Set<Int>
-    
-    var bookmarkedAyahs: Set<String>?
-    var bookmarkedSurah: Int?
-    var bookmarkedAyah: Int?
-    
-    private var isFavorite: Bool {
-        favoriteSurahs.contains(surah)
-    }
-    
-    private var isBookmarked: Bool {
-        if let bookmarkedAyahs = bookmarkedAyahs, let surah = bookmarkedSurah, let ayah = bookmarkedAyah {
-            return bookmarkedAyahs.contains("\(surah)-\(ayah)")
-        }
-        
-        return false
-    }
-
-    var body: some View {
-        #if !os(watchOS)
-        Button {
-            settings.hapticFeedback()
-            settings.toggleSurahFavorite(surah: surah)
-        } label: {
-            Image(systemName: isFavorite ? "star.fill" : "star")
-        }
-        .tint(settings.accentColor.color)
-        
-        if let surah = bookmarkedSurah, let ayah = bookmarkedAyah {
-            Button {
-                settings.hapticFeedback()
-                settings.toggleBookmark(surah: surah, ayah: ayah)
-            } label: {
-                Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-            }
-            .tint(settings.accentColor.color)
-        }
-        #endif
-    }
-}
-
-struct RightSwipeActions: View {
-    @EnvironmentObject private var settings: Settings
-    @EnvironmentObject private var quranPlayer: QuranPlayer
-
-    let surahID: Int
-    let surahName: String
-    
-    let ayahID: Int?
-    let certainReciter: Bool
-    
-    @Binding var searchText: String
-    @Binding var scrollToSurahID: Int
-    
-    init(
-        surahID: Int,
-        surahName: String,
-        ayahID: Int? = nil,
-        certainReciter: Bool = false,
-        searchText: Binding<String>,
-        scrollToSurahID: Binding<Int>
-    ) {
-        self.surahID = surahID
-        self.surahName = surahName
-        self.ayahID = ayahID
-        self.certainReciter = certainReciter
-        self._searchText = searchText
-        self._scrollToSurahID = scrollToSurahID
-    }
-
-    var body: some View {
-        #if !os(watchOS)
-        Button {
-            settings.hapticFeedback()
-            quranPlayer.playSurah(
-                surahNumber: surahID,
-                surahName: surahName,
-                certainReciter: certainReciter
-            )
-        } label: {
-            Image(systemName: "play.fill")
-        }
-        .tint(settings.accentColor.color)
-
-        if let ayah = ayahID {
-            Button {
-                settings.hapticFeedback()
-                quranPlayer.playAyah(surahNumber: surahID, ayahNumber: ayah)
-            } label: {
-                Image(systemName: "play.circle")
-            }
-        }
-
-        Button {
-            settings.hapticFeedback()
-            withAnimation {
-                searchText = ""
-                scrollToSurahID = surahID
-                self.endEditing()
-            }
-        } label: {
-            Image(systemName: "arrow.down.circle")
-        }
-        .tint(.secondary)
-        #endif
-    }
-}
-
-struct SurahContextMenu: View {
-    @EnvironmentObject var settings: Settings
-    @EnvironmentObject var quranData: QuranData
-    @EnvironmentObject var quranPlayer: QuranPlayer
-
-    let surahID: Int
-    let surahName: String
-    
-    let favoriteSurahs: Set<Int>
-    
-    @Binding var searchText: String
-    @Binding var scrollToSurahID: Int
-    
-    var lastListened: Bool?
-
-    private var isFavorite: Bool {
-        favoriteSurahs.contains(surahID)
-    }
-
-    var body: some View {
-        Button(role: isFavorite ? .destructive : .cancel) {
-            settings.hapticFeedback()
-            settings.toggleSurahFavorite(surah: surahID)
-        } label: {
-            Label(
-                isFavorite ? "Unfavorite Surah" : "Favorite Surah",
-                systemImage: isFavorite ? "star.fill" : "star"
-            )
-        }
-        
-        if lastListened == nil {
-            Button {
-                settings.hapticFeedback()
-                quranPlayer.playSurah(surahNumber: surahID, surahName: surahName)
-            } label: {
-                Label("Play Surah", systemImage: "play.fill")
-            }
-        }
-
-        Button {
-            settings.hapticFeedback()
-            
-            withAnimation {
-                searchText = ""
-                scrollToSurahID = surahID
-                self.endEditing()
-            }
-        } label: {
-            Text("Scroll To Surah")
-            Image(systemName: "arrow.down.circle")
-        }
-    }
-}
-
-struct AyahContextMenuModifier: ViewModifier {
-    @EnvironmentObject var settings: Settings
-    @EnvironmentObject var quranData: QuranData
-    @EnvironmentObject var quranPlayer: QuranPlayer
-
-    let surah: Int
-    let ayah: Int
-    
-    let favoriteSurahs: Set<Int>
-    let bookmarkedAyahs: Set<String>
-    
-    @Binding var searchText: String
-    @Binding var scrollToSurahID: Int
-    
-    let lastRead: Bool
-    
-    @State var shareSettings = ShareSettings()
-    @State var showAyahSheet = false
-
-    private var isBookmarked: Bool {
-        bookmarkedAyahs.contains("\(surah)-\(ayah)")
-    }
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        #if os(watchOS)
-        content
-        #else
-        content
-            .contextMenu {
-                if lastRead {
-                    Button(role: .destructive) {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            settings.lastReadSurah = 0
-                            settings.lastReadAyah = 0
-                        }
-                    } label: { Label("Remove", systemImage: "trash") }
-                    
-                    Divider()
-                }
-                
-                Button(role: isBookmarked ? .destructive : .cancel) {
-                    settings.hapticFeedback()
-                    settings.toggleBookmark(surah: surah, ayah: ayah)
-                } label: {
-                    Label(
-                        isBookmarked ? "Unbookmark Ayah" : "Bookmark Ayah",
-                        systemImage: isBookmarked ? "bookmark.fill" : "bookmark"
-                    )
-                }
-
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(surahNumber: surah, ayahNumber: ayah)
-                } label: {
-                    Label("Play Ayah", systemImage: "play.circle")
-                }
-
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(
-                        surahNumber: surah,
-                        ayahNumber: ayah,
-                        continueRecitation: true
-                    )
-                } label: {
-                    Label("Play from Ayah", systemImage: "play.circle.fill")
-                }
-
-                Button {
-                    settings.hapticFeedback()
-                    shareSettings = ShareSettings(
-                        arabic: settings.showArabicText,
-                        transliteration: settings.showTransliteration,
-                        translation: settings.showEnglishTranslation
-                    )
-                    showAyahSheet = true
-                } label: {
-                    Label("Share Ayah", systemImage: "square.and.arrow.up")
-                }
-
-                Divider()
-
-                if let surahObj = quranData.quran.first(where: { $0.id == surah }) {
-                    SurahContextMenu(
-                        surahID: surahObj.id,
-                        surahName: surahObj.nameTransliteration,
-                        favoriteSurahs: favoriteSurahs,
-                        searchText: $searchText,
-                        scrollToSurahID: $scrollToSurahID
-                    )
-                }
-            }
-            .sheet(isPresented: $showAyahSheet) {
-                ShareAyahSheet(
-                    shareSettings: $shareSettings,
-                    surahNumber: surah,
-                    ayahNumber: ayah
-                )
-            }
-        #endif
-    }
-}
-
-extension View {
-    func ayahContextMenuModifier(
-        surah: Int,
-        ayah: Int,
-        favoriteSurahs: Set<Int>,
-        bookmarkedAyahs: Set<String>,
-        searchText: Binding<String>,
-        scrollToSurahID: Binding<Int>,
-        lastRead: Bool = false
-    ) -> some View {
-        self.modifier(AyahContextMenuModifier(
-            surah: surah,
-            ayah: ayah,
-            favoriteSurahs: favoriteSurahs,
-            bookmarkedAyahs: bookmarkedAyahs,
-            searchText: searchText,
-            scrollToSurahID: scrollToSurahID,
-            lastRead: lastRead
-        ))
-    }
 }
 
 #if !os(watchOS)
@@ -527,21 +259,14 @@ struct LastListenedSurahRow: View {
                 }
                 .padding(.vertical, 8)
             }
-            .swipeActions(edge: .trailing) {
-                RightSwipeActions(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    certainReciter: true,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
-            .swipeActions(edge: .leading) {
-                LeftSwipeActions(
-                    surah: surah.id,
-                    favoriteSurahs: favoriteSurahs
-                )
-            }
+            .rightSwipeActions(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                certainReciter: true,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(surah: surah.id, favoriteSurahs: favoriteSurahs)
             #if !os(watchOS)
             .contextMenu {
                 Button(role: .destructive) {
@@ -610,30 +335,34 @@ struct LastReadAyahRow: View {
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah.id)-\(ayah.id)")
     }
+    
+    private var noteToShow: String? {
+        guard let idx = settings.bookmarkedAyahs.firstIndex(where: { $0.surah == surah.id && $0.ayah == ayah.id }) else {
+            return nil
+        }
+        let t = settings.bookmarkedAyahs[idx].note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (t?.isEmpty == false) ? t : nil
+    }
 
     var body: some View {
         Section(header: Text("LAST READ AYAH")) {
             NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                SurahAyahRow(surah: surah, ayah: ayah)
+                SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
             }
-            .swipeActions(edge: .trailing) {
-                RightSwipeActions(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    ayahID: ayah.id,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
-            .swipeActions(edge: .leading) {
-                LeftSwipeActions(
-                    surah: surah.id,
-                    favoriteSurahs: favoriteSurahs,
-                    bookmarkedAyahs: bookmarkedAyahs,
-                    bookmarkedSurah: surah.id,
-                    bookmarkedAyah: ayah.id
-                )
-            }
+            .rightSwipeActions(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                ayahID: ayah.id,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(
+                surah: surah.id,
+                favoriteSurahs: favoriteSurahs,
+                bookmarkedAyahs: bookmarkedAyahs,
+                bookmarkedSurah: surah.id,
+                bookmarkedAyah: ayah.id
+            )
             .ayahContextMenuModifier(
                 surah: surah.id,
                 ayah: ayah.id,
@@ -647,115 +376,8 @@ struct LastReadAyahRow: View {
     }
 }
 
-struct BookmarkAyahRow: View {
-    @EnvironmentObject private var settings: Settings
-    @EnvironmentObject private var quranData: QuranData
-    @EnvironmentObject private var quranPlayer: QuranPlayer
-
-    let bookmarkedAyah: BookmarkedAyah
-    
-    let favoriteSurahs: Set<Int>
-    let bookmarkedAyahs: Set<String>
-    
-    @Binding var searchText: String
-    @Binding var scrollToSurahID: Int
-
-    private var isBookmarked: Bool {
-        bookmarkedAyahs.contains("\(bookmarkedAyah.surah)-\(bookmarkedAyah.ayah)")
-    }
-
-    var body: some View {
-        guard
-            let surah = quranData.quran.first(where: { $0.id == bookmarkedAyah.surah }),
-            let ayah = surah.ayahs.first(where: { $0.id == bookmarkedAyah.ayah })
-        else { return AnyView(EmptyView()) }
-
-        return AnyView(
-            NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                SurahAyahRow(surah: surah, ayah: ayah)
-            }
-            .swipeActions(edge: .trailing) {
-                RightSwipeActions(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    ayahID: ayah.id,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
-            .swipeActions(edge: .leading) {
-                LeftSwipeActions(
-                    surah: surah.id,
-                    favoriteSurahs: favoriteSurahs,
-                    bookmarkedAyahs: bookmarkedAyahs,
-                    bookmarkedSurah: bookmarkedAyah.surah,
-                    bookmarkedAyah: bookmarkedAyah.ayah
-                )
-            }
-            .ayahContextMenuModifier(
-                surah: surah.id,
-                ayah: ayah.id,
-                favoriteSurahs: favoriteSurahs,
-                bookmarkedAyahs: bookmarkedAyahs,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID
-            )
-        )
-    }
-}
-
-struct FavoriteSurahRow: View {
-    @EnvironmentObject private var settings: Settings
-    @EnvironmentObject private var quranData: QuranData
-    @EnvironmentObject private var quranPlayer: QuranPlayer
-
-    let favoriteSurah: Int
-    
-    let favoriteSurahs: Set<Int>
-    
-    @Binding var searchText: String
-    @Binding var scrollToSurahID: Int
-
-    var body: some View {
-        guard let surah = quranData.quran.first(where: { $0.id == favoriteSurah })
-        else { return AnyView(EmptyView()) }
-
-        return AnyView(
-            NavigationLink(destination: AyahsView(surah: surah)) {
-                SurahRow(surah: surah)
-            }
-            .swipeActions(edge: .trailing) {
-                RightSwipeActions(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
-            .swipeActions(edge: .leading) {
-                LeftSwipeActions(
-                    surah: surah.id,
-                    favoriteSurahs: favoriteSurahs
-                )
-            }
-            #if !os(watchOS)
-            .contextMenu {
-                SurahContextMenu(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    favoriteSurahs: favoriteSurahs,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
-            #endif
-        )
-    }
-}
-
 struct AyahSearchResultRow: View {
     @EnvironmentObject private var settings: Settings
-    @EnvironmentObject private var quranPlayer: QuranPlayer
 
     let surah: Surah
     let ayah: Ayah
@@ -771,49 +393,45 @@ struct AyahSearchResultRow: View {
     }
 
     var body: some View {
-        Section(header: Text("AYAH SEARCH RESULT")) {
-            NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                SurahAyahRow(surah: surah, ayah: ayah)
-            }
-            .swipeActions(edge: .trailing) {
-                RightSwipeActions(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
-            .swipeActions(edge: .leading) {
-                LeftSwipeActions(
-                    surah: surah.id,
-                    favoriteSurahs: favoriteSurahs,
-                    bookmarkedAyahs: bookmarkedAyahs,
-                    bookmarkedSurah: surah.id,
-                    bookmarkedAyah: ayah.id,
-                )
-            }
-            .ayahContextMenuModifier(
-                surah: surah.id,
-                ayah: ayah.id,
-                favoriteSurahs: favoriteSurahs,
-                bookmarkedAyahs: bookmarkedAyahs,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID
-            )
+        NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
+            SurahAyahRow(surah: surah, ayah: ayah)
         }
+        .rightSwipeActions(
+            surahID: surah.id,
+            surahName: surah.nameTransliteration,
+            searchText: $searchText,
+            scrollToSurahID: $scrollToSurahID
+        )
+        .leftSwipeActions(
+            surah: surah.id,
+            favoriteSurahs: favoriteSurahs,
+            bookmarkedAyahs: bookmarkedAyahs,
+            bookmarkedSurah: surah.id,
+            bookmarkedAyah: ayah.id,
+        )
+        .ayahContextMenuModifier(
+            surah: surah.id,
+            ayah: ayah.id,
+            favoriteSurahs: favoriteSurahs,
+            bookmarkedAyahs: bookmarkedAyahs,
+            searchText: $searchText,
+            scrollToSurahID: $scrollToSurahID
+        )
     }
 }
 
-struct AyahSearchRow: View {
+struct AyahSearchRow: View, Equatable {
     @EnvironmentObject private var settings: Settings
     
     let surahName: String
     let surah: Int
     let ayah:  Int
     let query: String
+    
     let arabic: String
-    let english: String?
-    let translit: String?
+    let transliteration: String
+    let englishSaheeh: String
+    let englishMustafa: String
     
     let favoriteSurahs: Set<Int>
     let bookmarkedAyahs: Set<String>
@@ -822,64 +440,114 @@ struct AyahSearchRow: View {
     @Binding var scrollToSurahID: Int
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
+
+        // Precompute cleaned sources ONCE per render
+        let srcArabic  = settings.cleanSearch(arabic,          whitespace: false).removingArabicDiacriticsAndSigns
+        let srcTr      = settings.cleanSearch(transliteration, whitespace: false).removingArabicDiacriticsAndSigns
+        let srcSaheeh  = settings.cleanSearch(englishSaheeh,   whitespace: false).removingArabicDiacriticsAndSigns
+        let srcMustafa = settings.cleanSearch(englishMustafa,  whitespace: false).removingArabicDiacriticsAndSigns
+
+        // Matches
+        let mArabic  = !normalizedQuery.isEmpty && srcArabic.contains(normalizedQuery)
+        let mTr      = !normalizedQuery.isEmpty && srcTr.contains(normalizedQuery)
+        let mSaheeh  = !normalizedQuery.isEmpty && srcSaheeh.contains(normalizedQuery)
+        let mMustafa = !normalizedQuery.isEmpty && srcMustafa.contains(normalizedQuery)
+
+        // Arabic + Transliteration: show if ON or matched.
+        let showArabicLine  = settings.showArabicText      || mArabic
+        let showTrLine      = settings.showTransliteration || mTr
+
+        // --- English selection logic (only one unless both match) ---
+        let (showSaheehLine, showMustafaLine): (Bool, Bool) = {
+            let userSaheehOn  = settings.showEnglishSaheeh
+            let userMustafaOn = settings.showEnglishMustafa
+
+            if mSaheeh && mMustafa {
+                // both matched -> show both
+                return (true, true)
+            } else if mSaheeh || mMustafa {
+                // only the one that matched
+                return (mSaheeh, mMustafa)
+            } else {
+                // no matches -> respect toggles but cap to ONE line
+                if userSaheehOn && !userMustafaOn {
+                    return (true, false)
+                } else if userMustafaOn && !userSaheehOn {
+                    return (false, true)
+                } else if userSaheehOn && userMustafaOn {
+                    // both ON, no match -> pick default single
+                    // default = Saheeh; switch to (false, true) if you prefer Mustafa
+                    return (true, false)
+                } else {
+                    // neither ON -> none
+                    return (false, false)
+                }
+            }
+        }()
+
+        VStack(alignment: .leading, spacing: 8) {
             Text("\(surahName) \(surah):\(ayah)")
                 .font(.caption)
                 .foregroundColor(settings.accentColor.color)
-            
-            if settings.showArabicText {
+
+            if showArabicLine {
                 HighlightedSnippet(
                     source: arabic,
                     term: query,
                     font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                     accent: settings.accentColor.color,
-                    fg: .primary,
+                    fg: .primary
                 )
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
             }
-            
-            if settings.showTransliteration,
-               let tr = translit {
+
+            if showTrLine {
                 HighlightedSnippet(
-                    source: tr,
-                    term: query,
-                    font: .subheadline,
-                    accent: settings.accentColor.color,
-                    fg: .secondary,
-                )
-            }
-            
-            if settings.showEnglishTranslation,
-               let en = english {
-                HighlightedSnippet(
-                    source: en,
+                    source: transliteration,
                     term: query,
                     font: .footnote,
                     accent: settings.accentColor.color,
-                    fg: .secondary,
+                    fg: .secondary
+                )
+            }
+
+            if showSaheehLine {
+                HighlightedSnippet(
+                    source: englishSaheeh,
+                    term: query,
+                    font: .footnote,
+                    accent: settings.accentColor.color,
+                    fg: .secondary
+                )
+            }
+
+            if showMustafaLine {
+                HighlightedSnippet(
+                    source: englishMustafa,
+                    term: query,
+                    font: .footnote,
+                    accent: settings.accentColor.color,
+                    fg: .secondary
                 )
             }
         }
         .padding(.vertical, 2)
-        .swipeActions(edge: .trailing) {
-            RightSwipeActions(
-                surahID: surah,
-                surahName: surahName,
-                ayahID: ayah,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID
-            )
-        }
-        .swipeActions(edge: .leading) {
-            LeftSwipeActions(
-                surah: surah,
-                favoriteSurahs: favoriteSurahs,
-                bookmarkedAyahs: bookmarkedAyahs,
-                bookmarkedSurah: surah,
-                bookmarkedAyah: ayah
-            )
-        }
+        .rightSwipeActions(
+            surahID: surah,
+            surahName: surahName,
+            ayahID: ayah,
+            searchText: $searchText,
+            scrollToSurahID: $scrollToSurahID
+        )
+        .leftSwipeActions(
+            surah: surah,
+            favoriteSurahs: favoriteSurahs,
+            bookmarkedAyahs: bookmarkedAyahs,
+            bookmarkedSurah: surah,
+            bookmarkedAyah: ayah
+        )
         .ayahContextMenuModifier(
             surah: surah,
             ayah: ayah,
@@ -888,5 +556,12 @@ struct AyahSearchRow: View {
             searchText: $searchText,
             scrollToSurahID: $scrollToSurahID
         )
+    }
+    
+    static func == (l: Self, r: Self) -> Bool {
+        l.surah == r.surah && l.ayah == r.ayah &&
+        l.query == r.query &&
+        l.favoriteSurahs == r.favoriteSurahs &&
+        l.bookmarkedAyahs == r.bookmarkedAyahs
     }
 }
