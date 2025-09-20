@@ -227,7 +227,7 @@ struct MapView: View {
         .frame(maxWidth: .infinity)
         .background(settings.accentColor.color)
         .foregroundColor(.white)
-        .cornerRadius(12)
+        .cornerRadius(24)
         .padding(.horizontal, 16)
     }
 

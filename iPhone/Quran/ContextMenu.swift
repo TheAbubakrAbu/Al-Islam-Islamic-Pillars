@@ -367,6 +367,7 @@ struct LeftSwipeActions: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            #if !os(watchOS)
             .swipeActions(edge: .leading) {
                 Button {
                     settings.hapticFeedback()
@@ -386,6 +387,7 @@ struct LeftSwipeActions: ViewModifier {
                     .tint(settings.accentColor.color)
                 }
             }
+            #endif
             .confirmationDialog("Remove bookmark and delete note?", isPresented: $confirmRemoveNote, titleVisibility: .visible) {
                 Button("Remove", role: .destructive) {
                     settings.hapticFeedback()
@@ -435,40 +437,43 @@ struct RightSwipeActions: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        content.swipeActions(edge: .trailing) {
-            Button {
-                settings.hapticFeedback()
-                quranPlayer.playSurah(
-                    surahNumber: surahID,
-                    surahName: surahName,
-                    certainReciter: certainReciter
-                )
-            } label: {
-                Image(systemName: "play.fill")
-            }
-            .tint(settings.accentColor.color)
-
-            if let ayah = ayahID {
+        content
+            #if !os(watchOS)
+            .swipeActions(edge: .trailing) {
                 Button {
                     settings.hapticFeedback()
-                    quranPlayer.playAyah(surahNumber: surahID, ayahNumber: ayah)
+                    quranPlayer.playSurah(
+                        surahNumber: surahID,
+                        surahName: surahName,
+                        certainReciter: certainReciter
+                    )
                 } label: {
-                    Image(systemName: "play.circle")
+                    Image(systemName: "play.fill")
                 }
-            }
+                .tint(settings.accentColor.color)
 
-            Button {
-                settings.hapticFeedback()
-                withAnimation {
-                    searchText = ""
-                    scrollToSurahID = surahID
-                    endEditing()
+                if let ayah = ayahID {
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playAyah(surahNumber: surahID, ayahNumber: ayah)
+                    } label: {
+                        Image(systemName: "play.circle")
+                    }
                 }
-            } label: {
-                Image(systemName: "arrow.down.circle")
+
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        searchText = ""
+                        scrollToSurahID = surahID
+                        endEditing()
+                    }
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                }
+                .tint(.secondary)
             }
-            .tint(.secondary)
-        }
+            #endif
     }
 }
 
@@ -505,8 +510,6 @@ struct NoteEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
     
-    @FocusState private var noteFocused: Bool
-
     private let maxChars: Int = 300
 
     private var characterCount: Int { text.count }
@@ -526,18 +529,17 @@ struct NoteEditorSheet: View {
                     .modifier(HideEditorScrollBackground())
                     .textInputAutocapitalization(.sentences)
                     .disableAutocorrection(false)
-                    .focused($noteFocused)
                     .onChange(of: text) { newValue in
                         if newValue.count > maxChars {
                             text = String(newValue.prefix(maxChars))
                         }
                     }
                     .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .fill(cardFill)
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .stroke(cardStroke, lineWidth: 1)
                     )
 
@@ -579,11 +581,11 @@ struct NoteEditorSheet: View {
                 .accessibilityElement(children: .combine)
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
                 .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(cardFill)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .stroke(cardStroke, lineWidth: 1)
                 )
             }
@@ -606,14 +608,6 @@ struct NoteEditorSheet: View {
                     }
                     .disabled(isEmpty)
                 }
-            }
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    noteFocused = true
-                }
-            }
-            .onDisappear {
-                noteFocused = false
             }
         }
     }

@@ -86,7 +86,7 @@ struct HaramView: View {
                 Image("Al-Islam")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .cornerRadius(10)
+                        .cornerRadius(24)
                         #if !os(watchOS)
                         .contextMenu {
                             Button(action: {
@@ -154,7 +154,7 @@ struct NabawiView: View {
                 Image("Al-Quran")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .cornerRadius(10)
+                    .cornerRadius(24)
                     #if !os(watchOS)
                     .contextMenu {
                         Button(action: {
@@ -228,7 +228,7 @@ struct AqsaView: View {
                 Image("Al-Adhan")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .cornerRadius(10)
+                    .cornerRadius(24)
                     #if !os(watchOS)
                     .contextMenu {
                         Button(action: {

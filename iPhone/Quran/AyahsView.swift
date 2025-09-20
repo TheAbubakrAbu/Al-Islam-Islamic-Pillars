@@ -211,7 +211,7 @@ struct AyahsView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
                 .background(Color.clear.background(.ultraThinMaterial))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                 #if !os(watchOS)
                 .padding(.top, 6)
@@ -357,6 +357,8 @@ struct AyahsView: View {
             }
             .font(.footnote)
             .foregroundColor(settings.accentColor.color)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
         }
     }
     

@@ -72,6 +72,7 @@ struct AlIslamApp: App {
                     }
                 }
             }
+            //.statusBar(hidden: true)
             .environmentObject(settings)
             .environmentObject(quranData)
             .environmentObject(quranPlayer)

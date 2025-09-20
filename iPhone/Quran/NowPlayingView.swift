@@ -46,7 +46,8 @@ struct NowPlayingView: View {
                 }
             }
             .contextMenu { contextMenu(for: surah, ayah: ayahNum) }
-            .padding(.horizontal, 8)
+            .cornerRadius(24)
+            .padding(.horizontal)
             .transition(.opacity)
         )
         #else
@@ -159,7 +160,7 @@ struct NowPlayingView: View {
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
         .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(10)
+        .cornerRadius(24)
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying)
         .confirmationDialog("Remove bookmark and delete note?", isPresented: $confirmRemoveNote, titleVisibility: .visible) {

@@ -85,9 +85,12 @@ struct PrayerList: View {
                             : (fullPrayers ? fullPrayerTimes : prayerTimes)
                         ) { prayerTime in
                             ZStack {
-                                RoundedRectangle(cornerRadius: 15)
+                                RoundedRectangle(cornerRadius: 24)
                                     .fill(settings.currentPrayer?.nameTransliteration.contains(prayerTime.nameTransliteration) ?? false ? settings.accentColor.color.opacity(0.25) : .clear)
                                     .padding(.horizontal, -12)
+                                    #if !os(watchOS)
+                                    .padding(.vertical, -11)
+                                    #endif
                                 
                                 HStack {
                                     Button(action: {

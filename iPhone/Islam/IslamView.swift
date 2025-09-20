@@ -76,7 +76,7 @@ struct IslamView: View {
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle("Al-Islam")
             
-            TasbihView()
+            ArabicView()
         }
     }
 }
@@ -137,7 +137,7 @@ struct AlIslamAppsSection: View {
     var body: some View {
         Section(header: Text("AL-ISLAMIC APPS")) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [.yellow.opacity(0.25), .green.opacity(0.25)]),
@@ -147,6 +147,9 @@ struct AlIslamAppsSection: View {
                     )
                     .shadow(color: .primary.opacity(0.25), radius: 5, x: 0, y: 1)
                     .padding(.horizontal, -12)
+                    #if !os(watchOS)
+                    .padding(.vertical, -11)
+                    #endif
                 
                 HStack(spacing: spacing) {
                     Card(
@@ -190,7 +193,7 @@ private struct Card: View {
                 Image(title)
                     .resizable()
                     .scaledToFit()
-                    .cornerRadius(10)
+                    .cornerRadius(15)
                     .shadow(radius: 4)
 
                 #if !os(watchOS)

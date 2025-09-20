@@ -121,16 +121,15 @@ struct AdhanView: View {
                                     .lineLimit(nil)
                             }
                             #else
-                            if settings.prayers != nil, let currentLoc = settings.currentLocation {
-                                let currentCity = currentLoc.city
-                                Text(currentCity)
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                            } else {
-                                Text("No location")
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
+                            Group {
+                                if settings.prayers != nil, let currentLoc = settings.currentLocation {
+                                    Text(currentLoc.city)
+                                } else {
+                                    Text("No location")
+                                }
                             }
+                            .font(.subheadline)
+                            .lineLimit(2)
                             #endif
 
                             Spacer()
@@ -146,6 +145,7 @@ struct AdhanView: View {
                         Text("Compass may not be accurate on Apple Watch")
                             .font(.caption2)
                             .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         #endif
                     }
                     .animation(.easeInOut, value: showBigQibla)
@@ -197,7 +197,6 @@ struct AdhanView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
-                    .padding(.trailing, settings.defaultView ? 6 : 0)
                 }
             }
             .sheet(isPresented: $showingSettingsSheet) {

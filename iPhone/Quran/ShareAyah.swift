@@ -115,7 +115,7 @@ struct ShareAyahSheet: View {
                             Image(uiImage: img)
                                 .resizable()
                                 .scaledToFit()
-                                .cornerRadius(15)
+                                .cornerRadius(24)
                                 .padding(.horizontal, 16)
                                 .contextMenu { copyMenu(image: img) }
                         }
@@ -125,7 +125,7 @@ struct ShareAyahSheet: View {
                             .foregroundColor(.white)
                             .padding()
                             .background(Color.black)
-                            .cornerRadius(15)
+                            .cornerRadius(24)
                             .padding(.horizontal, 16)
                             .contextMenu { copyMenu(image: generatedImage) }
                             .lineLimit(nil)
@@ -213,7 +213,7 @@ struct ShareAyahSheet: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(settings.accentColor.color)
-                .cornerRadius(10)
+                .cornerRadius(24)
                 .foregroundColor(.primary)
         }
     }
@@ -334,8 +334,8 @@ struct ShareAyahSheet: View {
                 append(ayah.textEnglishSaheeh, bodyAttr)
             }
             if shareSettings.englishMustafa {
-                if shareSettings.englishSaheeh { append("\n\n", bodyAttr) } // spacer between translations
-                append("— Mustafa Khattab", captionAttr)
+                if shareSettings.englishSaheeh { append("\n\n", bodyAttr) }
+                append("— Clear Quran (Mustafa Khattab)", captionAttr)
                 append("\n", bodyAttr)
                 append(ayah.textEnglishMustafa, bodyAttr)
             }

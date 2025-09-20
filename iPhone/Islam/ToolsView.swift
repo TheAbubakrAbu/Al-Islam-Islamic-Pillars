@@ -296,13 +296,13 @@ struct TasbihView: View {
             Section(header: Text("GLORIFICATIONS OF ALLAH ﷻ‎")) {
                 ForEach(tasbihData.indices, id: \.self) { index in
                     ZStack {
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 24)
                             .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.0001))
                             #if !os(watchOS)
                             .padding(.horizontal, -12)
+                            .padding(.vertical, -11)
                             #else
-                            .padding(.horizontal, -6)
-                            .padding(.vertical, -7)
+                            .padding(-7)
                             #endif
                         
                         TasbihRow(tasbih: tasbihData[index], counter: binding(for: index))
@@ -341,7 +341,7 @@ struct TasbihView: View {
                     }
                 }
                 .padding()
-                .cornerRadius(15)
+                .cornerRadius(24)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .onTapGesture {
                     settings.hapticFeedback()
@@ -804,7 +804,7 @@ private struct WallpaperCell: View {
             Image(wallpaper.imageName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .cornerRadius(10)
+                .cornerRadius(24)
                 #if !os(watchOS)
                 .contextMenu {
                     Button {
