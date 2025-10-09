@@ -201,6 +201,8 @@ private struct Card: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .padding(.top, 4)
                 #endif
             }

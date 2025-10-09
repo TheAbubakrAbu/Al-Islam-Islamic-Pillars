@@ -156,6 +156,7 @@ private struct UpcomingPrayerCell: View {
                 ProgressView(value: progress)
                     .tint(settings.accentColor.color)
                     .padding(.top, 4)
+                
                 timeInfo
             }
             .frame(maxWidth: .infinity, alignment: .trailing)

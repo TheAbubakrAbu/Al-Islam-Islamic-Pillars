@@ -70,12 +70,10 @@ final class QuranPlayer: ObservableObject {
         
         switch type {
         case .began:
-            // System interruption (call, Siri, etc.) — pause and allow dimming
             pause()
             idleTimerSet(false)
             
         case .ended:
-            // Resume only if the system recommends it; only then keep screen awake
             if let opts = user[AVAudioSessionInterruptionOptionKey] as? UInt,
                AVAudioSession.InterruptionOptions(rawValue: opts).contains(.shouldResume) {
                 player?.play()
@@ -98,14 +96,14 @@ final class QuranPlayer: ObservableObject {
             player?.play()
             isPlaying = true
             isPaused = false
-            idleTimerSet(true)           // ensure screen stays awake when playing
+            idleTimerSet(true)
             updateNowPlayingInfo()
             return .success
         }
         
         cmd.pauseCommand.addTarget { [unowned self] _ in
             guard isPlaying else { return .commandFailed }
-            pause()                      // pause() already sets idleTimerSet(false)
+            pause()
             return .success
         }
         
@@ -436,7 +434,24 @@ final class QuranPlayer: ObservableObject {
         } else {
             if continueRecitation {
                 queuePlayer = AVQueuePlayer()
-                if let fi = firstItem { queuePlayer?.insert(fi, after: nil) }
+                
+                if let fi = firstItem {
+                    fi.preferredForwardBufferDuration = 5
+                    queuePlayer?.insert(fi, after: nil)
+                    
+                    if let surah = quranData.quran.first(where: { $0.id == surahNumber }),
+                       ayahNumber < surah.numberOfAyahs,
+                       let reciter = reciters.first(where: { $0.name == settings.reciter })
+                    {
+                        let nextGlobalId = quranData.quran.prefix(surah.id - 1).reduce(0) { $0 + $1.numberOfAyahs } + (ayahNumber + 1)
+                        if let nextURL = URL(string: "https://cdn.islamic.network/quran/audio/\(reciter.ayahBitrate)/\(reciter.ayahIdentifier)/\(nextGlobalId).mp3") {
+                            let nextItem = AVPlayerItem(url: nextURL)
+                            nextItem.preferredForwardBufferDuration = 5
+                            queuePlayer?.insert(nextItem, after: fi)
+                        }
+                    }
+                }
+                
                 player = queuePlayer
             } else {
                 player = AVPlayer(playerItem: firstItem)
@@ -477,30 +492,41 @@ final class QuranPlayer: ObservableObject {
             }
         }
         
-        // If we are using a queue (continueRecitation without repeats), keep the "now playing" title in sync
         if let qp = queuePlayer {
-            queuePlayerItemObserver = qp.observe(\.currentItem, options: [.old, .new]) { [weak self] _, _ in
-                guard let self = self else { return }
-                guard
-                    let s = self.currentSurahNumber,
-                    let cur = self.currentAyahNumber,
-                    let sur = self.quranData.quran.first(where: { $0.id == s }),
-                    let rec = reciters.first(where: { $0.name == self.settings.reciter })
+            let prefetchObs = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self = self,
+                      let s = self.currentSurahNumber,
+                      let a = self.currentAyahNumber,
+                      let sur = self.quranData.quran.first(where: { $0.id == s }),
+                      let reciter = reciters.first(where: { $0.name == self.settings.reciter })
                 else { return }
-                
-                self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(cur)" + self.repeatSuffix(
-                    total: self.ayahRepeatCount,
-                    remaining: self.ayahRepeatRemaining
-                )
-                self.nowPlayingReciter = rec.ayahIdentifier.contains("minshawi") && !rec.name.contains("Minshawi")
-                    ? "Muhammad Al-Minshawi (Murattal)" : rec.name
-                self.updateNowPlayingInfo()
+
+                var nextSurahId = s
+                var nextAyahNumber = a + 2
+                if nextAyahNumber > sur.numberOfAyahs {
+                    nextSurahId += 1
+                    nextAyahNumber = 1
+                }
+
+                guard (1...114).contains(nextSurahId),
+                      let nextSurah = self.quranData.quran.first(where: { $0.id == nextSurahId })
+                else { return }
+
+                let nextGlobalId = self.quranData.quran.prefix(nextSurah.id - 1).reduce(0) { $0 + $1.numberOfAyahs } + nextAyahNumber
+                guard let url = URL(string: "https://cdn.islamic.network/quran/audio/\(reciter.ayahBitrate)/\(reciter.ayahIdentifier)/\(nextGlobalId).mp3") else { return }
+
+                let nextItem = AVPlayerItem(url: url)
+                nextItem.preferredForwardBufferDuration = 5
+                qp.insert(nextItem, after: nil)
             }
-        } else {
-            queuePlayerItemObserver = nil
+
+            notificationObservers.append(prefetchObs)
         }
         
-        // Handle item end: reuse on repeat; otherwise continue/stop.
         let endObs = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: nil,
@@ -512,11 +538,9 @@ final class QuranPlayer: ObservableObject {
                   let sur = self.quranData.quran.first(where: { $0.id == s })
             else { return }
             
-            // If we still have repeats left for THIS ayah, reuse the same item by seeking to 0.
             if self.ayahRepeatRemaining > 1 {
                 self.ayahRepeatRemaining -= 1
                 self.player?.seek(to: .zero) { _ in
-                    // Refresh now playing title with new repeat index
                     self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(a)" +
                         self.repeatSuffix(total: self.ayahRepeatCount, remaining: self.ayahRepeatRemaining)
                     self.updateNowPlayingInfo()
@@ -527,9 +551,7 @@ final class QuranPlayer: ObservableObject {
                 return
             }
             
-            // Repeats exhausted:
             if self.continueRecitationFromAyah, a < sur.numberOfAyahs {
-                // Move to the next ayah as a single pass (no loop)
                 self.ayahRepeatCount = 1
                 self.ayahRepeatRemaining = 1
                 self.playAyah(
@@ -539,7 +561,6 @@ final class QuranPlayer: ObservableObject {
                     repeatCount: 1
                 )
             } else {
-                // End of the line for this ayah
                 self.stop()
             }
         }
