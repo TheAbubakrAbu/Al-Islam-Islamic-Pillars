@@ -14,6 +14,7 @@ struct HighlightedSnippet: View {
         let result = highlight(source: source, term: spacedQueryIfNeeded)
         Text(result)
             .font(font)
+            .lineLimit(nil)
             #if !os(watchOS)
             .textSelection(.enabled)
             #endif

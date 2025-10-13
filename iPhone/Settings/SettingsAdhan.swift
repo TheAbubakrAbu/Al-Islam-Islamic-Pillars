@@ -702,7 +702,7 @@ extension Settings {
         guard triggerTime > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Al‑Islam"
+        content.title = "Al-Islam"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = .default
 

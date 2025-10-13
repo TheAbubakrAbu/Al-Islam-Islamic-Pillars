@@ -12,6 +12,8 @@ struct QuranView: View {
     @State private var verseHits: [VerseIndexEntry] = []
     @State private var hasMoreHits = true
     @State private var showAyahSearch = false
+    @State private var blockAyahSearchAfterZero = false
+    @State private var zeroResultQueryLength = 0
     private let hitPageSize = 5
         
     private static let arFormatter: NumberFormatter = {
@@ -295,29 +297,39 @@ struct QuranView: View {
                     }
                     
                     if settings.groupBySurah || (!searchText.isEmpty && settings.searchForSurahs) {
-                        Section(header: searchText.isEmpty ? AnyView(SurahsHeader()) : AnyView(Text("SURAH SEARCH RESULTS"))) {
-                            let cleanedSearch = settings.cleanSearch(searchText.replacingOccurrences(of: ":", with: ""))
-                            let surahAyahPair = searchText.split(separator: ":").map(String.init)
-                            let upperQuery = searchText.uppercased()
-                            let numericQuery: Int? = {
-                                if surahAyahPair.count == 2 {
-                                    return Int(surahAyahPair[0]) ?? arabicToEnglishNumber(surahAyahPair[0])
+                        let cleanedSearch = settings.cleanSearch(searchText.replacingOccurrences(of: ":", with: ""))
+                        let surahAyahPair = searchText.split(separator: ":").map(String.init)
+                        let upperQuery = searchText.uppercased()
+                        let numericQuery: Int? = {
+                            if surahAyahPair.count == 2 {
+                                return Int(surahAyahPair[0]) ?? arabicToEnglishNumber(surahAyahPair[0])
+                            } else {
+                                return Int(cleanedSearch) ?? arabicToEnglishNumber(cleanedSearch)
+                            }
+                        }()
+
+                        let filteredSurahs: [Surah] = quranData.quran.filter { surah in
+                            if let n = numericQuery, n == surah.id { return true }
+                            if searchText.isEmpty { return true }
+                            return upperQuery.contains(surah.nameEnglish.uppercased())                     ||
+                                   upperQuery.contains(surah.nameTransliteration.uppercased())             ||
+                                   settings.cleanSearch(surah.nameArabic).contains(cleanedSearch)          ||
+                                   settings.cleanSearch(surah.nameTransliteration).contains(cleanedSearch) ||
+                                   settings.cleanSearch(surah.nameEnglish).contains(cleanedSearch)         ||
+                                   settings.cleanSearch(String(surah.id)).contains(cleanedSearch)          ||
+                                   settings.cleanSearch(arabicNumberString(from: surah.id)).contains(cleanedSearch)
+                        }
+
+                        Section(header:
+                            Group {
+                                if searchText.isEmpty {
+                                    SurahsHeader()
                                 } else {
-                                    return Int(cleanedSearch) ?? arabicToEnglishNumber(cleanedSearch)
+                                    Text("SURAH SEARCH RESULTS (\(filteredSurahs.count))")
                                 }
-                            }()
-                            
-                            ForEach(quranData.quran.filter { surah in
-                                if let n = numericQuery, n == surah.id { return true }
-                                if searchText.isEmpty { return true }
-                                return upperQuery.contains(surah.nameEnglish.uppercased())            ||
-                                       upperQuery.contains(surah.nameTransliteration.uppercased())    ||
-                                       settings.cleanSearch(surah.nameArabic).contains(cleanedSearch)          ||
-                                       settings.cleanSearch(surah.nameTransliteration).contains(cleanedSearch) ||
-                                       settings.cleanSearch(surah.nameEnglish).contains(cleanedSearch)         ||
-                                       settings.cleanSearch(String(surah.id)).contains(cleanedSearch)          ||
-                                       settings.cleanSearch(arabicNumberString(from: surah.id)).contains(cleanedSearch)
-                            }) { surah in
+                            }
+                        ) {
+                            ForEach(filteredSurahs, id: \.id) { surah in
                                 NavigationLink(destination: AyahsView(surah: surah)) {
                                     SurahRow(surah: surah)
                                 }
@@ -527,15 +539,24 @@ struct QuranView: View {
                             let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard verseHits.isEmpty, !q.isEmpty else { return }
 
+                            if blockAyahSearchAfterZero && q.count > zeroResultQueryLength { return }
+
                             let (first, more) = fetchHits(query: q, limit: hitPageSize, offset: 0)
                             withAnimation {
                                 verseHits = first
                                 hasMoreHits = more
+                                if first.isEmpty {
+                                    blockAyahSearchAfterZero = true
+                                    zeroResultQueryLength = q.count
+                                } else {
+                                    blockAyahSearchAfterZero = false
+                                }
                             }
                         }
                         .onDisappear {
                             withAnimation {
                                 showAyahSearch = false
+                                blockAyahSearchAfterZero = false
                             }
                         }
                         .onChange(of: searchText) { txt in
@@ -543,21 +564,40 @@ struct QuranView: View {
                                 withAnimation {
                                     verseHits = []
                                     hasMoreHits = false
+                                    blockAyahSearchAfterZero = false
                                 }
                                 return
                             }
+
                             let q = txt.trimmingCharacters(in: .whitespacesAndNewlines)
+
                             guard !q.isEmpty else {
                                 withAnimation {
                                     verseHits = []
                                     hasMoreHits = false
+                                    blockAyahSearchAfterZero = false
                                 }
                                 return
                             }
+
+                            if blockAyahSearchAfterZero {
+                                if q.count < zeroResultQueryLength {
+                                    blockAyahSearchAfterZero = false
+                                } else if q.count > zeroResultQueryLength {
+                                    return
+                                }
+                            }
+
                             let (first, more) = fetchHits(query: q, limit: hitPageSize, offset: 0)
                             withAnimation {
                                 verseHits = first
                                 hasMoreHits = more
+                                if first.isEmpty {
+                                    blockAyahSearchAfterZero = true
+                                    zeroResultQueryLength = q.count
+                                } else {
+                                    blockAyahSearchAfterZero = false
+                                }
                             }
                         }
                     }

@@ -245,11 +245,11 @@ struct AyahRow: View {
                 }
                 .padding(10)
                 .background(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(Color.secondary.opacity(0.08))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 20)
                         .stroke(settings.accentColor.color.opacity(0.25), lineWidth: 1)
                 )
                 .contentShape(Rectangle())
@@ -275,6 +275,7 @@ struct AyahRow: View {
                 )
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: .infinity, alignment: .trailing)
+                .lineLimit(nil)
             }
 
             if showTranslit {
@@ -288,6 +289,7 @@ struct AyahRow: View {
                 )
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(nil)
             }
 
             if showEnglishSaheeh {
@@ -306,6 +308,7 @@ struct AyahRow: View {
                 }
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(nil)
             }
 
             if showEnglishMustafa {
@@ -324,6 +327,7 @@ struct AyahRow: View {
                 }
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(nil)
             }
         }
         .lineLimit(nil)
