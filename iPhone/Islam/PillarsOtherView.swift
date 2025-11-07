@@ -45,6 +45,12 @@ struct PillarsOtherView: View {
         }
         
         Section(header: Text("QURAN & TAFSIR")) {
+            NavigationLink(destination: CompileView()) {
+                Text("Compilation of the Quran")
+                    .font(.subheadline)
+            }
+            .padding(.vertical, 4)
+            
             NavigationLink(destination: TajweedView()) {
                 Text("Tajweed")
                     .font(.subheadline)
@@ -52,7 +58,19 @@ struct PillarsOtherView: View {
             .padding(.vertical, 4)
             
             NavigationLink(destination: JuzView()) {
-                Text("30 Juz")
+                Text("The 30 Juz (Parts)")
+                    .font(.subheadline)
+            }
+            .padding(.vertical, 4)
+            
+            NavigationLink(destination: AhrufView()) {
+                Text("The 7 Ahruf (Modes)")
+                    .font(.subheadline)
+            }
+            .padding(.vertical, 4)
+            
+            NavigationLink(destination: QiraatView()) {
+                Text("The 10 Qiraat (Recitations)")
                     .font(.subheadline)
             }
             .padding(.vertical, 4)
@@ -581,6 +599,155 @@ struct CalendarView: View {
     }
 }
 
+struct CompileView: View {
+    @EnvironmentObject var settings: Settings
+
+    var body: some View {
+        List {
+            Section(header: Text("OVERVIEW")) {
+                Text("From the first revelation, the Quran was preserved by the Companions through precise memorization (hifdh) and careful writing on parchments, leather, bones, and leaves. Prophet Muhammad (peace and blessings be upon him) had official scribes (including Zayd ibn Thabit) who wrote verses as they were revealed.")
+                    .font(.body)
+
+                Text("Every year in Ramadan, Jibril (Gabriel) reviewed the Quran with Prophet Muhammad (peace and blessings be upon him); in the final year this review occurred twice (al-Ardah al-Akhirah). Prophet Muhammad (peace and blessings be upon him) taught the Companions the exact wording, pronunciation, and the order in which the surahs and ayat should be recited.")
+                    .font(.body)
+            }
+
+            Section(header: Text("ALLAH’S PROMISE OF PRESERVATION")) {
+                Text("“Indeed, We have sent down the Reminder, and indeed, We will be its Guardian.” (Quran 15:9)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("“Move not your tongue with it to hasten it. Indeed, upon Us is its collection and its recitation. So when We have recited it, then follow its recitation. Then upon Us is its clarification.” (Quran 75:16–19)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("“And recite the Quran with measured recitation.” (Quran 73:4)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("“[It is] a Quran which We have divided (by intervals) so that you might recite it to the people over a prolonged period, and We have sent it down progressively.” (Quran 17:106)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+
+            Section(header: Text("DURING THE PROPHET’S LIFETIME ﷺ")) {
+                Text("• Memorization first: Many Companions memorized the Quran word-for-word and reviewed it with Prophet Muhammad (peace and blessings be upon him) in prayer and lessons.")
+                    .font(.body)
+                Text("• Official scribes: Verses were dictated to scribes such as Zayd ibn Thabit, Ubayy ibn Ka‘b, and others, and kept as written fragments verified by Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+                Text("• Annual review: Jibril reviewed the entire Quran with Prophet Muhammad (peace and blessings be upon him) yearly in Ramadan; in the final year, the review occurred twice, confirming wording and order.")
+                    .font(.body)
+            }
+
+            Section(header: Text("FIRST COMPILATION UNDER ABU BAKR")) {
+                Text("After the Battle of Yamamah, many memorizers were martyred. At the counsel of Umar ibn al-Khattab, Caliph Abu Bakr commissioned Zayd ibn Thabit to collect the Quran into one compiled manuscript.")
+                    .font(.body)
+
+                Text("Zayd gathered the Quran from written materials and from those who had memorized it, accepting verses only when corroborated by multiple reliable witnesses and his own memorization, all according to what had been reviewed with Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+
+                Text("This compiled mushaf was kept with Abu Bakr, then with Umar, and after Umar with Hafsah bint Umar (may Allah be pleased with them).")
+                    .font(.body)
+            }
+
+            Section(header: Text("STANDARDIZATION UNDER UTHMAN")) {
+                Text("As Islam spread, differences in regional reading threatened dispute. Caliph Uthman ibn Affan formed a committee led by Zayd ibn Thabit with senior Qurayshi scholars to produce standardized copies based on the Abu Bakr compilation and the established Uthmanic rasm (consonantal skeleton) that could accommodate the revealed modes.")
+                    .font(.body)
+
+                Text("Uthman sent official copies to major centers (e.g., Kufa, Basra, Sham) and asked that non-verified personal materials be retired to prevent confusion between private notes/duas and the Quranic text. The Companions agreed with this measure, preserving unity upon the authenticated text.")
+                    .font(.body)
+
+                Text("This standardization did not remove revelation; rather, it unified the community upon the verified mushaf that preserved what remained from the seven Ahruf in the Uthmanic rasm and ensured consistent public recitation.")
+                    .font(.body)
+            }
+
+            Section(header: Text("CONSENSUS OF THE COMPANIONS")) {
+                Text("The Companions — foremost memorizers and teachers — were unanimous in accepting the compilation and the Uthmanic copies. It is widely reported that Abu Bakr, Umar, Uthman, and Ali were among the foremost memorizers and teachers of the Quran, and none objected to the standardized mushaf.")
+                    .font(.body)
+
+                Text("Zayd ibn Thabit led the technical work in both Abu Bakr’s and Uthman’s projects, bringing rigorous verification. Senior scholars, including Quraysh experts, reviewed and approved the copies.")
+                    .font(.body)
+            }
+
+            Section(header: Text("THE FOUR MASTERS & LEADING TRANSMITTERS")) {
+                Text("Prophet Muhammad (peace and blessings be upon him) said: “Take the Quran from four: Abdullah ibn Masud, Salim (the freed slave of Abu Hudhayfah), Ubayy ibn Ka‘b, and Mu‘adh ibn Jabal.” (Sahih al-Bukhari)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("These masters, together with others like Zayd ibn Thabit, were key references for wording, recitation, and teaching, anchoring transmission among the Companions and their students.")
+                    .font(.body)
+            }
+
+            Section(header: Text("AHRUF, QIRAAT, AND THE UTHMANIC RASM")) {
+                Text("Prophet Muhammad (peace and blessings be upon him) taught that the Quran was revealed in seven Ahruf (modes) for ease. The Uthmanic rasm allowed what remained of those modes to be read and transmitted through canonical Qiraat verified by chains. The Ten Qiraat (with their twenty riwayaat) are mutawatir and reflect how the prophetic recitation was preserved in writing and oral teaching.")
+                    .font(.body)
+
+                Text("Thus, standardization did not limit revelation; it safeguarded it — preventing private notes and unverified materials from being mistaken for the Quran — while preserving the legitimate readings taught by Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+            }
+
+            Section(header: Text("KEY REPORTS (BRIEF)")) {
+                Text("• Seven Ahruf: “The Quran was revealed in seven Ahruf, so recite whichever is easiest for you.” (Sahih al-Bukhari; Sahih Muslim)")
+                    .font(.body)
+                Text("• Double review in final Ramadan (al-Ardah al-Akhirah): reported in authentic narrations.")
+                    .font(.body)
+                Text("• Abu Bakr’s compilation via Zayd after Yamamah: authentic reports in Sahih collections.")
+                    .font(.body)
+                Text("• Uthman’s committee (with Zayd) and distribution of official copies: authentic reports in Sahih collections.")
+                    .font(.body)
+            }
+
+            Section(header: Text("MANUSCRIPT EVIDENCE (HISTORICAL NOTES)")) {
+                Text("Early Quranic manuscripts discovered in different regions (e.g., Hijaz, Yemen, Syria, North Africa, Anatolia) reflect the early Uthmanic rasm and align with the text recited today.")
+                    .font(.body)
+
+                Text("Examples often cited by historians include: the Birmingham fragments (radiocarbon dated to the earliest period of Islam), folios from Sana’a (including palimpsests showing early layers of writing), and early codices associated with major centers and later libraries (e.g., Topkapi).")
+                    .font(.body)
+
+                Text("While scholarly studies analyze paleography, orthography, and dating techniques, the consonantal text aligns with the standardized Uthmanic tradition, and the Quran remains read globally in the same wording preserved by the Ummah.")
+                    .font(.body)
+            }
+
+            Section(header: Text("WHY WERE PRIVATE MATERIALS RETIRED?")) {
+                Text("Some Companions wrote personal notes — duas, explanations, or hadith — near Quranic passages. To prevent confusion between private annotations and the Quran, and to avoid unchecked variants, Uthman ordered that only the verified official copies be used for public recitation and that other materials be retired.")
+                    .font(.body)
+
+                Text("No Companion rejected the standardized mushaf. The community recited, taught, and transmitted the same Quran by memorization and writing through every generation.")
+                    .font(.body)
+            }
+
+            Section(header: Text("CONTINUITY UNTIL TODAY")) {
+                Text("The Quran we hold today is the same revelation taught by Prophet Muhammad (peace and blessings be upon him), preserved through the consensus of the Companions, the Uthmanic rasm, the living tradition of memorization, and the mutawatir Qiraat. Around the world, millions memorize the entire Quran — letter for letter — continuing an unbroken chain of transmission.")
+                    .font(.body)
+
+                Text("Public recitation, prayer, and education remain bound to the verified text. The Ummah’s practice fulfills Allah's (Glorified and Exalted be He) promise: its preservation is both textual and living.")
+                    .font(.body)
+            }
+
+            Section(header: Text("SELECT VERSES & REMINDERS")) {
+                Text("“And when the Quran is recited, then listen to it and pay attention that you may receive mercy.” (Quran 7:204)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("“Do they not reflect upon the Quran? If it had been from other than Allah (Glorified and Exalted be He), they would have found within it much contradiction.” (Quran 4:82)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("“Falsehood cannot approach it from before it or from behind it; [it is] a revelation from One All-Wise, Praiseworthy.” (Quran 41:42)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+            
+            Section(header: Text("USEFUL LINKS")) {
+                Text("Learn More about the Compilation of the Quran: https://www.youtube.com/watch?v=n281Zyywyn4&t=343s")
+                    .font(.caption)
+            }
+        }
+        .navigationTitle("Compilation of the Quran")
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+    }
+}
+
 struct TajweedView: View {
     @EnvironmentObject var settings: Settings
 
@@ -665,7 +832,7 @@ struct JuzView: View {
                 Text("This structure fosters a daily relationship with the Quran and encourages reflection on its meanings.")
                     .font(.body)
 
-                Text("The Prophet Muhammad (peace and blessings be upon him) emphasized balanced recitation, saying:")
+                Text("Prophet Muhammad (peace and blessings be upon him) emphasized balanced recitation, saying:")
                     .font(.body)
 
                 Text("“He who recites the Quran in less than three days does not grasp its meaning” (Sunan Abu Dawud 1394).")
@@ -673,10 +840,250 @@ struct JuzView: View {
                     .foregroundColor(settings.accentColor.color)
             }
         }
-        .navigationTitle("Juz")
+        .navigationTitle("Thirty Juz")
         .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
+
+struct AhrufView: View {
+    @EnvironmentObject var settings: Settings
+
+    var body: some View {
+        List {
+            Section(header: Text("OVERVIEW")) {
+                Text("The Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحْرُف) — the plural of Harf (حَرْف). The word Harf comes from the Arabic root H–r–f (ح ر ف), meaning “edge, border, side, or angle,” referring to a particular “way” or “mode.” Islamically and Quranically, Ahruf refers to the divinely revealed modes of recitation.")
+                    .font(.body)
+
+                Text("A Harf (حَرْف) — literally meaning “edge/side/aspect,” and in this context “a mode/way of reciting” — refers to a divinely revealed manner of recitation that includes slight differences in pronunciation, vowel patterns, pausing/connection, or permitted word-forms, while preserving the exact same meaning and guidance.")
+                    .font(.body)
+
+                Text("All seven Ahruf are revelation from Allah (Glorified and Exalted be He). They are not scholarly opinions nor later inventions — they are part of the Quran that Allah (Glorified and Exalted be He) sent down to Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+            }
+
+            Section(header: Text("WHY SEVEN AHRUF?")) {
+                Text("The Arabs at the time of revelation had many dialects (Quraysh, Hudhayl, Tamim, Hawazin, etc.). Allah (Glorified and Exalted be He), in His mercy, revealed the Quran in seven modes so that every tribe could recite the Quran easily without difficulty or burden.")
+                    .font(.body)
+
+                Text("Allah (Glorified and Exalted be He) did not reveal seven different Qurans — rather, one Quran with divinely allowed flexibility, making memorization and recitation easier.")
+                    .font(.body)
+            }
+
+            Section(header: Text("PROPHETIC HADITH ON THE SEVEN AHRUF")) {
+                Text("Prophet Muhammad (peace and blessings be upon him) said:")
+                    .font(.body)
+
+                Text("“The Quran was revealed in seven Ahruf, so recite whichever is easiest for you.”\n— Sahih al-Bukhari • Sahih Muslim")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Another narration explains how Jibril kept requesting ease for the Ummah:")
+                    .font(.body)
+
+                Text("“Jibril recited to me in one harf. I asked him to increase it… until he ended with seven Ahruf.”\n— Sahih Muslim")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("In the famous incident of Umar and Hisham ibn Hakim — both of them recited differently, and Prophet Muhammad (peace and blessings be upon him) said that both were revealed, proving that the variations are not mistakes but revelation.")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+
+            Section(header: Text("DO THE AHRUF AFFECT PRESERVATION?")) {
+                Text("No. The Quran remains perfectly preserved — letter for letter, word for word, in every revealed mode. The Ahruf are part of that preservation, not a contradiction to it.")
+                    .font(.body)
+
+                Text("Allah (Glorified and Exalted be He) promised:")
+                    .font(.body)
+
+                Text("“Indeed, We have sent down the Reminder, and indeed, We will be its Guardian.” (Quran 15:9)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("The variations in Ahruf do not alter meanings, beliefs, or rulings. Rather, they highlight precision and perfection — the Ummah memorized and transmitted every letter exactly as revealed.")
+                    .font(.body)
+
+                Text("Each harf is revealed, preserved, and protected by Allah (Glorified and Exalted be He). Muslims do not choose or invent a harf — we only recite what Allah (Glorified and Exalted be He) revealed through His Messenger, Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+            }
+
+            Section(header: Text("HOW AHRUF WERE PRESERVED")) {
+                Text("• Prophet Muhammad (peace and blessings be upon him) taught the Companions each harf personally.\n• Jibril reviewed the Quran with Prophet Muhammad (peace and blessings be upon him) every year in Ramadan.\n• In the year Prophet Muhammad (peace and blessings be upon him) passed away, Jibril reviewed it twice (al-Ardah al-Akhirah).")
+                    .font(.body)
+
+                Text("During the caliphate of Uthman (may Allah be pleased with him), the Ummah was unified upon the written Uthmanic mushaf, which preserved what the Ummah recited — containing what remained from the seven Ahruf in the Uthmanic rasm.")
+                    .font(.body)
+
+                Text("The Ahruf are preserved through oral transmission, ijazahs, and chains of narration (isnad).")
+                    .font(.body)
+            }
+
+            Section(header: Text("WHAT ABOUT THE TEN QIRAAT?")) {
+                Text("The Ten Qiraat are the mass-transmitted (mutawatir) methods that show how the Ahruf were preserved through the Uthmanic mushaf and teaching traditions.")
+                    .font(.body)
+
+                Text("Each Qiraah has an unbroken chain (isnad) from the reciter → to his teacher → back to Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+
+                Text("Learn more in the next section: 10 Qiraat (Canonical Recitations).")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+            
+            Section(header: Text("USEFUL LINKS")) {
+                Text("Learn More about Ahruf and Qiraat: https://www.youtube.com/watch?v=8hj7u0F3yEg&t=34s")
+                    .font(.caption)
+            }
+
+        }
+        .navigationTitle("Seven Ahruf (Modes)")
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+    }
+}
+
+struct QiraatView: View {
+    @EnvironmentObject var settings: Settings
+
+    var body: some View {
+        List {
+            Section(header: Text("OVERVIEW")) {
+                Text("The Ten Qiraat (قِرَاءَات) — from the root q–r–a (قرأ) meaning “to read/recite” — literally means “readings/recitations.” Islamically and Quranically, a Qiraah (قِرَاءَة) is a specific, verified method of reciting the Quran. The Ten Qiraat are the preserved, mass-transmitted (mutawatir - مُتَوَاتِر) recitations of the Quran — each a precise method taught by Prophet Muhammad (peace and blessings be upon him) and transmitted through authentic chains of narrators (isnad إِسْنَاد). They do not represent different Qurans, but different prophetic ways of reciting the same revelation.")
+                    .font(.body)
+
+                Text("As covered in the previous section, the Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحْرُف) — modes of recitation for ease. Jibril (Gabriel) brought these modes to Prophet Muhammad (peace and blessings be upon him), who taught them to the Ummah. The Qiraat show how those Ahruf were preserved in practice through the Uthmanic rasm (الرَّسْم العُثْمَانِي) — the consonantal skeleton of the mushaf (مُصْحَف).")
+                    .font(.body)
+            }
+
+            Section(header: Text("WHAT IS A QIRAAH?")) {
+                Text("A Qiraah (قراءة) is a canonical, authenticated way of reciting the Quran that meets three criteria: (1) agreement with the Uthmanic rasm (الرسم العثماني), (2) sound Arabic language, and (3) authentic, widespread transmission (tawatur تواتر).")
+                    .font(.body)
+
+                Text("All Ten Qiraat return to Prophet Muhammad (peace and blessings be upon him). Every reciter has an unbroken chain of students → teachers → Companions → Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Most differences are within established rules of tajwid (تجويد), allowable word-forms and vowels, elongation (madd مد), assimilation (idgham إدغام), imalah (إمالة), and stopping/continuation — while preserving the same meanings and guidance.")
+                    .font(.body)
+
+                Text("Important: The Qiraat are not arbitrary. They reflect how the seven Ahruf were preserved through both writing and oral transmission — essentially a “mix and preserve” of the revealed modes into rigorously taught, verifiable recitational methods.")
+                    .font(.body)
+            }
+
+            Section(header: Text("QIRAAH (قراءة) VS RIWAYAH (رواية)")) {
+                Text("• Qiraah: the recitation method attributed to an Imam of recitation (e.g., Nafi, Asim).")
+                    .font(.body)
+                Text("• Riwayah: the narration/transmission of that Qiraah by a primary rawi (narrator). Each Qiraah has two principal riwayaat (plural of riwayah).")
+                    .font(.body)
+
+                Text("Example: “Hafs ‘an Asim” means the riwayah (narration) of Hafs (حفص) from the Qiraah (recitation) of Asim (عاصم). “Warsh ‘an Nafi” means the riwayah of Warsh (ورش) from the Qiraah of Nafi (نافع).")
+                    .font(.body)
+
+                Text("Hafs ‘an Asim is the most widespread globally today; that does not mean it is the only right one. All Ten Qiraat (and their 20 riwayaat) are valid, mutawatir, and from Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+
+            Section(header: Text("AUTHENTICITY & PRESERVATION")) {
+                Text("The Ten Qiraat are mutawatir — mass attested by many independent chains. They are part of the precise preservation Allah (Glorified and Exalted be He) promised for His Book.")
+                    .font(.body)
+
+                Text("“Indeed, We have sent down the Reminder, and indeed, We will be its Guardian.” (Quran 15:9)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("They do not affect preservation; rather, they manifest it: letter for letter, word for word — in all the ways Prophet Muhammad (peace and blessings be upon him) taught.")
+                    .font(.body)
+            }
+
+            Section(header: Text("THE FOUR MASTERS OF THE QURAN")) {
+                Text("Prophet Muhammad (peace and blessings be upon him) said: “Take the Quran from four: Abdullah ibn Masud, Salim (the freed slave of Abu Hudhayfah), Ubayy ibn Ka‘b, and Mu‘adh ibn Jabal.” (Sahih al-Bukhari)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("These four masters were among the foremost teachers of the Quran among the Companions, and their recitation and teaching shaped subsequent generations of transmitters.")
+                    .font(.body)
+            }
+
+            Section(header: Text("THE 20 RIWAYAAT (روايات)")) {
+                Text("Each Qiraah (recitation method) has two primary riwayaat (narrations). These are the 20 canonical transmissions used in teaching and ijazah (chain certification).")
+                    .font(.body)
+
+                Group {
+                    Text("• Warsh an Nafi (وَرْش عَنْ نَافِع)").font(.body)
+                    Text("• Qalun an Nafi (قَالُون عَنْ نَافِع)").font(.body)
+
+                    Text("• Al-Bazzi an Ibn Kathir (البَزِّي عَنْ ابْنِ كَثِير)").font(.body)
+                    Text("• Qunbul an Ibn Kathir (قُنْبُل عَنْ ابْنِ كَثِير)").font(.body)
+
+                    Text("• Ad-Duri an Abu Amr (الدُّورِي عَنْ أَبِي عَمْرٍو)").font(.body)
+                    Text("• As-Susi an Abu Amr (السُّوسِي عَنْ أَبِي عَمْرٍو)").font(.body)
+
+                    Text("• Hisham an Ibn Amir (هِشَام عَنْ ابْنِ عَامِر)").font(.body)
+                    Text("• Ibn Dhakwan an Ibn Amir (ابْنُ ذَكْوَان عَنْ ابْنِ عَامِر)").font(.body)
+
+                    Text("• Hafs an Asim (حَفْص عَنْ عَاصِم)").font(.body)
+                    Text("• Shu'bah an Asim (شُعْبَة عَنْ عَاصِم)").font(.body)
+                }
+
+                Group {
+                    Text("• Khalaf an Hamzah (خَلَف عَنْ حَمْزَة)").font(.body)
+                    Text("• Khallad an Hamzah (خَلَّاد عَنْ حَمْزَة)").font(.body)
+
+                    Text("• Abu al-Harith an Al-Kisai (أَبُو الحَارِث عَنْ الكِسَائِي)").font(.body)
+                    Text("• Ad-Duri an Al-Kisai (الدُّورِي عَنْ الكِسَائِي)").font(.body)
+
+                    Text("• Ibn Wardān an Abu Ja'far (ابْنُ وَرْدَان عَنْ أَبِي جَعْفَر)").font(.body)
+                    Text("• Ibn Jammaz an Abu Ja'far (ابْنُ جَمَّاز عَنْ أَبِي جَعْفَر)").font(.body)
+
+                    Text("• Ruways an Ya'qub (رُوَيْس عَنْ يَعْقُوب)").font(.body)
+                    Text("• Rawh an Ya'qub (رَوْح عَنْ يَعْقُوب)").font(.body)
+
+                    Text("• Ishaq an Khalaf al-Ashir (إِسْحَاق عَنْ خَلَف العَاشِر)").font(.body)
+                    Text("• Idris an Khalaf al-Ashir (إِدْرِيس عَنْ خَلَف العَاشِر)").font(.body)
+                }
+            }
+
+            Section(header: Text("OTHER REPORTED QIRAAT")) {
+                Text("There are other reported qiraat besides these Ten. Unlike the Ten Qiraat, which are mutawatir and mass attested, those others do not reach mutawatir status. That does not automatically make them inauthentic — some have isnad to Prophet Muhammad (peace and blessings be upon him) — but because they are not mass attested, we avoid them in public recitation and worship.")
+                    .font(.body)
+
+                Text("We recite what is known with certainty (yaqin يقين) to be from Prophet Muhammad (peace and blessings be upon him) — the Ten Qiraat and their 20 riwayaat. This unites the Ummah upon what is rigorously established.")
+                    .font(.body)
+            }
+
+            Section(header: Text("PRACTICAL STUDY & ADVICE")) {
+                Text("• Learn with a qualified teacher who has ijazah (إجازة) and isnad (إسناد). Do not self-invent pronunciations or rely only on apps without verification.")
+                    .font(.body)
+                Text("• Begin with one riwayah (commonly Hafs ‘an Asim), then explore others (e.g., Warsh ‘an Nafi) as you progress.")
+                    .font(.body)
+                Text("• Remember: differences are a mercy, not a contradiction. They illuminate the Quran’s depth and precision.")
+                    .font(.body)
+            }
+
+            Section(header: Text("IN-APP AUDIO")) {
+                Text("In this app, you can listen to multiple Qiraat/riwayaat (not all twenty are available). Availability varies by full-surah vs. ayah-by-ayah playback.")
+                    .font(.body)
+            }
+
+            Section(header: Text("RECAP")) {
+                Text("“The Ten Qiraat are the preserved, mass-transmitted (mutawatir) recitations taught by Prophet Muhammad (peace and blessings be upon him), passed down through authentic chains. Each Qiraah is a specific, verified method of reciting the Quran — not a different text. They reflect how the Ahruf were preserved in writing and oral transmission. All Ten Qiraat — and their 20 riwayaat — return to Prophet Muhammad (peace and blessings be upon him).”")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+
+            Section(header: Text("USEFUL LINKS")) {
+                Text("Learn More about Ahruf and Qiraat: https://www.youtube.com/watch?v=8hj7u0F3yEg&t=34s")
+                    .font(.caption)
+
+                Text("Learn about the other Qiraat: https://www.youtube.com/watch?v=CeV6w0rCilQ&t=80s")
+                    .font(.caption)
+            }
+        }
+        .navigationTitle("Ten Qiraat & 20 Riwayaat")
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+    }
+}
+
 
 struct FarewellView: View {
     @EnvironmentObject var settings: Settings

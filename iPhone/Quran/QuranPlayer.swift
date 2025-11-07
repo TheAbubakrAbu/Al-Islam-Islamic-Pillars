@@ -382,17 +382,17 @@ final class QuranPlayer: ObservableObject {
             let _ = reciters.first(where: { $0.name == settings.reciter })
         else { return }
 
-        self.ayahRepeatCount = max(1, repeatCount)
-        self.ayahRepeatRemaining = self.ayahRepeatCount
-        self.lastAyahParams = (surahNumber, ayahNumber, isBismillah, continueRecitation)
+        self.ayahRepeatCount      = max(1, repeatCount)
+        self.ayahRepeatRemaining  = self.ayahRepeatCount
+        self.lastAyahParams       = (surahNumber, ayahNumber, isBismillah, continueRecitation)
 
         withAnimation {
             currentSurahNumber = surahNumber
-            currentAyahNumber = ayahNumber
-            isPlayingSurah = false
+            currentAyahNumber  = ayahNumber
+            isPlayingSurah     = false
         }
-        continueRecitationFromAyah = continueRecitation
 
+        continueRecitationFromAyah = continueRecitation
         startAyahPlayback(
             surahNumber: surahNumber,
             ayahNumber: ayahNumber,
@@ -408,59 +408,29 @@ final class QuranPlayer: ObservableObject {
         continueRecitation: Bool
     ) {
         removeAllObservers()
-        
+
         guard
-            let surah = quranData.quran.first(where: { $0.id == surahNumber }),
+            let surah  = quranData.quran.first(where: { $0.id == surahNumber }),
             (1...surah.numberOfAyahs).contains(ayahNumber),
             let reciter = reciters.first(where: { $0.name == settings.reciter })
         else { return }
-        
-        let firstItem = makeItem(
-            forSurah: surah,
-            reciter: reciter,
-            ayahNumber: ayahNumber,
-            isBismillah: isBismillah
-        )
-        
+
         setupAudioSession()
         isLoading = true
-        
-        if ayahRepeatCount > 1 {
-            guard let fi = firstItem else { return }
-            let single = AVPlayer(playerItem: fi)
+
+        if ayahRepeatCount > 1 || !continueRecitation {
+            queuePlayer = nil
+
+            guard let firstItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNumber, isBismillah: isBismillah) else {
+                isLoading = false; showInternetAlert = true; return
+            }
+            firstItem.preferredForwardBufferDuration = 8
+
+            let single = AVPlayer(playerItem: firstItem)
             single.actionAtItemEnd = .none
             player = single
-            queuePlayer = nil
-        } else {
-            if continueRecitation {
-                queuePlayer = AVQueuePlayer()
-                
-                if let fi = firstItem {
-                    fi.preferredForwardBufferDuration = 5
-                    queuePlayer?.insert(fi, after: nil)
-                    
-                    if let surah = quranData.quran.first(where: { $0.id == surahNumber }),
-                       ayahNumber < surah.numberOfAyahs,
-                       let reciter = reciters.first(where: { $0.name == settings.reciter })
-                    {
-                        let nextGlobalId = quranData.quran.prefix(surah.id - 1).reduce(0) { $0 + $1.numberOfAyahs } + (ayahNumber + 1)
-                        if let nextURL = URL(string: "https://cdn.islamic.network/quran/audio/\(reciter.ayahBitrate)/\(reciter.ayahIdentifier)/\(nextGlobalId).mp3") {
-                            let nextItem = AVPlayerItem(url: nextURL)
-                            nextItem.preferredForwardBufferDuration = 5
-                            queuePlayer?.insert(nextItem, after: fi)
-                        }
-                    }
-                }
-                
-                player = queuePlayer
-            } else {
-                player = AVPlayer(playerItem: firstItem)
-                queuePlayer = nil
-            }
-        }
-        
-        if let fi = firstItem {
-            statusObserver = fi.observe(\.status) { [weak self] itm, _ in
+
+            statusObserver = firstItem.observe(\.status) { [weak self] itm, _ in
                 guard let self = self else { return }
                 DispatchQueue.main.async {
                     self.isLoading = false
@@ -469,19 +439,11 @@ final class QuranPlayer: ObservableObject {
                         self.player?.play()
                         self.isPlaying = true
                         self.isPaused  = false
-                        
-                        let base = isBismillah
-                            ? "Bismillah"
-                            : "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
-                        self.nowPlayingTitle = base + self.repeatSuffix(
-                            total: self.ayahRepeatCount,
-                            remaining: self.ayahRepeatRemaining
-                        )
-                        
-                        self.nowPlayingReciter =
-                            reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
+
+                        let base = isBismillah ? "Bismillah" : "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
+                        self.nowPlayingTitle = base + self.repeatSuffix(total: self.ayahRepeatCount, remaining: self.ayahRepeatRemaining)
+                        self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
                             ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
-                        
                         self.updateNowPlayingInfo()
                     } else {
                         self.isPlaying = false
@@ -490,81 +452,114 @@ final class QuranPlayer: ObservableObject {
                     }
                 }
             }
-        }
-        
-        if let qp = queuePlayer {
-            let prefetchObs = NotificationCenter.default.addObserver(
+
+            let endObs = NotificationCenter.default.addObserver(
                 forName: .AVPlayerItemDidPlayToEndTime,
-                object: nil,
+                object: player?.currentItem,
                 queue: .main
             ) { [weak self] _ in
-                guard let self = self,
-                      let s = self.currentSurahNumber,
-                      let a = self.currentAyahNumber,
-                      let sur = self.quranData.quran.first(where: { $0.id == s }),
-                      let reciter = reciters.first(where: { $0.name == self.settings.reciter })
-                else { return }
+                guard let self = self else { return }
 
-                var nextSurahId = s
-                var nextAyahNumber = a + 2
-                if nextAyahNumber > sur.numberOfAyahs {
-                    nextSurahId += 1
-                    nextAyahNumber = 1
+                if self.ayahRepeatRemaining > 1 {
+                    self.ayahRepeatRemaining -= 1
+                    self.player?.seek(to: .zero) { _ in
+                        self.nowPlayingTitle = "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)" +
+                            self.repeatSuffix(total: self.ayahRepeatCount, remaining: self.ayahRepeatRemaining)
+                        self.updateNowPlayingInfo()
+                        self.player?.play()
+                        self.isPlaying = true
+                        self.isPaused  = false
+                    }
+                } else {
+                    self.stop()
                 }
-
-                guard (1...114).contains(nextSurahId),
-                      let nextSurah = self.quranData.quran.first(where: { $0.id == nextSurahId })
-                else { return }
-
-                let nextGlobalId = self.quranData.quran.prefix(nextSurah.id - 1).reduce(0) { $0 + $1.numberOfAyahs } + nextAyahNumber
-                guard let url = URL(string: "https://cdn.islamic.network/quran/audio/\(reciter.ayahBitrate)/\(reciter.ayahIdentifier)/\(nextGlobalId).mp3") else { return }
-
-                let nextItem = AVPlayerItem(url: url)
-                nextItem.preferredForwardBufferDuration = 5
-                qp.insert(nextItem, after: nil)
             }
-
-            notificationObservers.append(prefetchObs)
+            notificationObservers.append(endObs)
+            return
         }
-        
-        let endObs = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self = self,
-                  let s = self.currentSurahNumber,
-                  let a = self.currentAyahNumber,
-                  let sur = self.quranData.quran.first(where: { $0.id == s })
-            else { return }
-            
-            if self.ayahRepeatRemaining > 1 {
-                self.ayahRepeatRemaining -= 1
-                self.player?.seek(to: .zero) { _ in
-                    self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(a)" +
-                        self.repeatSuffix(total: self.ayahRepeatCount, remaining: self.ayahRepeatRemaining)
-                    self.updateNowPlayingInfo()
-                    self.player?.play()
+
+        guard let firstItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNumber, isBismillah: isBismillah) else {
+            isLoading = false; showInternetAlert = true; return
+        }
+        firstItem.preferredForwardBufferDuration = 8
+
+        var nextItem: AVPlayerItem?
+        if ayahNumber < surah.numberOfAyahs {
+            nextItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNumber + 1)
+            nextItem?.preferredForwardBufferDuration = 8
+        }
+
+        let q = AVQueuePlayer()
+        q.actionAtItemEnd = .advance
+        q.automaticallyWaitsToMinimizeStalling = true
+
+        q.insert(firstItem, after: nil)
+
+        if let ni = nextItem {
+            q.insert(ni, after: firstItem)
+        }
+
+        queuePlayer = q
+        player = q
+
+        statusObserver = firstItem.observe(\.status) { [weak self] itm, _ in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.idleTimerSet(true)
+                if itm.status == .readyToPlay {
+                    self.queuePlayer?.play()
                     self.isPlaying = true
                     self.isPaused  = false
+
+                    let base = isBismillah ? "Bismillah" : "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
+                    self.nowPlayingTitle = base
+                    self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
+                        ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
+                    self.updateNowPlayingInfo()
+                } else {
+                    self.isPlaying = false
+                    self.isPaused  = false
+                    self.showInternetAlert = true
                 }
-                return
-            }
-            
-            if self.continueRecitationFromAyah, a < sur.numberOfAyahs {
-                self.ayahRepeatCount = 1
-                self.ayahRepeatRemaining = 1
-                self.playAyah(
-                    surahNumber: s,
-                    ayahNumber: a + 1,
-                    continueRecitation: true,
-                    repeatCount: 1
-                )
-            } else {
-                self.stop()
             }
         }
-        notificationObservers.append(endObs)
+
+        queuePlayerItemObserver = q.observe(\.currentItem, options: [.old, .new]) { [weak self] qPlayer, change in
+            guard let self = self else { return }
+            guard let newItem = change.newValue as? AVPlayerItem else { return }
+
+            if let s = self.currentSurahNumber,
+               let a = self.currentAyahNumber,
+               let sur = self.quranData.quran.first(where: { $0.id == s }) {
+
+                if a < sur.numberOfAyahs {
+                    self.currentAyahNumber = a + 1
+                } else {
+                    self.stop()
+                    return
+                }
+
+                if let recNow = reciters.first(where: { $0.name == self.settings.reciter }) {
+                    self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(self.currentAyahNumber!)"
+                    self.nowPlayingReciter = recNow.ayahIdentifier.contains("minshawi") && !recNow.name.contains("Minshawi")
+                        ? "Muhammad Al-Minshawi (Murattal)" : recNow.name
+                    self.updateNowPlayingInfo()
+                }
+
+                if self.continueRecitationFromAyah,
+                   qPlayer.items().count < 2,
+                   let rec = reciters.first(where: { $0.name == self.settings.reciter }) {
+
+                    let nextAyah = self.currentAyahNumber! + 1
+                    if nextAyah <= sur.numberOfAyahs,
+                       let upcoming = self.makeItem(forSurah: sur, reciter: rec, ayahNumber: nextAyah) {
+                        upcoming.preferredForwardBufferDuration = 8
+                        qPlayer.insert(upcoming, after: newItem)
+                    } else {}
+                }
+            }
+        }
     }
     
     private func makeItem(

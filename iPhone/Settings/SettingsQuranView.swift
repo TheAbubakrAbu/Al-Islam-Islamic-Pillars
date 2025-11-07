@@ -171,48 +171,131 @@ struct SettingsQuranView: View {
 
 struct ReciterListView: View {
     @EnvironmentObject var settings: Settings
-    
     @Environment(\.presentationMode) private var presentationMode
-    
+
     var body: some View {
         List {
-            Section(header: Text("Reciters")) {
-                ForEach(reciters, id: \.self) { reciter in
-                    Button(action: {
-                        settings.hapticFeedback()
-                        
-                        withAnimation {
-                            settings.reciter = reciter.name
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(reciter.name)
-                                    .font(.subheadline)
-                                    .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
-                                    .multilineTextAlignment(.leading)
-                                
-                                Spacer()
-                                
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(settings.accentColor.color)
-                                    .opacity(reciter.name == settings.reciter ? 1 : 0)
-                            }
-                            
-                            if reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
-                                Text("This reciter is only available for surah recitation. Defaults to Minshawi (Murattal) for ayahs.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
+            if !recitersMujjawwad.isEmpty {
+                Section(header: Text("SLOW & MELODIC (MUJJAWWAD)")) {
+                    reciterButtons(recitersMujjawwad)
+                }
+            }
+
+            if !recitersMuallim.isEmpty {
+                Section(header: Text("TEACHING (MUʿALLIM)")) {
+                    reciterButtons(recitersMuallim)
+                }
+            }
+
+            if !recitersMurattal.isEmpty {
+                Section(header: Text("NORMAL (MURATTAL)")) {
+                    reciterButtons(recitersMurattal)
+                }
+            }
+            
+            Section(header: Text("ABOUT QIRAAT")) {
+                VStack(alignment: .leading) {
+                    Text("""
+                    The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+
+                    The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+
+                    To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
+                    """)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                    Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .padding(.top, 4)
+                    
+                    Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+                .padding(.vertical, 4)
+            }
+            
+            if !recitersKhalaf.isEmpty {
+                Section(header: Text("KHALAF AN HAMZAH")) {
+                    reciterButtons(recitersKhalaf, qiraah: true)
+                }
+            }
+
+            if !recitersWarsh.isEmpty {
+                Section(header: Text("WARSH AN NAFI")) {
+                    reciterButtons(recitersWarsh, qiraah: true)
+                }
+            }
+
+            if !recitersQaloon.isEmpty {
+                Section(header: Text("QALOON AN NAFI")) {
+                    reciterButtons(recitersQaloon, qiraah: true)
+                }
+            }
+
+            if !recitersBuzzi.isEmpty {
+                Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
+                    reciterButtons(recitersBuzzi, qiraah: true)
+                }
+            }
+
+            if !recitersQunbul.isEmpty {
+                Section(header: Text("QUNBUL AN IBN KATHIR")) {
+                    reciterButtons(recitersQunbul, qiraah: true)
+                }
+            }
+
+            if !recitersDuri.isEmpty {
+                Section(header: Text("AD-DURI AN ABI AMR")) {
+                    reciterButtons(recitersDuri, qiraah: true)
                 }
             }
         }
         .navigationTitle("Select Reciter")
         .applyConditionalListStyle(defaultView: true)
+    }
+
+    @ViewBuilder
+    private func reciterButtons(_ list: [Reciter], qiraah: Bool = false) -> some View {
+        ForEach(list) { reciter in
+            reciterRow(reciter, qiraah: qiraah)
+        }
+    }
+
+    @ViewBuilder
+    private func reciterRow(_ reciter: Reciter, qiraah: Bool) -> some View {
+        Button {
+            settings.hapticFeedback()
+            withAnimation {
+                settings.reciter = reciter.name
+                presentationMode.wrappedValue.dismiss()
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(reciter.name)
+                        .font(.subheadline)
+                        .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
+                        .multilineTextAlignment(.leading)
+
+                    Spacer()
+
+                    Image(systemName: "checkmark")
+                        .foregroundColor(settings.accentColor.color)
+                        .opacity(reciter.name == settings.reciter ? 1 : 0)
+                }
+
+                if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
+                    Text("This reciter is only available for surah recitation. Defaults to Minshawi (Murattal) for ayahs.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.vertical, 4)
+        }
     }
 }
 
