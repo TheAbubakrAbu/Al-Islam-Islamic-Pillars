@@ -59,6 +59,24 @@ struct ArabicLetterView: View {
                     .padding(.vertical, tempArabicFont ? 0 : 2)
                 }
                 
+                if let weight = letterData.weight {
+                    Section(header: Text("LIGHT / HEAVY PRONUNCIATION")) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(weight == .heavy ? "Heavy letter (Tafkhīm)"
+                                 : weight == .light ? "Light letter (Tarqīq)"
+                                 : weight == .conditional ? "Conditional letter"
+                                 : "Follows previous letter")
+                                .font(.headline)
+
+                            if let weightRule = letterData.weightRule {
+                                Text(weightRule)
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                
                 Section(header: Text("DIFFERENT FORMS")) {
                     VStack {
                         HStack(alignment: .center) {
@@ -118,12 +136,24 @@ struct ArabicLetterView: View {
                                 
                                 TashkeelRow(letterData: letterData, tashkeels: chunks[idx], tempArabicFont: tempArabicFont)
                                     .padding(.top, 14)
-                                    .padding(.bottom, idx == chunks.count - 1 ? 14 : 0)
                             }
                             #if !os(watchOS)
                             .listRowSeparator(.hidden, edges: .bottom)
                             #endif
                         }
+                        
+                        #if !os(watchOS)
+                        Text("WITH ALIF HAMZA")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
+                            .padding(.bottom, 8)
+                            .listRowSeparator(.hidden, edges: .bottom)
+                        #else
+                        HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
+                        #endif
                     }
                 }
                 
@@ -263,5 +293,53 @@ struct TashkeelRow: View {
                 }
             }
         }
+    }
+}
+
+struct HamzaPracticeRow: View {
+    @EnvironmentObject var settings: Settings
+    
+    let letterData: LetterData
+    let tempArabicFont: Bool
+
+    private var syllables: [(latin: String, arabic: String)] {
+        let s = letterData.sound
+        let l = letterData.letter
+
+        return [
+            ("A" + s, "أَ" + l + "ْ"),
+            ("I" + s, "إِ" + l + "ْ"),
+            ("U" + s, "أُ" + l + "ْ")
+        ]
+    }
+
+    var body: some View {
+        HStack(spacing: 20) {
+            ForEach(syllables, id: \.latin) { syl in
+                VStack {
+                    Text(syl.latin)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text(syl.arabic)
+                        .font(
+                            tempArabicFont
+                            ? .custom(settings.fontArabic,
+                                      size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
+                            : .title
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, tempArabicFont ? 0 : 8)
+                }
+            }
+        }
+        .padding(.top, 6)
+    }
+}
+
+#Preview {
+    if standardArabicLetters.count > 1 {
+        ArabicLetterView(letterData: standardArabicLetters[1])
+            .environmentObject(Settings.shared)
     }
 }

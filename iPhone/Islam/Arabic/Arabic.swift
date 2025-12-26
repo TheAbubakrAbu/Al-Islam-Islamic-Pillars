@@ -9,9 +9,19 @@ struct LetterData: Identifiable, Codable, Equatable, Comparable {
     let showTashkeel: Bool
     let sound: String
     
+    var weight: LetterWeight?
+    var weightRule: String?
+    
     static func < (lhs: LetterData, rhs: LetterData) -> Bool {
         return lhs.id < rhs.id
     }
+}
+
+enum LetterWeight: String, Codable {
+    case light           // always tarqeeq
+    case heavy           // always tafkheem
+    case conditional     // depends on rules
+    case followsPrevious // like alif
 }
 
 struct Tashkeel {
@@ -27,34 +37,95 @@ private enum LetterID {
 }
 
 let standardArabicLetters: [LetterData] = [
-    LetterData(id: LetterID.next(), letter: "ا", forms: ["ـا", "ـا ـ", "ا ـ"], name: "اَلِف", transliteration: "alif", showTashkeel: false, sound: "a"),
-    LetterData(id: LetterID.next(), letter: "ب", forms: ["ـب", "ـبـ", "بـ"], name: "بَاء", transliteration: "baa", showTashkeel: true, sound: "b"),
-    LetterData(id: LetterID.next(), letter: "ت", forms: ["ـت", "ـتـ", "تـ"], name: "تَاء", transliteration: "taa", showTashkeel: true, sound: "t"),
-    LetterData(id: LetterID.next(), letter: "ث", forms: ["ـث", "ـثـ", "ثـ"], name: "ثَاء", transliteration: "thaa", showTashkeel: true, sound: "th"),
-    LetterData(id: LetterID.next(), letter: "ج", forms: ["ـج", "ـجـ", "جـ"], name: "جِيم", transliteration: "jeem", showTashkeel: true, sound: "j"),
-    LetterData(id: LetterID.next(), letter: "ح", forms: ["ـح", "ـحـ", "حـ"], name: "حَاء", transliteration: "Haa", showTashkeel: true, sound: "H"),
-    LetterData(id: LetterID.next(), letter: "خ", forms: ["ـخ", "ـخـ", "خـ"], name: "خَاء", transliteration: "khaa", showTashkeel: true, sound: "kh"),
-    LetterData(id: LetterID.next(), letter: "د", forms: ["ـد", "ـد ـ", "د ـ"], name: "دَال", transliteration: "daal", showTashkeel: true, sound: "d"),
-    LetterData(id: LetterID.next(), letter: "ذ", forms: ["ـذ", "ـذ ـ", "ذ ـ"], name: "ذَال", transliteration: "dhaal", showTashkeel: true, sound: "dh"),
-    LetterData(id: LetterID.next(), letter: "ر", forms: ["ـر", "ـر ـ", "ر ـ"], name: "رَاء", transliteration: "raa", showTashkeel: true, sound: "r"),
-    LetterData(id: LetterID.next(), letter: "ز", forms: ["ـز", "ـز ـ", "ز ـ"], name: "زَاي", transliteration: "zay", showTashkeel: true, sound: "z"),
-    LetterData(id: LetterID.next(), letter: "س", forms: ["ـس", "ـسـ", "سـ"], name: "سِين", transliteration: "seen", showTashkeel: true, sound: "s"),
-    LetterData(id: LetterID.next(), letter: "ش", forms: ["ـش", "ـشـ", "شـ"], name: "شِين", transliteration: "sheen", showTashkeel: true, sound: "sh"),
-    LetterData(id: LetterID.next(), letter: "ص", forms: ["ـص", "ـصـ", "صـ"], name: "صَاد", transliteration: "Saad", showTashkeel: true, sound: "S"),
-    LetterData(id: LetterID.next(), letter: "ض", forms: ["ـض", "ـضـ", "ضـ"], name: "ضَاد", transliteration: "Daad", showTashkeel: true, sound: "D"),
-    LetterData(id: LetterID.next(), letter: "ط", forms: ["ـط", "ـطـ", "طـ"], name: "طَاء", transliteration: "Taa", showTashkeel: true, sound: "T"),
-    LetterData(id: LetterID.next(), letter: "ظ", forms: ["ـظ", "ـظـ", "ظـ"], name: "ظَاء", transliteration: "Dhaa", showTashkeel: true, sound: "Dh"),
-    LetterData(id: LetterID.next(), letter: "ع", forms: ["ـع", "ـعـ", "عـ"], name: "عَين", transliteration: "'ayn", showTashkeel: true, sound: "'a"),
-    LetterData(id: LetterID.next(), letter: "غ", forms: ["ـغ", "ـغـ", "غـ"], name: "غَين", transliteration: "ghayn", showTashkeel: true, sound: "gh"),
-    LetterData(id: LetterID.next(), letter: "ف", forms: ["ـف", "ـفـ", "فـ"], name: "فَاء", transliteration: "faa", showTashkeel: true, sound: "f"),
-    LetterData(id: LetterID.next(), letter: "ق", forms: ["ـق", "ـقـ", "قـ"], name: "قَاف", transliteration: "qaaf", showTashkeel: true, sound: "q"),
-    LetterData(id: LetterID.next(), letter: "ك", forms: ["ـك", "ـكـ", "كـ"], name: "كَاف", transliteration: "kaaf", showTashkeel: true, sound: "k"),
-    LetterData(id: LetterID.next(), letter: "ل", forms: ["ـل", "ـلـ", "لـ"], name: "لَام", transliteration: "laam", showTashkeel: true, sound: "l"),
-    LetterData(id: LetterID.next(), letter: "م", forms: ["ـم", "ـمـ", "مـ"], name: "مِيم", transliteration: "meem", showTashkeel: true, sound: "m"),
-    LetterData(id: LetterID.next(), letter: "ن", forms: ["ـن", "ـنـ", "نـ"], name: "نُون", transliteration: "noon", showTashkeel: true, sound: "n"),
-    LetterData(id: LetterID.next(), letter: "ه", forms: ["ـه", "ـهـ", "هـ"], name: "هَاء", transliteration: "haa", showTashkeel: true, sound: "h"),
-    LetterData(id: LetterID.next(), letter: "و", forms: ["ـو", "ـو ـ", "و ـ"], name: "وَاو", transliteration: "waw", showTashkeel: true, sound: "w"),
-    LetterData(id: LetterID.next(), letter: "ي", forms: ["ـي", "ـيـ", "يـ"], name: "يَاء", transliteration: "yaa", showTashkeel: true, sound: "y")
+    LetterData(
+        id: LetterID.next(),
+        letter: "ا",
+        forms: ["ـا", "ـا ـ", "ا ـ"],
+        name: "اَلِف",
+        transliteration: "alif",
+        showTashkeel: false,
+        sound: "a",
+        weight: .followsPrevious,
+        weightRule: "Alif has no weight of its own; it follows the heaviness or lightness of the previous letter."
+    ),
+    
+    LetterData(id: LetterID.next(), letter: "ب", forms: ["ـب", "ـبـ", "بـ"], name: "بَاء", transliteration: "baa", showTashkeel: true, sound: "b", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ت", forms: ["ـت", "ـتـ", "تـ"], name: "تَاء", transliteration: "taa", showTashkeel: true, sound: "t", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ث", forms: ["ـث", "ـثـ", "ثـ"], name: "ثَاء", transliteration: "thaa", showTashkeel: true, sound: "th", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ج", forms: ["ـج", "ـجـ", "جـ"], name: "جِيم", transliteration: "jeem", showTashkeel: true, sound: "j", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ح", forms: ["ـح", "ـحـ", "حـ"], name: "حَاء", transliteration: "Haa", showTashkeel: true, sound: "H", weight: .light),
+    
+    LetterData(id: LetterID.next(), letter: "خ", forms: ["ـخ", "ـخـ", "خـ"], name: "خَاء", transliteration: "khaa", showTashkeel: true, sound: "kh", weight: .heavy),
+    
+    LetterData(id: LetterID.next(), letter: "د", forms: ["ـد", "ـد ـ", "د ـ"], name: "دَال", transliteration: "daal", showTashkeel: true, sound: "d", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ذ", forms: ["ـذ", "ـذ ـ", "ذ ـ"], name: "ذَال", transliteration: "dhaal", showTashkeel: true, sound: "dh", weight: .light),
+    
+    LetterData(
+        id: LetterID.next(),
+        letter: "ر",
+        forms: ["ـر", "ـر ـ", "ر ـ"],
+        name: "رَاء",
+        transliteration: "raa",
+        showTashkeel: true,
+        sound: "r",
+        weight: .conditional,
+        weightRule: "Heavy with fatha/damma, or sukoon preceded by fatha/damma; light with kasra."
+    ),
+    
+    LetterData(id: LetterID.next(), letter: "ز", forms: ["ـز", "ـز ـ", "ز ـ"], name: "زَاي", transliteration: "zay", showTashkeel: true, sound: "z", weight: .light),
+    LetterData(id: LetterID.next(), letter: "س", forms: ["ـس", "ـسـ", "سـ"], name: "سِين", transliteration: "seen", showTashkeel: true, sound: "s", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ش", forms: ["ـش", "ـشـ", "شـ"], name: "شِين", transliteration: "sheen", showTashkeel: true, sound: "sh", weight: .light),
+    
+    LetterData(id: LetterID.next(), letter: "ص", forms: ["ـص", "ـصـ", "صـ"], name: "صَاد", transliteration: "Saad", showTashkeel: true, sound: "S", weight: .heavy),
+    LetterData(id: LetterID.next(), letter: "ض", forms: ["ـض", "ـضـ", "ضـ"], name: "ضَاد", transliteration: "Daad", showTashkeel: true, sound: "D", weight: .heavy),
+    LetterData(id: LetterID.next(), letter: "ط", forms: ["ـط", "ـطـ", "طـ"], name: "طَاء", transliteration: "Taa", showTashkeel: true, sound: "T", weight: .heavy),
+    LetterData(id: LetterID.next(), letter: "ظ", forms: ["ـظ", "ـظـ", "ظـ"], name: "ظَاء", transliteration: "Dhaa", showTashkeel: true, sound: "Dh", weight: .heavy),
+    
+    LetterData(id: LetterID.next(), letter: "ع", forms: ["ـع", "ـعـ", "عـ"], name: "عَين", transliteration: "'ayn", showTashkeel: true, sound: "'a", weight: .light),
+    LetterData(id: LetterID.next(), letter: "غ", forms: ["ـغ", "ـغـ", "غـ"], name: "غَين", transliteration: "ghayn", showTashkeel: true, sound: "gh", weight: .heavy),
+    LetterData(id: LetterID.next(), letter: "ف", forms: ["ـف", "ـفـ", "فـ"], name: "فَاء", transliteration: "faa", showTashkeel: true, sound: "f", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ق", forms: ["ـق", "ـقـ", "قـ"], name: "قَاف", transliteration: "qaaf", showTashkeel: true, sound: "q", weight: .heavy),
+    LetterData(id: LetterID.next(), letter: "ك", forms: ["ـك", "ـكـ", "كـ"], name: "كَاف", transliteration: "kaaf", showTashkeel: true, sound: "k", weight: .light),
+    
+    LetterData(
+        id: LetterID.next(),
+        letter: "ل",
+        forms: ["ـل", "ـلـ", "لـ"],
+        name: "لَام",
+        transliteration: "laam",
+        showTashkeel: true,
+        sound: "l",
+        weight: .conditional,
+        weightRule: "Heavy only in the Name of Allah when preceded by fatha or damma; otherwise light."
+    ),
+    
+    LetterData(id: LetterID.next(), letter: "م", forms: ["ـم", "ـمـ", "مـ"], name: "مِيم", transliteration: "meem", showTashkeel: true, sound: "m", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ن", forms: ["ـن", "ـنـ", "نـ"], name: "نُون", transliteration: "noon", showTashkeel: true, sound: "n", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ه", forms: ["ـه", "ـهـ", "هـ"], name: "هَاء", transliteration: "haa", showTashkeel: true, sound: "h", weight: .light),
+    
+    LetterData(
+        id: LetterID.next(),
+        letter: "و",
+        forms: ["ـو", "ـو ـ", "و ـ"],
+        name: "وَاو",
+        transliteration: "waw",
+        showTashkeel: true,
+        sound: "w",
+        weight: .followsPrevious,
+        weightRule: "As a vowel, it follows the previous letter’s weight; as a consonant, it is light."
+    ),
+    
+    LetterData(
+        id: LetterID.next(),
+        letter: "ي",
+        forms: ["ـي", "ـيـ", "يـ"],
+        name: "يَاء",
+        transliteration: "yaa",
+        showTashkeel: true,
+        sound: "y",
+        weight: .followsPrevious,
+        weightRule: "As a vowel, it follows the previous letter’s weight; as a consonant, it is light."
+    )
 ]
 
 let otherArabicLetters: [LetterData] = [

@@ -40,7 +40,11 @@ struct CreditsView: View {
                 .listRowSeparator(.hidden)
                 
                 Section {
-                    Text("This app was inspired by my desire to help new reverts and non-Muslims learn about Islam and easily access the Quran and prayer times. I’m deeply grateful to my parents for instilling in me a love for the faith—may Allah reward them. I also extend my thanks to my teacher, Mr. Joe Silvey, who, though not Muslim, has been a constant ally, supporting our school's Muslim Student Association and helping us hold weekly Jummuah prayers.")
+                    Text("""
+                    This app was inspired by my desire to help new reverts and non-Muslims learn about Islam and easily access the Quran and prayer times. I’m deeply grateful to my parents for instilling in me a love for the faith (may Allah ﷻ‎ reward them).
+
+                    I also want to express my gratitude to my high school teacher, Mr. Joe Silvey, who, despite not being Muslim, stood with our Muslim Student Association and helped us organize weekly Jummuah prayers.
+                    """)
                         .font(.body)
                         .multilineTextAlignment(.leading)
                     

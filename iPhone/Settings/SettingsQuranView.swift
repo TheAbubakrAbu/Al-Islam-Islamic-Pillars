@@ -175,9 +175,9 @@ struct ReciterListView: View {
 
     var body: some View {
         List {
-            if !recitersMujjawwad.isEmpty {
-                Section(header: Text("SLOW & MELODIC (MUJJAWWAD)")) {
-                    reciterButtons(recitersMujjawwad)
+            if !recitersMujawwad.isEmpty {
+                Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
+                    reciterButtons(recitersMujawwad)
                 }
             }
 

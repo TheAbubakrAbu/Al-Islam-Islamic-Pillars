@@ -20,6 +20,7 @@ final class QuranPlayer: ObservableObject {
     private var backButtonClickCount = 0
     private var backButtonClickTimestamp: Date?
     private var continueRecitationFromAyah = false
+    private var didHandleSingleAyahEnd = false
     
     var player: AVPlayer?
     private var queuePlayer: AVQueuePlayer?
@@ -166,12 +167,15 @@ final class QuranPlayer: ObservableObject {
     }
     
     func stop() {
+        didHandleSingleAyahEnd = false
         repeatCount = 1
         repeatRemaining = 1
         ayahRepeatCount = 1
         ayahRepeatRemaining = 1
 
         withAnimation {
+            isLoading = false
+            
             saveLastListenedSurah()
             
             player?.currentItem?.cancelPendingSeeks()
@@ -201,7 +205,8 @@ final class QuranPlayer: ObservableObject {
     private func removeAllObservers() {
         notificationObservers.forEach(NotificationCenter.default.removeObserver)
         notificationObservers.removeAll()
-        queuePlayerItemObserver = nil; statusObserver = nil
+        queuePlayerItemObserver = nil
+        statusObserver = nil
     }
     
     private var repeatCount: Int = 1
@@ -393,6 +398,7 @@ final class QuranPlayer: ObservableObject {
         }
 
         continueRecitationFromAyah = continueRecitation
+        didHandleSingleAyahEnd = false
         startAyahPlayback(
             surahNumber: surahNumber,
             ayahNumber: ayahNumber,
@@ -455,16 +461,25 @@ final class QuranPlayer: ObservableObject {
 
             let endObs = NotificationCenter.default.addObserver(
                 forName: .AVPlayerItemDidPlayToEndTime,
-                object: player?.currentItem,
+                object: nil,
                 queue: .main
-            ) { [weak self] _ in
+            ) { [weak self] note in
                 guard let self = self else { return }
+                
+                guard let finishedItem = note.object as? AVPlayerItem,
+                      finishedItem == self.player?.currentItem else { return }
+
+                guard !self.didHandleSingleAyahEnd else { return }
+                self.didHandleSingleAyahEnd = true
 
                 if self.ayahRepeatRemaining > 1 {
                     self.ayahRepeatRemaining -= 1
                     self.player?.seek(to: .zero) { _ in
-                        self.nowPlayingTitle = "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)" +
-                            self.repeatSuffix(total: self.ayahRepeatCount, remaining: self.ayahRepeatRemaining)
+                        self.didHandleSingleAyahEnd = false
+                        self.nowPlayingTitle =
+                            "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)" +
+                            self.repeatSuffix(total: self.ayahRepeatCount,
+                                              remaining: self.ayahRepeatRemaining)
                         self.updateNowPlayingInfo()
                         self.player?.play()
                         self.isPlaying = true
@@ -474,6 +489,7 @@ final class QuranPlayer: ObservableObject {
                     self.stop()
                 }
             }
+
             notificationObservers.append(endObs)
             return
         }
@@ -527,6 +543,14 @@ final class QuranPlayer: ObservableObject {
 
         queuePlayerItemObserver = q.observe(\.currentItem, options: [.old, .new]) { [weak self] qPlayer, change in
             guard let self = self else { return }
+            
+            if qPlayer.currentItem == nil || qPlayer.items().isEmpty {
+                DispatchQueue.main.async {
+                    self.stop()
+                }
+                return
+            }
+            
             guard let newItem = change.newValue as? AVPlayerItem else { return }
 
             if let s = self.currentSurahNumber,

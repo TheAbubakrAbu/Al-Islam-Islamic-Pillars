@@ -1,7 +1,10 @@
 import SwiftUI
 import Combine
 
-enum ActionMode { case text, image }
+enum ActionMode: String {
+    case text
+    case image
+}
 
 struct ShareAyahSheet: View {
     @EnvironmentObject private var settings: Settings
@@ -13,7 +16,9 @@ struct ShareAyahSheet: View {
     let surahNumber: Int
     let ayahNumber: Int
     
+    @AppStorage("shareAyahLastActionMode") private var storedActionModeRaw: String = ActionMode.image.rawValue
     @State private var actionMode: ActionMode = .image
+    
     @State private var generatedImage: UIImage?
     @State private var activityItems: [Any] = []
     @State private var showingActivityView = false
@@ -188,7 +193,18 @@ struct ShareAyahSheet: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .accentColor(settings.accentColor.color)
-        .onAppear(perform: generatePreviewImage)
+        .onAppear {
+            withAnimation {
+                actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
+                generatePreviewImage()
+            }
+        }
+        .onChange(of: actionMode) { newValue in
+            storedActionModeRaw = newValue.rawValue
+            if newValue == .image && generatedImage == nil {
+                generatePreviewImage()
+            }
+        }
         .onChange(of: shareSettings) { _ in generatePreviewImage() }
         .onChange(of: includeNote) { _ in generatePreviewImage() }
         .onChange(of: showingActivityView) { if !$0 { presentationMode.wrappedValue.dismiss() } }
@@ -278,7 +294,9 @@ struct ShareAyahSheet: View {
         
         // --- Layout constants
         let padding: CGFloat = 20, spacing: CGFloat = 8, extraSpacing: CGFloat = 30
-        let maxWidth = UIScreen.main.bounds.width - 50
+        let iPhoneCanvasCap: CGFloat = 500
+        let deviceWidth = UIScreen.main.bounds.width - 50
+        let maxWidth = min(deviceWidth, iPhoneCanvasCap)
         
         // Paragraph styles
         let right = NSMutableParagraphStyle();  right.alignment = .right

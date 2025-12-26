@@ -88,15 +88,6 @@ extension Settings {
         }
     }
     
-    func requestFreshLocation() {
-        Self.locationManager.requestLocation()
-        
-        Self.locationManager.startUpdatingLocation()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
-            Self.locationManager.stopUpdatingLocation()
-        }
-    }
-    
     actor GeocodeActor {
         private let gc = CLGeocoder()
         func placemark(for location: CLLocation) async throws -> CLPlacemark? {
@@ -315,8 +306,8 @@ extension Settings {
         "Maghrib":   .init(ar:"المَغْرِب",tr:"Maghrib",en:"Sunset",   img:"sunset",        rakah:"3", sunnahB:"0", sunnahA:"2"),
         "Isha":      .init(ar:"العِشَاء", tr:"Isha",   en:"Night",    img:"moon",          rakah:"4", sunnahB:"0", sunnahA:"2"),
         // grouped (travel) variants
-        "Dh/As":     .init(ar:"الظُهْر وَالْعَصْر", tr:"Dhuhr/Asr",   en:"Daytime",   img:"sun.max", rakah:"2 and 2", sunnahB:"0", sunnahA:"0"),
-        "Mg/Ij":     .init(ar:"المَغْرِب وَالْعِشَاء", tr:"Maghrib/Isha", en:"Nighttime", img:"sunset", rakah:"3 and 2",sunnahB:"0", sunnahA:"0")
+        "Dhuhr/Asr":     .init(ar:"الظُهْر وَالْعَصْر", tr:"Dhuhr/Asr",   en:"Daytime",   img:"sun.max", rakah:"2 and 2", sunnahB:"0", sunnahA:"0"),
+        "Maghrib/Isha":     .init(ar:"المَغْرِب وَالْعِشَاء", tr:"Maghrib/Isha", en:"Nighttime", img:"sunset", rakah:"3 and 2",sunnahB:"0", sunnahA:"0")
     ]
     
     @inline(__always)
@@ -397,21 +388,21 @@ extension Settings {
             return [
                 prayer(from: "Fajr",    time: fajr),
                 prayer(from: "Sunrise", time: sunrise),
-                prayer(from: "Dh/As",   time: dhAsr),
-                prayer(from: "Mg/Ij",   time: mgIsha)
+                prayer(from: "Dhuhr/Asr",   time: dhAsr),
+                prayer(from: "Maghrib/Isha",   time: mgIsha)
             ]
         }
     }
 
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, calledFrom: StaticString = #function, completion: (() -> Void)? = nil) {
         updateDates()
-
+        
         guard let loc = currentLocation, loc.latitude  != 1000, loc.longitude != 1000 else {
             logger.debug("No valid location – skip refresh")
             completion?()
             return
         }
-
+        
         if force || loc.city.contains("(") {
             Task { @MainActor in
                 await updateCity(latitude: loc.latitude, longitude: loc.longitude)
@@ -421,7 +412,7 @@ extension Settings {
         if travelAutomatic, homeLocation != nil {
             checkIfTraveling()
         }
-
+        
         // Decide if we need fresh prayers
         let today      = Date()
         let stored     = prayers
@@ -429,13 +420,13 @@ extension Settings {
         let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
         let emptyList  = stored?.prayers.isEmpty ?? true
         let needsFetch = force || stored == nil || staleCity || staleDate || emptyList
-
+        
         if needsFetch {
             logger.debug("Fetching prayer times – caller: \(calledFrom)")
-
+            
             let todayPrayers  = getPrayerTimes(for: today) ?? []
             let fullPrayers   = getPrayerTimes(for: today, fullPrayers: true) ?? []
-
+            
             prayers = Prayers(
                 day: today,
                 city: currentLocation!.city,
@@ -443,7 +434,7 @@ extension Settings {
                 fullPrayers: fullPrayers,
                 setNotification: false
             )
-
+            
             schedulePrayerTimeNotifications()
             printAllScheduledNotifications()
             WidgetCenter.shared.reloadAllTimelines()
@@ -452,7 +443,7 @@ extension Settings {
             printAllScheduledNotifications()
             WidgetCenter.shared.reloadAllTimelines()
         }
-
+        
         updateCurrentAndNextPrayer()
         completion?()
     }
@@ -539,11 +530,11 @@ extension Settings {
         "Fajr":          .init(enabled: \.notificationFajr,  preMinutes: \.preNotificationFajr,  nagging: \.naggingFajr),
         "Shurooq":       .init(enabled: \.notificationSunrise, preMinutes: \.preNotificationSunrise, nagging: \.naggingSunrise),
         "Dhuhr":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
-        "Dh/As":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
+        "Dhuhr/Asr":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
         "Jummuah":       .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
         "Asr":           .init(enabled: \.notificationAsr,   preMinutes: \.preNotificationAsr,   nagging: \.naggingAsr),
         "Maghrib":       .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
-        "Mg/Ij":         .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
+        "Maghrib/Isha":         .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
         "Isha":          .init(enabled: \.notificationIsha,  preMinutes: \.preNotificationIsha,  nagging: \.naggingIsha)
     ]
 
@@ -635,24 +626,29 @@ extension Settings {
             }
         }
         
-        // Schedule for the next 3 days
-        for dayOffset in 1..<4 {
-            let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? Date()
-            guard let list = getPrayerTimes(for: date) else { continue }
-
-            for prayer in list {
-                guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
-
-                for minutes in offsets(for: prefs) {
-                    scheduleNotification(
-                        for: prayer,
-                        preNotificationTime: minutes == 0 ? nil : minutes,
-                        city: city
-                    )
+        let futureDays = naggingMode ? 1 : 3
+        if futureDays > 0 {
+            for dayOffset in 1...futureDays {
+                let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? Date()
+                guard let list = getPrayerTimes(for: date) else { continue }
+                
+                for prayer in list {
+                    guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
+                    
+                    for minutes in offsets(for: prefs) {
+                        scheduleNotification(
+                            for: prayer,
+                            preNotificationTime: minutes == 0 ? nil : minutes,
+                            city: city
+                        )
+                    }
                 }
             }
         }
 
+        if naggingMode {
+            scheduleRefreshNag(inDays: 1, using: center)
+        }
         scheduleRefreshNag(inDays: 2, using: center)
         scheduleRefreshNag(inDays: 3, using: center)
         
