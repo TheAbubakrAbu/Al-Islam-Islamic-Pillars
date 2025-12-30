@@ -97,7 +97,6 @@ struct AdhanView: View {
                             #if !os(watchOS)
                             if let currentLoc = settings.currentLocation {
                                 let currentCity = currentLoc.city
-
                                 Image(systemName: "location.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
@@ -108,6 +107,16 @@ struct AdhanView: View {
                                 Text(currentCity)
                                     .font(.subheadline)
                                     .lineLimit(nil)
+                                    .contextMenu {
+                                        Button(action: {
+                                            settings.hapticFeedback()
+                                            
+                                            UIPasteboard.general.string = currentCity
+                                        }) {
+                                            Text("Copy City Name")
+                                            Image(systemName: "doc.on.doc")
+                                        }
+                                    }
                             } else {
                                 Image(systemName: "location.slash")
                                     .resizable()
@@ -162,16 +171,12 @@ struct AdhanView: View {
                 #if !os(watchOS)
                 if settings.prayers != nil && settings.currentLocation != nil {
                     PrayerCountdown()
-                        .transition(.opacity)
                     PrayerList()
-                        .transition(.opacity)
                 }
                 #else
                 if settings.prayers != nil {
                     PrayerCountdown()
-                        .transition(.opacity)
                     PrayerList()
-                        .transition(.opacity)
                 }
                 #endif
             }
@@ -200,7 +205,9 @@ struct AdhanView: View {
                 }
             }
             .sheet(isPresented: $showingSettingsSheet) {
-                NavigationView { SettingsAdhanView(showNotifications: true) }
+                NavigationView {
+                    SettingsAdhanView(showNotifications: true)
+                }
             }
             #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)
@@ -211,7 +218,7 @@ struct AdhanView: View {
         ), titleVisibility: .visible) {
             switch showAlert {
             case .travelTurnOnAutomatic:
-                Button("Override: Turn Off Traveling Mode", role: .destructive) {
+                Button("Override: Turn Off", role: .destructive) {
                     withAnimation {
                         settings.travelingMode = false
                     }
@@ -221,13 +228,13 @@ struct AdhanView: View {
                     settings.fetchPrayerTimes(force: true)
                 }
                 
-                Button("Confirm: Keep Traveling Mode On", role: .cancel) {
+                Button("Confirm: Keep On", role: .cancel) {
                     settings.travelTurnOnAutomatic = false
                     settings.travelTurnOffAutomatic = false
                 }
                 
             case .travelTurnOffAutomatic:
-                Button("Override: Keep Traveling Mode On", role: .destructive) {
+                Button("Override: Keep On", role: .destructive) {
                     withAnimation {
                         settings.travelingMode = true
                     }
@@ -237,7 +244,7 @@ struct AdhanView: View {
                     settings.fetchPrayerTimes(force: true)
                 }
                 
-                Button("Confirm: Turn Off Traveling Mode", role: .cancel) {
+                Button("Confirm: Turn Off", role: .cancel) {
                     settings.travelTurnOnAutomatic = false
                     settings.travelTurnOffAutomatic = false
                 }
@@ -287,4 +294,9 @@ struct AdhanView: View {
         }
         .navigationViewStyle(.stack)
     }
+}
+
+#Preview {
+    AdhanView()
+        .environmentObject(Settings.shared)
 }

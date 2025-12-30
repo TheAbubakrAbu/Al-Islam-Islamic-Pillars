@@ -27,15 +27,15 @@ struct AyahsView: View {
                     guard !cleanQuery.isEmpty else { return true }
 
                     let rawArabic   = settings.cleanSearch(a.textArabic)
-                    let clearArabic = settings.cleanSearch(a.textClearArabic)
+                    let cleanArabic = settings.cleanSearch(a.textCleanArabic)
 
                     return rawArabic.contains(cleanQuery)
-                        || clearArabic.contains(cleanQuery)
+                        || cleanArabic.contains(cleanQuery)
                         || settings.cleanSearch(a.textTransliteration).contains(cleanQuery)
                         || settings.cleanSearch(a.textEnglishSaheeh).contains(cleanQuery)
                         || settings.cleanSearch(a.textEnglishMustafa).contains(cleanQuery)
                         || settings.cleanSearch(String(a.id)).contains(cleanQuery)
-                        || settings.cleanSearch(arabicNumberString(from: a.id)).contains(cleanQuery)
+                        || settings.cleanSearch(a.idArabic).contains(cleanQuery)
                         || Int(cleanQuery) == a.id
                 }
                 
@@ -352,7 +352,7 @@ struct AyahsView: View {
             showingSettingsSheet = true
         } label: {
             VStack(alignment: .trailing) {
-                Text("\(surah.nameArabic) - \(arabicNumberString(from: surah.id))")
+                Text("\(surah.nameArabic) - \(surah.idArabic)")
                 Text("\(surah.nameTransliteration) - \(surah.id)")
             }
             .font(.footnote)
@@ -398,4 +398,11 @@ struct RotatingGearView: View {
                 }
             }
     }
+}
+
+#Preview {
+    QuranView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

@@ -262,7 +262,7 @@ extension Settings {
         }
 
         let base = Self.hijriCalendarAR.date(byAdding: .day, value: hijriOffset, to: now) ?? now
-        let arabic  = arabicNumberString(from: Self.hijriFormatterAR.string(from: base)) + " هـ"
+        let arabic = arabicNumberString(from: Self.hijriFormatterAR.string(from: base)) + " هـ"
         let english = Self.hijriFormatterEN.string(from: base)
 
         withAnimation {
@@ -366,7 +366,7 @@ extension Settings {
             if isFriday {
                 list.append(
                     Prayer(nameArabic: "الجُمُعَة",
-                           nameTransliteration: "Jummuah",
+                           nameTransliteration: "Jumuah",
                            nameEnglish: "Friday",
                            time: dhuhr,
                            image: "sun.max.fill",
@@ -531,7 +531,7 @@ extension Settings {
         "Shurooq":       .init(enabled: \.notificationSunrise, preMinutes: \.preNotificationSunrise, nagging: \.naggingSunrise),
         "Dhuhr":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
         "Dhuhr/Asr":         .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
-        "Jummuah":       .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
+        "Jumuah":       .init(enabled: \.notificationDhuhr, preMinutes: \.preNotificationDhuhr, nagging: \.naggingDhuhr),
         "Asr":           .init(enabled: \.notificationAsr,   preMinutes: \.preNotificationAsr,   nagging: \.naggingAsr),
         "Maghrib":       .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
         "Maghrib/Isha":         .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
@@ -661,7 +661,7 @@ extension Settings {
             switch prayer.nameTransliteration {
             case "Shurooq":
                 return " (end of Fajr)"
-            case "Jummuah":
+            case "Jumuah":
                 return " (Friday)"
             default:
                 return ""

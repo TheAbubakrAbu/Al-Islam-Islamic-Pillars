@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 enum ActionMode: String {
     case text
@@ -12,10 +11,11 @@ struct ShareAyahSheet: View {
     
     @Environment(\.presentationMode) private var presentationMode
     
-    @Binding var shareSettings: ShareSettings
     let surahNumber: Int
     let ayahNumber: Int
     
+    @State private var shareSettings = ShareSettings()
+
     @AppStorage("shareAyahLastActionMode") private var storedActionModeRaw: String = ActionMode.image.rawValue
     @State private var actionMode: ActionMode = .image
     
@@ -41,36 +41,57 @@ struct ShareAyahSheet: View {
         return n
     }
         
-    private var surah: Surah { quranData.quran.first(where: { $0.id == surahNumber })! }
-    private var ayah: Ayah  { surah.ayahs.first(where: { $0.id == ayahNumber })! }
+    private var surah: Surah? { quranData.quran.first(where: { $0.id == surahNumber }) }
+    private var ayah: Ayah? { surah?.ayahs.first(where: { $0.id == ayahNumber }) }
     
     private var shareText: String {
+        guard let surah = surah, let ayah = ayah else { return "Loading…" }
+
         var s = ""
 
         @inline(__always) func sepIfNeeded() {
             if !s.isEmpty { s += "\n\n" }
         }
-        
-        @inline(__always) func appendBlock(label: String, text: String?) {
+
+        @inline(__always) func appendBlock(label: String?, text: String?) {
             guard let text = text, !text.isEmpty else { return }
             sepIfNeeded()
-            s += "\(label)\n\(text)"
+            if let label = label, !label.isEmpty {
+                s += "\(label)\n"
+            }
+            s += text
         }
 
+        // Arabic
         if shareSettings.arabic {
-            let header = "[\(surah.nameArabic) \(arabicNumberString(from: surah.id)):\(arabicNumberString(from: ayah.id))]"
-            appendBlock(label: header, text: (settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic))
+            let header: String? = settings.showAyahInformation
+                ? "[\(surah.nameArabic) \(surah.idArabic):\(ayah.idArabic)]"
+                : nil
+
+            let arabicText = settings.cleanArabicText ? ayah.textCleanArabic : ayah.textArabic
+            appendBlock(
+                label: header,
+                text: (settings.showAyahInformation ? arabicText : "\(arabicText) \(ayah.idArabic)")
+            )
         }
 
+        // Transliteration
         if shareSettings.transliteration {
             let trLabelName = (!shareSettings.englishSaheeh && !shareSettings.englishMustafa)
                 ? combinedName(translit: surah.nameTransliteration, english: surah.nameEnglish)
                 : surah.nameTransliteration
 
-            appendBlock(label: "[\(trLabelName) \(surah.id):\(ayah.id)]",
-                        text: ayah.textTransliteration)
+            let header: String? = settings.showAyahInformation
+                ? "[\(trLabelName) \(surah.id):\(ayah.id)]"
+                : nil
+            
+            appendBlock(
+                label: header,
+                text: settings.showAyahInformation ? ayah.textTransliteration : "\(ayah.textTransliteration) (\(ayah.id))"
+            )
         }
 
+        // English
         let wantsAnyEnglish = shareSettings.englishSaheeh || shareSettings.englishMustafa
         if wantsAnyEnglish {
             let headerName = (!shareSettings.transliteration)
@@ -78,28 +99,39 @@ struct ShareAyahSheet: View {
                 : surah.nameEnglish
 
             sepIfNeeded()
-            s += "[\(headerName) \(surah.id):\(ayah.id)]"
+
+            if settings.showAyahInformation {
+                s += "[\(headerName) \(surah.id):\(ayah.id)]\n"
+            }
 
             if shareSettings.englishSaheeh {
-                s += "\n— Saheeh International"
-                s += "\n\(ayah.textEnglishSaheeh)"
+                if settings.showAyahInformation {
+                    s += "— Saheeh International\n"
+                }
+                
+                s += settings.showAyahInformation ? ayah.textEnglishSaheeh : "\(ayah.textEnglishSaheeh) (\(ayah.id))"
             }
+
             if shareSettings.englishMustafa {
-                if shareSettings.englishSaheeh { s += "\n" }
-                s += "\n— Mustafa Khattab"
-                s += "\n\(ayah.textEnglishMustafa)"
+                if shareSettings.englishSaheeh { s += "\n\n" } else if !settings.showAyahInformation { /* keep as-is */ } else { s += "\n" }
+                if settings.showAyahInformation {
+                    s += "— Mustafa Khattab\n"
+                }
+                s += settings.showAyahInformation ? ayah.textEnglishMustafa : "\(ayah.textEnglishMustafa) (\(ayah.id))"
             }
         }
-        
+
+        // Note
         if includeNote, let note = noteText {
             appendBlock(label: "Note", text: note)
         }
 
-        if shareSettings.showFooter {
+        // Surah Information (footer)
+        if settings.showSurahInformation {
             sepIfNeeded()
             s += "\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
         }
-        
+
         return s
     }
     
@@ -160,7 +192,13 @@ struct ShareAyahSheet: View {
                         .padding(.vertical, 2)
                 }
                 
-                Toggle("Show Surah Information", isOn: $shareSettings.showFooter.animation(.easeInOut))
+                Toggle("Show Ayah Information", isOn: $settings.showAyahInformation.animation(.easeInOut))
+                    .tint(settings.accentColor.color)
+                    .scaleEffect(0.8)
+                    .padding(.horizontal, -24)
+                    .padding(.vertical, 2)
+                
+                Toggle("Show Surah Information", isOn: $settings.showSurahInformation.animation(.easeInOut))
                     .tint(settings.accentColor.color)
                     .scaleEffect(0.8)
                     .padding(.horizontal, -24)
@@ -194,10 +232,15 @@ struct ShareAyahSheet: View {
         }
         .accentColor(settings.accentColor.color)
         .onAppear {
-            withAnimation {
-                actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
-                generatePreviewImage()
-            }
+            shareSettings = ShareSettings(
+                arabic: settings.showArabicText,
+                transliteration: settings.showTransliteration,
+                englishSaheeh: settings.showEnglishSaheeh,
+                englishMustafa: settings.showEnglishMustafa
+            )
+            
+            actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
+            generatePreviewImage()
         }
         .onChange(of: actionMode) { newValue in
             storedActionModeRaw = newValue.rawValue
@@ -206,6 +249,8 @@ struct ShareAyahSheet: View {
             }
         }
         .onChange(of: shareSettings) { _ in generatePreviewImage() }
+        .onChange(of: settings.showSurahInformation) { _ in generatePreviewImage() }
+        .onChange(of: settings.showAyahInformation) { _ in generatePreviewImage() }
         .onChange(of: includeNote) { _ in generatePreviewImage() }
         .onChange(of: showingActivityView) { if !$0 { presentationMode.wrappedValue.dismiss() } }
     }
@@ -218,7 +263,7 @@ struct ShareAyahSheet: View {
         .tint(settings.accentColor.color)
         .disabled(disabled)
         .padding(.horizontal, 20)
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
     }
     
     private func actionButton(_ title: String, action: @escaping () -> Void) -> some View {
@@ -273,19 +318,23 @@ struct ShareAyahSheet: View {
     
     private func generatePreviewImage() {
         DispatchQueue.global(qos: .userInitiated).async {
-            let img = self.drawImage()
+            let img: UIImage = autoreleasepool { self.drawImage() }
             DispatchQueue.main.async {
-                self.generatedImage = img
-                if self.actionMode == .image {
-                    self.activityItems = [img]
+                withAnimation(.easeInOut) {
+                    self.generatedImage = img
+                    if self.actionMode == .image {
+                        self.activityItems = [img]
+                    }
                 }
             }
         }
     }
     
     private func drawImage() -> UIImage {
+        guard let surah = surah, let ayah = ayah else { return UIImage() }
+
         let bodyFont   = UIFont.preferredFont(forTextStyle: .body)
-        let arabicFont = UIFont(name: settings.fontArabic, size: bodyFont.pointSize) ?? bodyFont
+        let arabicFont = UIFont(name: settings.fontArabic, size: bodyFont.pointSize * 1.15) ?? bodyFont
         let captionFont = UIFont.preferredFont(forTextStyle: .caption2)
         
         let textColor      = UIColor.white
@@ -304,12 +353,12 @@ struct ShareAyahSheet: View {
         let cent  = NSMutableParagraphStyle();  cent.alignment  = .center
         
         // Attr dictionaries
-        let bodyAttr     = [NSAttributedString.Key.font: bodyFont,   .foregroundColor: textColor]      as [NSAttributedString.Key: Any]
-        let arAttr       = [NSAttributedString.Key.font: arabicFont, .foregroundColor: textColor, .paragraphStyle: right]
-        let accentAttr   = [NSAttributedString.Key.font: bodyFont,   .foregroundColor: accent,    .paragraphStyle: left]
-        let arAccent     = [NSAttributedString.Key.font: arabicFont, .foregroundColor: accent,    .paragraphStyle: right]
-        let centAccent   = [NSAttributedString.Key.font: bodyFont,   .foregroundColor: accent,    .paragraphStyle: cent]
-        let captionAttr  = [NSAttributedString.Key.font: captionFont,.foregroundColor: secondaryColor,.paragraphStyle: left]
+        let bodyAttr = [NSAttributedString.Key.font: bodyFont, .foregroundColor: textColor] as [NSAttributedString.Key: Any]
+        let arAttr = [NSAttributedString.Key.font: arabicFont, .foregroundColor: textColor, .paragraphStyle: right]
+        let accentAttr = [NSAttributedString.Key.font: bodyFont, .foregroundColor: accent,    .paragraphStyle: left]
+        let arAccent = [NSAttributedString.Key.font: arabicFont, .foregroundColor: accent,    .paragraphStyle: right]
+        let centAccent = [NSAttributedString.Key.font: bodyFont, .foregroundColor: accent,    .paragraphStyle: cent]
+        let captionAttr = [NSAttributedString.Key.font: captionFont, .foregroundColor: secondaryColor,.paragraphStyle: left]
         
         // --- Compose full attributed text once
         let text = NSMutableAttributedString()
@@ -318,10 +367,17 @@ struct ShareAyahSheet: View {
         
         // Arabic
         if shareSettings.arabic {
-            append("[\(surah.nameArabic) ", arAccent)
-            append("\(arabicNumberString(from: surah.id)):\(arabicNumberString(from: ayah.id))]", accentAttr)
-            append("\n", bodyAttr)
-            append(settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic, arAttr)
+            var arabicText = settings.cleanArabicText ? ayah.textCleanArabic : ayah.textArabic
+            
+            if settings.showAyahInformation {
+                append("[\(surah.nameArabic) ", arAccent)
+                append("\(surah.idArabic):\(ayah.idArabic)]", accentAttr)
+                append("\n", bodyAttr)
+            } else {
+                arabicText += " \(ayah.idArabic)"
+            }
+            
+            append(arabicText, arAttr)
         }
         
         // Transliteration
@@ -331,9 +387,13 @@ struct ShareAyahSheet: View {
                 : surah.nameTransliteration
 
             sepIfNeeded()
-            append("[\(trLabelName) \(surah.id):\(ayah.id)]", accentAttr)
-            append("\n", bodyAttr)
-            append(ayah.textTransliteration, bodyAttr)
+            
+            if settings.showAyahInformation {
+                append("[\(trLabelName) \(surah.id):\(ayah.id)]", accentAttr)
+                append("\n", bodyAttr)
+            }
+            
+            append(settings.showAyahInformation ? ayah.textTransliteration : "\(ayah.textTransliteration) (\(ayah.id))", bodyAttr)
         }
 
         let wantsAnyEnglish = shareSettings.englishSaheeh || shareSettings.englishMustafa
@@ -343,19 +403,28 @@ struct ShareAyahSheet: View {
                 : surah.nameEnglish
 
             sepIfNeeded()
-            append("[\(enHeaderName) \(surah.id):\(ayah.id)]", accentAttr)
+
+            if settings.showAyahInformation {
+                append("[\(enHeaderName) \(surah.id):\(ayah.id)]", accentAttr)
+                append("\n", bodyAttr)
+            }
 
             if shareSettings.englishSaheeh {
-                append("\n", bodyAttr)
-                append("— Saheeh International", captionAttr)
-                append("\n", bodyAttr)
-                append(ayah.textEnglishSaheeh, bodyAttr)
+                if settings.showAyahInformation {
+                    append("— Saheeh International", captionAttr)
+                    append("\n", bodyAttr)
+                }
+                append(settings.showAyahInformation ? ayah.textEnglishSaheeh : "\(ayah.textEnglishSaheeh) (\(ayah.id))", bodyAttr)
             }
+
             if shareSettings.englishMustafa {
                 if shareSettings.englishSaheeh { append("\n\n", bodyAttr) }
-                append("— Clear Quran (Mustafa Khattab)", captionAttr)
-                append("\n", bodyAttr)
-                append(ayah.textEnglishMustafa, bodyAttr)
+
+                if settings.showAyahInformation {
+                    append("— Clear Quran (Mustafa Khattab)", captionAttr)
+                    append("\n", bodyAttr)
+                }
+                append(settings.showAyahInformation ? ayah.textEnglishMustafa : "\(ayah.textEnglishMustafa) (\(ayah.id))", bodyAttr)
             }
         }
         
@@ -367,7 +436,7 @@ struct ShareAyahSheet: View {
         }
         
         // Footer
-        if shareSettings.showFooter {
+        if settings.showSurahInformation {
             sepIfNeeded()
             append("\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) ", centAccent)
             append(surah.type == "meccan" ? "🕋" : "🕌", bodyAttr)
@@ -433,3 +502,10 @@ struct ActivityView: UIViewControllerRepresentable {
 }
 
 extension Color { var uiColor: UIColor { UIColor(self) } }
+
+#Preview {
+    ShareAyahSheet(surahNumber: 2, ayahNumber: 5)
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
+}

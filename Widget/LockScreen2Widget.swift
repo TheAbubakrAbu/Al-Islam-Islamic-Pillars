@@ -11,24 +11,35 @@ struct LockScreen2EntryView: View {
                     .font(.caption)
             } else if let currentPrayer = entry.currentPrayer, let nextPrayer = entry.nextPrayer {
                 HStack {
-                    Image(systemName: currentPrayer.image)
-                        .font(.caption)
-                        .padding(.trailing, -4)
+                    if entry.prayers.count == 6 {
+                        Image(systemName: currentPrayer.image)
+                            .font(.caption)
+                            .padding(.trailing, -4)
+                    }
                     
                     Text(currentPrayer.nameTransliteration)
                         .font(.headline)
+                    
+                    Text("\(nextPrayer.time, style: .timer)")
+                        .foregroundColor(.secondary)
+                        .font(.footnote)
                 }
-                
-                Text("Time left: \(nextPrayer.time, style: .timer)")
-                    .font(.caption)
                 
                 Text("\(nextPrayer.nameTransliteration) at \(nextPrayer.time, style: .time)")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Image(systemName: "location.fill")
+                        .padding(.trailing, -4)
+                    
+                    Text(entry.currentCity)
+                }
+                .font(.footnote)
             }
         }
         .multilineTextAlignment(.leading)
         .lineLimit(1)
+        .minimumScaleFactor(0.5)
     }
 }
 

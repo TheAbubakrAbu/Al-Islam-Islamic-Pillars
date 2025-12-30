@@ -29,7 +29,7 @@ struct WhenIsPrayerIntent: AppIntent {
         switch prayer {
         case .fajr:    keys = ["Fajr", "Fajer", "Dawn"]
         case .sunrise: keys = ["Shurooq", "Sunrise"]
-        case .dhuhr:   keys = ["Dhuhr", "Thuhr", "Dhuhur", "Thuhur", "Jummuah", "Noon"]
+        case .dhuhr:   keys = ["Dhuhr", "Thuhr", "Dhuhur", "Thuhur", "Jumuah", "Noon"]
         case .asr:     keys = ["Asr", "Aser", "Afternoon"]
         case .maghrib: keys = ["Maghrib", "Magrib", "Maghreb", "Magreb", "Sunset"]
         case .isha:    keys = ["Isha", "Ishaa", "Esha", "Eshaa", "Night"]
@@ -37,7 +37,7 @@ struct WhenIsPrayerIntent: AppIntent {
 
         if let p = list.first(where: { keys.contains($0.nameTransliteration) || keys.contains($0.nameEnglish) }) {
             let time = Settings.shared.formatDate(p.time)
-            let name = (p.nameTransliteration == "Jummuah") ? "Jummuah (Dhuhr)" : p.nameTransliteration
+            let name = (p.nameTransliteration == "Jumuah") ? "Jumuah (Dhuhr)" : p.nameTransliteration
             let msg = "\(name) is at \(time)."
             return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
         }

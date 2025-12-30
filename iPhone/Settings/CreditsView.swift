@@ -43,7 +43,7 @@ struct CreditsView: View {
                     Text("""
                     This app was inspired by my desire to help new reverts and non-Muslims learn about Islam and easily access the Quran and prayer times. I’m deeply grateful to my parents for instilling in me a love for the faith (may Allah ﷻ‎ reward them).
 
-                    I also want to express my gratitude to my high school teacher, Mr. Joe Silvey, who, despite not being Muslim, stood with our Muslim Student Association and helped us organize weekly Jummuah prayers.
+                    I also want to express my gratitude to my high school teacher, Mr. Joe Silvey, who, despite not being Muslim, stood with our Muslim Student Association and helped us organize weekly Jumuah prayers.
                     """)
                         .font(.body)
                         .multilineTextAlignment(.leading)

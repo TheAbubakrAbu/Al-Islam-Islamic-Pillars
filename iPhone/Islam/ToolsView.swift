@@ -515,31 +515,49 @@ struct NameTranslation: Codable {
 }
 
 struct NameOfAllah: Codable, Identifiable {
-    var id: String { "\(number)" }
+    let number: Int
+    let id: String
 
     let name: String
     let transliteration: String
-    let number: Int
     let found: String
     let en: NameTranslation
 
-    private static func clean(_ s: String) -> String {
-        let unwanted: Set<Character> = ["[", "]", "(", ")", "-", "'", "\""]
-        let stripped = s.filter { !unwanted.contains($0) }
-        return (stripped.applyingTransform(.stripDiacritics, reverse: false) ?? stripped)
-               .lowercased()
+    let numberArabic: String
+    let searchTokens: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case name, transliteration, number, found, en
     }
 
-    var searchTokens: [String] {
-        [
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+
+        number = try c.decode(Int.self, forKey: .number)
+        name = try c.decode(String.self, forKey: .name)
+        transliteration = try c.decode(String.self, forKey: .transliteration)
+        found = try c.decode(String.self, forKey: .found)
+        en = try c.decode(NameTranslation.self, forKey: .en)
+
+        id = "\(number)"
+        numberArabic = arabicNumberString(from: number)
+
+        searchTokens = [
             Self.clean(name),
             Self.clean(transliteration),
             Self.clean(en.meaning),
             Self.clean(en.desc),
             Self.clean(found),
             "\(number)",
-            arabicNumberString(from: number)
+            numberArabic
         ]
+    }
+
+    private static func clean(_ s: String) -> String {
+        let unwanted: Set<Character> = ["[", "]", "(", ")", "-", "'", "\""]
+        let stripped = s.filter { !unwanted.contains($0) }
+        return (stripped.applyingTransform(.stripDiacritics, reverse: false) ?? stripped)
+            .lowercased()
     }
 }
 
@@ -639,15 +657,17 @@ private struct NameRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("First Found: \(String(name.found.prefix(through: name.found.firstIndex(of: ")") ?? name.found.endIndex)))")
                         .font(.subheadline).foregroundColor(.secondary)
+                    
                     Text(name.en.meaning).font(.subheadline)
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(name.name.removeDiacriticsFromLastLetter()) ‑ \(arabicNumberString(from: name.number))")
+                    Text("\(name.name.removeDiacriticsFromLastLetter()) ‑ \(name.numberArabic)")
                         .font(.headline)
                         .foregroundColor(settings.accentColor.color)
+                    
                     Text("\(name.transliteration) ‑ \(name.number)")
                         .font(.subheadline)
                 }
@@ -683,14 +703,6 @@ private struct NameRow: View {
         }
     }
     #endif
-}
-
-extension String {
-    func removeDiacriticsFromLastLetter() -> String {
-        guard let last = last else { return self }
-        let cleaned = String(last).removingArabicDiacriticsAndSigns
-        return cleaned == String(last) ? self : dropLast() + cleaned
-    }
 }
 
 struct DateView: View {
@@ -852,4 +864,11 @@ private struct WallpaperCell: View {
                 #endif
         }
     }
+}
+
+#Preview {
+    IslamView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

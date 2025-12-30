@@ -86,7 +86,6 @@ struct AyahContextMenuModifier: ViewModifier {
     
     let lastRead: Bool
     
-    @State var shareSettings = ShareSettings()
     @State var showAyahSheet = false
     
     @State private var showingNoteSheet = false
@@ -228,12 +227,6 @@ struct AyahContextMenuModifier: ViewModifier {
 
                 Button {
                     settings.hapticFeedback()
-                    shareSettings = ShareSettings(
-                        arabic: settings.showArabicText,
-                        transliteration: settings.showTransliteration,
-                        englishSaheeh: settings.showEnglishSaheeh,
-                        englishMustafa: settings.showEnglishMustafa
-                    )
                     showAyahSheet = true
                 } label: {
                     Label("Share Ayah", systemImage: "square.and.arrow.up")
@@ -253,7 +246,6 @@ struct AyahContextMenuModifier: ViewModifier {
             }
             .sheet(isPresented: $showAyahSheet) {
                 ShareAyahSheet(
-                    shareSettings: $shareSettings,
                     surahNumber: surah,
                     ayahNumber: ayah
                 )

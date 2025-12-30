@@ -155,7 +155,7 @@ struct PrayerList: View {
                                                 case "Shurooq":
                                                     settings.preNotificationSunrise = 15
                                                     settings.notificationSunrise = true
-                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                case "Dhuhr", "Dhuhr/Asr", "Jumuah":
                                                     settings.preNotificationDhuhr = 15
                                                     settings.notificationDhuhr = true
                                                 case "Asr":
@@ -178,7 +178,7 @@ struct PrayerList: View {
                                                 case "Shurooq":
                                                     settings.preNotificationSunrise = 0
                                                     settings.notificationSunrise = false
-                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                case "Dhuhr", "Dhuhr/Asr", "Jumuah":
                                                     settings.preNotificationDhuhr = 0
                                                     settings.notificationDhuhr = false
                                                 case "Asr":
@@ -201,7 +201,7 @@ struct PrayerList: View {
                                                 case "Shurooq":
                                                     settings.preNotificationSunrise = 0
                                                     settings.notificationSunrise = true
-                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                case "Dhuhr", "Dhuhr/Asr", "Jumuah":
                                                     settings.preNotificationDhuhr = 0
                                                     settings.notificationDhuhr = true
                                                 case "Asr":
@@ -235,7 +235,7 @@ struct PrayerList: View {
                                                 case "Shurooq":
                                                     settings.preNotificationSunrise = 15
                                                     settings.notificationSunrise = true
-                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                case "Dhuhr", "Dhuhr/Asr", "Jumuah":
                                                     settings.preNotificationDhuhr = 15
                                                     settings.notificationDhuhr = true
                                                 case "Asr":
@@ -264,7 +264,7 @@ struct PrayerList: View {
                                                 case "Shurooq":
                                                     settings.preNotificationSunrise = 0
                                                     settings.notificationSunrise = true
-                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                case "Dhuhr", "Dhuhr/Asr", "Jumuah":
                                                     settings.preNotificationDhuhr = 0
                                                     settings.notificationDhuhr = true
                                                 case "Asr":
@@ -293,7 +293,7 @@ struct PrayerList: View {
                                                 case "Shurooq":
                                                     settings.preNotificationSunrise = 0
                                                     settings.notificationSunrise = false
-                                                case "Dhuhr", "Dhuhr/Asr", "Jummuah":
+                                                case "Dhuhr", "Dhuhr/Asr", "Jumuah":
                                                     settings.preNotificationDhuhr = 0
                                                     settings.notificationDhuhr = false
                                                 case "Asr":
@@ -348,7 +348,7 @@ struct PrayerList: View {
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
                                                 .padding(.top, 2)
-                                        } else if prayerTime.nameTransliteration == "Jummuah" {
+                                        } else if prayerTime.nameTransliteration == "Jumuah" {
                                             Text("Prophet Muhammad (peace be upon him) said: \"The Friday prayer is obligatory upon every Muslim in the time of Dhuhr, except for a child, a woman, or an ill person\" (Abu Dawood 1067).")
                                                 .foregroundColor(.secondary)
                                                 .font(.caption)
@@ -489,4 +489,9 @@ struct PrayerList: View {
             }
         }
     }
+}
+
+#Preview {
+    AdhanView()
+        .environmentObject(Settings.shared)
 }

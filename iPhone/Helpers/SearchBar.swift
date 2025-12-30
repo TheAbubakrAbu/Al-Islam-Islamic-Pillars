@@ -46,6 +46,12 @@ struct SearchBar: UIViewRepresentable {
         searchBar.delegate = context.coordinator
         searchBar.placeholder = "Search"
         searchBar.autocorrectionType = .no
+        
+        if #available(iOS 26.0, watchOS 26.0, visionOS 26.0, macOS 26.0, *) {
+            searchBar.backgroundImage = UIImage()
+            searchBar.searchTextField.backgroundColor = .clear
+        }
+        
         return searchBar
     }
 
@@ -59,4 +65,8 @@ struct SearchBar: UIViewRepresentable {
             self.text = searchBar.text ?? ""
         }
     }
+}
+
+#Preview {
+    SearchBar(text: .constant("Search"))
 }

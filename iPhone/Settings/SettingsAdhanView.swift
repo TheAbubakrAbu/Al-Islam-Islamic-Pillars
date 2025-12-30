@@ -147,7 +147,7 @@ struct SettingsAdhanView: View {
         ), titleVisibility: .visible) {
             switch showAlert {
             case .travelTurnOnAutomatic:
-                Button("Override: Turn Off Traveling Mode", role: .destructive) {
+                Button("Override: Turn Off", role: .destructive) {
                     withAnimation {
                         settings.travelingMode = false
                     }
@@ -157,13 +157,13 @@ struct SettingsAdhanView: View {
                     settings.fetchPrayerTimes(force: true)
                 }
                 
-                Button("Confirm: Keep Traveling Mode On", role: .cancel) {
+                Button("Confirm: Keep On", role: .cancel) {
                     settings.travelTurnOnAutomatic = false
                     settings.travelTurnOffAutomatic = false
                 }
                 
             case .travelTurnOffAutomatic:
-                Button("Override: Keep Traveling Mode On", role: .destructive) {
+                Button("Override: Keep On", role: .destructive) {
                     withAnimation {
                         settings.travelingMode = true
                     }
@@ -173,7 +173,7 @@ struct SettingsAdhanView: View {
                     settings.fetchPrayerTimes(force: true)
                 }
                 
-                Button("Confirm: Turn Off Traveling Mode", role: .cancel) {
+                Button("Confirm: Turn Off", role: .cancel) {
                     settings.travelTurnOnAutomatic = false
                     settings.travelTurnOffAutomatic = false
                 }

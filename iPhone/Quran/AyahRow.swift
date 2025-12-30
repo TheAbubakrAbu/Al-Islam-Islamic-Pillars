@@ -8,7 +8,6 @@ struct AyahRow: View {
     @State private var ayahBeginnerMode = false
     
     #if !os(watchOS)
-    @State private var shareSettings = ShareSettings()
     @State private var showingAyahSheet = false
     
     @State private var showingNoteSheet = false
@@ -99,7 +98,7 @@ struct AyahRow: View {
             
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text(arabicNumberString(from: ayah.id))
+                    Text(ayah.idArabic)
                         .foregroundColor(settings.accentColor.color)
                         #if !os(watchOS)
                         .font(.custom("KFGQPCHafsEx1UthmanicScript-Reg", size: UIFont.preferredFont(forTextStyle: .largeTitle).pointSize))
@@ -138,7 +137,6 @@ struct AyahRow: View {
                     }
                     .sheet(isPresented: $showingAyahSheet) {
                         ShareAyahSheet(
-                            shareSettings: $shareSettings,
                             surahNumber: surah.id,
                             ayahNumber: ayah.id
                         )
@@ -266,7 +264,7 @@ struct AyahRow: View {
 
             if showArabic {
                 HighlightedSnippet(
-                    source: spacedArabic(settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic),
+                    source: spacedArabic(settings.cleanArabicText ? ayah.textCleanArabic : ayah.textArabic),
                     term: searchText,
                     font: .custom(settings.fontArabic, size: settings.fontArabicSize),
                     accent: settings.accentColor.color,
@@ -432,12 +430,6 @@ struct AyahRow: View {
             
             Button {
                 settings.hapticFeedback()
-                shareSettings = ShareSettings(
-                    arabic: settings.showArabicText,
-                    transliteration: settings.showTransliteration,
-                    englishSaheeh: settings.showEnglishSaheeh,
-                    englishMustafa: settings.showEnglishMustafa
-                )
                 showingAyahSheet = true
             } label: {
                 Label("Share Ayah", systemImage: "square.and.arrow.up")

@@ -11,8 +11,8 @@ struct PillarsOtherView: View {
             }
             .padding(.vertical, 4)
             
-            NavigationLink(destination: JummuahView()) {
-                Text("Jummuah (Friday) Prayer")
+            NavigationLink(destination: JumuahView()) {
+                Text("Jumuah (Friday) Prayer")
                     .font(.subheadline)
             }
             .padding(.vertical, 4)
@@ -143,7 +143,7 @@ struct WudhuView: View {
                     .font(.body)
                 Text("Ghusl becomes obligatory to remove major ritual impurity (**Janabah - جَنَابَة**).")
                     .font(.body)
-                Text("It is also recommended before attending Jummuah (Friday) prayer, entering Ihram for Hajj or Umrah, and after washing a deceased person.")
+                Text("It is also recommended before attending Jumuah (Friday) prayer, entering Ihram for Hajj or Umrah, and after washing a deceased person.")
                     .font(.body)
             }
 
@@ -166,13 +166,13 @@ struct WudhuView: View {
     }
 }
 
-struct JummuahView: View {
+struct JumuahView: View {
     @EnvironmentObject var settings: Settings
 
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Jummuah (جُمُعَة) comes from the Arabic word meaning “congregation” or “Friday.” It refers to the Friday congregational prayer that replaces Dhuhr.")
+                Text("Jumuah (جُمُعَة) comes from the Arabic word meaning “congregation” or “Friday.” It refers to the Friday congregational prayer that replaces Dhuhr.")
                     .font(.body)
 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:")
@@ -182,10 +182,10 @@ struct JummuahView: View {
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
 
-                Text("Jummuah prayer consists of a sermon (**Khutbah - خُطْبَة**) followed by a two-rak’ah Salah led by the Imam. It is obligatory for Muslim men who can attend, though it is not obligatory for women.")
+                Text("Jumuah prayer consists of a sermon (**Khutbah - خُطْبَة**) followed by a two-rak’ah Salah led by the Imam. It is obligatory for Muslim men who can attend, though it is not obligatory for women.")
                     .font(.body)
 
-                Text("If Jummuah is missed at the mosque, one performs the full Dhuhr prayer (4 rak’ahs).")
+                Text("If Jumuah is missed at the mosque, one performs the full Dhuhr prayer (4 rak’ahs).")
                     .font(.body)
             }
 
@@ -202,7 +202,7 @@ struct JummuahView: View {
             }
 
             Section(header: Text("RECOMMENDED PRACTICES")) {
-                Text("Muslims are encouraged to engage in specific acts of worship on Jummuah:")
+                Text("Muslims are encouraged to engage in specific acts of worship on Jumuah:")
                     .font(.body)
 
                 Text("1. **Reciting Surah Al-Kahf (سُورَة ٱلْكَهْف):** The Prophet Muhammad (peace and blessings be upon him) said:")
@@ -228,7 +228,7 @@ struct JummuahView: View {
             }
 
             Section(header: Text("ETIQUETTE")) {
-                Text("Observing proper etiquette during Jummuah is essential:")
+                Text("Observing proper etiquette during Jumuah is essential:")
                     .font(.body)
 
                 Text("1. Arrive early to the mosque and sit attentively during the Khutbah.")
@@ -242,7 +242,7 @@ struct JummuahView: View {
             }
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Jummuah")
+        .navigationTitle("Jumuah")
     }
 }
 

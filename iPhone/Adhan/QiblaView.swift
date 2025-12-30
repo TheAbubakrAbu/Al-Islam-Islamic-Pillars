@@ -26,7 +26,6 @@ struct QiblaView: View {
         })
     }
 
-    // MARK: - Math helpers
     private func angularDistance(_ a: Double, _ b: Double) -> Double {
         var d = (a - b).truncatingRemainder(dividingBy: 360)
         if d < -180 { d += 360 }
@@ -40,7 +39,6 @@ struct QiblaView: View {
         return d
     }
 
-    // MARK: - Derived UI
     private var distToQibla: Double { angularDistance(compass.direction, 0) }
     private var arrowColour: Color { distToQibla <=  5 ? settings.accentColor.color : .primary }
     private var ringColour:  Color { distToQibla <= 20 ? settings.accentColor.color : .primary }
@@ -50,7 +48,6 @@ struct QiblaView: View {
         let arrowH = max(30, size * 0.55)
         let kaaba  = max(20, size * 0.40)
 
-        // Map 0…20° → 1…0 alignment score (<=20° starts glowing; <=5° pops)
         let score = 1.0 - (min(20.0, distToQibla) / 20.0)
 
         ZStack {
@@ -67,7 +64,7 @@ struct QiblaView: View {
         }
         .padding(.trailing, -12)
         .rotationEffect(.degrees(compass.direction))
-        .animation(nil, value: compass.direction)     // no tween on heading
+        .animation(nil, value: compass.direction)
         .onAppear {
             compass.start()
             #if os(iOS)
@@ -80,29 +77,24 @@ struct QiblaView: View {
         .onDisappear { compass.stop() }
         #if os(iOS)
         .onChange(of: compass.direction) { newAngle in
-            // iOS haptics only when the control is big
             guard size > 50 else { return }
 
             let now = ProcessInfo.processInfo.systemUptime
-            // throttle ~12Hz
             guard now - lastHapticTime >= 0.08 else { return }
 
             let delta = shortestDelta(from: lastAngle, to: newAngle)
             let absDelta = abs(delta)
 
-            // Distance from perfect alignment (0°)
             let dist = angularDistance(newAngle, 0)
 
-            // Adaptive step: bigger movement when far; sensitive near target
-            let step = max(3.0, min(12.0, dist / 2.0)) // 3°…12°
+            let step = max(3.0, min(12.0, dist / 2.0))
 
             if absDelta >= step {
-                // Intensity ramps within last 30°
-                let proximity = max(0.0, min(1.0, (30.0 - dist) / 30.0)) // 0…1
-                let intensity = CGFloat(0.3 + 0.7 * proximity)           // 0.3…1.0
+                let proximity = max(0.0, min(1.0, (30.0 - dist) / 30.0))
+                let intensity = CGFloat(0.3 + 0.7 * proximity)
 
                 if dist <= 5 {
-                    notify.notificationOccurred(.success) // strong pop when aligned
+                    notify.notificationOccurred(.success)
                     notify.prepare()
                 } else {
                     impact.impactOccurred(intensity: intensity)
@@ -140,16 +132,13 @@ struct GlassyQiblaRing: View {
         let innerBlur   = max(0.5, size * 0.04)
 
         ZStack {
-            // Frosted body
             glassFill
-                // Inner shadow — centered, masked
                 .overlay(
                     Circle()
                         .stroke(Color.black.opacity(0.14), lineWidth: innerLine)
                         .blur(radius: innerBlur)
                         .mask(Circle().stroke(lineWidth: innerLine))
                 )
-                // Specular highlight — trimmed and masked
                 .overlay(
                     Circle()
                         .fill(
@@ -170,10 +159,8 @@ struct GlassyQiblaRing: View {
                                 .stroke(style: .init(lineWidth: glossWidth, lineCap: .round))
                         )
                 )
-                // Drop shadow is symmetric (y-only), doesn’t affect layout
                 .shadow(color: Color.black.opacity(0.18), radius: shadowR, x: 0, y: max(0.5, size * 0.04))
 
-            // Radiant border
             Circle()
                 .strokeBorder(
                     AngularGradient(
@@ -187,15 +174,14 @@ struct GlassyQiblaRing: View {
                     lineWidth: ringWidth
                 )
 
-            // Soft outer glow — masked to circle so it can’t bleed
             Circle()
                 .stroke(tint.opacity(0.25 + 0.45 * alignmentScore), lineWidth: outerGlowW)
                 .blur(radius: max(0.6, size * 0.05))
                 .mask(Circle().stroke(lineWidth: outerGlowW))
         }
         .frame(width: size, height: size)
-        .clipShape(Circle()) // <- keep every pixel inside the circle
-        .compositingGroup()  // <- render first, then clip
+        .clipShape(Circle())
+        .compositingGroup()
         .scaleEffect(1.0 + 0.03 * alignmentScore)
         .animation(.spring(response: 0.38, dampingFraction: 0.78), value: alignmentScore)
     }
@@ -225,7 +211,7 @@ final class LocalQiblaCompassHolder: ObservableObject {
     @Published private(set) var inner: LocalQiblaCompass?
     @Published var direction: Double = 0
 
-    private var cancellable: AnyCancellable?   // <-- keep it
+    private var cancellable: AnyCancellable?
 
     func startIfNeeded() {
         if let inner = inner {
@@ -245,20 +231,18 @@ final class LocalQiblaCompassHolder: ObservableObject {
     func stop() { inner?.stop() }
 }
 
-/// Minimal compass that only runs while QiblaView is visible.
-/// It asks for the current coords each time (via the closure) and publishes the delta.
 final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDelegate {
-    @Published var direction: Double = 0            // rotation to apply (0 = aligned)
+    @Published var direction: Double = 0
     private let lm = CLLocationManager()
-    private let locationProvider: () -> Location?   // returns current app location when available
-    private let minStep: Double = 1.0               // ignore sub-degree jitter
+    private let locationProvider: () -> Location?
+    private let minStep: Double = 1.0
     private var started = false
 
     init(locationProvider: @escaping () -> Location?) {
         self.locationProvider = locationProvider
         super.init()
         lm.delegate = self
-        lm.headingFilter = 1                         // ~1° steps
+        lm.headingFilter = 1
     }
 
     func start() {
@@ -278,7 +262,7 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
         let qibla = Qibla(coordinates: Coordinates(latitude: cur.latitude, longitude: cur.longitude)).direction
         let heading = (h.trueHeading >= 0 ? h.trueHeading : h.magneticHeading)
 
-        var delta = qibla - heading                   // normalize to 0…360
+        var delta = qibla - heading
         delta.formTruncatingRemainder(dividingBy: 360)
         if delta < 0 { delta += 360 }
 
@@ -288,4 +272,9 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
     }
 
     deinit { stop() }
+}
+
+#Preview {
+    AdhanView()
+        .environmentObject(Settings.shared)
 }

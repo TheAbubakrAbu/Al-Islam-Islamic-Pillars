@@ -75,30 +75,30 @@ struct LaunchScreen: View {
             }
         }
         .onAppear {
-            triggerHapticFeedback(.soft)
-            
-            withAnimation(.easeInOut(duration: 0.5)) {
-                size = 0.9
-                opacity = 1.0
-                gradientSize = 3.0
-                
+            Task { @MainActor in
                 triggerHapticFeedback(.soft)
-            }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    size = 0.9
+                    opacity = 1.0
+                    gradientSize = 3.0
+                }
+
+                try? await Task.sleep(nanoseconds: 800_000_000)
+
                 triggerHapticFeedback(.soft)
-                
                 withAnimation(.easeOut(duration: 0.5)) {
                     size = 0.8
                     gradientSize = 0.0
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                    triggerHapticFeedback(.soft)
+                await QuranData.shared.waitUntilLoaded()
 
-                    withAnimation {
-                        self.isLaunching = false
-                    }
+                try? await Task.sleep(nanoseconds: 700_000_000)
+
+                triggerHapticFeedback(.soft)
+                withAnimation {
+                    isLaunching = false
                 }
             }
         }
@@ -126,4 +126,9 @@ struct LaunchScreen: View {
     enum HapticFeedbackType {
         case soft, light, medium, heavy
     }
+}
+
+#Preview {
+    LaunchScreen(isLaunching: .constant(true))
+        .environmentObject(Settings.shared)
 }

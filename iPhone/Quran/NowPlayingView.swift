@@ -271,3 +271,10 @@ struct NowPlayingView: View {
     }
 
 }
+
+#Preview {
+    NowPlayingView(quranView: false)
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
+}

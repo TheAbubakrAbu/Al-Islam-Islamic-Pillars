@@ -143,3 +143,8 @@ struct HijriCalendarView: View {
         .navigationViewStyle(.stack)
     }
 }
+
+#Preview {
+    HijriCalendarView()
+        .environmentObject(Settings.shared)
+}

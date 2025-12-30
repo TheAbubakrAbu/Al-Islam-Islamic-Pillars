@@ -22,20 +22,16 @@ struct QuranView: View {
         return f
     }()
     
+    func arabicToEnglishNumber(_ arabicNumber: String) -> Int? {
+        QuranView.arFormatter.number(from: arabicNumber)?.intValue
+    }
+    
     var lastReadSurah: Surah? {
         quranData.quran.first(where: { $0.id == settings.lastReadSurah })
     }
 
     var lastReadAyah: Ayah? {
         lastReadSurah?.ayahs.first(where: { $0.id == settings.lastReadAyah })
-    }
-    
-    func arabicToEnglishNumber(_ arabicNumber: String) -> Int? {
-        QuranView.arFormatter.number(from: arabicNumber)?.intValue
-    }
-
-    func arabicNumberString(from number: Int) -> String {
-        QuranView.arFormatter.string(from: NSNumber(value: number)) ?? "\(number)"
     }
     
     func getSurahAndAyah(from searchText: String) -> (surah: Surah?, ayah: Ayah?) {
@@ -317,7 +313,7 @@ struct QuranView: View {
                                    settings.cleanSearch(surah.nameTransliteration).contains(cleanedSearch) ||
                                    settings.cleanSearch(surah.nameEnglish).contains(cleanedSearch)         ||
                                    settings.cleanSearch(String(surah.id)).contains(cleanedSearch)          ||
-                                   settings.cleanSearch(arabicNumberString(from: surah.id)).contains(cleanedSearch)
+                                   settings.cleanSearch(surah.idArabic).contains(cleanedSearch)
                         }
 
                         Section(header:
@@ -357,7 +353,7 @@ struct QuranView: View {
                             }
                         }
                     } else {
-                        ForEach(quranData.juzList, id: \.id) { juz in
+                        ForEach(QuranData.juzList, id: \.id) { juz in
                             Section(header: JuzHeader(juz: juz)) {
                                 let surahsInRange = quranData.quran.filter {
                                     $0.id >= juz.startSurah && $0.id <= juz.endSurah
@@ -746,4 +742,11 @@ struct QuranView: View {
             AyahsView(surah: quranData.quran[0])
         }
     }
+}
+
+#Preview {
+    QuranView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

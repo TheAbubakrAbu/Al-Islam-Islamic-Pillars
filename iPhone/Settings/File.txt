@@ -1,0 +1,9 @@
+private let arabicNumberFormatter: NumberFormatter = {
+    let formatter = NumberFormatter()
+    formatter.locale = Locale(identifier: "ar")
+    return formatter
+}()
+
+func arabicNumberString(from number: Int) -> String {
+    arabicNumberFormatter.string(from: NSNumber(value: number)) ?? String(number)
+}

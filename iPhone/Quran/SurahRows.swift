@@ -45,7 +45,7 @@ struct SurahRow: View {
                 Spacer()
                 
                 VStack(alignment: .trailing) {
-                    Text("\(surah.nameArabic) - \(arabicNumberString(from: surah.id))")
+                    Text("\(surah.nameArabic) - \(surah.idArabic)")
                         .font(.headline)
                         .multilineTextAlignment(.trailing)
                         .foregroundColor(settings.accentColor.color)
@@ -65,7 +65,7 @@ struct SurahRow: View {
             HStack {
                 Spacer()
                 
-                Text("\(surah.nameArabic) - \(arabicNumberString(from: surah.id))")
+                Text("\(surah.nameArabic) - \(surah.idArabic)")
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -127,7 +127,7 @@ struct SurahAyahRow: View {
             } else {
                 VStack {
                     if settings.showArabicText {
-                        let text = settings.cleanArabicText ? ayah.textClearArabic : ayah.textArabic
+                        let text = settings.cleanArabicText ? ayah.textCleanArabic : ayah.textArabic
                         
                         Text(settings.beginnerMode ? text.map { "\($0) " }.joined() : text)
                             .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
