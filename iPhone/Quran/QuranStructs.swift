@@ -25,7 +25,26 @@ struct VerseIndexEntry: Identifiable, Hashable {
     let id: String
     let surah: Int
     let ayah: Int
-    let searchBlob: String
+    let arabicBlob: String
+    let englishBlob: String
+}
+
+extension String {
+    var containsArabicLetters: Bool {
+        unicodeScalars.contains { s in
+            switch s.value {
+            case 0x0600...0x06FF,     // Arabic
+                 0x0750...0x077F,     // Arabic Supplement
+                 0x08A0...0x08FF,     // Arabic Extended-A
+                 0xFB50...0xFDFF,     // Arabic Presentation Forms-A
+                 0xFE70...0xFEFF,     // Arabic Presentation Forms-B
+                 0x1EE00...0x1EEFF:   // Arabic Mathematical Alphabetic Symbols
+                return true
+            default:
+                return false
+            }
+        }
+    }
 }
 
 struct LastListenedSurah: Identifiable, Codable {

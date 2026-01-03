@@ -191,6 +191,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    var favoriteSurahSet: Set<Int> { Set(favoriteSurahs) }
+    var bookmarkedAyahSet: Set<String> { Set(bookmarkedAyahs.map(\.id)) }
      
     @AppStorage("showCurrentInfo") var showCurrentInfo: Bool = false
     @AppStorage("showNextInfo") var showNextInfo: Bool = false

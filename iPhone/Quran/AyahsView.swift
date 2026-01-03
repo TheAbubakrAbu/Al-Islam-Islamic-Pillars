@@ -227,6 +227,9 @@ struct AyahsView: View {
                 .animation(.easeInOut(duration: 0.35), value: showFloatingHeader)
         }
         .navigationTitle(surah.nameEnglish)
+        /*.toolbarTitleMenu {
+            
+        }*/
         .navigationBarItems(trailing: navBarTitle)
         .sheet(isPresented: $showingSettingsSheet) { settingsSheet }
         .onChange(of: quranPlayer.showInternetAlert) { if $0 { showAlert = true; quranPlayer.showInternetAlert = false } }

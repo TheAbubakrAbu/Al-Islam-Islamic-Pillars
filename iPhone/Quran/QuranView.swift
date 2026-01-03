@@ -11,7 +11,6 @@ struct QuranView: View {
     
     @State private var verseHits: [VerseIndexEntry] = []
     @State private var hasMoreHits = true
-    @State private var showAyahSearch = false
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
     private let hitPageSize = 5
@@ -330,7 +329,11 @@ struct QuranView: View {
                                     SurahRow(surah: surah)
                                 }
                                 .id("surah_\(surah.id)")
-                                .onAppear { if surah.id == scrollToSurahID { scrollToSurahID = -1 } }
+                                .onAppear {
+                                    if surah.id == scrollToSurahID {
+                                        scrollToSurahID = -1
+                                    }
+                                }
                                 .rightSwipeActions(
                                     surahID: surah.id,
                                     surahName: surah.nameTransliteration,
@@ -530,41 +533,7 @@ struct QuranView: View {
                                 .multilineTextAlignment(.center)
                             }
                         }
-                        .onAppear {
-                            showAyahSearch = true
-                            let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard verseHits.isEmpty, !q.isEmpty else { return }
-
-                            if blockAyahSearchAfterZero && q.count > zeroResultQueryLength { return }
-
-                            let (first, more) = fetchHits(query: q, limit: hitPageSize, offset: 0)
-                            withAnimation {
-                                verseHits = first
-                                hasMoreHits = more
-                                if first.isEmpty {
-                                    blockAyahSearchAfterZero = true
-                                    zeroResultQueryLength = q.count
-                                } else {
-                                    blockAyahSearchAfterZero = false
-                                }
-                            }
-                        }
-                        .onDisappear {
-                            withAnimation {
-                                showAyahSearch = false
-                                blockAyahSearchAfterZero = false
-                            }
-                        }
                         .onChange(of: searchText) { txt in
-                            guard showAyahSearch else {
-                                withAnimation {
-                                    verseHits = []
-                                    hasMoreHits = false
-                                    blockAyahSearchAfterZero = false
-                                }
-                                return
-                            }
-
                             let q = txt.trimmingCharacters(in: .whitespacesAndNewlines)
 
                             guard !q.isEmpty else {

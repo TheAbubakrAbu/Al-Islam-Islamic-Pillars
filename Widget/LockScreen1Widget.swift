@@ -11,19 +11,22 @@ struct LockScreen1EntryView: View {
                     .font(.caption)
             } else if let nextPrayer = entry.nextPrayer {
                 HStack {
-                    Image(systemName: nextPrayer.image)
-                        .font(.caption)
-                        .padding(.trailing, -4)
+                    if !nextPrayer.nameTransliteration.contains("/") {
+                        Image(systemName: nextPrayer.image)
+                            .font(.caption)
+                            .padding(.trailing, -4)
+                    }
                     
                     Text(nextPrayer.nameTransliteration)
                         .font(.headline)
                 }
+                .lineLimit(2)
                 
                 Text(nextPrayer.time, style: .time)
                     .font(.caption2)
+                    .lineLimit(1)
             }
         }
-        .lineLimit(1)
         .minimumScaleFactor(0.5)
     }
 }

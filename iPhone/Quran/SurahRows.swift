@@ -439,6 +439,10 @@ struct AyahSearchRow: View, Equatable {
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
     
+    private var isBookmarked: Bool {
+        bookmarkedAyahs.contains("\(surah)-\(ayah)")
+    }
+    
     var body: some View {
         let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
 
@@ -487,9 +491,18 @@ struct AyahSearchRow: View, Equatable {
         }()
 
         VStack(alignment: .leading, spacing: 8) {
-            Text("\(surahName) \(surah):\(ayah)")
-                .font(.caption)
-                .foregroundColor(settings.accentColor.color)
+            HStack {
+                Text("\(surahName) \(surah):\(ayah)")
+                
+                if isBookmarked {
+                    Spacer()
+                    
+                    Image(systemName: "bookmark.fill")
+                }
+            }
+            .font(.caption)
+            .foregroundColor(settings.accentColor.color)
+            .transition(.opacity)
 
             if showArabicLine {
                 HighlightedSnippet(

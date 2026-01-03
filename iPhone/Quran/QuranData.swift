@@ -102,9 +102,14 @@ final class QuranData: ObservableObject {
 
             let vIndex = surahs.flatMap { surah in
                 surah.ayahs.map { ayah in
-                    let blob = [
+                    let arabicBlob = [
                         ayah.textArabic,
-                        ayah.textCleanArabic,
+                        ayah.textCleanArabic
+                    ]
+                    .map { settings.cleanSearch($0) }
+                    .joined(separator: " ")
+
+                    let latinBlob = [
                         ayah.textEnglishSaheeh,
                         ayah.textEnglishMustafa,
                         ayah.textTransliteration
@@ -116,7 +121,8 @@ final class QuranData: ObservableObject {
                         id: "\(surah.id):\(ayah.id)",
                         surah: surah.id,
                         ayah: ayah.id,
-                        searchBlob: blob
+                        arabicBlob: arabicBlob,
+                        englishBlob: latinBlob
                     )
                 }
             }
@@ -156,17 +162,21 @@ final class QuranData: ObservableObject {
         guard !q.isEmpty else { return [] }
         if q.rangeOfCharacter(from: .decimalDigits) != nil { return [] }
 
+        let useArabic = raw.containsArabicLetters
+
         var results: [VerseIndexEntry] = []
         results.reserveCapacity(limit == .max ? 64 : min(limit, 64))
 
         var skipped = 0
         for entry in verseIndex {
-            if entry.searchBlob.contains(q) {
+            let haystack = useArabic ? entry.arabicBlob : entry.englishBlob
+            if haystack.contains(q) {
                 if skipped < offset { skipped += 1; continue }
                 results.append(entry)
                 if limit != .max, results.count >= limit { break }
             }
         }
+
         return results
     }
     

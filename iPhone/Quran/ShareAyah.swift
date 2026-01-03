@@ -19,6 +19,8 @@ struct ShareAyahSheet: View {
     @AppStorage("shareAyahLastActionMode") private var storedActionModeRaw: String = ActionMode.image.rawValue
     @State private var actionMode: ActionMode = .image
     
+    @State private var didInit = false
+    
     @State private var generatedImage: UIImage?
     @State private var activityItems: [Any] = []
     @State private var showingActivityView = false
@@ -232,16 +234,22 @@ struct ShareAyahSheet: View {
         }
         .accentColor(settings.accentColor.color)
         .onAppear {
-            shareSettings = ShareSettings(
-                arabic: settings.showArabicText,
-                transliteration: settings.showTransliteration,
-                englishSaheeh: settings.showEnglishSaheeh,
-                englishMustafa: settings.showEnglishMustafa
-            )
-            
-            actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
-            generatePreviewImage()
+            guard !didInit else { return }
+            didInit = true
+
+            withAnimation {
+                shareSettings = ShareSettings(
+                    arabic: settings.showArabicText,
+                    transliteration: settings.showTransliteration,
+                    englishSaheeh: settings.showEnglishSaheeh,
+                    englishMustafa: settings.showEnglishMustafa
+                )
+                
+                actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
+                generatePreviewImage()
+            }
         }
+
         .onChange(of: actionMode) { newValue in
             storedActionModeRaw = newValue.rawValue
             if newValue == .image && generatedImage == nil {

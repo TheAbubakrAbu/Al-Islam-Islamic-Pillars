@@ -547,7 +547,9 @@ extension Settings {
 
         // user‑defined single offset
         let minutes = self[keyPath: prefs.preMinutes]
-        if minutes > 0 { result.append(minutes) }
+        if self[keyPath: prefs.enabled], minutes > 0 {
+            result.append(minutes)
+        }
 
         // nagging offsets (if globally on *and* per‑prayer nagging on)
         if naggingMode && self[keyPath: prefs.nagging] {

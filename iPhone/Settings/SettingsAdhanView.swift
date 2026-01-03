@@ -50,7 +50,7 @@ struct SettingsAdhanView: View {
                         .font(.subheadline)
                         .tint(settings.accentColor.color)
                     
-                    Text("The Hanafi madhab sets Asr later than other schools. Enable this only if you follow the Hanafi method.")
+                    Text("The Hanafi madhab sets Asr later than other schools of thought. Enable this only if you follow the Hanafi method.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
@@ -326,6 +326,7 @@ struct NotificationView: View {
             
             NavigationLink(destination: MoreNotificationView()) {
                 Label("More Notification Settings", systemImage: "bell.fill")
+                    .font(.subheadline)
             }
         }
         .onAppear {

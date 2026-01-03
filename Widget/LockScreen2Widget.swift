@@ -11,7 +11,7 @@ struct LockScreen2EntryView: View {
                     .font(.caption)
             } else if let currentPrayer = entry.currentPrayer, let nextPrayer = entry.nextPrayer {
                 HStack {
-                    if entry.prayers.count == 6 {
+                    if !currentPrayer.nameTransliteration.contains("/") {
                         Image(systemName: currentPrayer.image)
                             .font(.caption)
                             .padding(.trailing, -4)
