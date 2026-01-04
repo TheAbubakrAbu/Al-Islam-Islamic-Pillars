@@ -94,6 +94,18 @@ struct ToolsView: View {
                 .padding(.vertical, 4)
                 .accentColor(settings.accentColor.color)
             }
+            
+            NavigationLink(destination: PillarsView()) {
+                Label(
+                    title: { Text("Islamic Pillars and Basics") },
+                    icon: {
+                        Image(systemName: "moon.stars")
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor.color)
+            }
         }
     }
 }
