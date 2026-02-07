@@ -12,6 +12,7 @@ struct AyahRow: View {
     
     @State private var showingNoteSheet = false
     @State private var draftNote: String = ""
+    @State private var showCustomRangeSheet = false
     #endif
     
     let surah: Surah
@@ -215,6 +216,27 @@ struct AyahRow: View {
         } message: {
             Text("This ayah has a note. Unbookmarking will delete the note.")
         }
+        #if !os(watchOS)
+        .sheet(isPresented: $showCustomRangeSheet) {
+            PlayCustomRangeSheet(
+                surah: surah,
+                initialStartAyah: ayah.id,
+                initialEndAyah: surah.numberOfAyahs,
+                onPlay: { start, end, repAyah, repSec in
+                    quranPlayer.playCustomRange(
+                        surahNumber: surah.id,
+                        surahName: surah.nameTransliteration,
+                        startAyah: start,
+                        endAyah: end,
+                        repeatPerAyah: repAyah,
+                        repeatSection: repSec
+                    )
+                },
+                onCancel: { showCustomRangeSheet = false }
+            )
+            .environmentObject(settings)
+        }
+        #endif
     }
     
     @ViewBuilder
@@ -402,6 +424,13 @@ struct AyahRow: View {
                 quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
             } label: {
                 Label("Play from Ayah", systemImage: "play.circle.fill")
+            }
+
+            Button {
+                settings.hapticFeedback()
+                showCustomRangeSheet = true
+            } label: {
+                Label("Play Custom Range", systemImage: "slider.horizontal.3")
             }
             
             Divider()

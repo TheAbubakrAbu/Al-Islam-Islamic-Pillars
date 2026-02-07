@@ -173,89 +173,112 @@ struct ReciterListView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.presentationMode) private var presentationMode
 
+    private static let defaultReciter = "Muhammad Al-Minshawi (Murattal)"
+
     var body: some View {
-        List {
-            if !recitersMujawwad.isEmpty {
-                Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
-                    reciterButtons(recitersMujawwad)
+        ScrollViewReader { proxy in
+            List {
+                if !recitersMinshawi.isEmpty {
+                    Section(header: Text("MUHAMMAD SIDDIQ AL-MINSHAWI")) {
+                        reciterButtons(recitersMinshawi)
+                    }
                 }
-            }
-
-            if !recitersMuallim.isEmpty {
-                Section(header: Text("TEACHING (MUʿALLIM)")) {
-                    reciterButtons(recitersMuallim)
+                
+                if !recitersMujawwad.isEmpty {
+                    Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
+                        reciterButtons(recitersMujawwad)
+                    }
                 }
-            }
 
-            if !recitersMurattal.isEmpty {
-                Section(header: Text("NORMAL (MURATTAL)")) {
-                    reciterButtons(recitersMurattal)
+                if !recitersMuallim.isEmpty {
+                    Section(header: Text("TEACHING (MUʿALLIM)")) {
+                        reciterButtons(recitersMuallim)
+                    }
                 }
-            }
-            
-            Section(header: Text("ABOUT QIRAAT")) {
-                VStack(alignment: .leading) {
-                    Text("""
-                    The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
-                    The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+                if !recitersMurattal.isEmpty {
+                    Section(header: Text("NORMAL (MURATTAL)")) {
+                        reciterButtons(recitersMurattal)
+                    }
+                }
+                
+                Section(header: Text("ABOUT QIRAAT")) {
+                    VStack(alignment: .leading) {
+                        Text("""
+                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
-                    To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
-                    """)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                        The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                    Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
+                        To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
+                        """)
                         .font(.subheadline)
                         .foregroundColor(.primary)
-                        .padding(.top, 4)
-                    
-                    Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-                .padding(.vertical, 4)
-            }
-            
-            if !recitersKhalaf.isEmpty {
-                Section(header: Text("KHALAF AN HAMZAH")) {
-                    reciterButtons(recitersKhalaf, qiraah: true)
-                }
-            }
 
-            if !recitersWarsh.isEmpty {
-                Section(header: Text("WARSH AN NAFI")) {
-                    reciterButtons(recitersWarsh, qiraah: true)
+                        Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                            .padding(.top, 4)
+                        
+                        Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    }
+                    .padding(.vertical, 4)
+                }
+                
+                if !recitersKhalaf.isEmpty {
+                    Section(header: Text("KHALAF AN HAMZAH")) {
+                        reciterButtons(recitersKhalaf, qiraah: true)
+                    }
+                }
+
+                if !recitersWarsh.isEmpty {
+                    Section(header: Text("WARSH AN NAFI")) {
+                        reciterButtons(recitersWarsh, qiraah: true)
+                    }
+                }
+
+                if !recitersQaloon.isEmpty {
+                    Section(header: Text("QALOON AN NAFI")) {
+                        reciterButtons(recitersQaloon, qiraah: true)
+                    }
+                }
+
+                if !recitersBuzzi.isEmpty {
+                    Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
+                        reciterButtons(recitersBuzzi, qiraah: true)
+                    }
+                }
+
+                if !recitersQunbul.isEmpty {
+                    Section(header: Text("QUNBUL AN IBN KATHIR")) {
+                        reciterButtons(recitersQunbul, qiraah: true)
+                    }
+                }
+
+                if !recitersDuri.isEmpty {
+                    Section(header: Text("AD-DURI AN ABI AMR")) {
+                        reciterButtons(recitersDuri, qiraah: true)
+                    }
                 }
             }
-
-            if !recitersQaloon.isEmpty {
-                Section(header: Text("QALOON AN NAFI")) {
-                    reciterButtons(recitersQaloon, qiraah: true)
+            .navigationTitle("Select Reciter")
+            .applyConditionalListStyle(defaultView: true)
+            .onAppear {
+                if settings.reciter.isEmpty || reciters.first(where: { $0.name == settings.reciter }) == nil {
+                    withAnimation {
+                        settings.reciter = Self.defaultReciter
+                    }
                 }
-            }
-
-            if !recitersBuzzi.isEmpty {
-                Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
-                    reciterButtons(recitersBuzzi, qiraah: true)
-                }
-            }
-
-            if !recitersQunbul.isEmpty {
-                Section(header: Text("QUNBUL AN IBN KATHIR")) {
-                    reciterButtons(recitersQunbul, qiraah: true)
-                }
-            }
-
-            if !recitersDuri.isEmpty {
-                Section(header: Text("AD-DURI AN ABI AMR")) {
-                    reciterButtons(recitersDuri, qiraah: true)
+                let target = settings.reciter
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        proxy.scrollTo(target, anchor: .top)
+                    }
                 }
             }
         }
-        .navigationTitle("Select Reciter")
-        .applyConditionalListStyle(defaultView: true)
     }
 
     @ViewBuilder
@@ -296,6 +319,7 @@ struct ReciterListView: View {
             }
             .padding(.vertical, 4)
         }
+        .id(reciter.name)
     }
 }
 

@@ -72,6 +72,7 @@ private struct CurrentPrayerCell: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .multilineTextAlignment(.leading)
         }
         .onTapGesture {
             settings.hapticFeedback()
@@ -158,6 +159,7 @@ private struct UpcomingPrayerCell: View {
                 timeInfo
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
+            .multilineTextAlignment(.trailing)
         }
         .onTapGesture {
             settings.hapticFeedback()

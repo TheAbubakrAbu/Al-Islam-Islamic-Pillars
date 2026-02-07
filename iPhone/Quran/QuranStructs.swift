@@ -81,6 +81,7 @@ struct Reciter: Identifiable, Comparable, Codable, Hashable {
 }
 
 let reciters: [Reciter] = (
+    recitersMinshawi +
     recitersMurattal +
     recitersMujawwad +
     recitersMuallim +
@@ -91,6 +92,14 @@ let reciters: [Reciter] = (
     recitersDuri +
     recitersKhalaf
 ).sorted()
+
+let recitersMinshawi = [
+    Reciter(name: "Muhammad Al-Minshawi (Murattal)", ayahIdentifier: "ar.minshawi", ayahBitrate: "128", surahLink: "https://server10.mp3quran.net/minsh/"),
+    
+    Reciter(name: "Muhammad Al-Minshawi (Mujawwad)", ayahIdentifier: "ar.minshawimujawwad", ayahBitrate: "64", surahLink: "https://server10.mp3quran.net/minsh/Almusshaf-Al-Mojawwad/"),
+    
+    Reciter(name: "Muhammad Al-Minshawi (Muʿallim)", ayahIdentifier: "ar.minshawi", ayahBitrate: "128", surahLink: "https://server10.mp3quran.net/minsh/Almusshaf-Al-Mo-lim/"),
+].sorted()
 
 let recitersMurattal = [
     Reciter(name: "Abdul Basit (Murattal)", ayahIdentifier: "ar.abdulbasitmurattal", ayahBitrate: "192", surahLink: "https://server7.mp3quran.net/basit/"),

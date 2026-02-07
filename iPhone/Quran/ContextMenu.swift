@@ -91,6 +91,7 @@ struct AyahContextMenuModifier: ViewModifier {
     @State private var showingNoteSheet = false
     @State private var draftNote: String = ""
     @State private var showRespectAlert = false
+    @State private var showCustomRangeSheet = false
 
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
@@ -200,6 +201,13 @@ struct AyahContextMenuModifier: ViewModifier {
                 } label: {
                     Label("Play from Ayah", systemImage: "play.circle.fill")
                 }
+
+                Button {
+                    settings.hapticFeedback()
+                    showCustomRangeSheet = true
+                } label: {
+                    Label("Play Custom Range", systemImage: "slider.horizontal.3")
+                }
                 
                 Divider()
                 
@@ -249,6 +257,27 @@ struct AyahContextMenuModifier: ViewModifier {
                     surahNumber: surah,
                     ayahNumber: ayah
                 )
+            }
+            .sheet(isPresented: $showCustomRangeSheet) {
+                if let surahObj = surahObj {
+                    PlayCustomRangeSheet(
+                        surah: surahObj,
+                        initialStartAyah: ayah,
+                        initialEndAyah: surahObj.numberOfAyahs,
+                        onPlay: { start, end, repAyah, repSec in
+                            quranPlayer.playCustomRange(
+                                surahNumber: surahObj.id,
+                                surahName: surahObj.nameTransliteration,
+                                startAyah: start,
+                                endAyah: end,
+                                repeatPerAyah: repAyah,
+                                repeatSection: repSec
+                            )
+                        },
+                        onCancel: { showCustomRangeSheet = false }
+                    )
+                    .environmentObject(settings)
+                }
             }
             .sheet(isPresented: $showingNoteSheet) {
                 if let surah = surahObj {

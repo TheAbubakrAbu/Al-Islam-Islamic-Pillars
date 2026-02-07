@@ -15,7 +15,15 @@ final class QuranPlayer: ObservableObject {
     @Published var currentSurahNumber: Int?
     @Published var currentAyahNumber: Int?
     @Published var isPlayingSurah = false
+    @Published var isPlayingCustomRange = false
     @Published var showInternetAlert = false
+
+    @Published private(set) var customRangeStartAyah: Int?
+    @Published private(set) var customRangeEndAyah: Int?
+    @Published private(set) var customRangeRepeatPerAyah: Int = 1
+    @Published private(set) var customRangeRepeatSection: Int = 1
+    @Published private(set) var customRangeCurrentIndex: Int?
+    @Published private(set) var customRangeTotalItems: Int?
     
     private var backButtonClickCount = 0
     private var backButtonClickTimestamp: Date?
@@ -125,8 +133,16 @@ final class QuranPlayer: ObservableObject {
             return .success
         }
         
-        cmd.skipBackwardCommand.isEnabled = false
-        cmd.skipForwardCommand.isEnabled = false
+        cmd.skipBackwardCommand.addTarget { [unowned self] _ in
+            guard player != nil else { return .commandFailed }
+            seek(by: -10)
+            return .success
+        }
+        cmd.skipForwardCommand.addTarget { [unowned self] _ in
+            guard player != nil else { return .commandFailed }
+            seek(by: 10)
+            return .success
+        }
         
         cmd.changePlaybackPositionCommand.addTarget { [unowned self] evt in
             guard
@@ -141,8 +157,14 @@ final class QuranPlayer: ObservableObject {
         }
     }
     
-    func skipBackward()  { player == nil ? () : isPlayingSurah ? surahSkipBackward() : ayahSkipBackward() }
-    func skipForward()   { player == nil ? () : isPlayingSurah ? surahSkipForward() : ayahSkipForward(continueRecitation: continueRecitationFromAyah) }
+    func skipBackward()  {
+        if isPlayingCustomRange { seek(by: -10); return }
+        player == nil ? () : isPlayingSurah ? surahSkipBackward() : ayahSkipBackward()
+    }
+    func skipForward()   {
+        if isPlayingCustomRange { seek(by: 10); return }
+        player == nil ? () : isPlayingSurah ? surahSkipForward() : ayahSkipForward(continueRecitation: continueRecitationFromAyah)
+    }
     
     func pause(saveInfo: Bool = true) {
         if saveInfo { saveLastListenedSurah() }
@@ -189,9 +211,19 @@ final class QuranPlayer: ObservableObject {
             currentSurahNumber = nil
             currentAyahNumber = nil
             isPlayingSurah = false
+            isPlayingCustomRange = false
             isPlaying = false
             isPaused = false
         }
+        customRangeSequence = []
+        customRangeSurahNumber = 0
+        customRangeSurahName = ""
+        customRangeStartAyah = nil
+        customRangeEndAyah = nil
+        customRangeRepeatPerAyah = 1
+        customRangeRepeatSection = 1
+        customRangeCurrentIndex = nil
+        customRangeTotalItems = nil
 
         updateNowPlayingInfo(clear: true)
 
@@ -374,6 +406,10 @@ final class QuranPlayer: ObservableObject {
     private var ayahRepeatRemaining: Int = 1
     private var lastAyahParams: (surahNumber: Int, ayahNumber: Int, isBismillah: Bool, continueRecitation: Bool)?
 
+    private var customRangeSequence: [(ayahNumber: Int, isBismillah: Bool)] = []
+    private var customRangeSurahNumber: Int = 0
+    private var customRangeSurahName: String = ""
+
     func playAyah(
         surahNumber: Int,
         ayahNumber: Int,
@@ -405,6 +441,125 @@ final class QuranPlayer: ObservableObject {
             isBismillah: isBismillah,
             continueRecitation: continueRecitation
         )
+    }
+
+    func playCustomRange(
+        surahNumber: Int,
+        surahName: String,
+        startAyah: Int,
+        endAyah: Int,
+        repeatPerAyah: Int,
+        repeatSection: Int
+    ) {
+        guard
+            let surah = quranData.quran.first(where: { $0.id == surahNumber }),
+            (1...surah.numberOfAyahs).contains(startAyah),
+            (1...surah.numberOfAyahs).contains(endAyah),
+            startAyah <= endAyah,
+            let reciter = reciters.first(where: { $0.name == settings.reciter })
+        else { return }
+
+        let perAyah = max(1, repeatPerAyah)
+        let section = max(1, repeatSection)
+
+        var sequence: [(ayahNumber: Int, isBismillah: Bool)] = []
+        for _ in 1...section {
+            for ayah in startAyah...endAyah {
+                for _ in 1...perAyah {
+                    sequence.append((ayah, false))
+                }
+            }
+        }
+
+        guard !sequence.isEmpty,
+              let first = sequence.first
+        else { return }
+
+        removeAllObservers()
+        customRangeSequence = sequence
+        customRangeSurahNumber = surahNumber
+        customRangeSurahName = surahName
+        customRangeStartAyah = startAyah
+        customRangeEndAyah = endAyah
+        customRangeRepeatPerAyah = perAyah
+        customRangeRepeatSection = section
+        customRangeCurrentIndex = 1
+        customRangeTotalItems = sequence.count
+
+        withAnimation {
+            currentSurahNumber = surahNumber
+            currentAyahNumber = first.ayahNumber
+            isPlayingSurah = false
+            isPlayingCustomRange = true
+        }
+        continueRecitationFromAyah = false
+
+        setupAudioSession()
+        isLoading = true
+
+        var items: [AVPlayerItem] = []
+        for (ayahNum, isBismillah) in sequence {
+            guard let item = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNum, isBismillah: isBismillah) else {
+                isLoading = false
+                showInternetAlert = true
+                customRangeSequence = []
+                customRangeStartAyah = nil
+                customRangeEndAyah = nil
+                return
+            }
+            item.preferredForwardBufferDuration = 8
+            items.append(item)
+        }
+
+        let q = AVQueuePlayer(items: items)
+        q.actionAtItemEnd = .advance
+        q.automaticallyWaitsToMinimizeStalling = true
+        queuePlayer = q
+        player = q
+
+        statusObserver = items[0].observe(\.status) { [weak self] itm, _ in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.idleTimerSet(true)
+                if itm.status == .readyToPlay {
+                    self.queuePlayer?.play()
+                    self.isPlaying = true
+                    self.isPaused = false
+                    let (ayahNum, isBismillah) = self.customRangeSequence[0]
+                    let base = isBismillah ? "Bismillah" : "\(self.customRangeSurahName) \(self.customRangeSurahNumber):\(ayahNum)"
+                    self.nowPlayingTitle = base
+                    self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
+                        ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
+                    self.updateNowPlayingInfo()
+                } else {
+                    self.isPlaying = false
+                    self.isPaused = false
+                    self.showInternetAlert = true
+                }
+            }
+        }
+
+        queuePlayerItemObserver = q.observe(\.currentItem, options: [.old, .new]) { [weak self] qPlayer, _ in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                if qPlayer.currentItem == nil || qPlayer.items().isEmpty {
+                    self.stop()
+                    return
+                }
+                let remaining = qPlayer.items().count
+                let playedCount = self.customRangeSequence.count - remaining
+                guard playedCount >= 0, playedCount < self.customRangeSequence.count else { return }
+                let (ayahNum, isBismillah) = self.customRangeSequence[playedCount]
+                self.currentAyahNumber = ayahNum
+                self.customRangeCurrentIndex = playedCount + 1
+                let base = isBismillah ? "Bismillah" : "\(self.customRangeSurahName) \(self.customRangeSurahNumber):\(ayahNum)"
+                self.nowPlayingTitle = base
+                self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
+                    ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
+                self.updateNowPlayingInfo()
+            }
+        }
     }
 
     private func startAyahPlayback(
