@@ -184,7 +184,7 @@ struct HeaderRow: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 8)
 
-            if settings.showTransliteration {
+            if settings.showTransliteration, settings.isHafsDisplay {
                 Text(englishTransliteration)
                     .foregroundColor(settings.accentColor.color)
                     .font(.system(size: settings.englishFontSize))
@@ -194,7 +194,7 @@ struct HeaderRow: View {
                     .padding(.vertical, 4)
             }
 
-            if settings.showEnglishSaheeh || settings.showEnglishMustafa {
+            if (settings.showEnglishSaheeh || settings.showEnglishMustafa), settings.isHafsDisplay {
                 Text(englishTranslation)
                     .foregroundColor(settings.accentColor.color)
                     .font(.system(size: settings.englishFontSize))

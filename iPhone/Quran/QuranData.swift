@@ -30,34 +30,128 @@ struct Surah: Codable, Identifiable {
 
         idArabic = arabicNumberString(from: id)
     }
+
+    init(id: Int, idArabic: String, nameArabic: String, nameTransliteration: String, nameEnglish: String, type: String, numberOfAyahs: Int, ayahs: [Ayah]) {
+        self.id = id
+        self.idArabic = idArabic
+        self.nameArabic = nameArabic
+        self.nameTransliteration = nameTransliteration
+        self.nameEnglish = nameEnglish
+        self.type = type
+        self.numberOfAyahs = numberOfAyahs
+        self.ayahs = ayahs
+    }
 }
 
 struct Ayah: Codable, Identifiable {
     let id: Int
     let idArabic: String
 
-    let textArabic: String
-    let textCleanArabic: String
-
+    let textHafs: String
     let textTransliteration: String
     let textEnglishSaheeh: String
     let textEnglishMustafa: String
 
+    let textShubah: String?
+    
+    let textBuzzi: String?
+    let textQunbul: String?
+    
+    let textWarsh: String?
+    let textQaloon: String?
+    
+    let textDuri: String?
+    let textSusi: String?
+
     enum CodingKeys: String, CodingKey {
-        case id, textArabic, textTransliteration, textEnglishSaheeh, textEnglishMustafa
+        case id
+        case textHafs = "textArabic"
+        case textTransliteration, textEnglishSaheeh, textEnglishMustafa
+        case textWarsh, textQaloon, textDuri, textBuzzi, textQunbul, textShubah, textSusi
+    }
+
+    /// Raw Arabic for the given display qiraah. Nil = Hafs.
+    func textArabic(for displayQiraah: String?) -> String {
+        let raw: String? = {
+            guard let q = displayQiraah else { return nil }
+            if q.contains("Warsh") { return textWarsh }
+            if q.contains("Qaloon") { return textQaloon }
+            if q.contains("Duri") || q.contains("Doori") { return textDuri }
+            if q.contains("Buzzi") || q.contains("Bazzi") { return textBuzzi }
+            if q.contains("Qunbul") || q.contains("Qumbul") { return textQunbul }
+            if q.contains("Shu'bah") || q.contains("Shouba") { return textShubah }
+            if q.contains("Susi") || q.contains("Soosi") { return textSusi }
+            return nil
+        }()
+        return (raw ?? textHafs).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Clean (no diacritics) Arabic for the given display qiraah.
+    func textCleanArabic(for displayQiraah: String?) -> String {
+        textArabic(for: displayQiraah).removingArabicDiacriticsAndSigns
+    }
+
+    /// Current riwayah's Arabic (uses Settings.displayQiraahForArabic). Used for display, search, share.
+    var textArabic: String { textArabic(for: Settings.shared.displayQiraahForArabic) }
+    var textCleanArabic: String { textCleanArabic(for: Settings.shared.displayQiraahForArabic) }
+
+    /// Clean Bismillah (no diacritics). Shown for Fatiha 1 when the riwayah’s first ayah is ta'awwudh.
+    static let bismillahCleanArabic = "بسم الله الرحمن الرحيم"
+
+    /// Arabic to show in UI. For Fatiha ayah 1 with clean mode, if the ayah doesn’t start with بسم (e.g. ta'awwudh), shows Bismillah instead.
+    /// - Parameter qiraahOverride: When non-nil, use this qiraah instead of Settings (e.g. comparison mode). Use "" for Hafs.
+    func displayArabicText(surahId: Int, clean: Bool, qiraahOverride: String? = nil) -> String {
+        let qiraah: String? = if let override = qiraahOverride {
+            (override.isEmpty || override == "Hafs") ? nil : override
+        } else {
+            Settings.shared.displayQiraahForArabic
+        }
+        let text = clean ? textCleanArabic(for: qiraah) : textArabic(for: qiraah)
+        if surahId == 1 && id == 1 && clean {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.hasPrefix("بسم") {
+                return Self.bismillahCleanArabic
+            }
+        }
+        return text
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-
         id = try c.decode(Int.self, forKey: .id)
-        textArabic = try c.decode(String.self, forKey: .textArabic)
+        textHafs = try c.decode(String.self, forKey: .textHafs)
         textTransliteration = try c.decode(String.self, forKey: .textTransliteration)
         textEnglishSaheeh = try c.decode(String.self, forKey: .textEnglishSaheeh)
         textEnglishMustafa = try c.decode(String.self, forKey: .textEnglishMustafa)
-
-        textCleanArabic = textArabic.removingArabicDiacriticsAndSigns
+        textWarsh = try c.decodeIfPresent(String.self, forKey: .textWarsh)
+        textQaloon = try c.decodeIfPresent(String.self, forKey: .textQaloon)
+        textDuri = try c.decodeIfPresent(String.self, forKey: .textDuri)
+        textBuzzi = try c.decodeIfPresent(String.self, forKey: .textBuzzi)
+        textQunbul = try c.decodeIfPresent(String.self, forKey: .textQunbul)
+        textShubah = try c.decodeIfPresent(String.self, forKey: .textShubah)
+        textSusi = try c.decodeIfPresent(String.self, forKey: .textSusi)
         idArabic = arabicNumberString(from: id)
+    }
+
+    init(id: Int, idArabic: String, textHafs: String, textTransliteration: String, textEnglishSaheeh: String, textEnglishMustafa: String, textWarsh: String?, textQaloon: String?, textDuri: String?, textBuzzi: String?, textQunbul: String?, textShubah: String?, textSusi: String?) {
+        self.id = id
+        self.idArabic = idArabic
+        self.textHafs = textHafs
+        self.textTransliteration = textTransliteration
+        self.textEnglishSaheeh = textEnglishSaheeh
+        self.textEnglishMustafa = textEnglishMustafa
+        self.textWarsh = textWarsh
+        self.textQaloon = textQaloon
+        self.textDuri = textDuri
+        self.textBuzzi = textBuzzi
+        self.textQunbul = textQunbul
+        self.textShubah = textShubah
+        self.textSusi = textSusi
+    }
+
+    /// Arabic to display; pass qiraah and whether to strip diacritics.
+    func displayArabic(qiraah: String?, clean: Bool) -> String {
+        clean ? textCleanArabic(for: qiraah) : textArabic(for: qiraah)
     }
 }
 
@@ -75,6 +169,8 @@ final class QuranData: ObservableObject {
 
     private var surahIndex = [Int:Int]()
     private var ayahIndex = [[Int:Int]]()
+    /// Qiraah key the verse index was built for ("" = Hafs). Rebuild when display qiraah changes.
+    private var cachedVerseIndexQiraah: String? = nil
 
     private var loadTask: Task<Void, Never>?
 
@@ -90,6 +186,45 @@ final class QuranData: ObservableObject {
         await loadTask?.value
     }
 
+    private struct QiraatAyahEntry: Codable {
+        let id: Int
+        let text: String?
+        let textArabic: String?
+        var displayText: String? { text ?? textArabic }
+    }
+
+    private static let qiraatKeys: [(filename: String, key: String)] = [
+        ("QiraahWarsh", "textWarsh"),
+        ("QiraahQaloon", "textQaloon"),
+        ("QiraahDuri", "textDuri"),
+        ("QiraahBuzzi", "textBuzzi"),
+        ("QiraahQunbul", "textQunbul"),
+        ("QiraahShubah", "textShubah"),
+        ("QiraahSusi", "textSusi"),
+    ]
+
+    /// key (e.g. "textWarsh") -> surahId -> ayahId -> text
+    private func loadQiraatOverlay() -> [String: [Int: [Int: String]]] {
+        var result: [String: [Int: [Int: String]]] = [:]
+        for (filename, key) in Self.qiraatKeys {
+            guard let url = Bundle.main.url(forResource: filename, withExtension: "json", subdirectory: "JSONs/Qiraat")
+                ?? Bundle.main.url(forResource: filename, withExtension: "json") else { continue }
+            guard let data = try? Data(contentsOf: url),
+                  let raw = try? JSONDecoder().decode([String: [QiraatAyahEntry]].self, from: data) else { continue }
+            var bySurah: [Int: [Int: String]] = [:]
+            for (surahStr, ayahs) in raw {
+                guard let surahId = Int(surahStr) else { continue }
+                var lookup: [Int: String] = [:]
+                for entry in ayahs {
+                    if let t = entry.displayText, !t.isEmpty { lookup[entry.id] = t }
+                }
+                bySurah[surahId] = lookup
+            }
+            result[key] = bySurah
+        }
+        return result
+    }
+
     private func load() async {
         guard let url = Bundle.main.url(forResource: "quran", withExtension: "json") else {
             fatalError("quran.json missing")
@@ -97,26 +232,38 @@ final class QuranData: ObservableObject {
 
         do {
             let data = try Data(contentsOf: url)
-            let surahs = try JSONDecoder().decode([Surah].self, from: data)
+            var surahs = try JSONDecoder().decode([Surah].self, from: data)
+
+            let overlay = loadQiraatOverlay()
+            if !overlay.isEmpty {
+                surahs = surahs.map { surah in
+                    let ayahs = surah.ayahs.map { ayah in
+                        let textWarsh = overlay["textWarsh"]?[surah.id]?[ayah.id]
+                        let textQaloon = overlay["textQaloon"]?[surah.id]?[ayah.id]
+                        let textDuri = overlay["textDuri"]?[surah.id]?[ayah.id]
+                        let textBuzzi = overlay["textBuzzi"]?[surah.id]?[ayah.id]
+                        let textQunbul = overlay["textQunbul"]?[surah.id]?[ayah.id]
+                        let textShubah = overlay["textShubah"]?[surah.id]?[ayah.id]
+                        let textSusi = overlay["textSusi"]?[surah.id]?[ayah.id]
+                        return Ayah(id: ayah.id, idArabic: ayah.idArabic, textHafs: ayah.textHafs, textTransliteration: ayah.textTransliteration, textEnglishSaheeh: ayah.textEnglishSaheeh, textEnglishMustafa: ayah.textEnglishMustafa, textWarsh: textWarsh, textQaloon: textQaloon, textDuri: textDuri, textBuzzi: textBuzzi, textQunbul: textQunbul, textShubah: textShubah, textSusi: textSusi)
+                    }
+                    return Surah(id: surah.id, idArabic: surah.idArabic, nameArabic: surah.nameArabic, nameTransliteration: surah.nameTransliteration, nameEnglish: surah.nameEnglish, type: surah.type, numberOfAyahs: surah.numberOfAyahs, ayahs: ayahs)
+                }
+            }
+
             let (sIndex, aIndex) = buildIndexes(for: surahs)
-
-            let vIndex = surahs.flatMap { surah in
+            let surahsToPublish = surahs
+            let displayQiraah = settings.displayQiraahForArabic
+            let vIndex = surahsToPublish.flatMap { surah in
                 surah.ayahs.map { ayah in
-                    let arabicBlob = [
-                        ayah.textArabic,
-                        ayah.textCleanArabic
-                    ]
-                    .map { settings.cleanSearch($0) }
-                    .joined(separator: " ")
-
+                    let raw = ayah.textArabic(for: displayQiraah)
+                    let clean = ayah.textCleanArabic(for: displayQiraah)
+                    let arabicBlob = [raw, clean].map { settings.cleanSearch($0) }.joined(separator: " ")
                     let latinBlob = [
                         ayah.textEnglishSaheeh,
                         ayah.textEnglishMustafa,
                         ayah.textTransliteration
-                    ]
-                    .map { settings.cleanSearch($0) }
-                    .joined(separator: " ")
-
+                    ].map { settings.cleanSearch($0) }.joined(separator: " ")
                     return VerseIndexEntry(
                         id: "\(surah.id):\(ayah.id)",
                         surah: surah.id,
@@ -130,11 +277,35 @@ final class QuranData: ObservableObject {
             await MainActor.run {
                 self.surahIndex = sIndex
                 self.ayahIndex = aIndex
-                self.quran = surahs
+                self.quran = surahsToPublish
                 self.verseIndex = vIndex
+                self.cachedVerseIndexQiraah = displayQiraah ?? ""
             }
         } catch {
             fatalError("Failed to load Quran: \(error)")
+        }
+    }
+
+    private func rebuildVerseIndex() {
+        let displayQiraah = settings.displayQiraahForArabic
+        verseIndex = quran.flatMap { surah in
+            surah.ayahs.map { ayah in
+                let raw = ayah.textArabic(for: displayQiraah)
+                let clean = ayah.textCleanArabic(for: displayQiraah)
+                let arabicBlob = [raw, clean].map { settings.cleanSearch($0) }.joined(separator: " ")
+                let latinBlob = [
+                    ayah.textEnglishSaheeh,
+                    ayah.textEnglishMustafa,
+                    ayah.textTransliteration
+                ].map { settings.cleanSearch($0) }.joined(separator: " ")
+                return VerseIndexEntry(
+                    id: "\(surah.id):\(ayah.id)",
+                    surah: surah.id,
+                    ayah: ayah.id,
+                    arabicBlob: arabicBlob,
+                    englishBlob: latinBlob
+                )
+            }
         }
     }
 
@@ -156,6 +327,11 @@ final class QuranData: ObservableObject {
     }
 
     func searchVerses(term raw: String, limit: Int = 10, offset: Int = 0) -> [VerseIndexEntry] {
+        let currentKey = settings.displayQiraahForArabic ?? ""
+        if cachedVerseIndexQiraah != currentKey {
+            rebuildVerseIndex()
+            cachedVerseIndexQiraah = currentKey
+        }
         guard !verseIndex.isEmpty else { return [] }
 
         let q = settings.cleanSearch(raw, whitespace: true)

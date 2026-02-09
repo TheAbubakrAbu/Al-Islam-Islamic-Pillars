@@ -127,24 +127,24 @@ struct SurahAyahRow: View {
             } else {
                 VStack {
                     if settings.showArabicText {
-                        let text = settings.cleanArabicText ? ayah.textCleanArabic : ayah.textArabic
-                        
+                        let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
+
                         Text(settings.beginnerMode ? text.map { "\($0) " }.joined() : text)
                             .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                     
-                    if settings.showTransliteration {
+                    if settings.showTransliteration, settings.isHafsDisplay {
                         Text(ayah.textTransliteration)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    if settings.showEnglishSaheeh {
+                    if settings.showEnglishSaheeh, settings.isHafsDisplay {
                         Text(ayah.textEnglishSaheeh)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                    } else if settings.showEnglishMustafa {
+                    } else if settings.showEnglishMustafa, settings.isHafsDisplay {
                         Text(ayah.textEnglishMustafa)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -198,7 +198,7 @@ struct LastListenedSurahRow: View {
                     ) {
                         HStack {
                             Text("Surah \(lastListenedSurah.surahNumber): \(lastListenedSurah.surahName)")
-                                .font(.headline)
+                                .font(.title2.bold())
                                 .foregroundColor(settings.accentColor.color)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
@@ -458,12 +458,13 @@ struct AyahSearchRow: View, Equatable {
         let mSaheeh  = !normalizedQuery.isEmpty && srcSaheeh.contains(normalizedQuery)
         let mMustafa = !normalizedQuery.isEmpty && srcMustafa.contains(normalizedQuery)
 
-        // Arabic + Transliteration: show if ON or matched.
+        // Arabic + Transliteration: show if ON or matched. When non-Hafs qiraah, only Arabic.
         let showArabicLine  = settings.showArabicText      || mArabic
-        let showTrLine      = settings.showTransliteration || mTr
+        let showTrLine      = settings.isHafsDisplay && (settings.showTransliteration || mTr)
 
-        // --- English selection logic (only one unless both match) ---
+        // --- English selection logic (only one unless both match). Hidden when non-Hafs. ---
         let (showSaheehLine, showMustafaLine): (Bool, Bool) = {
+            guard settings.isHafsDisplay else { return (false, false) }
             let userSaheehOn  = settings.showEnglishSaheeh
             let userMustafaOn = settings.showEnglishMustafa
 
@@ -577,4 +578,11 @@ struct AyahSearchRow: View, Equatable {
         l.favoriteSurahs == r.favoriteSurahs &&
         l.bookmarkedAyahs == r.bookmarkedAyahs
     }
+}
+
+#Preview {
+    QuranView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

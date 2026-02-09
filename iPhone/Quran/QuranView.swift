@@ -320,7 +320,22 @@ struct QuranView: View {
                                 if searchText.isEmpty {
                                     SurahsHeader()
                                 } else {
-                                    Text("SURAH SEARCH RESULTS (\(filteredSurahs.count))")
+                                    HStack {
+                                        Text("SURAH SEARCH RESULTS")
+                                        
+                                        Spacer()
+                                        
+                                        Text("\(filteredSurahs.count)")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(settings.accentColor.color)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            #if !os(watchOS)
+                                            .background(.ultraThinMaterial)
+                                            #endif
+                                            .clipShape(Capsule())
+                                    }
+                                    .padding(.vertical, 4)
                                 }
                             }
                         ) {
@@ -437,6 +452,7 @@ struct QuranView: View {
                                     #endif
                                 }
                             }
+                            .sectionIndexLabelWhenAvailable("\(juz.id)")
                         }
                     }
                     
@@ -447,9 +463,27 @@ struct QuranView: View {
                         
                         let exactMatchBump = (surah != nil && ayah != nil) ? 1 : 0
                         let canShowNext = hasMoreHits && !verseHits.isEmpty
-                        let header = "AYAH SEARCH RESULTS (\(verseHits.count + exactMatchBump)\(canShowNext ? "+" : ""))"
+                        let ayahCount = verseHits.count + exactMatchBump
+                        let ayahCountStr = "\(ayahCount)\(canShowNext ? "+" : "")"
                         
-                        Section(header: Text(header)) {
+                        Section(header:
+                            HStack {
+                                Text("AYAH SEARCH RESULTS")
+                            
+                                Spacer()
+                            
+                                Text(ayahCountStr)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(settings.accentColor.color)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    #if !os(watchOS)
+                                    .background(.ultraThinMaterial)
+                                    #endif
+                                    .clipShape(Capsule())
+                            }
+                            .padding(.vertical, 4)
+                        ) {
                             if let surah = surah, let ayah = ayah {
                                 AyahSearchResultRow(
                                     surah: surah,
@@ -471,7 +505,7 @@ struct QuranView: View {
                                             surah: hit.surah,
                                             ayah: hit.ayah,
                                             query: searchText,
-                                            arabic: ayah.textArabic,
+                                            arabic: ayah.displayArabicText(surahId: hit.surah, clean: settings.cleanArabicText),
                                             transliteration: ayah.textTransliteration,
                                             englishSaheeh: ayah.textEnglishSaheeh,
                                             englishMustafa: ayah.textEnglishMustafa,
@@ -569,6 +603,7 @@ struct QuranView: View {
                 }
                 .applyConditionalListStyle(defaultView: settings.defaultView)
                 .dismissKeyboardOnScroll()
+                .listSectionIndexVisibilityWhenAvailable(visible: !settings.groupBySurah && searchText.isEmpty)
                 #if os(watchOS)
                 .searchable(text: $searchText)
                 #endif
@@ -709,6 +744,27 @@ struct QuranView: View {
             AyahsView(surah: surah)
         } else {
             AyahsView(surah: quranData.quran[0])
+        }
+    }
+}
+
+// MARK: - iOS 26+ Section index for Juz fast-scroll
+private extension View {
+    @ViewBuilder
+    func sectionIndexLabelWhenAvailable(_ label: String) -> some View {
+        if #available(iOS 26.0, watchOS 26.0, *) {
+            sectionIndexLabel(label)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func listSectionIndexVisibilityWhenAvailable(visible: Bool) -> some View {
+        if #available(iOS 26.0, watchOS 26.0, *) {
+            listSectionIndexVisibility(.visible)
+        } else {
+            self
         }
     }
 }

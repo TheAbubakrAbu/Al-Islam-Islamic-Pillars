@@ -1004,6 +1004,24 @@ struct QiraatView: View {
                     .font(.body)
             }
 
+            Section(header: Text("THE 10 QIRAAT (القراءات)")) {
+                Text("The Ten Qiraat are the canonical recitation methods of the Quran. Each is named after its primary teacher (the Imam of that recitation).")
+                    .font(.body)
+
+                Group {
+                    Text("• Nafi (نَافِع)").font(.body)
+                    Text("• Ibn Kathir (ابْنِ كَثِير)").font(.body)
+                    Text("• Abu Amr (أَبُو عَمْرٍو)").font(.body)
+                    Text("• Ibn Amir (ابْنُ عَامِر)").font(.body)
+                    Text("• Asim (عَاصِم)").font(.body)
+                    Text("• Hamzah (حَمْزَة)").font(.body)
+                    Text("• Al-Kisai (الكِسَائِي)").font(.body)
+                    Text("• Abu Ja'far (أَبُو جَعْفَر)").font(.body)
+                    Text("• Ya'qub (يَعْقُوب)").font(.body)
+                    Text("• Khalaf al-Ashir (خَلَف العَاشِر)").font(.body)
+                }
+            }
+
             Section(header: Text("THE 20 RIWAYAAT (روايات)")) {
                 Text("Each Qiraah (recitation method) has two primary riwayaat (narrations). These are the 20 canonical transmissions used in teaching and ijazah (chain certification).")
                     .font(.body)
@@ -1015,8 +1033,8 @@ struct QiraatView: View {
                     Text("• Al-Bazzi an Ibn Kathir (البَزِّي عَنْ ابْنِ كَثِير)").font(.body)
                     Text("• Qunbul an Ibn Kathir (قُنْبُل عَنْ ابْنِ كَثِير)").font(.body)
 
-                    Text("• Ad-Duri an Abu Amr (الدُّورِي عَنْ أَبِي عَمْرٍو)").font(.body)
-                    Text("• As-Susi an Abu Amr (السُّوسِي عَنْ أَبِي عَمْرٍو)").font(.body)
+                    Text("• Ad-Duri an Abi Amr (الدُّورِي عَنْ أَبِي عَمْرٍو)").font(.body)
+                    Text("• As-Susi an Abi Amr (السُّوسِي عَنْ أَبِي عَمْرٍو)").font(.body)
 
                     Text("• Hisham an Ibn Amir (هِشَام عَنْ ابْنِ عَامِر)").font(.body)
                     Text("• Ibn Dhakwan an Ibn Amir (ابْنُ ذَكْوَان عَنْ ابْنِ عَامِر)").font(.body)

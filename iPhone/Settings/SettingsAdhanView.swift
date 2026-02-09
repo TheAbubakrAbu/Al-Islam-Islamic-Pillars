@@ -88,7 +88,10 @@ struct SettingsAdhanView: View {
                 
                 VStack(alignment: .leading) {
                     #if !os(watchOS)
-                    Toggle("Traveling Mode", isOn: $settings.travelingMode.animation(.easeInOut))
+                    Toggle("Traveling Mode", isOn: Binding(
+                        get: { settings.travelingMode },
+                        set: { settings.travelingModeManuallyToggled = true; settings.travelingMode = $0 }
+                    ).animation(.easeInOut))
                         .font(.subheadline)
                         .tint(settings.accentColor.color)
                         .disabled(settings.travelAutomatic)
@@ -98,7 +101,10 @@ struct SettingsAdhanView: View {
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
                     #else
-                    Toggle("Traveling Mode", isOn: $settings.travelingMode.animation(.easeInOut))
+                    Toggle("Traveling Mode", isOn: Binding(
+                        get: { settings.travelingMode },
+                        set: { settings.travelingModeManuallyToggled = true; settings.travelingMode = $0 }
+                    ).animation(.easeInOut))
                         .font(.subheadline)
                         .tint(settings.accentColor.color)
                     #endif
@@ -148,6 +154,7 @@ struct SettingsAdhanView: View {
             switch showAlert {
             case .travelTurnOnAutomatic:
                 Button("Override: Turn Off", role: .destructive) {
+                    settings.travelingModeManuallyToggled = true
                     withAnimation {
                         settings.travelingMode = false
                     }
@@ -164,6 +171,7 @@ struct SettingsAdhanView: View {
                 
             case .travelTurnOffAutomatic:
                 Button("Override: Keep On", role: .destructive) {
+                    settings.travelingModeManuallyToggled = true
                     withAnimation {
                         settings.travelingMode = true
                     }

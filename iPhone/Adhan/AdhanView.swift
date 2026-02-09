@@ -219,6 +219,7 @@ struct AdhanView: View {
             switch showAlert {
             case .travelTurnOnAutomatic:
                 Button("Override: Turn Off", role: .destructive) {
+                    settings.travelingModeManuallyToggled = true
                     withAnimation {
                         settings.travelingMode = false
                     }
@@ -235,6 +236,7 @@ struct AdhanView: View {
                 
             case .travelTurnOffAutomatic:
                 Button("Override: Keep On", role: .destructive) {
+                    settings.travelingModeManuallyToggled = true
                     withAnimation {
                         settings.travelingMode = true
                     }

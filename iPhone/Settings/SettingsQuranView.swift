@@ -27,9 +27,10 @@ struct SettingsQuranView: View {
                 }
                 .accentColor(settings.accentColor.color)
                 
+                
                 Picker("After Surah Recitation Ends", selection: $settings.reciteType.animation(.easeInOut)) {
-                    Text("Continue to Next").tag("Continue to Next")
-                    Text("Continue to Previous").tag("Continue to Previous")
+                    Text("Go to Next").tag("Continue to Next")
+                    Text("Go to Previous").tag("Continue to Previous")
                     Text("End Recitation").tag("End Recitation")
                 }
                 .font(.subheadline)
@@ -38,7 +39,7 @@ struct SettingsQuranView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             Section(header: Text("ARABIC TEXT")) {
                 Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
                     .font(.subheadline)
@@ -64,7 +65,7 @@ struct SettingsQuranView: View {
                     }
                     
                     Picker("Arabic Font", selection: $settings.fontArabic.animation(.easeInOut)) {
-                        Text("Uthmani").tag("KFGQPCHafsEx1UthmanicScript-Reg")
+                        Text("Uthmani").tag("KFGQPCQUMBULUthmanicScript-Regu")
                         Text("Indopak").tag("Al_Mushaf")
                     }
                     #if !os(watchOS)
@@ -90,54 +91,86 @@ struct SettingsQuranView: View {
                 }
             }
             
-            Section(header: Text("ENGLISH TEXT")) {
-                Toggle("Show Transliteration", isOn: $settings.showTransliteration.animation(.easeInOut))
-                    .font(.subheadline)
-                    .disabled(!settings.showArabicText && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
-                
-                Toggle("Show English Translation\nSaheeh International", isOn: $settings.showEnglishSaheeh.animation(.easeInOut))
-                    .font(.subheadline)
-                    .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishMustafa)
-                
-                Toggle("Show English Translation\nClear Quran (Mustafa Khattab)", isOn: $settings.showEnglishMustafa.animation(.easeInOut))
-                    .font(.subheadline)
-                    .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishSaheeh)
-                
-                if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                    Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
-                        Text("English Font Size: \(Int(settings.englishFontSize))")
-                            .font(.subheadline)
+            if settings.isHafsDisplay {
+                Section(header: Text("ENGLISH TEXT")) {
+                    Toggle("Show Transliteration", isOn: $settings.showTransliteration.animation(.easeInOut))
+                        .font(.subheadline)
+                        .disabled(!settings.showArabicText && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
+                    
+                    Toggle("Show English Translation\nSaheeh International", isOn: $settings.showEnglishSaheeh.animation(.easeInOut))
+                        .font(.subheadline)
+                        .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishMustafa)
+                    
+                    Toggle("Show English Translation\nClear Quran (Mustafa Khattab)", isOn: $settings.showEnglishMustafa.animation(.easeInOut))
+                        .font(.subheadline)
+                        .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishSaheeh)
+                    
+                    if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
+                        Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
+                            Text("English Font Size: \(Int(settings.englishFontSize))")
+                                .font(.subheadline)
+                        }
                     }
-                }
-                
-                Toggle("Use System Font Size", isOn: Binding(
-                    get: {
-                        let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-                        var usesSystemSizes = true
-                        
-                        if settings.showArabicText {
-                            usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
-                        }
-                        
-                        if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                            usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
-                        }
-                        return usesSystemSizes
-                    },
-                    set: { newValue in
-                        let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-                        withAnimation {
-                            if newValue {
-                                settings.fontArabicSize = systemBodySize + 10
-                                settings.englishFontSize = systemBodySize
-                            } else {
-                                settings.fontArabicSize = systemBodySize + 11
-                                settings.englishFontSize = systemBodySize + 1
+                    
+                    Toggle("Use System Font Size", isOn: Binding(
+                        get: {
+                            let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                            var usesSystemSizes = true
+                            
+                            if settings.showArabicText {
+                                usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
+                            }
+                            
+                            if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
+                                usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
+                            }
+                            return usesSystemSizes
+                        },
+                        set: { newValue in
+                            let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                            withAnimation {
+                                if newValue {
+                                    settings.fontArabicSize = systemBodySize + 10
+                                    settings.englishFontSize = systemBodySize
+                                } else {
+                                    settings.fontArabicSize = systemBodySize + 11
+                                    settings.englishFontSize = systemBodySize + 1
+                                }
                             }
                         }
-                    }
-                ))
-                .font(.subheadline)
+                    ))
+                    .font(.subheadline)
+                }
+            }
+            
+            Section(header: Text("RIWAYAH / QIRAAH"), footer: Text("Transliteration, translations, and all English text apply only to default Hafs an Asim. For other riwayat, only the Arabic text is shown.")) {
+                ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
+                    .font(.subheadline)
+                
+                Text("""
+                The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+
+                The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+
+                To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
+                """)
+                .font(.caption)
+                .foregroundColor(.primary)
+
+                Text("***Hafs An Asim* is the most common and widespread Qiraah in the world today.**")
+                    .font(.caption)
+                    .foregroundColor(.primary)
+                    .padding(.top, 4)
+                
+                VStack(alignment: .leading) {
+                    Toggle("Comparison mode", isOn: $settings.qiraatComparisonMode.animation(.easeInOut))
+                        .font(.subheadline)
+                    
+                    Text("When on, the ayah view shows a riwayah picker above the search bar so you can switch and compare qiraat in that screen.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+                }
             }
             
             #if !os(watchOS)
@@ -434,3 +467,9 @@ struct FavoritesView: View {
     }
 }
 #endif
+
+#Preview {
+    SettingsQuranView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+}

@@ -184,29 +184,31 @@ struct AyahContextMenuModifier: ViewModifier {
                     )
                 }
 
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(surahNumber: surah, ayahNumber: ayah)
+                Menu {
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playAyah(surahNumber: surah, ayahNumber: ayah)
+                    } label: {
+                        Label("Play This Ayah", systemImage: "play.circle")
+                    }
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playAyah(
+                            surahNumber: surah,
+                            ayahNumber: ayah,
+                            continueRecitation: true
+                        )
+                    } label: {
+                        Label("Play From Ayah", systemImage: "play.circle.fill")
+                    }
+                    Button {
+                        settings.hapticFeedback()
+                        showCustomRangeSheet = true
+                    } label: {
+                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
+                    }
                 } label: {
                     Label("Play Ayah", systemImage: "play.circle")
-                }
-
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(
-                        surahNumber: surah,
-                        ayahNumber: ayah,
-                        continueRecitation: true
-                    )
-                } label: {
-                    Label("Play from Ayah", systemImage: "play.circle.fill")
-                }
-
-                Button {
-                    settings.hapticFeedback()
-                    showCustomRangeSheet = true
-                } label: {
-                    Label("Play Custom Range", systemImage: "slider.horizontal.3")
                 }
                 
                 Divider()
@@ -232,6 +234,13 @@ struct AyahContextMenuModifier: ViewModifier {
                 }
                 
                 Divider()
+
+                Button {
+                    settings.hapticFeedback()
+                    ShareAyahSheet.copyAyahToPasteboard(surahNumber: surah, ayahNumber: ayah, settings: settings, quranData: quranData)
+                } label: {
+                    Label("Copy Ayah", systemImage: "doc.on.doc")
+                }
 
                 Button {
                     settings.hapticFeedback()

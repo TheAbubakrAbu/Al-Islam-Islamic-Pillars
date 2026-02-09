@@ -3,7 +3,6 @@ import SwiftUI
 struct NowPlayingView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranPlayer: QuranPlayer
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var quranView: Bool
     @Binding private var scrollDown: Int
@@ -62,20 +61,12 @@ struct NowPlayingView: View {
         )
         #endif
     }
-    
-    private var transportControlFont: Font {
-        horizontalSizeClass == .regular ? .body : .title2
-    }
-
-    private var transportSideFont: Font {
-        horizontalSizeClass == .regular ? .subheadline : .body
-    }
 
     @ViewBuilder
     private func transportButtons(isPlaying: Bool) -> some View {
         if quranPlayer.isPlayingCustomRange {
             Image(systemName: "gobackward.10")
-                .font(transportSideFont)
+                .font(.title2)
                 .foregroundColor(settings.accentColor.color)
                 .onTapGesture {
                     settings.hapticFeedback()
@@ -83,7 +74,7 @@ struct NowPlayingView: View {
                 }
         } else {
             Image(systemName: "backward.fill")
-                .font(transportSideFont)
+                .font(.title2)
                 .foregroundColor(settings.accentColor.color)
                 .onTapGesture {
                     settings.hapticFeedback()
@@ -92,7 +83,7 @@ struct NowPlayingView: View {
         }
 
         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-            .font(transportControlFont)
+            .font(.title2)
             .foregroundColor(settings.accentColor.color)
             .onTapGesture {
                 settings.hapticFeedback()
@@ -103,7 +94,7 @@ struct NowPlayingView: View {
 
         if quranPlayer.isPlayingCustomRange {
             Image(systemName: "goforward.10")
-                .font(transportSideFont)
+                .font(.title2)
                 .foregroundColor(settings.accentColor.color)
                 .onTapGesture {
                     settings.hapticFeedback()
@@ -111,7 +102,7 @@ struct NowPlayingView: View {
                 }
         } else {
             Image(systemName: "forward.fill")
-                .font(transportSideFont)
+                .font(.title2)
                 .foregroundColor(settings.accentColor.color)
                 .onTapGesture {
                     settings.hapticFeedback()
@@ -127,7 +118,7 @@ struct NowPlayingView: View {
         if let cur = quranPlayer.customRangeCurrentIndex,
            let total = quranPlayer.customRangeTotalItems,
            total > 0 {
-            pos = " · \(cur)/\(total)"
+            pos = " (\(cur)/\(total))"
         } else {
             pos = ""
         }
@@ -186,7 +177,7 @@ struct NowPlayingView: View {
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying)
         #else
-        let spacing: CGFloat = horizontalSizeClass == .regular ? 10 : 16
+        let spacing: CGFloat = 10
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 if let title = quranPlayer.nowPlayingTitle {
@@ -194,14 +185,14 @@ struct NowPlayingView: View {
                         .foregroundColor(.primary)
                         .font(.headline.bold())
                         .lineLimit(1)
-                        .minimumScaleFactor(horizontalSizeClass == .regular ? 0.8 : 0.5)
+                        .minimumScaleFactor(0.5)
                 }
                 if let reciter = quranPlayer.nowPlayingReciter {
                     Text(reciter)
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                        .minimumScaleFactor(horizontalSizeClass == .regular ? 0.8 : 0.5)
+                        .minimumScaleFactor(0.5)
                 }
                 if quranPlayer.isPlayingCustomRange,
                    let start = quranPlayer.customRangeStartAyah,

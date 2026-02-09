@@ -17,7 +17,9 @@ struct AyahRow: View {
     
     let surah: Surah
     let ayah: Ayah
-    
+    /// When non-nil (e.g. comparison mode), use this qiraah for Arabic instead of global setting.
+    var comparisonQiraahOverride: String? = nil
+
     @Binding var scrollDown: Int?
     @Binding var searchText: String
     
@@ -76,9 +78,14 @@ struct AyahRow: View {
     var body: some View {
         let isBookmarked = isBookmarkedHere
         let showArabic = settings.showArabicText
-        let showTranslit = settings.showTransliteration
-        let showEnglishSaheeh = settings.showEnglishSaheeh
-        let showEnglishMustafa = settings.showEnglishMustafa
+        let hafsOnly: Bool = if let override = comparisonQiraahOverride {
+            override.isEmpty || override == "Hafs"
+        } else {
+            settings.isHafsDisplay
+        }
+        let showTranslit = settings.showTransliteration && hafsOnly
+        let showEnglishSaheeh = settings.showEnglishSaheeh && hafsOnly
+        let showEnglishMustafa = settings.showEnglishMustafa && hafsOnly
         let fontSizeEN = settings.englishFontSize
         
         ZStack {
@@ -102,9 +109,9 @@ struct AyahRow: View {
                     Text(ayah.idArabic)
                         .foregroundColor(settings.accentColor.color)
                         #if !os(watchOS)
-                        .font(.custom("KFGQPCHafsEx1UthmanicScript-Reg", size: UIFont.preferredFont(forTextStyle: .largeTitle).pointSize))
+                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .largeTitle).pointSize))
                         #else
-                        .font(.custom("KFGQPCHafsEx1UthmanicScript-Reg", size: UIFont.preferredFont(forTextStyle: .title2).pointSize))
+                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize))
                         #endif
                     
                     Spacer()
@@ -286,7 +293,7 @@ struct AyahRow: View {
 
             if showArabic {
                 HighlightedSnippet(
-                    source: spacedArabic(settings.cleanArabicText ? ayah.textCleanArabic : ayah.textArabic),
+                    source: spacedArabic(ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: comparisonQiraahOverride)),
                     term: searchText,
                     font: .custom(settings.fontArabic, size: settings.fontArabicSize),
                     accent: settings.accentColor.color,
@@ -412,25 +419,29 @@ struct AyahRow: View {
                 Label("Repeat Ayah", systemImage: "repeat")
             }
             
-            Button {
-                settings.hapticFeedback()
-                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+            Menu {
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+                } label: {
+                    Label("Play This Ayah", systemImage: "play.circle")
+                }
+                
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
+                } label: {
+                    Label("Play From Ayah", systemImage: "play.circle.fill")
+                }
+                
+                Button {
+                    settings.hapticFeedback()
+                    showCustomRangeSheet = true
+                } label: {
+                    Label("Play Custom Range", systemImage: "slider.horizontal.3")
+                }
             } label: {
                 Label("Play Ayah", systemImage: "play.circle")
-            }
-            
-            Button {
-                settings.hapticFeedback()
-                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
-            } label: {
-                Label("Play from Ayah", systemImage: "play.circle.fill")
-            }
-
-            Button {
-                settings.hapticFeedback()
-                showCustomRangeSheet = true
-            } label: {
-                Label("Play Custom Range", systemImage: "slider.horizontal.3")
             }
             
             Divider()
@@ -456,7 +467,14 @@ struct AyahRow: View {
             }
             
             Divider()
-            
+
+            Button {
+                settings.hapticFeedback()
+                ShareAyahSheet.copyAyahToPasteboard(surahNumber: surah.id, ayahNumber: ayah.id, settings: settings, quranData: quranData)
+            } label: {
+                Label("Copy Ayah", systemImage: "doc.on.doc")
+            }
+
             Button {
                 settings.hapticFeedback()
                 showingAyahSheet = true

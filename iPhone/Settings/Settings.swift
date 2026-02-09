@@ -93,6 +93,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @Published var prayersData: Data {
         didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
             if !prayersData.isEmpty {
                 appGroupUserDefaults?.setValue(prayersData, forKey: "prayersData")
             }
@@ -122,15 +123,22 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @Published var accentColor: AccentColor {
-        didSet { appGroupUserDefaults?.setValue(accentColor.rawValue, forKey: "accentColor") }
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(accentColor.rawValue, forKey: "accentColor")
+        }
     }
     
     @Published var travelingMode: Bool {
-        didSet { appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingMode") }
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingMode")
+        }
     }
     
     @Published var currentLocation: Location? {
         didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
             guard let location = currentLocation else { return }
             do {
                 let locationData = try Self.encoder.encode(location)
@@ -143,6 +151,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @Published var homeLocation: Location? {
         didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
             guard let homeLocation = homeLocation else {
                 appGroupUserDefaults?.removeObject(forKey: "homeLocationData")
                 return
@@ -157,15 +166,24 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @Published var hanafiMadhab: Bool {
-        didSet { appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhab") }
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhab")
+        }
     }
     
     @Published var prayerCalculation: String {
-        didSet { appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculation") }
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculation")
+        }
     }
     
     @Published var hijriOffset: Int {
-        didSet { appGroupUserDefaults?.setValue(hijriOffset, forKey: "hijriOffset") }
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(hijriOffset, forKey: "hijriOffset")
+        }
     }
     
     @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
@@ -269,7 +287,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("travelAutomatic") var travelAutomatic: Bool = true
     @AppStorage("travelTurnOffAutomatic") var travelTurnOffAutomatic: Bool = false
     @AppStorage("travelTurnOnAutomatic") var travelTurnOnAutomatic: Bool = false
-    
+    /// Set by the UI when the user toggles Traveling Mode; fetchPrayerTimes skips checkIfTraveling once so we don’t override or notify.
+    var travelingModeManuallyToggled: Bool = false
+
     @AppStorage("showLocationAlert") var showLocationAlert: Bool = false {
         willSet { objectWillChange.send() }
     }
@@ -402,11 +422,27 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
+    /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
+    @AppStorage("displayQiraah") var displayQiraah: String = ""
+
+    /// When on, AyahsView shows a qiraat picker above the search bar to compare riwayat in that view.
+    @AppStorage("qiraatComparisonMode") var qiraatComparisonMode: Bool = false
+
+    /// Pass to Ayah.displayArabic(qiraah:clean:). Nil means Hafs.
+    var displayQiraahForArabic: String? {
+        (displayQiraah.isEmpty || displayQiraah == "Hafs") ? nil : displayQiraah
+    }
+
+    /// When false, only Arabic is shown (no transliteration or English), since those are for Hafs an Asim only.
+    var isHafsDisplay: Bool {
+        displayQiraah.isEmpty || displayQiraah == "Hafs"
+    }
+
     @AppStorage("showArabicText") var showArabicText: Bool = true
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
-    @AppStorage("fontArabic") var fontArabic: String = "KFGQPCHafsEx1UthmanicScript-Reg"
+    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
     @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10
-    
+
     @AppStorage("useFontArabic") var useFontArabic = true
 
     @AppStorage("showTransliteration") var showTransliteration: Bool = false

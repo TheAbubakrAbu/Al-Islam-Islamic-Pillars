@@ -63,6 +63,10 @@ struct ShareSettings: Equatable {
     var transliteration = false
     var englishSaheeh = false
     var englishMustafa = false
+    var includeQiraah = false
+    /// Font for Arabic when sharing: "KFGQPCQUMBULUthmanicScript-Regu" (Uthmani) or "Al_Mushaf" (Indopak). Empty = use app font.
+    var shareArabicFont = ""
+    var cleanArabic = false
 }
 
 struct Reciter: Identifiable, Comparable, Codable, Hashable {

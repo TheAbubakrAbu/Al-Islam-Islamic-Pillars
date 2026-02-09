@@ -152,8 +152,11 @@ extension Settings {
         }
     }
     
+    private static let travelingNotificationId = "Al-Islam.TravelingMode"
+
     func checkIfTraveling() {
-        guard travelAutomatic,
+        guard Bundle.main.bundleIdentifier?.contains("Widget") != true,
+              travelAutomatic,
               let currentLocation = currentLocation,
               let homeLocation = homeLocation,
               currentLocation.latitude != 1000,
@@ -167,41 +170,33 @@ extension Settings {
 
         if isAway {
             if !travelingMode {
-                DispatchQueue.main.async {
-                    guard !self.travelingMode else { return }
-                    withAnimation { self.travelingMode = true }
-                    self.travelTurnOffAutomatic = false
-                    self.travelTurnOnAutomatic  = true
-
-                    #if !os(watchOS)
-                    let content = UNMutableNotificationContent()
-                    content.title = "Al-Islam"
-                    content.body  = "Traveling mode automatically turned on at \(currentLocation.city)"
-                    content.sound = .default
-                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-                    let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-                    UNUserNotificationCenter.current().add(req)
-                    #endif
-                }
+                withAnimation { travelingMode = true }
+                travelTurnOffAutomatic = false
+                travelTurnOnAutomatic  = true
+                #if !os(watchOS)
+                let content = UNMutableNotificationContent()
+                content.title = "Al-Islam"
+                content.body  = "Traveling mode automatically turned on at \(currentLocation.city)"
+                content.sound = .default
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+                let req = UNNotificationRequest(identifier: Self.travelingNotificationId, content: content, trigger: trigger)
+                UNUserNotificationCenter.current().add(req)
+                #endif
             }
         } else {
             if travelingMode {
-                DispatchQueue.main.async {
-                    guard self.travelingMode else { return }
-                    withAnimation { self.travelingMode = false }
-                    self.travelTurnOnAutomatic  = false
-                    self.travelTurnOffAutomatic = true
-
-                    #if !os(watchOS)
-                    let content = UNMutableNotificationContent()
-                    content.title = "Al-Islam"
-                    content.body  = "Traveling mode automatically turned off at \(currentLocation.city)"
-                    content.sound = .default
-                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-                    let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-                    UNUserNotificationCenter.current().add(req)
-                    #endif
-                }
+                withAnimation { travelingMode = false }
+                travelTurnOnAutomatic  = false
+                travelTurnOffAutomatic = true
+                #if !os(watchOS)
+                let content = UNMutableNotificationContent()
+                content.title = "Al-Islam"
+                content.body  = "Traveling mode automatically turned off at \(currentLocation.city)"
+                content.sound = .default
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+                let req = UNNotificationRequest(identifier: Self.travelingNotificationId, content: content, trigger: trigger)
+                UNUserNotificationCenter.current().add(req)
+                #endif
             }
         }
     }
@@ -409,8 +404,12 @@ extension Settings {
             }
         }
         
-        if travelAutomatic, homeLocation != nil {
+        let isWidget = Bundle.main.bundleIdentifier?.contains("Widget") == true
+        if !isWidget, travelAutomatic, homeLocation != nil, !travelingModeManuallyToggled {
+            travelingModeManuallyToggled = false
             checkIfTraveling()
+        } else if travelingModeManuallyToggled {
+            travelingModeManuallyToggled = false
         }
         
         // Decide if we need fresh prayers
