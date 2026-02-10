@@ -184,34 +184,36 @@ struct AyahContextMenuModifier: ViewModifier {
                     )
                 }
 
-                Menu {
-                    Button {
-                        settings.hapticFeedback()
-                        quranPlayer.playAyah(surahNumber: surah, ayahNumber: ayah)
+                if settings.isHafsDisplay {
+                    Menu {
+                        Button {
+                            settings.hapticFeedback()
+                            quranPlayer.playAyah(surahNumber: surah, ayahNumber: ayah)
+                        } label: {
+                            Label("Play This Ayah", systemImage: "play.circle")
+                        }
+                        Button {
+                            settings.hapticFeedback()
+                            quranPlayer.playAyah(
+                                surahNumber: surah,
+                                ayahNumber: ayah,
+                                continueRecitation: true
+                            )
+                        } label: {
+                            Label("Play From Ayah", systemImage: "play.circle.fill")
+                        }
+                        Button {
+                            settings.hapticFeedback()
+                            showCustomRangeSheet = true
+                        } label: {
+                            Label("Play Custom Range", systemImage: "slider.horizontal.3")
+                        }
                     } label: {
-                        Label("Play This Ayah", systemImage: "play.circle")
+                        Label("Play Ayah", systemImage: "play.circle")
                     }
-                    Button {
-                        settings.hapticFeedback()
-                        quranPlayer.playAyah(
-                            surahNumber: surah,
-                            ayahNumber: ayah,
-                            continueRecitation: true
-                        )
-                    } label: {
-                        Label("Play From Ayah", systemImage: "play.circle.fill")
-                    }
-                    Button {
-                        settings.hapticFeedback()
-                        showCustomRangeSheet = true
-                    } label: {
-                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
-                    }
-                } label: {
-                    Label("Play Ayah", systemImage: "play.circle")
+                    
+                    Divider()
                 }
-                
-                Divider()
                 
                 Button {
                     settings.hapticFeedback()
@@ -272,7 +274,7 @@ struct AyahContextMenuModifier: ViewModifier {
                     PlayCustomRangeSheet(
                         surah: surahObj,
                         initialStartAyah: ayah,
-                        initialEndAyah: surahObj.numberOfAyahs,
+                        initialEndAyah: surahObj.numberOfAyahs(for: settings.displayQiraahForArabic),
                         onPlay: { start, end, repAyah, repSec in
                             quranPlayer.playCustomRange(
                                 surahNumber: surahObj.id,
@@ -656,3 +658,10 @@ private struct HideEditorScrollBackground: ViewModifier {
     }
 }
 #endif
+
+#Preview {
+    QuranView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
+}

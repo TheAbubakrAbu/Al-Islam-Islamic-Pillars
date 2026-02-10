@@ -135,11 +135,13 @@ struct SettingsView: View {
                             .multilineTextAlignment(.leading)
                             .frame(width: glyphWidth)
                         
-                        Link("abubakrelmallah.com", destination: URL(string: "https://abubakrelmallah.com/")!)
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                            .multilineTextAlignment(.leading)
-                            .padding(.leading, -4)
+                        if let url = URL(string: "https://abubakrelmallah.com/") {
+                            Link("abubakrelmallah.com", destination: url)
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor.color)
+                                .multilineTextAlignment(.leading)
+                                .padding(.leading, -4)
+                        }
                     }
                     #if !os(watchOS)
                     .contextMenu {

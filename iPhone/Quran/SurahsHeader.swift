@@ -96,15 +96,17 @@ struct SurahSectionHeader: View {
     
     var body: some View {
         HStack {
-            #if os(watchOS)
-            Text("\(surah.numberOfAyahs) Ayahs - \(surah.type == "meccan" ? "🕋" : "🕌")")
-                .textCase(.uppercase)
-                .font(.subheadline)
-            #else
-            Text("\(surah.numberOfAyahs) Ayahs - \(surah.type) \(surah.type == "meccan" ? "🕋" : "🕌")")
-                .textCase(.uppercase)
-                .font(.subheadline)
-            #endif
+            Group {
+                #if !os(watchOS)
+                Text("\(surah.numberOfAyahs(for: settings.displayQiraahForArabic)) Ayahs - \(surah.type) \(surah.type == "meccan" ? "🕋" : "🕌")")
+                #else
+                Text("\(surah.numberOfAyahs(for: settings.displayQiraahForArabic)) Ayahs - \(surah.type == "meccan" ? "🕋" : "🕌")")
+                #endif
+            }
+            .textCase(.uppercase)
+            .font(.subheadline)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             
             Spacer()
             
@@ -219,7 +221,7 @@ struct HeaderRow: View {
                 }
             }
             
-            if englishTranslation.contains("name") {
+            if englishTranslation.contains("name"), settings.isHafsDisplay {
                 Button(action: {
                     settings.hapticFeedback()
                     
@@ -231,4 +233,11 @@ struct HeaderRow: View {
         }
         #endif
     }
+}
+
+#Preview {
+    QuranView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

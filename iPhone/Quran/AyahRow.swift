@@ -228,7 +228,7 @@ struct AyahRow: View {
             PlayCustomRangeSheet(
                 surah: surah,
                 initialStartAyah: ayah.id,
-                initialEndAyah: surah.numberOfAyahs,
+                initialEndAyah: surah.numberOfAyahs(for: settings.displayQiraahForArabic),
                 onPlay: { start, end, repAyah, repSec in
                     quranPlayer.playCustomRange(
                         surahNumber: surah.id,
@@ -404,47 +404,49 @@ struct AyahRow: View {
                 }
             }
             
-            Divider()
-            
-            Menu {
-                ForEach(repeatOptions, id: \.self) { count in
+            if settings.isHafsDisplay {
+                Divider()
+                
+                Menu {
+                    ForEach(repeatOptions, id: \.self) { count in
+                        Button {
+                            settings.hapticFeedback()
+                            quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: count)
+                        } label: {
+                            Label("Repeat \(count)×", systemImage: "repeat")
+                        }
+                    }
+                } label: {
+                    Label("Repeat Ayah", systemImage: "repeat")
+                }
+                
+                Menu {
                     Button {
                         settings.hapticFeedback()
-                        quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: count)
+                        quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
                     } label: {
-                        Label("Repeat \(count)×", systemImage: "repeat")
+                        Label("Play This Ayah", systemImage: "play.circle")
                     }
-                }
-            } label: {
-                Label("Repeat Ayah", systemImage: "repeat")
-            }
-            
-            Menu {
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+                    
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
+                    } label: {
+                        Label("Play From Ayah", systemImage: "play.circle.fill")
+                    }
+                    
+                    Button {
+                        settings.hapticFeedback()
+                        showCustomRangeSheet = true
+                    } label: {
+                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
+                    }
                 } label: {
-                    Label("Play This Ayah", systemImage: "play.circle")
+                    Label("Play Ayah", systemImage: "play.circle")
                 }
                 
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
-                } label: {
-                    Label("Play From Ayah", systemImage: "play.circle.fill")
-                }
-                
-                Button {
-                    settings.hapticFeedback()
-                    showCustomRangeSheet = true
-                } label: {
-                    Label("Play Custom Range", systemImage: "slider.horizontal.3")
-                }
-            } label: {
-                Label("Play Ayah", systemImage: "play.circle")
+                Divider()
             }
-            
-            Divider()
                         
             Button {
                 settings.hapticFeedback()
@@ -488,4 +490,11 @@ struct AyahRow: View {
         .padding(.bottom, 2)
         #endif
     }
+}
+
+#Preview {
+    QuranView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

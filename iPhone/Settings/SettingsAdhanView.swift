@@ -192,9 +192,9 @@ struct SettingsAdhanView: View {
         } message: {
             switch showAlert {
             case .travelTurnOnAutomatic:
-                Text("Al-Islam has automatically detected that you are traveling, so your prayers will be shortened.")
+                Text("Al-Adhan has automatically detected that you are traveling, so your prayers will be shortened.")
             case .travelTurnOffAutomatic:
-                Text("Al-Islam has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
+                Text("Al-Adhan has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
             case .none:
                 EmptyView()
             }

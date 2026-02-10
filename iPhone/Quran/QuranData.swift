@@ -41,6 +41,11 @@ struct Surah: Codable, Identifiable {
         self.numberOfAyahs = numberOfAyahs
         self.ayahs = ayahs
     }
+
+    /// Ayah count for the given qiraah (e.g. Baqarah has 286 in Hafs but 285 in Warsh). Use for display and range selection.
+    func numberOfAyahs(for displayQiraah: String?) -> Int {
+        ayahs.filter { $0.existsInQiraah(displayQiraah) }.count
+    }
 }
 
 struct Ayah: Codable, Identifiable {
@@ -89,6 +94,19 @@ struct Ayah: Codable, Identifiable {
     /// Clean (no diacritics) Arabic for the given display qiraah.
     func textCleanArabic(for displayQiraah: String?) -> String {
         textArabic(for: displayQiraah).removingArabicDiacriticsAndSigns
+    }
+
+    /// True if this ayah exists as its own verse in the given qiraah. In Hafs every ayah exists; in Warsh/Qaloon/etc. some Hafs ayahs are merged, so we only show ayahs that have qiraah-specific text (e.g. Baqarah has 286 in Hafs but 285 in Warsh).
+    func existsInQiraah(_ displayQiraah: String?) -> Bool {
+        guard let q = displayQiraah, !q.isEmpty, q != "Hafs" else { return true }
+        if q.contains("Warsh") { return textWarsh != nil }
+        if q.contains("Qaloon") { return textQaloon != nil }
+        if q.contains("Duri") || q.contains("Doori") { return textDuri != nil }
+        if q.contains("Buzzi") || q.contains("Bazzi") { return textBuzzi != nil }
+        if q.contains("Qunbul") || q.contains("Qumbul") { return textQunbul != nil }
+        if q.contains("Shu'bah") || q.contains("Shouba") { return textShubah != nil }
+        if q.contains("Susi") || q.contains("Soosi") { return textSusi != nil }
+        return true
     }
 
     /// Current riwayah's Arabic (uses Settings.displayQiraahForArabic). Used for display, search, share.
@@ -226,8 +244,8 @@ final class QuranData: ObservableObject {
     }
 
     private func load() async {
-        guard let url = Bundle.main.url(forResource: "quran", withExtension: "json") else {
-            fatalError("quran.json missing")
+        guard let url = Bundle.main.url(forResource: "Quran", withExtension: "json") else {
+            fatalError("Quran.json missing")
         }
 
         do {

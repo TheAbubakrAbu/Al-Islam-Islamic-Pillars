@@ -22,8 +22,8 @@ struct AyahsView: View {
         ScrollViewReader { proxy in
             VStack {
                 let cleanQuery = settings.cleanSearch(searchText, whitespace: true)
-                
-                let filteredAyahs = surah.ayahs.filter { a in
+                let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
+                let filteredAyahs = ayahsForQiraah.filter { a in
                     guard !cleanQuery.isEmpty else { return true }
 
                     let rawArabic   = settings.cleanSearch(a.textArabic)
@@ -55,7 +55,7 @@ struct AyahsView: View {
                                 }
                         ) {
                             VStack {
-                                let firstAyahClean = surah.ayahs.first?.textCleanArabic.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                                let firstAyahClean = ayahsForQiraah.first?.textCleanArabic.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                                 let showTaawwudh = (surah.id == 9) || (surah.id == 1 && firstAyahClean.hasPrefix("بسم"))
                                 if showTaawwudh {
                                     HeaderRow(
@@ -232,7 +232,7 @@ struct AyahsView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                 .padding(.top, 6)
-                .padding(.horizontal, settings.defaultView == true ? 20 : 16)
+                .padding(.horizontal, settings.defaultView ? 20 : 16)
                 .background(Color.clear)
                 .opacity(showFloatingHeader ? 1 : 0)
                 .padding(.horizontal, 55)
@@ -270,7 +270,7 @@ struct AyahsView: View {
             PlayCustomRangeSheet(
                 surah: surah,
                 initialStartAyah: 1,
-                initialEndAyah: surah.numberOfAyahs,
+                initialEndAyah: surah.numberOfAyahs(for: settings.displayQiraahForArabic),
                 onPlay: { start, end, repAyah, repSec in
                     quranPlayer.playCustomRange(
                         surahNumber: surah.id,
@@ -339,7 +339,8 @@ struct AyahsView: View {
                     
                     Button {
                         settings.hapticFeedback()
-                        if let randomAyah = surah.ayahs.randomElement() {
+                        let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
+                        if let randomAyah = ayahsForQiraah.randomElement() {
                             quranPlayer.playAyah(
                                 surahNumber: surah.id,
                                 ayahNumber: randomAyah.id,

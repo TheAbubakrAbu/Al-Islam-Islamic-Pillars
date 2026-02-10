@@ -22,6 +22,8 @@ struct PlayCustomRangeSheet: View {
     private static let repeatMax = 20
     private static let repeatOptions = [1, 2, 3, 5, 10, 20]
 
+    private var maxAyah: Int { surah.numberOfAyahs(for: settings.displayQiraahForArabic) }
+
     init(
         surah: Surah,
         initialStartAyah: Int,
@@ -45,7 +47,16 @@ struct PlayCustomRangeSheet: View {
     }
 
     private var canPlay: Bool {
-        startAyah >= 1 && endAyah <= surah.numberOfAyahs && startAyah <= endAyah
+        startAyah >= 1 && endAyah <= maxAyah && startAyah <= endAyah
+    }
+
+    private func clampRangeToMaxAyah() {
+        let m = maxAyah
+        if endAyah > m { endAyah = m; endAyahText = "\(m)" }
+        if startAyah > m { startAyah = m; startAyahText = "\(m)" }
+        if startAyah < 1 { startAyah = 1; startAyahText = "1" }
+        if endAyah < 1 { endAyah = 1; endAyahText = "1" }
+        if startAyah > endAyah { endAyah = startAyah; endAyahText = "\(startAyah)" }
     }
 
     private var ayahCount: Int {
@@ -82,6 +93,8 @@ struct PlayCustomRangeSheet: View {
                 playButtonBar
             }
         }
+        .onAppear { clampRangeToMaxAyah() }
+        .onChange(of: settings.displayQiraahForArabic) { _ in clampRangeToMaxAyah() }
         .id("\(initialStartAyah)-\(initialEndAyah)")
     }
 
@@ -94,7 +107,7 @@ struct PlayCustomRangeSheet: View {
                 Text(surah.nameTransliteration)
                     .font(.title3.weight(.semibold))
                     .foregroundColor(.primary)
-                Text("Surah \(surah.id) · \(surah.numberOfAyahs) ayahs")
+                Text("Surah \(surah.id) · \(maxAyah) ayahs")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -113,13 +126,13 @@ struct PlayCustomRangeSheet: View {
                 .foregroundColor(.secondary)
 
             HStack(spacing: 12) {
-                rangeField(title: "From", value: $startAyah, text: $startAyahText, max: surah.numberOfAyahs) { new in
+                rangeField(title: "From", value: $startAyah, text: $startAyahText, max: maxAyah) { new in
                     if new > endAyah { endAyah = new; endAyahText = "\(endAyah)" }
                 }
                 Image(systemName: "arrow.right")
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(Color(.tertiaryLabel))
-                rangeField(title: "To", value: $endAyah, text: $endAyahText, max: surah.numberOfAyahs) { new in
+                rangeField(title: "To", value: $endAyah, text: $endAyahText, max: maxAyah) { new in
                     if new < startAyah { startAyah = new; startAyahText = "\(startAyah)" }
                 }
             }
@@ -134,14 +147,14 @@ struct PlayCustomRangeSheet: View {
                 settings.hapticFeedback()
                 withAnimation(.easeInOut(duration: 0.2)) {
                     startAyah = 1
-                    endAyah = surah.numberOfAyahs
+                    endAyah = maxAyah
                     startAyahText = "1"
-                    endAyahText = "\(surah.numberOfAyahs)"
+                    endAyahText = "\(maxAyah)"
                 }
             } label: {
                 HStack {
                     Image(systemName: "doc.text.fill")
-                    Text("Whole surah (1–\(surah.numberOfAyahs))")
+                    Text("Whole surah (1–\(maxAyah))")
                 }
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(settings.accentColor.color)
@@ -229,7 +242,6 @@ struct PlayCustomRangeSheet: View {
     }
 
     private func commitBothAyahFields() {
-        let maxAyah = surah.numberOfAyahs
         let s = min(Swift.max(1, Int(startAyahText.trimmingCharacters(in: .whitespaces)) ?? startAyah), maxAyah)
         let e = min(Swift.max(1, Int(endAyahText.trimmingCharacters(in: .whitespaces)) ?? endAyah), maxAyah)
         let from = min(s, e)

@@ -9,6 +9,30 @@ struct SettingsQuranView: View {
     init(showEdits: Bool = false) {
         _showEdits = State(initialValue: showEdits)
     }
+
+    private var includeEnglish: Binding<Bool> {
+        Binding(
+            get: {
+                settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa)
+            },
+            set: { newValue in
+                // If not on Hafs, English settings don't apply (toggle is disabled in UI).
+                guard settings.isHafsDisplay else { return }
+                withAnimation {
+                    if newValue {
+                        // Ensure at least one English option is enabled so this toggle can stay on.
+                        if !(settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa) {
+                            settings.showEnglishSaheeh = true
+                        }
+                    } else {
+                        settings.showTransliteration = false
+                        settings.showEnglishSaheeh = false
+                        settings.showEnglishMustafa = false
+                    }
+                }
+            }
+        )
+    }
     
     var body: some View {
         List {
@@ -91,8 +115,11 @@ struct SettingsQuranView: View {
                 }
             }
             
-            if settings.isHafsDisplay {
-                Section(header: Text("ENGLISH TEXT")) {
+            Section(header: Text("ENGLISH TEXT"), footer: Text("Transliteration, translations, and all English text apply only to default Hafs an Asim. For other riwayat, only the Arabic text is shown.")) {
+                if settings.isHafsDisplay && includeEnglish.wrappedValue {
+                    Toggle("Include English", isOn: includeEnglish.animation(.easeInOut))
+                        .font(.subheadline)
+                    
                     Toggle("Show Transliteration", isOn: $settings.showTransliteration.animation(.easeInOut))
                         .font(.subheadline)
                         .disabled(!settings.showArabicText && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
@@ -140,10 +167,16 @@ struct SettingsQuranView: View {
                         }
                     ))
                     .font(.subheadline)
+                } else {
+                    Toggle("Include English", isOn: includeEnglish.animation(.easeInOut))
+                        .disabled(!settings.isHafsDisplay)
                 }
             }
             
-            Section(header: Text("RIWAYAH / QIRAAH"), footer: Text("Transliteration, translations, and all English text apply only to default Hafs an Asim. For other riwayat, only the Arabic text is shown.")) {
+            Section(
+                header: Text("RIWAYAH / QIRAAH"),
+                footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")
+            ) {
                 ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
                     .font(.subheadline)
                 
@@ -235,7 +268,7 @@ struct ReciterListView: View {
                     }
                 }
                 
-                Section(header: Text("ABOUT QIRAAT")) {
+                Section(header: Text("ABOUT QIRAAT"), footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
                     VStack(alignment: .leading) {
                         Text("""
                         The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
