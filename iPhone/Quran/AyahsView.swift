@@ -18,6 +18,15 @@ struct AyahsView: View {
     let surah: Surah
     var ayah: Int? = 0
     
+    /// Negative top padding for search bar only on iPhone; iPad and Mac use 0.
+    private static var searchBarTopPadding: CGFloat {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .phone ? -6 : 0
+        #else
+        return 0
+        #endif
+    }
+    
     var body: some View {
         ScrollViewReader { proxy in
             VStack {
@@ -40,53 +49,65 @@ struct AyahsView: View {
                 }
                 
                 List {
-                    if searchText.isEmpty {
-                        Section(header:
-                            SurahSectionHeader(surah: surah)
-                                .onAppear {
-                                    withAnimation {
-                                        showFloatingHeader = false
-                                    }
-                                }
-                                .onDisappear {
-                                    withAnimation {
-                                        showFloatingHeader = true
-                                    }
-                                }
-                        ) {
-                            VStack {
-                                let firstAyahClean = ayahsForQiraah.first?.textCleanArabic.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                                let showTaawwudh = (surah.id == 9) || (surah.id == 1 && firstAyahClean.hasPrefix("بسم"))
-                                if showTaawwudh {
-                                    HeaderRow(
-                                        arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيۡطَانِ ٱلرَّجِيمِ",
-                                        englishTransliteration: "Audhu billahi minashaitanir rajeem",
-                                        englishTranslation: "I seek refuge in Allah from the accursed Satan."
-                                    )
-                                    .padding(.vertical)
-                                } else {
-                                    HeaderRow(
-                                        arabicText: "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِِ",
-                                        englishTransliteration: "Bismi Allahi alrrahmani alrraheemi",
-                                        englishTranslation: "In the name of Allah, the Compassionate, the Merciful."
-                                    )
-                                    .padding(.vertical)
-                                }
+                    Section {
+                        VStack {
+                            let firstAyahClean = ayahsForQiraah.first?.textCleanArabic.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                            let showTaawwudh = (surah.id == 9) || (surah.id == 1 && firstAyahClean.hasPrefix("بسم"))
+                            if showTaawwudh {
+                                HeaderRow(
+                                    arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيۡطَانِ ٱلرَّجِيمِ",
+                                    englishTransliteration: "Audhu billahi minashaitanir rajeem",
+                                    englishTranslation: "I seek refuge in Allah from the accursed Satan."
+                                )
+                                .padding(.vertical)
+                            } else {
+                                HeaderRow(
+                                    arabicText: "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِِ",
+                                    englishTransliteration: "Bismi Allahi alrrahmani alrraheemi",
+                                    englishTranslation: "In the name of Allah, the Compassionate, the Merciful."
+                                )
+                                .padding(.vertical)
+                            }
+                            
+                            #if !os(watchOS)
+                            if !settings.defaultView {
+                                Divider()
+                                    .background(settings.accentColor.color)
+                                    .padding(.trailing, -100)
+                                    .padding(.bottom, -100)
+                            }
+                            #endif
+                        }
+                    } header: {
+                        ZStack {
+                            if searchText.isEmpty {
+                                SurahSectionHeader(surah: surah)
+                                    .onAppear { withAnimation { showFloatingHeader = false } }
+                                    .onDisappear { withAnimation { showFloatingHeader = true } }
+                            }
+                            
+                            HStack {
+                                if !searchText.isEmpty { Spacer() }
                                 
-                                #if !os(watchOS)
-                                if !settings.defaultView {
-                                    Divider()
-                                        .background(settings.accentColor.color)
-                                        .padding(.trailing, -100)
-                                        .padding(.bottom, -100)
-                                }
-                                #endif
+                                Text(String(filteredAyahs.count))
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(settings.accentColor.color)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    #if !os(watchOS)
+                                    .background(.ultraThinMaterial)
+                                    #endif
+                                    .clipShape(Capsule())
+                                    .opacity(searchText.isEmpty ? 0 : 1)
                             }
                         }
-                        #if !os(watchOS)
-                        .listRowSeparator(.hidden, edges: .bottom)
-                        #endif
+                        .animation(.easeInOut, value: searchText)
+                        .transition(.opacity)
                     }
+
+                    #if !os(watchOS)
+                    .listRowSeparator(.hidden, edges: .bottom)
+                    #endif
                     
                     ForEach(filteredAyahs, id: \.id) { ayah in
                         Group {
@@ -132,8 +153,6 @@ struct AyahsView: View {
                             }
                             scrollDown = nil
                         }
-                        #endif
-                        #if !os(watchOS)
                         .listRowSeparator(
                             (ayah.id == filteredAyahs.first?.id && searchText.isEmpty) || settings.defaultView
                                 ? .hidden : .visible,
@@ -200,21 +219,7 @@ struct AyahsView: View {
                         
                         playButton(proxy: proxy)
                     }
-                    .padding(.top, -8)
-
-                    if !searchText.isEmpty && !filteredAyahs.isEmpty {
-                        HStack {
-                            Spacer()
-                            Text("\(filteredAyahs.count) ayah\(filteredAyahs.count == 1 ? "" : "s")")
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Capsule())
-                        }
-                        .padding(.horizontal, 12)
-                    }
+                    .padding(.top, Self.searchBarTopPadding)
                 }
                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                 #endif
@@ -240,7 +245,7 @@ struct AyahsView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .offset(y: showFloatingHeader ? 0 : -80)
                 .opacity(showFloatingHeader ? 1 : 0)
-                .animation(.easeInOut(duration: 0.35), value: showFloatingHeader)
+                .animation(.easeInOut, value: showFloatingHeader)
         }
         .overlay(alignment: .bottom) {
             if settings.qiraatComparisonMode && !quranPlayer.isPlaying && !quranPlayer.isPaused {
@@ -302,7 +307,7 @@ struct AyahsView: View {
     private func playButton(proxy: ScrollViewProxy) -> some View {
         let playerIdle = !quranPlayer.isLoading && !quranPlayer.isPlaying && !quranPlayer.isPaused
         let canResumeLast = settings.lastListenedSurah?.surahNumber == surah.id
-        let repeatCounts  = [2, 3, 5, 10]
+        let repeatCounts  = [2, 3, 5, 10, 15]
 
         if playerIdle {
             Menu {

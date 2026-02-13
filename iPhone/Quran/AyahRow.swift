@@ -377,7 +377,7 @@ struct AyahRow: View {
     @ViewBuilder
     private func menuBlock(isBookmarked: Bool) -> some View {
         #if !os(watchOS)
-        let repeatOptions = [2, 3, 5, 10]
+        let repeatOptions = [2, 3, 5, 10, 15]
 
         VStack(alignment: .leading) {
             Button(role: isBookmarked ? .destructive : nil) {

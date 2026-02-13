@@ -55,7 +55,13 @@ struct JuzHeader: View {
     
     var body: some View {
         HStack {
-            Text("JUZ \(juz.id) - \(juz.nameTransliteration.uppercased())")
+            Text("JUZ \(juz.id)")
+                .lineLimit(1)
+            
+            Text("- \(juz.nameTransliteration.uppercased()) - \(juz.nameArabic)")
+                .font(.footnote)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
             
             #if !os(watchOS)
             Spacer()

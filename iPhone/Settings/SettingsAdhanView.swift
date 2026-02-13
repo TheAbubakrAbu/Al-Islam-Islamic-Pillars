@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct SettingsAdhanView: View {
     @EnvironmentObject var settings: Settings
@@ -324,55 +325,226 @@ struct NotificationView: View {
     @Environment(\.scenePhase) private var scenePhase
     
     @State private var showAlert: Bool = false
+    @State private var notifSettings: UNNotificationSettings?
+    @State private var requestAccessAlertMessage: String?
     
     var body: some View {
         List {
+            #if !os(watchOS)
+            Section {
+                permissionCard
+            }
+            #endif
+            
             Section(header: Text("HIJRI CALENDAR")) {
                 Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
                     .font(.subheadline)
             }
             
-            NavigationLink(destination: MoreNotificationView()) {
-                Label("More Notification Settings", systemImage: "bell.fill")
-                    .font(.subheadline)
-            }
-        }
-        .onAppear {
-            settings.requestNotificationAuthorization {
-                settings.fetchPrayerTimes {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if settings.showNotificationAlert {
-                            showAlert = true
-                        }
-                    }
+            Section(header: Text("PRAYER REMINDERS")) {
+                NavigationLink(destination: MoreNotificationView()) {
+                    Label("Prayer Notifications", systemImage: "bell.fill")
+                        .font(.subheadline)
                 }
             }
         }
-        .onChange(of: scenePhase) { _ in
-            settings.requestNotificationAuthorization {
-                settings.fetchPrayerTimes {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if settings.showNotificationAlert {
-                            showAlert = true
-                        }
-                    }
-                }
-            }
-        }
+        .task { await refresh() }
+        .onAppear { requestAuthorizationAndFetchPrayerTimes() }
+        .onChange(of: scenePhase) { _ in requestAuthorizationAndFetchPrayerTimes() }
         .confirmationDialog("", isPresented: $showAlert, titleVisibility: .visible) {
-            Button("Open Settings") {
-                #if !os(watchOS)
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                }
-                #endif
-            }
+            Button("Open Settings") { openSystemSettings() }
             Button("Ignore", role: .cancel) { }
         } message: {
             Text("Please go to Settings and enable notifications to be notified of prayer times.")
         }
+        .confirmationDialog("Notifications", isPresented: Binding(
+            get: { requestAccessAlertMessage != nil },
+            set: { if !$0 { requestAccessAlertMessage = nil } }
+        ), titleVisibility: .visible) {
+            Button("OK", role: .cancel) { requestAccessAlertMessage = nil }
+            Button("Open Settings") {
+                requestAccessAlertMessage = nil
+                openSystemSettings()
+            }
+        } message: {
+            if let msg = requestAccessAlertMessage {
+                Text(msg)
+            }
+        }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Notification Settings")
+    }
+    
+    #if !os(watchOS)
+    private var permissionCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Permission", systemImage: "bell.badge")
+                    .font(.headline)
+                    .foregroundColor(settings.accentColor.color)
+
+                Spacer()
+
+                Text(permissionPillText)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(Capsule().fill(permissionPillColor))
+                    .overlay(Capsule().stroke(Color.primary.opacity(0.12), lineWidth: 1))
+                    .padding(.trailing, -6)
+            }
+            .animation(.easeInOut(duration: 0.25), value: permissionPillText)
+
+            if let s = notifSettings {
+                VStack(spacing: 8) {
+                    infoRow("Status", statusText(s.authorizationStatus))
+                    infoRow("Alerts", notificationSettingText(s.alertSetting))
+                    infoRow("Sounds", notificationSettingText(s.soundSetting))
+                }
+                .font(.footnote)
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    settings.hapticFeedback()
+                    Task { @MainActor in await onRequestAccessTapped() }
+                } label: {
+                    smallButton("Request Access", systemImage: "checkmark.seal")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    settings.hapticFeedback()
+                    openSystemSettings()
+                } label: {
+                    smallButton("Open Settings", systemImage: "gear")
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                )
+        )
+        .animation(.easeInOut(duration: 0.25), value: notifSettings?.authorizationStatus.rawValue)
+    }
+    #endif
+    
+    private var permissionPillText: String {
+        statusText(notifSettings?.authorizationStatus ?? .notDetermined)
+    }
+    
+    private var permissionPillColor: Color {
+        guard let status = notifSettings?.authorizationStatus else { return .secondary }
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return settings.accentColor.color
+        case .denied:
+            return .red
+        case .notDetermined:
+            return .orange
+        @unknown default:
+            return .secondary
+        }
+    }
+    
+    private func infoRow(_ left: String, _ right: String) -> some View {
+        HStack {
+            Text(left).foregroundColor(.secondary)
+            Spacer()
+            Text(right).foregroundColor(.primary)
+        }
+    }
+    
+    private func statusText(_ s: UNAuthorizationStatus) -> String {
+        switch s {
+        case .notDetermined: return "Not asked"
+        case .denied: return "Denied"
+        case .authorized: return "Allowed"
+        case .provisional: return "Provisional"
+        case .ephemeral: return "Ephemeral"
+        @unknown default: return "Unknown"
+        }
+    }
+    
+    private func notificationSettingText(_ s: UNNotificationSetting) -> String {
+        switch s {
+        case .enabled: return "On"
+        case .disabled: return "Off"
+        case .notSupported: return "N/A"
+        @unknown default: return "Unknown"
+        }
+    }
+    
+    private func smallButton(_ title: String, systemImage: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+            
+            Text(title)
+                .font(.footnote.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+        }
+        .frame(minHeight: 44)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(settings.accentColor.color.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(settings.accentColor.color.opacity(0.35), lineWidth: 1)
+        )
+    }
+    
+    private func openSystemSettings() {
+        #if !os(watchOS)
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+        #endif
+    }
+    
+    @MainActor
+    private func refresh() async {
+        let center = UNUserNotificationCenter.current()
+        notifSettings = await center.notificationSettings()
+    }
+    
+    private func requestAuthorizationAndFetchPrayerTimes() {
+        settings.requestNotificationAuthorization {
+            settings.fetchPrayerTimes {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if settings.showNotificationAlert {
+                        showAlert = true
+                    }
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    private func onRequestAccessTapped() async {
+        let center = UNUserNotificationCenter.current()
+        let current = await center.notificationSettings()
+        switch current.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            requestAccessAlertMessage = "Notifications are already turned on."
+        case .denied:
+            requestAccessAlertMessage = "Notifications are turned off. Open Settings to enable them."
+        case .notDetermined:
+            _ = await settings.requestNotificationAuthorization()
+            await refresh()
+        @unknown default:
+            requestAccessAlertMessage = "Unable to change notification settings."
+        }
     }
 }
 
@@ -599,6 +771,9 @@ struct MoreNotificationView: View {
                 }
             }
         }
+        .onDisappear {
+            settings.fetchPrayerTimes(notification: true)
+        }
         .confirmationDialog("", isPresented: $showAlert, titleVisibility: .visible) {
             Button("Open Settings") {
                 #if !os(watchOS)
@@ -612,7 +787,7 @@ struct MoreNotificationView: View {
             Text("Please go to Settings and enable notifications to be notified of prayer times.")
         }
         .applyConditionalListStyle(defaultView: true)
-        .navigationTitle("Notification Settings")
+        .navigationTitle("Prayer Notifications")
     }
 }
 
@@ -623,8 +798,6 @@ struct NotificationSettingsSection: View {
     
     @Binding var preNotificationTime: Int
     @Binding var isNotificationOn: Bool
-    
-    @State private var isPrenotificationOn : Bool = false
 
     var body: some View {
         Section(header: Text(prayerName.uppercased())) {
@@ -643,4 +816,9 @@ struct NotificationSettingsSection: View {
             }
         }
     }
+}
+
+#Preview {
+    SettingsAdhanView(showNotifications: true)
+        .environmentObject(Settings.shared)
 }
