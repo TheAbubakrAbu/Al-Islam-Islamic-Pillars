@@ -57,6 +57,9 @@ struct Ayah: Codable, Identifiable {
     let textEnglishSaheeh: String
     let textEnglishMustafa: String
 
+    let juz: Int?
+    let page: Int?
+
     let textShubah: String?
     
     let textBuzzi: String?
@@ -72,6 +75,7 @@ struct Ayah: Codable, Identifiable {
         case id
         case textHafs = "textArabic"
         case textTransliteration, textEnglishSaheeh, textEnglishMustafa
+        case juz, page
         case textWarsh, textQaloon, textDuri, textBuzzi, textQunbul, textShubah, textSusi
     }
 
@@ -143,6 +147,8 @@ struct Ayah: Codable, Identifiable {
         textTransliteration = try c.decode(String.self, forKey: .textTransliteration)
         textEnglishSaheeh = try c.decode(String.self, forKey: .textEnglishSaheeh)
         textEnglishMustafa = try c.decode(String.self, forKey: .textEnglishMustafa)
+        juz = try c.decodeIfPresent(Int.self, forKey: .juz)
+        page = try c.decodeIfPresent(Int.self, forKey: .page)
         textWarsh = try c.decodeIfPresent(String.self, forKey: .textWarsh)
         textQaloon = try c.decodeIfPresent(String.self, forKey: .textQaloon)
         textDuri = try c.decodeIfPresent(String.self, forKey: .textDuri)
@@ -153,13 +159,15 @@ struct Ayah: Codable, Identifiable {
         idArabic = arabicNumberString(from: id)
     }
 
-    init(id: Int, idArabic: String, textHafs: String, textTransliteration: String, textEnglishSaheeh: String, textEnglishMustafa: String, textWarsh: String?, textQaloon: String?, textDuri: String?, textBuzzi: String?, textQunbul: String?, textShubah: String?, textSusi: String?) {
+    init(id: Int, idArabic: String, textHafs: String, textTransliteration: String, textEnglishSaheeh: String, textEnglishMustafa: String, juz: Int? = nil, page: Int? = nil, textWarsh: String?, textQaloon: String?, textDuri: String?, textBuzzi: String?, textQunbul: String?, textShubah: String?, textSusi: String?) {
         self.id = id
         self.idArabic = idArabic
         self.textHafs = textHafs
         self.textTransliteration = textTransliteration
         self.textEnglishSaheeh = textEnglishSaheeh
         self.textEnglishMustafa = textEnglishMustafa
+        self.juz = juz
+        self.page = page
         self.textWarsh = textWarsh
         self.textQaloon = textQaloon
         self.textDuri = textDuri
@@ -276,6 +284,8 @@ final class QuranData: ObservableObject {
                             textTransliteration: base?.textTransliteration ?? "",
                             textEnglishSaheeh: base?.textEnglishSaheeh ?? "",
                             textEnglishMustafa: base?.textEnglishMustafa ?? "",
+                            juz: base?.juz,
+                            page: base?.page,
                             textWarsh: overlay["textWarsh"]?[surah.id]?[ayahID] ?? base?.textWarsh,
                             textQaloon: overlay["textQaloon"]?[surah.id]?[ayahID] ?? base?.textQaloon,
                             textDuri: overlay["textDuri"]?[surah.id]?[ayahID] ?? base?.textDuri,

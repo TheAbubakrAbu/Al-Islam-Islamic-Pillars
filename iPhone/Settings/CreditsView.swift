@@ -80,7 +80,7 @@ struct CreditsView: View {
                     Group {
                         if let url = URL(string: "https://github.com/risan/quran-json") {
                             Link(
-                                "Credit for the Arabic and English transliteration of the Quran data goes to Risan Bagja Pradana",
+                                "Credit for the English transliteration of the Quran data goes to Risan Bagja Pradana",
                                 destination: url
                             )
                         }
@@ -94,7 +94,7 @@ struct CreditsView: View {
 
                         if let url = URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc") {
                             Link(
-                                "Credit for the Arabic text for multiple qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)",
+                                "Credit for the Quranic Arabic text (Hafs an Asim) and all other qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)",
                                 destination: url
                             )
                         }

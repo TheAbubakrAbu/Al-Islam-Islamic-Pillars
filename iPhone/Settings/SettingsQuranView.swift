@@ -68,6 +68,9 @@ struct SettingsQuranView: View {
                 Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
                     .font(.subheadline)
                     .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
+
+                Toggle("Show Page and Juz Dividers", isOn: $settings.showPageJuzDividers.animation(.easeInOut))
+                    .font(.subheadline)
                 
                 if settings.showArabicText {
                     VStack(alignment: .leading) {

@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		7205C1EB2D796DFD001D4979 /* LockScreen3Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EA2D796DFD001D4979 /* LockScreen3Widget.swift */; };
 		7205C1ED2D796E0F001D4979 /* LockScreen4Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7205C1EC2D796E0F001D4979 /* LockScreen4Widget.swift */; };
+		720BF0882F6A937600E3F263 /* Quran.json in Resources */ = {isa = PBXBuildFile; fileRef = 720BF0872F6A937600E3F263 /* Quran.json */; };
+		720BF0892F6A937600E3F263 /* Quran.json in Resources */ = {isa = PBXBuildFile; fileRef = 720BF0872F6A937600E3F263 /* Quran.json */; };
 		720CCE0E2E394375002DD82E /* QuranView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE052E394375002DD82E /* QuranView.swift */; };
 		720CCE0F2E394375002DD82E /* AyahRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE082E394375002DD82E /* AyahRow.swift */; };
 		720CCE102E394375002DD82E /* AyahsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE092E394375002DD82E /* AyahsView.swift */; };
@@ -43,8 +45,8 @@
 		720CCE352E394547002DD82E /* Arabic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE282E394437002DD82E /* Arabic.swift */; };
 		720DEC5B2D244EEF006EA342 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720DEC5A2D244EEF006EA342 /* CreditsView.swift */; };
 		72109F312A65D77400BD373E /* Complication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72109F302A65D77400BD373E /* Complication.swift */; };
-		721722EE2E6BA09E002F584F /* Quran.json in Resources */ = {isa = PBXBuildFile; fileRef = 721722ED2E6BA09E002F584F /* Quran.json */; };
-		721722EF2E6BA09E002F584F /* Quran.json in Resources */ = {isa = PBXBuildFile; fileRef = 721722ED2E6BA09E002F584F /* Quran.json */; };
+		721722EE2E6BA09E002F584F /* Quran_Old.json in Resources */ = {isa = PBXBuildFile; fileRef = 721722ED2E6BA09E002F584F /* Quran_Old.json */; };
+		721722EF2E6BA09E002F584F /* Quran_Old.json in Resources */ = {isa = PBXBuildFile; fileRef = 721722ED2E6BA09E002F584F /* Quran_Old.json */; };
 		722BBD362F0992D4004F3659 /* AdhanSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722BBD352F0992D4004F3659 /* AdhanSheet.swift */; };
 		723873442F37342E00D3A8CD /* PlayCustomRangeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 723873432F37342E00D3A8CD /* PlayCustomRangeSheet.swift */; };
 		723873662F374BDB00D3A8CD /* QiraahShubah.json in Resources */ = {isa = PBXBuildFile; fileRef = 723873602F374BDB00D3A8CD /* QiraahShubah.json */; };
@@ -233,6 +235,7 @@
 /* Begin PBXFileReference section */
 		7205C1EA2D796DFD001D4979 /* LockScreen3Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen3Widget.swift; sourceTree = "<group>"; };
 		7205C1EC2D796E0F001D4979 /* LockScreen4Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen4Widget.swift; sourceTree = "<group>"; };
+		720BF0872F6A937600E3F263 /* Quran.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Quran.json; sourceTree = "<group>"; };
 		720CCE042E394375002DD82E /* QuranData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranData.swift; sourceTree = "<group>"; };
 		720CCE052E394375002DD82E /* QuranView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranView.swift; sourceTree = "<group>"; };
 		720CCE062E394375002DD82E /* SurahRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurahRows.swift; sourceTree = "<group>"; };
@@ -249,7 +252,7 @@
 		720CCE2A2E394437002DD82E /* ArabicLetterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicLetterView.swift; sourceTree = "<group>"; };
 		720DEC5A2D244EEF006EA342 /* CreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
 		72109F302A65D77400BD373E /* Complication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Complication.swift; sourceTree = "<group>"; };
-		721722ED2E6BA09E002F584F /* Quran.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Quran.json; sourceTree = "<group>"; };
+		721722ED2E6BA09E002F584F /* Quran_Old.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Quran_Old.json; sourceTree = "<group>"; };
 		722BBD352F0992D4004F3659 /* AdhanSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanSheet.swift; sourceTree = "<group>"; };
 		7230F8962D41CA7C0017DAE3 /* Entitlements-Main.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Entitlements-Main.entitlements"; sourceTree = "<group>"; };
 		723873432F37342E00D3A8CD /* PlayCustomRangeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayCustomRangeSheet.swift; sourceTree = "<group>"; };
@@ -519,7 +522,8 @@
 			isa = PBXGroup;
 			children = (
 				72C3FE542F6A039400136976 /* 99_Names_Of_Allah.json */,
-				721722ED2E6BA09E002F584F /* Quran.json */,
+				720BF0872F6A937600E3F263 /* Quran.json */,
+				721722ED2E6BA09E002F584F /* Quran_Old.json */,
 				7238735B2F37462700D3A8CD /* Qiraat */,
 			);
 			path = JSONs;
@@ -749,7 +753,8 @@
 				723873992F397BF300D3A8CD /* Uthmani.ttf in Resources */,
 				723B9E0B2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
 				7274865F2F3D8219001240F8 /* QiraahQaloon.json in Resources */,
-				721722EF2E6BA09E002F584F /* Quran.json in Resources */,
+				720BF0892F6A937600E3F263 /* Quran.json in Resources */,
+				721722EF2E6BA09E002F584F /* Quran_Old.json in Resources */,
 				72F7DB752F0431740037B059 /* Assets.xcassets in Resources */,
 				72C3FE562F6A039400136976 /* 99_Names_Of_Allah.json in Resources */,
 				723B9E022F3B138C0042DCDE /* QiraahBuzzi.json in Resources */,
@@ -768,8 +773,9 @@
 				7238739A2F397BF300D3A8CD /* Uthmani.ttf in Resources */,
 				723873662F374BDB00D3A8CD /* QiraahShubah.json in Resources */,
 				7274865E2F3D8219001240F8 /* QiraahQaloon.json in Resources */,
+				720BF0882F6A937600E3F263 /* Quran.json in Resources */,
 				723B9E0C2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
-				721722EE2E6BA09E002F584F /* Quran.json in Resources */,
+				721722EE2E6BA09E002F584F /* Quran_Old.json in Resources */,
 				72C3FE552F6A039400136976 /* 99_Names_Of_Allah.json in Resources */,
 				723B9E032F3B138C0042DCDE /* QiraahBuzzi.json in Resources */,
 				723B9E052F3B13B40042DCDE /* QiraahQunbul.json in Resources */,
