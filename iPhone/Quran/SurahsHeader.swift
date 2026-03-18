@@ -26,6 +26,8 @@ struct SurahsHeader: View {
                 }
             } label: {
                 Image(systemName: "shuffle")
+                    .buttonStyle(.plain)
+                    .clipShape(Rectangle())
             }
             #endif
         }
@@ -81,6 +83,8 @@ struct JuzHeader: View {
                 }
             } label: {
                 Image(systemName: "shuffle")
+                    .buttonStyle(.plain)
+                    .clipShape(Rectangle())
             }
             #endif
         }
@@ -112,7 +116,7 @@ struct SurahSectionHeader: View {
             .textCase(.uppercase)
             .font(.subheadline)
             .lineLimit(1)
-            .minimumScaleFactor(0.5)
+            .minimumScaleFactor(0.25)
             
             Spacer()
             

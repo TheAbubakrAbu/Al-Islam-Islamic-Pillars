@@ -4,6 +4,8 @@ import MediaPlayer
 
 final class QuranPlayer: ObservableObject {
     static let shared = QuranPlayer()
+    private static let listeningHistoryKey = "quranListeningHistoryData"
+    private static let readingHistoryKey = "quranReadingHistoryData"
     
     @ObservedObject var settings = Settings.shared
     @ObservedObject var quranData = QuranData.shared
@@ -25,6 +27,16 @@ final class QuranPlayer: ObservableObject {
     @Published private(set) var customRangeCurrentIndex: Int?
     @Published private(set) var customRangeTotalItems: Int?
     @Published private(set) var customRangeCurrentRepeatWithinAyah: Int?
+
+    @Published var listeningHistory: [ListeningHistoryItem] = [] {
+        didSet { persistListeningHistory() }
+    }
+    @Published var readingHistory: [ReadingHistoryItem] = [] {
+        didSet { persistReadingHistory() }
+    }
+    
+    private var lastSavedListeningSurahNumber: Int?
+    private var lastSavedReadingPosition: (surahNumber: Int, ayahNumber: Int)?
 
     private var backButtonClickCount = 0
     private var backButtonClickTimestamp: Date?
@@ -53,6 +65,7 @@ final class QuranPlayer: ObservableObject {
             name: AVAudioSession.interruptionNotification,
             object: AVAudioSession.sharedInstance()
         )
+        loadHistoryFromDefaults()
         setupRemoteTransportControls()
     }
     
@@ -347,6 +360,7 @@ final class QuranPlayer: ObservableObject {
                             self.repeatSuffix(total: self.repeatCount, remaining: self.repeatRemaining)
                         self.nowPlayingReciter = reciter.name
                         self.updateNowPlayingInfo()
+                        self.recordListeningHistory(surahNumber: surahNumber, surahName: surahName, reciter: reciter.name)
                     }
 
                     self.idleTimerSet(true)
@@ -984,6 +998,135 @@ final class QuranPlayer: ObservableObject {
                         fullDuration: fullDur
                     )
                 }
+            }
+        }
+    }
+
+    /// Records listening history with surah-based deduplication:
+    /// Only saves when switching to a different Surah.
+    func recordListeningHistory(surahNumber: Int, surahName: String, reciter: String) {
+        // Don't save if it's already the first item in history
+        if let firstItem = listeningHistory.first, firstItem.surahNumber == surahNumber {
+            return
+        }
+        
+        let shouldSave = lastSavedListeningSurahNumber == nil || lastSavedListeningSurahNumber != surahNumber
+        
+        if shouldSave {
+            let item = ListeningHistoryItem(
+                surahNumber: surahNumber,
+                surahName: surahName,
+                reciter: Reciter(
+                    name: reciter,
+                    ayahIdentifier: "",
+                    ayahBitrate: "",
+                    surahLink: ""
+                )
+            )
+            
+            withAnimation {
+                listeningHistory.insert(item, at: 0)
+                if listeningHistory.count > 5 {
+                    listeningHistory = Array(listeningHistory.prefix(5))
+                }
+            }
+            
+            lastSavedListeningSurahNumber = surahNumber
+        }
+    }
+    
+    /// Records reading history with hybrid deduplication:
+    /// Only saves if switching to different Surah OR moving 3+ ayahs away within same Surah
+    func recordReadingHistory(surahNumber: Int, surahName: String, ayahNumber: Int) {
+        let normalizedAyah = max(1, ayahNumber)
+        
+        // Don't save if it's already the first item in history
+        if let firstItem = readingHistory.first, 
+           firstItem.surahNumber == surahNumber && firstItem.ayahNumber == normalizedAyah {
+            return
+        }
+        
+        let shouldSave: Bool
+        
+        if let last = lastSavedReadingPosition {
+            if last.surahNumber != surahNumber {
+                // Different surah - always save
+                shouldSave = true
+            } else if abs(last.ayahNumber - normalizedAyah) >= 3 {
+                // Same surah but 3+ ayahs away - save
+                shouldSave = true
+            } else {
+                // Same surah and within 2 ayahs - don't save
+                shouldSave = false
+            }
+        } else {
+            // First time - always save
+            shouldSave = true
+        }
+        
+        if shouldSave {
+            let item = ReadingHistoryItem(
+                surahNumber: surahNumber,
+                surahName: surahName,
+                ayahNumber: normalizedAyah
+            )
+            
+            withAnimation {
+                readingHistory.insert(item, at: 0)
+                if readingHistory.count > 5 {
+                    readingHistory = Array(readingHistory.prefix(5))
+                }
+            }
+            
+            lastSavedReadingPosition = (surahNumber, normalizedAyah)
+        }
+    }
+
+    private func persistListeningHistory() {
+        let capped = Array(listeningHistory.prefix(5))
+        if capped.count != listeningHistory.count {
+            listeningHistory = capped
+            return
+        }
+
+        if let data = try? Settings.encoder.encode(capped) {
+            UserDefaults.standard.set(data, forKey: Self.listeningHistoryKey)
+        }
+    }
+
+    private func persistReadingHistory() {
+        let capped = Array(readingHistory.prefix(5))
+        if capped.count != readingHistory.count {
+            readingHistory = capped
+            return
+        }
+
+        if let data = try? Settings.encoder.encode(capped) {
+            UserDefaults.standard.set(data, forKey: Self.readingHistoryKey)
+        }
+    }
+
+    private func loadHistoryFromDefaults() {
+        if let listeningData = UserDefaults.standard.data(forKey: Self.listeningHistoryKey),
+           let decodedListening = try? Settings.decoder.decode([ListeningHistoryItem].self, from: listeningData) {
+            listeningHistory = Array(decodedListening.prefix(5))
+            if let firstListening = listeningHistory.first {
+                lastSavedListeningSurahNumber = firstListening.surahNumber
+            }
+        }
+
+        if let readingData = UserDefaults.standard.data(forKey: Self.readingHistoryKey),
+           let decodedReading = try? Settings.decoder.decode([ReadingHistoryItem].self, from: readingData) {
+            let normalizedReading = decodedReading.map {
+                ReadingHistoryItem(
+                    surahNumber: $0.surahNumber,
+                    surahName: $0.surahName,
+                    ayahNumber: max(1, $0.ayahNumber)
+                )
+            }
+            readingHistory = Array(normalizedReading.prefix(5))
+            if let firstReading = readingHistory.first {
+                lastSavedReadingPosition = (firstReading.surahNumber, firstReading.ayahNumber)
             }
         }
     }

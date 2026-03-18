@@ -16,7 +16,7 @@ struct AyahsView: View {
     @State private var showAlert = false
     @State private var showCustomRangeSheet = false
     let surah: Surah
-    var ayah: Int? = 0
+    var ayah: Int? = nil
     
     /// Negative top padding for search bar only on iPhone; iPad and Mac use 0.
     private static var searchBarTopPadding: CGFloat {
@@ -240,7 +240,7 @@ struct AyahsView: View {
                 .padding(.horizontal, settings.defaultView ? 20 : 16)
                 .background(Color.clear)
                 .opacity(showFloatingHeader ? 1 : 0)
-                .padding(.horizontal, 55)
+                .padding(.horizontal, 60)
                 .zIndex(1)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .offset(y: showFloatingHeader ? 0 : -80)
@@ -269,6 +269,9 @@ struct AyahsView: View {
             
         }*/
         .navigationBarItems(trailing: navBarTitle)
+        .onAppear {
+            quranPlayer.recordReadingHistory(surahNumber: surah.id, surahName: surah.nameTransliteration, ayahNumber: ayah ?? 1)
+        }
         .sheet(isPresented: $showingSettingsSheet) { settingsSheet }
         #if !os(watchOS)
         .sheet(isPresented: $showCustomRangeSheet) {
@@ -307,7 +310,7 @@ struct AyahsView: View {
     private func playButton(proxy: ScrollViewProxy) -> some View {
         let playerIdle = !quranPlayer.isLoading && !quranPlayer.isPlaying && !quranPlayer.isPaused
         let canResumeLast = settings.lastListenedSurah?.surahNumber == surah.id
-        let repeatCounts  = [2, 3, 5, 10, 15]
+        let repeatCounts  = [2, 3, 5, 10, 15, 20]
 
         if playerIdle {
             Menu {
@@ -335,6 +338,17 @@ struct AyahsView: View {
                 }
                 
                 Menu {
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playAyah(
+                            surahNumber: surah.id,
+                            ayahNumber: 1,
+                            continueRecitation: true
+                        )
+                    } label: {
+                        Label("Play Ayah by Ayah", systemImage: "list.number")
+                    }
+
                     Button {
                         settings.hapticFeedback()
                         showCustomRangeSheet = true

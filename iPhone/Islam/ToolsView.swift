@@ -515,31 +515,32 @@ struct TasbihRow: View {
     }
 }
 
-struct Root: Codable {
+struct Root: Decodable {
     let code: Int
     let status: String
     let data: [NameOfAllah]
 }
 
-struct NameTranslation: Codable {
+struct NameTranslation: Decodable {
     let meaning: String
     let desc: String
 }
 
-struct NameOfAllah: Codable, Identifiable {
+struct NameOfAllah: Decodable, Identifiable {
     let number: Int
     let id: String
 
     let name: String
     let transliteration: String
     let found: String
-    let en: NameTranslation
+    let meaning: String
+    let desc: String
 
     let numberArabic: String
     let searchTokens: [String]
 
     enum CodingKeys: String, CodingKey {
-        case name, transliteration, number, found, en
+        case name, transliteration, number, found, meaning, desc, en
     }
 
     init(from decoder: Decoder) throws {
@@ -549,7 +550,18 @@ struct NameOfAllah: Codable, Identifiable {
         name = try c.decode(String.self, forKey: .name)
         transliteration = try c.decode(String.self, forKey: .transliteration)
         found = try c.decode(String.self, forKey: .found)
-        en = try c.decode(NameTranslation.self, forKey: .en)
+
+        // New schema stores meaning/desc at the top level.
+        // Fallback to old schema (en.meaning/en.desc) for compatibility.
+        if let topLevelMeaning = try c.decodeIfPresent(String.self, forKey: .meaning),
+           let topLevelDesc = try c.decodeIfPresent(String.self, forKey: .desc) {
+            meaning = topLevelMeaning
+            desc = topLevelDesc
+        } else {
+            let en = try c.decode(NameTranslation.self, forKey: .en)
+            meaning = en.meaning
+            desc = en.desc
+        }
 
         id = "\(number)"
         numberArabic = arabicNumberString(from: number)
@@ -557,8 +569,8 @@ struct NameOfAllah: Codable, Identifiable {
         searchTokens = [
             Self.clean(name),
             Self.clean(transliteration),
-            Self.clean(en.meaning),
-            Self.clean(en.desc),
+            Self.clean(meaning),
+            Self.clean(desc),
             Self.clean(found),
             "\(number)",
             numberArabic
@@ -567,9 +579,16 @@ struct NameOfAllah: Codable, Identifiable {
 
     private static func clean(_ s: String) -> String {
         let unwanted: Set<Character> = ["[", "]", "(", ")", "-", "'", "\""]
-        let stripped = s.filter { !unwanted.contains($0) }
+        let stripped = s
+            .normalizingArabicIndicDigitsToWestern
+            .filter { !unwanted.contains($0) }
         return (stripped.applyingTransform(.stripDiacritics, reverse: false) ?? stripped)
             .lowercased()
+    }
+
+    var firstFoundShort: String {
+        guard let closingParen = found.firstIndex(of: ")") else { return found }
+        return String(found[...closingParen])
     }
 }
 
@@ -587,7 +606,16 @@ final class NamesViewModel: ObservableObject {
         DispatchQueue.global(qos: .utility).async {
             do {
                 let data = try Data(contentsOf: url, options: .mappedIfSafe)
-                let root = try JSONDecoder().decode(Root.self, from: data)
+                let decoder = JSONDecoder()
+
+                // Prefer new schema: top-level array of names.
+                if let names = try? decoder.decode([NameOfAllah].self, from: data) {
+                    DispatchQueue.main.async { self.namesOfAllah = names }
+                    return
+                }
+
+                // Fallback for old schema with metadata wrapper.
+                let root = try decoder.decode(Root.self, from: data)
                 DispatchQueue.main.async { self.namesOfAllah = root.data }
             } catch {
                 logger.debug("❌ JSON decode error: \(error)")
@@ -602,17 +630,26 @@ struct NamesView: View {
     
     @AppStorage("showDescription") private var showDescription = false
     @State private var searchText = ""
+    @State private var expandedNameNumbers = Set<Int>()
     
     private var cleanedSearch: String { Self.clean(searchText) }
     
     private static func clean(_ s: String) -> String {
         let unwanted: Set<Character> = ["[", "]", "(", ")", "-", "'", "\""]
-        let stripped = s.filter { !unwanted.contains($0) }
+        let stripped = s
+            .normalizingArabicIndicDigitsToWestern
+            .filter { !unwanted.contains($0) }
         return (stripped.applyingTransform(.stripDiacritics, reverse: false) ?? stripped).lowercased()
     }
     
     private func matches(_ name: NameOfAllah) -> Bool {
         guard !cleanedSearch.isEmpty else { return true }
+
+        // If the query is purely numeric, treat it as an exact name-number lookup.
+        if cleanedSearch.allSatisfy(\.isNumber), let n = Int(cleanedSearch) {
+            return name.number == n
+        }
+
         return name.searchTokens.contains { $0.contains(cleanedSearch) } ||
                Int(cleanedSearch) == name.number
     }
@@ -631,7 +668,19 @@ struct NamesView: View {
                 
                 Section("99 NAMES") {
                     ForEach(namesData.namesOfAllah.filter(matches)) { name in
-                        NameRow(name: name, showDescription: showDescription)
+                        NameRow(
+                            name: name,
+                            showDescription: showDescription,
+                            isExpanded: expandedNameNumbers.contains(name.number)
+                        ) {
+                            withAnimation {
+                                if expandedNameNumbers.contains(name.number) {
+                                    expandedNameNumbers.remove(name.number)
+                                } else {
+                                    expandedNameNumbers.insert(name.number)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -654,6 +703,8 @@ private struct NameRow: View {
     @EnvironmentObject var settings: Settings
     let name: NameOfAllah
     let showDescription: Bool
+    let isExpanded: Bool
+    let onTap: () -> Void
     
     var body: some View {
         #if !os(watchOS)
@@ -667,10 +718,10 @@ private struct NameRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("First Found: \(String(name.found.prefix(through: name.found.firstIndex(of: ")") ?? name.found.endIndex)))")
+                    Text("First Found: \(name.firstFoundShort)")
                         .font(.subheadline).foregroundColor(.secondary)
                     
-                    Text(name.en.meaning).font(.subheadline)
+                    Text(name.meaning).font(.subheadline)
                 }
                 
                 Spacer()
@@ -684,25 +735,40 @@ private struct NameRow: View {
                         .font(.subheadline)
                 }
             }
-            .lineLimit(1).minimumScaleFactor(0.5)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             
-            if showDescription {
-                Text(name.en.desc)
+            if showDescription || isExpanded {
+                Text(name.desc)
                     .font(.footnote)
                     .foregroundColor(.secondary)
                     .transition(.opacity)
+                    .padding(.top, 2)
             }
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            settings.hapticFeedback()
+            onTap()
+        }
     }
     
     #if !os(watchOS)
     private var copyMenu: some View {
         Group {
+            menuItem("Copy All", text: """
+            Arabic: \(name.name.removeDiacriticsFromLastLetter())
+            Transliteration: \(name.transliteration)
+            Translation: \(name.meaning)
+            First Found: \(name.firstFoundShort)
+            Description: \(name.desc)
+            """)
             menuItem("Copy Arabic", text: name.name.removeDiacriticsFromLastLetter())
             menuItem("Copy Transliteration", text: name.transliteration)
-            menuItem("Copy Translation", text: name.en.meaning)
-            menuItem("Copy Description", text: name.en.desc)
+            menuItem("Copy Translation", text: name.meaning)
+            menuItem("Copy First Found", text: name.firstFoundShort)
+            menuItem("Copy Description", text: name.desc)
         }
     }
     
@@ -749,12 +815,8 @@ struct DateView: View {
     }()
     
     private var convertedDate: Date {
-        switch selectedTab {
-        case .hijriToGregorian:
-            return convert(sourceDate, from: hijriCalendar, to: gregorianCalendar)
-        case .gregorianToHijri:
-            return convert(sourceDate, from: gregorianCalendar, to: hijriCalendar)
-        }
+        // DatePicker stores an absolute Date; conversion is just calendar-specific formatting.
+        sourceDate
     }
 
     var body: some View {
@@ -801,10 +863,6 @@ struct DateView: View {
         #if !os(watchOS)
         .pickerStyle(.segmented)
         #endif
-    }
-    
-    private func convert(_ date: Date, from src: Calendar, to dst: Calendar) -> Date {
-        dst.date(from: src.dateComponents([.year, .month, .day], from: date)) ?? Date()
     }
     
     private func formatted(_ date: Date, using calendar: Calendar) -> String {

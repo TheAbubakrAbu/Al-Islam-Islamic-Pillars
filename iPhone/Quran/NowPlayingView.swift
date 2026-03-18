@@ -178,7 +178,7 @@ struct NowPlayingView: View {
         .animation(.easeInOut, value: quranPlayer.isPlaying)
         #else
         let spacing: CGFloat = 10
-        HStack {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 if let title = quranPlayer.nowPlayingTitle {
                     Text(title)
@@ -203,16 +203,14 @@ struct NowPlayingView: View {
                         .lineLimit(1)
                 }
             }
-
-            Spacer(minLength: 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: spacing) {
                 transportButtons(isPlaying: isPlaying)
             }
-            .padding(.horizontal)
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(24)
         .transition(.opacity)

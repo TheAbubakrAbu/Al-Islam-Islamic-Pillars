@@ -98,7 +98,9 @@ struct Ayah: Codable, Identifiable {
 
     /// True if this ayah exists as its own verse in the given qiraah. In Hafs every ayah exists; in Warsh/Qaloon/etc. some Hafs ayahs are merged, so we only show ayahs that have qiraah-specific text (e.g. Baqarah has 286 in Hafs but 285 in Warsh).
     func existsInQiraah(_ displayQiraah: String?) -> Bool {
-        guard let q = displayQiraah, !q.isEmpty, q != "Hafs" else { return true }
+        guard let q = displayQiraah, !q.isEmpty, q != "Hafs" else {
+            return !textHafs.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
         if q.contains("Warsh") { return textWarsh != nil }
         if q.contains("Qaloon") { return textQaloon != nil }
         if q.contains("Duri") || q.contains("Doori") { return textDuri != nil }
@@ -255,16 +257,35 @@ final class QuranData: ObservableObject {
             let overlay = loadQiraatOverlay()
             if !overlay.isEmpty {
                 surahs = surahs.map { surah in
-                    let ayahs = surah.ayahs.map { ayah in
-                        let textWarsh = overlay["textWarsh"]?[surah.id]?[ayah.id]
-                        let textQaloon = overlay["textQaloon"]?[surah.id]?[ayah.id]
-                        let textDuri = overlay["textDuri"]?[surah.id]?[ayah.id]
-                        let textBuzzi = overlay["textBuzzi"]?[surah.id]?[ayah.id]
-                        let textQunbul = overlay["textQunbul"]?[surah.id]?[ayah.id]
-                        let textShubah = overlay["textShubah"]?[surah.id]?[ayah.id]
-                        let textSusi = overlay["textSusi"]?[surah.id]?[ayah.id]
-                        return Ayah(id: ayah.id, idArabic: ayah.idArabic, textHafs: ayah.textHafs, textTransliteration: ayah.textTransliteration, textEnglishSaheeh: ayah.textEnglishSaheeh, textEnglishMustafa: ayah.textEnglishMustafa, textWarsh: textWarsh, textQaloon: textQaloon, textDuri: textDuri, textBuzzi: textBuzzi, textQunbul: textQunbul, textShubah: textShubah, textSusi: textSusi)
+                    let baseAyahsByID = Dictionary(uniqueKeysWithValues: surah.ayahs.map { ($0.id, $0) })
+
+                    var allAyahIDs = Set(baseAyahsByID.keys)
+                    for key in ["textWarsh", "textQaloon", "textDuri", "textBuzzi", "textQunbul", "textShubah", "textSusi"] {
+                        if let overlayIDs = overlay[key]?[surah.id]?.keys {
+                            allAyahIDs.formUnion(overlayIDs)
+                        }
                     }
+
+                    let ayahs = allAyahIDs.sorted().map { ayahID in
+                        let base = baseAyahsByID[ayahID]
+
+                        return Ayah(
+                            id: ayahID,
+                            idArabic: base?.idArabic ?? arabicNumberString(from: ayahID),
+                            textHafs: base?.textHafs ?? "",
+                            textTransliteration: base?.textTransliteration ?? "",
+                            textEnglishSaheeh: base?.textEnglishSaheeh ?? "",
+                            textEnglishMustafa: base?.textEnglishMustafa ?? "",
+                            textWarsh: overlay["textWarsh"]?[surah.id]?[ayahID] ?? base?.textWarsh,
+                            textQaloon: overlay["textQaloon"]?[surah.id]?[ayahID] ?? base?.textQaloon,
+                            textDuri: overlay["textDuri"]?[surah.id]?[ayahID] ?? base?.textDuri,
+                            textBuzzi: overlay["textBuzzi"]?[surah.id]?[ayahID] ?? base?.textBuzzi,
+                            textQunbul: overlay["textQunbul"]?[surah.id]?[ayahID] ?? base?.textQunbul,
+                            textShubah: overlay["textShubah"]?[surah.id]?[ayahID] ?? base?.textShubah,
+                            textSusi: overlay["textSusi"]?[surah.id]?[ayahID] ?? base?.textSusi
+                        )
+                    }
+
                     return Surah(id: surah.id, idArabic: surah.idArabic, nameArabic: surah.nameArabic, nameTransliteration: surah.nameTransliteration, nameEnglish: surah.nameEnglish, type: surah.type, numberOfAyahs: surah.numberOfAyahs, ayahs: ayahs)
                 }
             }

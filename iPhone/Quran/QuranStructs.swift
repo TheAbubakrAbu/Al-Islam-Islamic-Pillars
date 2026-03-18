@@ -58,6 +58,22 @@ struct LastListenedSurah: Identifiable, Codable {
     let fullDuration: Double
 }
 
+struct ListeningHistoryItem: Identifiable, Codable {
+    var id = UUID()
+    let surahNumber: Int
+    let surahName: String
+    let reciter: Reciter
+    var timestamp: Date = Date()
+}
+
+struct ReadingHistoryItem: Identifiable, Codable {
+    var id = UUID()
+    let surahNumber: Int
+    let surahName: String
+    let ayahNumber: Int
+    var timestamp: Date = Date()
+}
+
 struct ShareSettings: Equatable {
     var arabic = false
     var transliteration = false

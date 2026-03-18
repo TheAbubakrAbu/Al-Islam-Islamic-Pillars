@@ -414,6 +414,7 @@ struct NotificationView: View {
                     smallButton("Request Access", systemImage: "checkmark.seal")
                 }
                 .buttonStyle(.plain)
+                .contentShape(Rectangle())
 
                 Button {
                     settings.hapticFeedback()
@@ -422,6 +423,7 @@ struct NotificationView: View {
                     smallButton("Open Settings", systemImage: "gear")
                 }
                 .buttonStyle(.plain)
+                .contentShape(Rectangle())
             }
         }
         .padding()

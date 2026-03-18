@@ -9,10 +9,16 @@ struct HighlightedSnippet: View {
     let accent: Color
     let fg: Color
     var beginnerMode: Bool = false
+    var trailingSuffix: String = ""
+    var trailingSuffixFont: Font? = nil
+    var trailingSuffixColor: Color? = nil
 
     var body: some View {
         let result = highlight(source: source, term: spacedQueryIfNeeded)
-        Text(result)
+        let combined = Text(result) + Text(trailingSuffix)
+            .font(trailingSuffixFont ?? font)
+            .foregroundColor(trailingSuffixColor ?? fg)
+        combined
             .font(font)
             .lineLimit(nil)
             #if !os(watchOS)

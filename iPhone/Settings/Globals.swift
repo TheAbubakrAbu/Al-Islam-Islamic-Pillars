@@ -59,6 +59,38 @@ private let quranStripScalars: Set<UnicodeScalar> = {
 }()
 
 extension String {
+    var normalizingArabicIndicDigitsToWestern: String {
+        let arabicIndicZero: UInt32 = 0x0660
+        let easternArabicIndicZero: UInt32 = 0x06F0
+        let asciiZero: UInt32 = 0x0030
+
+        var out = String.UnicodeScalarView()
+        out.reserveCapacity(unicodeScalars.count)
+
+        for scalar in unicodeScalars {
+            switch scalar.value {
+            case 0x0660...0x0669:
+                let value = scalar.value - arabicIndicZero
+                if let mapped = UnicodeScalar(asciiZero + value) {
+                    out.append(mapped)
+                } else {
+                    out.append(scalar)
+                }
+            case 0x06F0...0x06F9:
+                let value = scalar.value - easternArabicIndicZero
+                if let mapped = UnicodeScalar(asciiZero + value) {
+                    out.append(mapped)
+                } else {
+                    out.append(scalar)
+                }
+            default:
+                out.append(scalar)
+            }
+        }
+
+        return String(out)
+    }
+
     var removingArabicDiacriticsAndSigns: String {
         var out = String.UnicodeScalarView()
         out.reserveCapacity(unicodeScalars.count)
@@ -75,9 +107,42 @@ extension String {
     }
     
     func removeDiacriticsFromLastLetter() -> String {
-        guard let last = last else { return self }
-        let cleaned = String(last).removingArabicDiacriticsAndSigns
-        return cleaned == String(last) ? self : dropLast() + cleaned
+        guard !isEmpty else { return self }
+
+        let shaddah: UInt32 = 0x0651
+        let scalars = Array(unicodeScalars)
+        var idx = scalars.count
+        var removedAny = false
+        var trailingShaddahCount = 0
+
+        while idx > 0 {
+            let scalar = scalars[idx - 1]
+            guard quranStripScalars.contains(scalar) else { break }
+
+            if scalar.value == shaddah {
+                trailingShaddahCount += 1
+            } else {
+                removedAny = true
+            }
+            idx -= 1
+        }
+
+        guard removedAny else { return self }
+
+        var out = String.UnicodeScalarView()
+        out.reserveCapacity(scalars.count)
+
+        if idx > 0 {
+            for scalar in scalars[0..<idx] { out.append(scalar) }
+        }
+
+        if trailingShaddahCount > 0 {
+            if let shaddahScalar = UnicodeScalar(shaddah) {
+                for _ in 0..<trailingShaddahCount { out.append(shaddahScalar) }
+            }
+        }
+
+        return String(out)
     }
 
     subscript(_ r: Range<Int>) -> Substring {

@@ -183,13 +183,31 @@ struct LastListenedSurahRow: View {
     
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
+    @Binding var showListeningHistory: Bool
 
     var body: some View {
         guard let surah = quranData.quran.first(where: { $0.id == lastListenedSurah.surahNumber })
         else { return AnyView(EmptyView()) }
 
         return AnyView(
-            Section(header: Text("LAST LISTENED TO SURAH")) {
+            Section(header:
+                HStack {
+                    Text("LAST LISTENED SURAH")
+
+                    Spacer()
+
+                    if !quranPlayer.listeningHistory.isEmpty {
+                        Image(systemName: showListeningHistory ? "minus.circle" : "plus.circle")
+                            .foregroundColor(settings.accentColor.color)
+                            .onTapGesture {
+                                withAnimation {
+                                    settings.hapticFeedback()
+                                    showListeningHistory.toggle()
+                                }
+                            }
+                    }
+                }
+            ) {
                 VStack {
                     NavigationLink(destination:
                         AyahsView(surah: surah)
@@ -258,6 +276,29 @@ struct LastListenedSurahRow: View {
                     }
                 }
                 .padding(.vertical, 8)
+
+                if showListeningHistory && !quranPlayer.listeningHistory.isEmpty {
+                    ForEach(quranPlayer.listeningHistory) { item in
+                        if let historySurah = quranData.quran.first(where: { $0.id == item.surahNumber }) {
+                            NavigationLink(destination: AyahsView(surah: historySurah)) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Surah \(item.surahNumber): \(item.surahName)")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundColor(settings.accentColor.color.opacity(0.75))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.5)
+
+                                    Text(item.reciter.name)
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.5)
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                }
             }
             .rightSwipeActions(
                 surahID: surah.id,
@@ -322,6 +363,7 @@ struct LastListenedSurahRow: View {
 struct LastReadAyahRow: View {
     @EnvironmentObject private var settings: Settings
     @EnvironmentObject private var quranPlayer: QuranPlayer
+    @EnvironmentObject private var quranData: QuranData
 
     let surah: Surah
     let ayah: Ayah
@@ -331,6 +373,7 @@ struct LastReadAyahRow: View {
     
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
+    @Binding var showReadingHistory: Bool
 
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah.id)-\(ayah.id)")
@@ -345,7 +388,24 @@ struct LastReadAyahRow: View {
     }
 
     var body: some View {
-        Section(header: Text("LAST READ AYAH")) {
+        Section(header:
+            HStack {
+                Text("LAST READ AYAH")
+
+                Spacer()
+
+                if !quranPlayer.readingHistory.isEmpty {
+                    Image(systemName: showReadingHistory ? "minus.circle" : "plus.circle")
+                        .foregroundColor(settings.accentColor.color)
+                        .onTapGesture {
+                            withAnimation {
+                                settings.hapticFeedback()
+                                showReadingHistory.toggle()
+                            }
+                        }
+                }
+            }
+        ) {
             NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
                 SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
             }
@@ -372,6 +432,53 @@ struct LastReadAyahRow: View {
                 scrollToSurahID: $scrollToSurahID,
                 lastRead: true
             )
+
+            if showReadingHistory && !quranPlayer.readingHistory.isEmpty {
+                ForEach(quranPlayer.readingHistory) { item in
+                    let normalizedAyah = max(1, item.ayahNumber)
+                    if let surah = quranData.quran.first(where: { $0.id == item.surahNumber }), let ayah = surah.ayahs.first(where: { $0.id == normalizedAyah }) {
+                        NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(item.surahNumber):\(normalizedAyah) - \(item.surahName)")
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundColor(settings.accentColor.color.opacity(0.6))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+
+                                Text(ayah.textEnglishSaheeh)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .rightSwipeActions(
+                            surahID: surah.id,
+                            surahName: surah.nameTransliteration,
+                            ayahID: ayah.id,
+                            searchText: $searchText,
+                            scrollToSurahID: $scrollToSurahID
+                        )
+                        .leftSwipeActions(
+                            surah: surah.id,
+                            favoriteSurahs: favoriteSurahs,
+                            bookmarkedAyahs: bookmarkedAyahs,
+                            bookmarkedSurah: surah.id,
+                            bookmarkedAyah: ayah.id
+                        )
+                        .ayahContextMenuModifier(
+                            surah: surah.id,
+                            ayah: ayah.id,
+                            favoriteSurahs: favoriteSurahs,
+                            bookmarkedAyahs: bookmarkedAyahs,
+                            searchText: $searchText,
+                            scrollToSurahID: $scrollToSurahID,
+                            lastRead: true
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -97,9 +97,12 @@ struct SettingsQuranView: View {
                     #endif
                     .disabled(!settings.showArabicText)
                     
-                    Stepper(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 2) {
-                        Text("Arabic Font Size: \(Int(settings.fontArabicSize))")
-                            .font(.subheadline)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Stepper(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1) {
+                            Text("Arabic Font Size: \(Int(settings.fontArabicSize))")
+                                .font(.subheadline)
+                        }
+                        Slider(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1)
                     }
                     
                     VStack(alignment: .leading) {
@@ -133,9 +136,12 @@ struct SettingsQuranView: View {
                         .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishSaheeh)
                     
                     if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                        Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
-                            Text("English Font Size: \(Int(settings.englishFontSize))")
-                                .font(.subheadline)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
+                                Text("English Font Size: \(Int(settings.englishFontSize))")
+                                    .font(.subheadline)
+                            }
+                            Slider(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1)
                         }
                     }
                     

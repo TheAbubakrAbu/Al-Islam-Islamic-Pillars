@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CreditsView: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.presentationMode) private var presentationMode
     
     var body: some View {
         NavigationView {
@@ -163,6 +164,54 @@ struct CreditsView: View {
             .accentColor(settings.accentColor.color)
             .tint(settings.accentColor.color)
             .navigationTitle("Credits")
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Button {
+                    settings.hapticFeedback()
+                    presentationMode.wrappedValue.dismiss()
+                } label: {
+                    Text("Done")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .font(.headline)
+                .foregroundColor(settings.accentColor.color)
+                .padding(18)
+                .background(buttonBackground)
+                .buttonStyle(.plain)
+                .clipShape(Rectangle())
+                .padding(.horizontal)
+            }
+        }
+    }
+    
+    private var buttonBackground: some View {
+        if #available(iOS 26.0, *) {
+            AnyView(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.clear)
+                    .glassEffect(.regular.tint(.white.opacity(0.20)).interactive(), in: .rect(cornerRadius: 24))
+            )
+        } else if #available(iOS 15.0, *) {
+            AnyView(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.white.opacity(0.05))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    )
+            )
+        } else {
+            AnyView(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(0.25))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                    )
+            )
         }
     }
 }
@@ -200,7 +249,7 @@ struct AppLinkRow: View {
             Image(imageName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .cornerRadius(8)
+                .cornerRadius(12)
                 .frame(width: 50, height: 50)
                 .padding(.trailing, 8)
 

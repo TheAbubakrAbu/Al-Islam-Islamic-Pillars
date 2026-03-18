@@ -31,18 +31,59 @@ struct PrayerCountdown: View {
     var body: some View {
         if let current = current, let next = next {
             Group {
-                Section(header: Text("CURRENT PRAYER")) {
-                    CurrentPrayerCell(prayer: current)
-                }
+                Section(header: HStack {
+                    Text("CURRENT")
+                    
+                    Spacer()
+                    
+                    Text("UPCOMING")
+                }) {
+                    VStack {
+                        HStack(alignment: .top) {
+                            CurrentPrayerCell(prayer: current, showHeader: true, showInfo: false)
+                            
+                            Divider().background(settings.accentColor.color)
+                            
+                            UpcomingPrayerCell(prayer: next, progress: progress, showHeader: true, showInfo: false)
+                        }
 
-                Section(header: Text("UPCOMING PRAYER")) {
-                    UpcomingPrayerCell(prayer: next, progress: progress)
-                        .onReceive(timer) { _ in updateProgress() }
+                        if settings.showPrayerInfo {
+                            Divider()
+                                .background(settings.accentColor.color)
+
+                            HStack(alignment: .top) {
+                                CurrentPrayerCell(prayer: current, showHeader: false, showInfo: true)
+
+                                UpcomingPrayerCell(prayer: next, progress: progress, showHeader: false, showInfo: true)
+                            }
+                        }
+                        
+                        ProgressView(value: progress)
+                            .tint(settings.accentColor.color)
+                            .padding(.top, 4)
+                        
+                        HStack {
+                            Text("Time Left: \(next.time, style: .timer)")
+                            
+                            Spacer()
+                        }
+                        .font(.headline)
+                    }
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.25)
                 }
             }
+            .onReceive(timer) { _ in updateProgress() }
             .onAppear(perform: updateProgress)
-            .onChange(of: scenePhase)      { _ in updateProgress() }
+            .onChange(of: scenePhase) { _ in updateProgress() }
             .onChange(of: settings.prayers) { _ in updateProgress() }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                
+                withAnimation { settings.showPrayerInfo.toggle() }
+            }
         }
     }
 }
@@ -51,46 +92,44 @@ private struct CurrentPrayerCell: View {
     @EnvironmentObject var settings: Settings
     
     let prayer: Prayer
+    var showHeader: Bool = true
+    var showInfo: Bool = true
 
     var body: some View {
-        ZStack {
-            Color.white.opacity(0.0001)
-            
-            VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 5) {
+            if showHeader {
                 title
                 subtitle
                 
                 Text("Started at \(prayer.time, style: .time)")
                     .font(.headline)
-                
-                if settings.showCurrentInfo {
-                    Divider()
-                        .background(settings.accentColor.color)
-                    
-                    rakahInfo
-                    sunnahInfo
-                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .multilineTextAlignment(.leading)
-        }
-        .onTapGesture {
-            settings.hapticFeedback()
             
-            withAnimation { settings.showCurrentInfo.toggle() }
+            if showInfo && settings.showPrayerInfo {
+                rakahInfo
+                sunnahInfo
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .multilineTextAlignment(.leading)
     }
 
     private var title: some View {
         HStack {
             Image(systemName: prayer.image)
+                #if !os(watchOS)
+                .font(.title3)
+                #else
+                .font(.subheadline)
+                #endif
+            
             Text(prayer.nameTransliteration)
+                #if !os(watchOS)
+                .font(.title)
+                #else
+                .font(.title3)
+                #endif
         }
-        #if !os(watchOS)
-        .font(.title)
-        #else
-        .font(.title3)
-        #endif
         .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
     }
 
@@ -135,43 +174,34 @@ private struct UpcomingPrayerCell: View {
     
     let prayer: Prayer
     let progress: Double
+    var showHeader: Bool = true
+    var showInfo: Bool = true
 
     var body: some View {
-        ZStack {
-            Color.white.opacity(0.0001)
-            
-            VStack(alignment: .trailing, spacing: 5) {
+        VStack(alignment: .trailing, spacing: 5) {
+            if showHeader {
                 title
                 subtitle
                 
-                if settings.showNextInfo {
-                    Divider()
-                        .background(settings.accentColor.color)
-                    
-                    rakahInfo
-                    sunnahInfo
-                }
-                
-                ProgressView(value: progress)
-                    .tint(settings.accentColor.color)
-                    .padding(.top, 4)
-                
-                timeInfo
+                Text("Starts at \(prayer.time, style: .time)")
+                    .font(.headline)
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .multilineTextAlignment(.trailing)
-        }
-        .onTapGesture {
-            settings.hapticFeedback()
             
-            withAnimation { settings.showNextInfo.toggle() }
+            if showInfo && settings.showPrayerInfo {
+                rakahInfo
+                sunnahInfo
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .multilineTextAlignment(.trailing)
     }
 
     private var title: some View {
         HStack {
             Text(prayer.nameTransliteration)
+            
             Image(systemName: prayer.image)
+                .font(.title3)
         }
         #if !os(watchOS)
         .font(.title)
@@ -214,17 +244,6 @@ private struct UpcomingPrayerCell: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
-    }
-
-    private var timeInfo: some View {
-        HStack {
-            Text("Time Left: \(prayer.time, style: .timer)")
-            
-            Spacer(minLength: 12)
-            
-            Text("Starts at \(prayer.time, style: .time)")
-        }
-        .font(.headline)
     }
 }
 

@@ -19,8 +19,8 @@ struct LockScreen1EntryView: View {
                     
                     Text(nextPrayer.nameTransliteration)
                         .font(.headline)
+                        .lineLimit(nextPrayer.nameTransliteration.contains("/") ? 2 : 1)
                 }
-                .lineLimit(2)
                 
                 Text(nextPrayer.time, style: .time)
                     .font(.caption2)

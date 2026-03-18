@@ -213,8 +213,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     var favoriteSurahSet: Set<Int> { Set(favoriteSurahs) }
     var bookmarkedAyahSet: Set<String> { Set(bookmarkedAyahs.map(\.id)) }
      
-    @AppStorage("showCurrentInfo") var showCurrentInfo: Bool = false
-    @AppStorage("showNextInfo") var showNextInfo: Bool = false
+    @AppStorage("showPrayerInfo") var showPrayerInfo: Bool = false
     
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true

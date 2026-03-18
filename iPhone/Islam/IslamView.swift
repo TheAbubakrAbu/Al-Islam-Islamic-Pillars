@@ -164,18 +164,20 @@ struct AlIslamAppsSection: View {
                 HStack(spacing: spacing) {
                     if let url = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493") {
                         Card(title: "Al-Adhan", url: url)
+                            .frame(maxWidth: .infinity)
                     }
                     
                     if let url = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655") {
                         Card(title: "Al-Islam", url: url)
+                            .frame(maxWidth: .infinity)
                     }
                     
                     if let url = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373") {
                         Card(title: "Al-Quran", url: url)
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
-                .scaledToFit()
                 .padding(.vertical, 8)
                 .padding(.horizontal)
             }
@@ -190,31 +192,61 @@ private struct Card: View {
     let title: String
     let url: URL
 
-    var body: some View {
-        Button(action: {
-            settings.hapticFeedback()
-            
-            openURL(url)
-        }) {
-            VStack {
-                Image(title)
-                    .resizable()
-                    .scaledToFit()
-                    .cornerRadius(15)
-                    .shadow(radius: 4)
+    private var iconImage: UIImage? {
+        UIImage(named: title)
+    }
 
-                #if !os(watchOS)
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .padding(.top, 4)
-                #endif
+    private func saveIconToPhotos() {
+        guard let iconImage else { return }
+
+        #if !os(watchOS)
+        UIImageWriteToSavedPhotosAlbum(iconImage, nil, nil, nil)
+        #endif
+    }
+
+    var body: some View {
+        VStack {
+            Image(title)
+                .resizable()
+                .scaledToFit()
+                .cornerRadius(18)
+                .shadow(radius: 4)
+
+            #if !os(watchOS)
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .padding(.top, 4)
+            #endif
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture {
+            settings.hapticFeedback()
+            openURL(url)
+        }
+        #if !os(watchOS)
+        .contextMenu {
+            Button {
+                UIPasteboard.general.string = url.absoluteString
+                settings.hapticFeedback()
+            } label: {
+                Label("Copy Link", systemImage: "link")
+            }
+
+            if iconImage != nil {
+                Button {
+                    saveIconToPhotos()
+                    settings.hapticFeedback()
+                } label: {
+                    Label("Download App Icon", systemImage: "square.and.arrow.down")
+                }
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        #endif
     }
 }
 

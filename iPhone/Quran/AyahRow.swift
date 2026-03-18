@@ -74,6 +74,11 @@ struct AyahRow: View {
     private func spacedArabic(_ text: String) -> String {
         (settings.beginnerMode || ayahBeginnerMode) ? text.map { "\($0) " }.joined() : text
     }
+
+    private func arabicDisplayText() -> String {
+        let baseText = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: comparisonQiraahOverride)
+        return spacedArabic(baseText)
+    }
     
     var body: some View {
         let isBookmarked = isBookmarkedHere
@@ -106,12 +111,24 @@ struct AyahRow: View {
             
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text(ayah.idArabic)
+                    Text("\(surah.id):\(ayah.id)")
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(settings.accentColor.color.opacity(0.12))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(settings.accentColor.color.opacity(0.3), lineWidth: 1)
+                        )
                         #if !os(watchOS)
-                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .largeTitle).pointSize))
-                        #else
-                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize))
+                        .onTapGesture {
+                            settings.hapticFeedback()
+                            showingAyahSheet = true
+                        }
                         #endif
                     
                     Spacer()
@@ -168,8 +185,8 @@ struct AyahRow: View {
                     }
                     #endif
                 }
-                .padding(.top, -8)
-                .padding(.bottom, settings.showArabicText ? -7 : 0)
+                .padding(.top, 0)
+                .padding(.bottom, settings.showArabicText ? 6 : 2)
                 
                 Group {
                     #if !os(watchOS)
@@ -293,12 +310,15 @@ struct AyahRow: View {
 
             if showArabic {
                 HighlightedSnippet(
-                    source: spacedArabic(ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: comparisonQiraahOverride)),
+                    source: arabicDisplayText(),
                     term: searchText,
                     font: .custom(settings.fontArabic, size: settings.fontArabicSize),
                     accent: settings.accentColor.color,
                     fg: .primary,
-                    beginnerMode: (settings.beginnerMode || ayahBeginnerMode)
+                    beginnerMode: (settings.beginnerMode || ayahBeginnerMode),
+                    trailingSuffix: " \(ayah.idArabic)",
+                    trailingSuffixFont: .custom("KFGQPCQUMBULUthmanicScript-Regu", size: settings.fontArabicSize),
+                    trailingSuffixColor: settings.accentColor.color
                 )
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -377,7 +397,7 @@ struct AyahRow: View {
     @ViewBuilder
     private func menuBlock(isBookmarked: Bool) -> some View {
         #if !os(watchOS)
-        let repeatOptions = [2, 3, 5, 10, 15]
+        let repeatOptions = [2, 3, 5, 10, 15, 20]
 
         VStack(alignment: .leading) {
             Button(role: isBookmarked ? .destructive : nil) {
@@ -413,8 +433,15 @@ struct AyahRow: View {
                             settings.hapticFeedback()
                             quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: count)
                         } label: {
-                            Label("Repeat \(count)×", systemImage: "repeat")
+                            Label("Repeat \(count)×", systemImage: "\(count).circle")
                         }
+                    }
+
+                    Button {
+                        settings.hapticFeedback()
+                        showCustomRangeSheet = true
+                    } label: {
+                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
                     }
                 } label: {
                     Label("Repeat Ayah", systemImage: "repeat")

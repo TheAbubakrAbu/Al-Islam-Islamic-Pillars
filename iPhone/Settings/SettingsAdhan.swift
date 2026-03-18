@@ -772,13 +772,78 @@ extension Settings {
         return binding(prefs.preMinutes, default: 0)
     }
 
+    enum PrayerNotificationMode {
+        case off
+        case atTime
+        case preNotification
+
+        var symbolName: String {
+            switch self {
+            case .off:
+                return "bell.slash"
+            case .atTime:
+                return "bell"
+            case .preNotification:
+                return "bell.fill"
+            }
+        }
+    }
+
+    func notificationMode(for prayerTime: Prayer) -> PrayerNotificationMode {
+        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return .off }
+
+        let enabled = self[keyPath: prefs.enabled]
+        let preMinutes = self[keyPath: prefs.preMinutes]
+
+        if enabled && preMinutes > 0 {
+            return .preNotification
+        }
+
+        if enabled {
+            return .atTime
+        }
+
+        return .off
+    }
+
+    func setNotificationMode(_ mode: PrayerNotificationMode, for prayerTime: Prayer) {
+        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return }
+
+        switch mode {
+        case .off:
+            self[keyPath: prefs.preMinutes] = 0
+            self[keyPath: prefs.enabled] = false
+        case .atTime:
+            self[keyPath: prefs.preMinutes] = 0
+            self[keyPath: prefs.enabled] = true
+        case .preNotification:
+            self[keyPath: prefs.preMinutes] = 15
+            self[keyPath: prefs.enabled] = true
+        }
+    }
+
+    @discardableResult
+    func cycleNotificationMode(for prayerTime: Prayer) -> PrayerNotificationMode {
+        let nextMode: PrayerNotificationMode
+
+        switch notificationMode(for: prayerTime) {
+        case .off:
+            nextMode = .atTime
+        case .atTime:
+            nextMode = .preNotification
+        case .preNotification:
+            nextMode = .off
+        }
+
+        setNotificationMode(nextMode, for: prayerTime)
+        return nextMode
+    }
+
     func shouldShowFilledBell(prayerTime: Prayer) -> Bool {
-        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
-        return self[keyPath: prefs.enabled] && self[keyPath: prefs.preMinutes] > 0
+        notificationMode(for: prayerTime) == .preNotification
     }
 
     func shouldShowOutlinedBell(prayerTime: Prayer) -> Bool {
-        guard let prefs = Self.notifTable[prayerTime.nameTransliteration] else { return false }
-        return self[keyPath: prefs.enabled] && self[keyPath: prefs.preMinutes] == 0
+        notificationMode(for: prayerTime) == .atTime
     }
 }
