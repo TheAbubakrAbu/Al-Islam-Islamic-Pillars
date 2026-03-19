@@ -32,7 +32,7 @@ struct HaramView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Masjid Al-Haram (ٱلْمَسْجِدُ ٱلْحَرَام), or “The Sacred Mosque,“ is located in **Mecca**, Saudi Arabia. It is the largest mosque in the world and surrounds the **Ka'bah** (ٱلْكَعْبَة), the holiest site in Islam. The Ka'bah is also known as “The House of Allah“ (بَيْتُ ٱللَّه).")
+                Text("Masjid Al-Haram (ٱلمَسجِدُ ٱلحَرَام), or “The Sacred Mosque,“ is located in **Mecca**, Saudi Arabia. It is the largest mosque in the world and surrounds the **Ka'bah** (ٱلكَعبَة), the holiest site in Islam. The Ka'bah is also known as “The House of Allah“ (بَيتُ ٱللَّه).")
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
@@ -47,7 +47,7 @@ struct HaramView: View {
             }
             
             Section(header: Text("SIGNIFICANCE OF THE KA'BAH")) {
-                Text("The **Ka'bah** (ٱلْكَعْبَة), meaning “The Cube,“ is the symbolic House of Allah. It serves as the **Qiblah** (قِبْلَةٌ) (direction of prayer) for Muslims worldwide. Every prayer offered by a Muslim is directed toward the Ka'bah.")
+                Text("The **Ka'bah** (ٱلكَعبَة), meaning “The Cube,“ is the symbolic House of Allah. It serves as the **Qiblah** (قِبلَةٌ) (direction of prayer) for Muslims worldwide. Every prayer offered by a Muslim is directed toward the Ka'bah.")
                     .font(.body)
                 
                 Text("The Ka'bah was built by **Prophet Ibrahim** (Abraham, peace be upon him) and his son **Prophet Isma'il** (Ishmael, peace be upon him) as a place of monotheistic worship. Allah says in the Quran:")
@@ -56,12 +56,12 @@ struct HaramView: View {
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
-                Text("The **Black Stone** (ٱلْحَجَرُ ٱلْأَسْوَد, Hajar Al-Aswad), embedded in one corner of the Ka'bah, is a sacred relic dating back to the time of Prophet Ibrahim (peace be upon him). Touching or kissing it during **Tawaf** is a Sunnah, but not obligatory.")
+                Text("The **Black Stone** (ٱلحَجَرُ ٱلأَسوَد, Hajar Al-Aswad), embedded in one corner of the Ka'bah, is a sacred relic dating back to the time of Prophet Ibrahim (peace be upon him). Touching or kissing it during **Tawaf** is a Sunnah, but not obligatory.")
                     .font(.body)
             }
             
             Section(header: Text("THE WELL OF ZAMZAM")) {
-                Text("The **Well of Zamzam** (بِئْرُ زَمْزَم) is located within Masjid Al-Haram. This miraculous water source was provided by Allah for **Hajar** (may Allah be pleased with her) and her son **Isma'il** (peace be upon him) when they were left in the barren desert. The well continues to flow abundantly to this day.")
+                Text("The **Well of Zamzam** (بِئرُ زَمزَم) is located within Masjid Al-Haram. This miraculous water source was provided by Allah for **Hajar** (may Allah be pleased with her) and her son **Isma'il** (peace be upon him) when they were left in the barren desert. The well continues to flow abundantly to this day.")
                     .font(.body)
                 
                 Text("Drinking Zamzam water is an act of worship and holds immense spiritual blessings.").font(.body)
@@ -110,7 +110,7 @@ struct NabawiView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Masjid An-Nabawi (ٱلْمَسْجِد ٱلنَّبَوِي), or “The Prophet’s Mosque,“ is located in Medina, Saudi Arabia. Originally known as Yathrib, the city was later renamed **Medina Al-Nabi (مَدِينَة ٱلنَّبِي)**, meaning “The City of the Prophet,“ or **Medina Al-Munawwara (ٱلْمَدِينَة ٱلْمُنَوَّرَة)**, “The Enlightened City,“ after the migration (Hijrah) of Prophet Muhammad (peace and blessings be upon him).")
+                Text("Masjid An-Nabawi (ٱلمَسجِد ٱلنَّبَوِي), or “The Prophet’s Mosque,“ is located in Medina, Saudi Arabia. Originally known as Yathrib, the city was later renamed **Medina Al-Nabi (مَدِينَة ٱلنَّبِي)**, meaning “The City of the Prophet,“ or **Medina Al-Munawwara (ٱلمَدِينَة ٱلمُنَوَّرَة)**, “The Enlightened City,“ after the migration (Hijrah) of Prophet Muhammad (peace and blessings be upon him).")
                     .font(.body)
 
                 Text("This mosque, built by the Prophet (peace and blessings be upon him) in 622 CE, is the second holiest site in Islam after Masjid Al-Haram. The Prophet (peace and blessings be upon him) made it a center of worship, governance, and community life.")
@@ -123,7 +123,7 @@ struct NabawiView: View {
             }
 
             Section(header: Text("SIGNIFICANCE")) {
-                Text("Masjid An-Nabawi is home to the **Rawdah (ٱلرَّوْضَة)**, an area between the Prophet's pulpit and his house, which he described as a garden from the gardens of Paradise. The Prophet (peace and blessings be upon him) said:")
+                Text("Masjid An-Nabawi is home to the **Rawdah (ٱلرَّوضَة)**, an area between the Prophet's pulpit and his house, which he described as a garden from the gardens of Paradise. The Prophet (peace and blessings be upon him) said:")
                     .font(.body)
                 Text("“Between my house and my pulpit there is a garden of the gardens of Paradise” (Sahih al-Bukhari 1196).")
                     .font(.body)
@@ -178,7 +178,7 @@ struct AqsaView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Masjid Al-Aqsa (ٱلْمَسْجِد ٱلْأَقْصَىٰ), meaning “The Farthest Mosque,“ is located in Jerusalem, Palestine, within a compound known as **Al-Haram Ash-Sharif (ٱلْحَرَم ٱلشَّرِيف)**, or “The Noble Sanctuary.“ It is the third holiest mosque in Islam after Masjid Al-Haram in Mecca and Masjid An-Nabawi in Medina.")
+                Text("Masjid Al-Aqsa (ٱلمَسجِد ٱلأَقصَىٰ), meaning “The Farthest Mosque,“ is located in Jerusalem, Palestine, within a compound known as **Al-Haram Ash-Sharif (ٱلحَرَم ٱلشَّرِيف)**, or “The Noble Sanctuary.“ It is the third holiest mosque in Islam after Masjid Al-Haram in Mecca and Masjid An-Nabawi in Medina.")
                     .font(.body)
                 
                 Text("Masjid Al-Aqsa holds immense historical and spiritual significance in Islam. Allah (Glorified and Exalted be He) mentions it in the Quran:").font(.body)
@@ -217,7 +217,7 @@ struct AqsaView: View {
             }
 
             Section(header: Text("STRUCTURE AND FEATURES")) {
-                Text("Masjid Al-Aqsa is part of a larger compound that includes the **Dome of the Rock (قُبَّة ٱلصَّخْرَة)**, the oldest Islamic architectural monument. The entire compound is considered sacred by Muslims, and the name Masjid Al-Aqsa often refers to the entire Noble Sanctuary.")
+                Text("Masjid Al-Aqsa is part of a larger compound that includes the **Dome of the Rock (قُبَّة ٱلصَّخرَة)**, the oldest Islamic architectural monument. The entire compound is considered sacred by Muslims, and the name Masjid Al-Aqsa often refers to the entire Noble Sanctuary.")
                     .font(.body)
                 
                 Text("The mosque’s architecture and location reflect centuries of Islamic devotion and heritage.")

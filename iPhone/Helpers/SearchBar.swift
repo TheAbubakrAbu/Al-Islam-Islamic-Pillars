@@ -47,8 +47,9 @@ struct SearchBar: UIViewRepresentable {
         searchBar.placeholder = "Search"
         searchBar.autocorrectionType = .no
         
-        if #available(iOS 26.0, watchOS 26.0, visionOS 26.0, macOS 26.0, *) {
-            searchBar.backgroundImage = UIImage()
+        searchBar.backgroundImage = UIImage()
+        
+        if #available(iOS 26.0, visionOS 26.0, macOS 26.0, *) {
             searchBar.searchTextField.backgroundColor = .clear
         }
         

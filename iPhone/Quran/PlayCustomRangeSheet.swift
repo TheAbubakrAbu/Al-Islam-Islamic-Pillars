@@ -212,13 +212,19 @@ struct PlayCustomRangeSheet: View {
 
             HStack(spacing: 12) {
                 rangeField(title: "From", value: $startAyah, text: $startAyahText, max: maxAyah) { new in
-                    if new > endAyah { endAyah = new; endAyahText = "\(endAyah)" }
+                    if new > endAyah {
+                        startAyah = endAyah
+                        startAyahText = "\(endAyah)"
+                    }
                 }
                 Image(systemName: "arrow.right")
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(Color(.tertiaryLabel))
                 rangeField(title: "To", value: $endAyah, text: $endAyahText, max: maxAyah) { new in
-                    if new < startAyah { startAyah = new; startAyahText = "\(startAyah)" }
+                    if new < startAyah {
+                        endAyah = startAyah
+                        endAyahText = "\(startAyah)"
+                    }
                 }
             }
             .onChange(of: startAyah) { ayah in

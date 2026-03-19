@@ -157,14 +157,14 @@ struct ShareAyahSheet: View {
     private static func qiraahLabels(displayQiraah: String) -> (english: String, arabic: String) {
         let key = displayQiraah.isEmpty ? "" : displayQiraah
         let map: [(tag: String, en: String, ar: String)] = [
-            ("", "Hafs an Asim (default)", "حَفْص عَنْ عَاصِم"),
-            ("Warsh an Nafi", "Warsh an Nafi", "وَرْش عَنْ نَافِع"),
-            ("Qaloon an Nafi", "Qaloon an Nafi", "قَالُون عَنْ نَافِع"),
-            ("Ad-Duri an Abi Amr", "Ad-Duri an Abi Amr", "الدُّورِي عَنْ أَبِي عَمْرٍو"),
-            ("Al-Buzzi an Ibn Kathir", "Al-Buzzi an Ibn Kathir", "البَزِّي عَنْ ابْنِ كَثِيرٍ"),
-            ("Qunbul an Ibn Kathir", "Qunbul an Ibn Kathir", "قُنْبُل عَنْ ابْنِ كَثِيرٍ"),
-            ("Shu'bah an Asim", "Shu'bah an Asim", "شُعْبَة عَنْ عَاصِم"),
-            ("As-Susi an Abi Amr", "As-Susi an Abi Amr", "السُّوسِي عَنْ أَبِي عَمْرٍو")
+            ("", "Hafs an Asim (default)", "حَفص عَن عَاصِم"),
+            ("Warsh an Nafi", "Warsh an Nafi", "وَرش عَن نَافِع"),
+            ("Qaloon an Nafi", "Qaloon an Nafi", "قَالُون عَن نَافِع"),
+            ("Ad-Duri an Abi Amr", "Ad-Duri an Abi Amr", "الدُّورِي عَن أَبِي عَمرٍو"),
+            ("Al-Buzzi an Ibn Kathir", "Al-Buzzi an Ibn Kathir", "البَزِّي عَن ابنِ كَثِيرٍ"),
+            ("Qunbul an Ibn Kathir", "Qunbul an Ibn Kathir", "قُنبُل عَن ابنِ كَثِيرٍ"),
+            ("Shu'bah an Asim", "Shu'bah an Asim", "شُعبَة عَن عَاصِم"),
+            ("As-Susi an Abi Amr", "As-Susi an Abi Amr", "السُّوسِي عَن أَبِي عَمرٍو")
         ]
         
         return map.first(where: { $0.tag == key }).map { ($0.en, $0.ar) } ?? (map[0].en, map[0].ar)

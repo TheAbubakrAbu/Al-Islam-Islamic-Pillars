@@ -307,9 +307,9 @@ struct HamzaPracticeRow: View {
         let l = letterData.letter
 
         return [
-            ("A" + s, "أَ" + l + "ْ"),
-            ("I" + s, "إِ" + l + "ْ"),
-            ("U" + s, "أُ" + l + "ْ")
+            ("A" + s, "أَ" + l + ""),
+            ("I" + s, "إِ" + l + ""),
+            ("U" + s, "أُ" + l + "")
         ]
     }
 

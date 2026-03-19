@@ -129,11 +129,11 @@ struct QuranView: View {
             #endif
         }
         .confirmationDialog(
-            "Internet Connection Error",
+            quranPlayer.playbackAlertTitle,
             isPresented: $quranPlayer.showInternetAlert,
             titleVisibility: .visible
         ) { Button("OK", role: .cancel) { } } message: {
-            Text("Unable to load the recitation due to an internet connection issue. Please check your connection and try again.")
+            Text(quranPlayer.playbackAlertMessage)
         }
     }
     

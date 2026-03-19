@@ -27,43 +27,8 @@ struct AyahsView: View {
         #endif
     }
 
-    private var nextSurahFirstAyahForQiraah: Ayah? {
-        guard let nextSurah = quranData.quran.first(where: { $0.id == surah.id + 1 }) else { return nil }
-        return nextSurah.ayahs.first { $0.existsInQiraah(settings.displayQiraahForArabic) }
-    }
-
     private var shouldShowBoundaryDividers: Bool {
         settings.showPageJuzDividers && searchText.isEmpty
-    }
-
-    private func boundaryText(from oldAyah: Ayah, to newAyah: Ayah) -> String? {
-        let pageChanged = oldAyah.page != newAyah.page
-        let juzChanged = oldAyah.juz != newAyah.juz
-        guard pageChanged || juzChanged else { return nil }
-
-        if let page = newAyah.page, let juz = newAyah.juz {
-            return juzChanged ? "Page \(page) • Juz \(juz)" : "Page \(page)"
-        }
-        if let page = newAyah.page {
-            return "Page \(page)"
-        }
-        if let juz = newAyah.juz {
-            return "Juz \(juz)"
-        }
-        return nil
-    }
-
-    private func boundaryText(for ayah: Ayah) -> String? {
-        if let page = ayah.page, let juz = ayah.juz {
-            return "Page \(page) - Juz \(juz)"
-        }
-        if let page = ayah.page {
-            return "Page \(page)"
-        }
-        if let juz = ayah.juz {
-            return "Juz \(juz)"
-        }
-        return nil
     }
 
     @ViewBuilder
@@ -105,16 +70,20 @@ struct AyahsView: View {
                         || settings.cleanSearch(a.idArabic).contains(cleanQuery)
                         || Int(cleanQuery) == a.id
                 }
+                let boundaryModel = shouldShowBoundaryDividers ? quranData.boundaryModel(forSurah: surah.id) : nil
                 let startOfSurahDividerText: String? = {
-                    guard shouldShowBoundaryDividers, let firstAyah = ayahsForQiraah.first else { return nil }
-                    return boundaryText(for: firstAyah)
+                    guard shouldShowBoundaryDividers else { return nil }
+                    return boundaryModel?.startDividerText
                 }()
                 let endOfSurahDividerText: String? = {
-                    guard shouldShowBoundaryDividers,
-                          let lastAyah = ayahsForQiraah.last,
-                          let nextAyah = nextSurahFirstAyahForQiraah else { return nil }
-                    return boundaryText(from: lastAyah, to: nextAyah)
+                    guard shouldShowBoundaryDividers else { return nil }
+                    return boundaryModel?.endDividerText
                 }()
+                let comparisonBottomPadding: CGFloat = (settings.qiraatComparisonMode && !quranPlayer.isPlaying && !quranPlayer.isPaused)
+                    ? (settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa)
+                       ? (settings.defaultView ? 4 : 12)
+                       : (settings.defaultView ? 16 : 32))
+                    : 0
                 
                 List {
                     Section {
@@ -186,9 +155,8 @@ struct AyahsView: View {
                         #endif
                     }
                     
-                    ForEach(Array(filteredAyahs.enumerated()), id: \.element.id) { index, ayah in
-                        let previousAyah = index > 0 ? filteredAyahs[index - 1] : nil
-                        let dividerBefore = shouldShowBoundaryDividers ? previousAyah.flatMap { boundaryText(from: $0, to: ayah) } : nil
+                    ForEach(filteredAyahs, id: \.id) { ayah in
+                        let dividerBefore = shouldShowBoundaryDividers ? boundaryModel?.dividerBeforeAyah[ayah.id] : nil
 
                         if let dividerBefore {
                             Section {
@@ -252,7 +220,7 @@ struct AyahsView: View {
                                 ? .hidden : .visible,
                             edges: .bottom
                         )
-                        .padding(.bottom, (ayah.id == filteredAyahs.last?.id && settings.qiraatComparisonMode && !quranPlayer.isPlaying && !quranPlayer.isPaused) ? (settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa) ? (settings.defaultView ? 4 : 12) : (settings.defaultView ? 16 : 32)) : 0)
+                        .padding(.bottom, (ayah.id == filteredAyahs.last?.id && endOfSurahDividerText == nil) ? comparisonBottomPadding : 0)
                         #else
                         .padding(.vertical)
                         #endif
@@ -261,6 +229,7 @@ struct AyahsView: View {
                     if let endOfSurahDividerText {
                         Section {
                             boundaryDivider(text: endOfSurahDividerText)
+                                .padding(.bottom, comparisonBottomPadding)
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
@@ -268,6 +237,7 @@ struct AyahsView: View {
                     }
                 }
                 .applyConditionalListStyle(defaultView: settings.defaultView)
+                .compactListSectionSpacing()
                 .dismissKeyboardOnScroll()
                 .onAppear {
                     if let sel = ayah, !didScrollDown {
@@ -393,10 +363,10 @@ struct AyahsView: View {
         }
         #endif
         .onChange(of: quranPlayer.showInternetAlert) { if $0 { showAlert = true; quranPlayer.showInternetAlert = false } }
-        .confirmationDialog("Internet Connection Error", isPresented: $showAlert, titleVisibility: .visible) {
+        .confirmationDialog(quranPlayer.playbackAlertTitle, isPresented: $showAlert, titleVisibility: .visible) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Unable to load the recitation due to an internet connection issue. Please check your connection and try again.")
+            Text(quranPlayer.playbackAlertMessage)
         }
         #else
         .navigationTitle("\(surah.id) - \(surah.nameTransliteration)")

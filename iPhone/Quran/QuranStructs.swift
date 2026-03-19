@@ -29,6 +29,12 @@ struct VerseIndexEntry: Identifiable, Hashable {
     let englishBlob: String
 }
 
+struct SurahBoundaryModel {
+    let startDividerText: String?
+    let dividerBeforeAyah: [Int: String]
+    let endDividerText: String?
+}
+
 extension String {
     var containsArabicLetters: Bool {
         unicodeScalars.contains { s in

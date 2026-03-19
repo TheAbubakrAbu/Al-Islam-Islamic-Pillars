@@ -170,6 +170,7 @@ struct CreditsView: View {
                     presentationMode.wrappedValue.dismiss()
                 } label: {
                     Text("Done")
+                        .foregroundColor(.primary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .font(.headline)
@@ -186,20 +187,20 @@ struct CreditsView: View {
     private var buttonBackground: some View {
         if #available(iOS 26.0, *) {
             AnyView(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(.clear)
-                    .glassEffect(.regular.tint(.white.opacity(0.20)).interactive(), in: .rect(cornerRadius: 24))
+                    .glassEffect(.regular.tint(settings.accentColor.color.opacity(0.25)).interactive(), in: .rect(cornerRadius: 24))
             )
         } else if #available(iOS 15.0, *) {
             AnyView(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(.ultraThinMaterial)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 24)
                             .fill(Color.white.opacity(0.05))
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 24)
                             .stroke(Color.white.opacity(0.18), lineWidth: 1)
                     )
             )

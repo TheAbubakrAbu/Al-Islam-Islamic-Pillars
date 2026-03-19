@@ -4,6 +4,19 @@ extension View {
     func applyConditionalListStyle(defaultView: Bool) -> some View {
         self.modifier(ConditionalListStyle(defaultView: defaultView))
     }
+
+    @ViewBuilder
+    func compactListSectionSpacing() -> some View {
+        #if os(watchOS)
+        self
+        #else
+        if #available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *) {
+            self.listSectionSpacing(.compact)
+        } else {
+            self
+        }
+        #endif
+    }
     
     func endEditing() {
         #if !os(watchOS)
@@ -38,11 +51,6 @@ struct ConditionalListStyle: ViewModifier {
             Group {
                 if defaultView {
                     content
-                        .apply {
-                            if #available(iOS 17.0, *) {
-                                $0.listSectionSpacing(.compact)
-                            }
-                        }
                 } else {
                     content
                         .listStyle(.plain)

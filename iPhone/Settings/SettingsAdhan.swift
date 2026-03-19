@@ -294,15 +294,15 @@ extension Settings {
     }
 
     private static let prayerProtos: [String: Proto] = [
-        "Fajr":      .init(ar:"الفَجْر",  tr:"Fajr",   en:"Dawn",     img:"sunrise",       rakah:"2", sunnahB:"2", sunnahA:"0"),
+        "Fajr":      .init(ar:"الفَجر",  tr:"Fajr",   en:"Dawn",     img:"sunrise",       rakah:"2", sunnahB:"2", sunnahA:"0"),
         "Sunrise":   .init(ar:"الشُرُوق", tr:"Shurooq",en:"Sunrise",  img:"sunrise.fill",  rakah:"0", sunnahB:"0", sunnahA:"0"),
-        "Dhuhr":     .init(ar:"الظُهْر",  tr:"Dhuhr",  en:"Noon",     img:"sun.max",       rakah:"4", sunnahB:"2 and 2", sunnahA:"2"),
-        "Asr":       .init(ar:"العَصْر",  tr:"Asr",    en:"Afternoon",img:"sun.min",       rakah:"4", sunnahB:"0", sunnahA:"0"),
-        "Maghrib":   .init(ar:"المَغْرِب",tr:"Maghrib",en:"Sunset",   img:"sunset",        rakah:"3", sunnahB:"0", sunnahA:"2"),
+        "Dhuhr":     .init(ar:"الظُهر",  tr:"Dhuhr",  en:"Noon",     img:"sun.max",       rakah:"4", sunnahB:"2 and 2", sunnahA:"2"),
+        "Asr":       .init(ar:"العَصر",  tr:"Asr",    en:"Afternoon",img:"sun.min",       rakah:"4", sunnahB:"0", sunnahA:"0"),
+        "Maghrib":   .init(ar:"المَغرِب",tr:"Maghrib",en:"Sunset",   img:"sunset",        rakah:"3", sunnahB:"0", sunnahA:"2"),
         "Isha":      .init(ar:"العِشَاء", tr:"Isha",   en:"Night",    img:"moon",          rakah:"4", sunnahB:"0", sunnahA:"2"),
         // grouped (travel) variants
-        "Dhuhr/Asr":     .init(ar:"الظُهْر وَالْعَصْر", tr:"Dhuhr/Asr",   en:"Daytime",   img:"sun.max", rakah:"2 and 2", sunnahB:"0", sunnahA:"0"),
-        "Maghrib/Isha":     .init(ar:"المَغْرِب وَالْعِشَاء", tr:"Maghrib/Isha", en:"Nighttime", img:"sunset", rakah:"3 and 2",sunnahB:"0", sunnahA:"0")
+        "Dhuhr/Asr":     .init(ar:"الظُهر وَالعَصر", tr:"Dhuhr/Asr",   en:"Daytime",   img:"sun.max", rakah:"2 and 2", sunnahB:"0", sunnahA:"0"),
+        "Maghrib/Isha":     .init(ar:"المَغرِب وَالعِشَاء", tr:"Maghrib/Isha", en:"Nighttime", img:"sunset", rakah:"3 and 2",sunnahB:"0", sunnahA:"0")
     ]
     
     @inline(__always)

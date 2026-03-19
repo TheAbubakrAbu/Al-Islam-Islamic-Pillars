@@ -19,6 +19,8 @@ final class QuranPlayer: ObservableObject {
     @Published var isPlayingSurah = false
     @Published var isPlayingCustomRange = false
     @Published var showInternetAlert = false
+    @Published var playbackAlertTitle = "Playback Error"
+    @Published var playbackAlertMessage = "Unable to load this recitation right now. Please try again."
 
     @Published private(set) var customRangeStartAyah: Int?
     @Published private(set) var customRangeEndAyah: Int?
@@ -87,6 +89,20 @@ final class QuranPlayer: ObservableObject {
             try AVAudioSession.sharedInstance().setActive(false,
                                                           options: .notifyOthersOnDeactivation)
         } catch { logger.debug("Audio session deactivate failed: \(error)") }
+    }
+
+    private func presentPlaybackFailure(_ message: String, title: String = "Playback Error") {
+        DispatchQueue.main.async {
+            withAnimation {
+                self.isLoading = false
+                self.isPlaying = false
+                self.isPaused = false
+                self.playbackAlertTitle = title
+                self.playbackAlertMessage = message
+                self.showInternetAlert = true
+            }
+            self.idleTimerSet(false)
+        }
     }
     
     @objc private func handleInterruption(notification: Notification) {
@@ -318,7 +334,10 @@ final class QuranPlayer: ObservableObject {
         ayahBackPendingRestart?.cancel()
         ayahBackPendingRestart = nil
         ayahBackPendingRestartScheduledAt = nil
-        guard (1...114).contains(surahNumber) else { return }
+        guard (1...114).contains(surahNumber) else {
+            presentPlaybackFailure("This surah could not be found. Please select a valid surah and try again.")
+            return
+        }
 
         self.repeatCount = max(1, repeatCount)
         self.repeatRemaining = self.repeatCount
@@ -331,13 +350,19 @@ final class QuranPlayer: ObservableObject {
         continueRecitationFromAyah = false
         backButtonClickCount = 0
 
-        guard let reciterPref = reciters.first(where: { $0.name == settings.reciter }) else { return }
+        guard let reciterPref = reciters.first(where: { $0.name == settings.reciter }) else {
+            presentPlaybackFailure("The selected reciter could not be found. Please choose another reciter in settings.")
+            return
+        }
         let reciter: Reciter = (certainReciter && settings.lastListenedSurah?.reciter != nil)
             ? settings.lastListenedSurah!.reciter
             : reciterPref
 
         let urlStr = "\(reciter.surahLink)\(String(format: "%03d", surahNumber)).mp3"
-        guard let url = URL(string: urlStr) else { showInternetAlert = true; return }
+        guard let url = URL(string: urlStr) else {
+            presentPlaybackFailure("The recitation link appears invalid. Please try another reciter.")
+            return
+        }
 
         setupAudioSession()
         isLoading = true
@@ -381,12 +406,7 @@ final class QuranPlayer: ObservableObject {
                         self.saveLastListenedSurah()
                     }
                 default:
-                    withAnimation {
-                        self.isLoading = false
-                        self.isPlaying = false
-                        self.isPaused  = false
-                        self.showInternetAlert = true
-                    }
+                    self.presentPlaybackFailure("Unable to load this recitation. Check your internet connection and try again.", title: "Playback Unavailable")
                 }
             }
         }
@@ -491,11 +511,18 @@ final class QuranPlayer: ObservableObject {
         ayahBackPendingRestart?.cancel()
         ayahBackPendingRestart = nil
         ayahBackPendingRestartScheduledAt = nil
-        guard
-            let surah = quranData.quran.first(where: { $0.id == surahNumber }),
-            (1...surah.numberOfAyahs).contains(ayahNumber),
-            let _ = reciters.first(where: { $0.name == settings.reciter })
-        else { return }
+        guard let surah = quranData.quran.first(where: { $0.id == surahNumber }) else {
+            presentPlaybackFailure("This surah could not be found. Please try again.")
+            return
+        }
+        guard (1...surah.numberOfAyahs).contains(ayahNumber) else {
+            presentPlaybackFailure("This ayah is outside the valid range for the selected surah.")
+            return
+        }
+        guard reciters.first(where: { $0.name == settings.reciter }) != nil else {
+            presentPlaybackFailure("The selected reciter could not be found. Please choose another reciter in settings.")
+            return
+        }
 
         self.ayahRepeatCount      = max(1, repeatCount)
         self.ayahRepeatRemaining  = self.ayahRepeatCount
@@ -528,13 +555,23 @@ final class QuranPlayer: ObservableObject {
         ayahBackPendingRestart?.cancel()
         ayahBackPendingRestart = nil
         ayahBackPendingRestartScheduledAt = nil
-        guard
-            let surah = quranData.quran.first(where: { $0.id == surahNumber }),
-            (1...surah.numberOfAyahs).contains(startAyah),
-            (1...surah.numberOfAyahs).contains(endAyah),
-            startAyah <= endAyah,
-            let reciter = reciters.first(where: { $0.name == settings.reciter })
-        else { return }
+        guard let surah = quranData.quran.first(where: { $0.id == surahNumber }) else {
+            presentPlaybackFailure("This surah could not be found. Please try again.")
+            return
+        }
+        guard (1...surah.numberOfAyahs).contains(startAyah),
+              (1...surah.numberOfAyahs).contains(endAyah) else {
+            presentPlaybackFailure("The selected ayah range is not valid for this surah.")
+            return
+        }
+        guard startAyah <= endAyah else {
+            presentPlaybackFailure("The range start cannot be after the range end.")
+            return
+        }
+        guard let reciter = reciters.first(where: { $0.name == settings.reciter }) else {
+            presentPlaybackFailure("The selected reciter could not be found. Please choose another reciter in settings.")
+            return
+        }
 
         let perAyah = max(1, repeatPerAyah)
         let section = max(1, repeatSection)
@@ -579,7 +616,7 @@ final class QuranPlayer: ObservableObject {
         for (ayahNum, isBismillah) in sequence {
             guard let item = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNum, isBismillah: isBismillah) else {
                 isLoading = false
-                showInternetAlert = true
+                presentPlaybackFailure("One or more ayah audio files could not be prepared. Please try again.", title: "Range Playback Failed")
                 customRangeSequence = []
                 customRangeStartAyah = nil
                 customRangeEndAyah = nil
@@ -613,9 +650,7 @@ final class QuranPlayer: ObservableObject {
                             ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
                         self.updateNowPlayingInfo()
                     } else {
-                        self.isPlaying = false
-                        self.isPaused = false
-                        self.showInternetAlert = true
+                        self.presentPlaybackFailure("Unable to start this custom range. Check your internet connection and try again.", title: "Range Playback Failed")
                     }
                 }
             }
@@ -678,7 +713,10 @@ final class QuranPlayer: ObservableObject {
             let surah  = quranData.quran.first(where: { $0.id == surahNumber }),
             (1...surah.numberOfAyahs).contains(ayahNumber),
             let reciter = reciters.first(where: { $0.name == settings.reciter })
-        else { return }
+        else {
+            presentPlaybackFailure("Could not prepare this ayah for playback. Please verify surah, ayah, and reciter settings.")
+            return
+        }
 
         setupAudioSession()
         isLoading = true
@@ -687,7 +725,9 @@ final class QuranPlayer: ObservableObject {
             queuePlayer = nil
 
             guard let firstItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNumber, isBismillah: isBismillah) else {
-                isLoading = false; showInternetAlert = true; return
+                isLoading = false
+                presentPlaybackFailure("Unable to load this ayah audio. Check your internet connection and try again.")
+                return
             }
             firstItem.preferredForwardBufferDuration = 8
 
@@ -712,11 +752,7 @@ final class QuranPlayer: ObservableObject {
                             self.updateNowPlayingInfo()
                         }
                     } else {
-                        withAnimation {
-                            self.isPlaying = false
-                            self.isPaused  = false
-                            self.showInternetAlert = true
-                        }
+                        self.presentPlaybackFailure("Unable to start ayah playback. Check your internet connection and try again.")
                     }
                 }
             }
@@ -759,7 +795,9 @@ final class QuranPlayer: ObservableObject {
         }
 
         guard let firstItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNumber, isBismillah: isBismillah) else {
-            isLoading = false; showInternetAlert = true; return
+            isLoading = false
+            presentPlaybackFailure("Unable to load this ayah audio. Check your internet connection and try again.")
+            return
         }
         firstItem.preferredForwardBufferDuration = 8
 
@@ -800,11 +838,7 @@ final class QuranPlayer: ObservableObject {
                         self.updateNowPlayingInfo()
                     }
                 } else {
-                    withAnimation {
-                        self.isPlaying = false
-                        self.isPaused  = false
-                        self.showInternetAlert = true
-                    }
+                    self.presentPlaybackFailure("Unable to continue ayah playback. Check your internet connection and try again.")
                 }
             }
         }
@@ -863,7 +897,10 @@ final class QuranPlayer: ObservableObject {
     ) -> AVPlayerItem? {
         let globalId = quranData.quran.prefix(surah.id - 1).reduce(0) { $0 + $1.numberOfAyahs } + ayahNumber
         let urlStr = "https://cdn.islamic.network/quran/audio/\(reciter.ayahBitrate)/\(reciter.ayahIdentifier)/\(globalId).mp3"
-        guard let url = URL(string: urlStr) else { showInternetAlert = true; return nil }
+        guard let url = URL(string: urlStr) else {
+            presentPlaybackFailure("A valid audio link could not be created for this ayah.")
+            return nil
+        }
         return AVPlayerItem(url: url)
     }
     

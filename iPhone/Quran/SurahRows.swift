@@ -380,7 +380,11 @@ struct LastReadAyahRow: View {
     }
     
     private var noteToShow: String? {
-        guard let idx = settings.bookmarkedAyahs.firstIndex(where: { $0.surah == surah.id && $0.ayah == ayah.id }) else {
+        noteText(surahID: surah.id, ayahID: ayah.id)
+    }
+
+    private func noteText(surahID: Int, ayahID: Int) -> String? {
+        guard let idx = settings.bookmarkedAyahs.firstIndex(where: { $0.surah == surahID && $0.ayah == ayahID }) else {
             return nil
         }
         let t = settings.bookmarkedAyahs[idx].note?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -438,20 +442,12 @@ struct LastReadAyahRow: View {
                     let normalizedAyah = max(1, item.ayahNumber)
                     if let surah = quranData.quran.first(where: { $0.id == item.surahNumber }), let ayah = surah.ayahs.first(where: { $0.id == normalizedAyah }) {
                         NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("\(item.surahNumber):\(normalizedAyah) - \(item.surahName)")
-                                    .font(.headline.weight(.semibold))
-                                    .foregroundColor(settings.accentColor.color.opacity(0.6))
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.7)
-
-                                Text(ayah.textEnglishSaheeh)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.7)
-                            }
-                            .padding(.vertical, 4)
+                            SurahAyahRow(
+                                surah: surah,
+                                ayah: ayah,
+                                note: noteText(surahID: surah.id, ayahID: ayah.id)
+                            )
+                            .opacity(0.6)
                         }
                         .rightSwipeActions(
                             surahID: surah.id,

@@ -63,7 +63,7 @@ struct ShahaadahView: View {
                 VStack(alignment: .leading) {
                     HStack {
                         Spacer()
-                        Text("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ ٱللّٰهِ")
+                        Text("أَشهَدُ أَن لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ ٱللّٰهِ")
                             .font(.body)
                             .foregroundColor(settings.accentColor.color)
                             .multilineTextAlignment(.trailing)
@@ -84,7 +84,7 @@ struct ShahaadahView: View {
                 VStack(alignment: .leading) {
                     HStack {
                         Spacer()
-                        Text("أَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ")
+                        Text("أَشهَدُ أَن لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشهَدُ أَنَّ مُحَمَّدًا عَبدُهُ وَرَسُولُهُ")
                             .font(.body)
                             .foregroundColor(settings.accentColor.color)
                             .multilineTextAlignment(.trailing)
@@ -187,7 +187,7 @@ struct SawmView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Sawm, derived from the Arabic word “صَوْم“ (Sawm), meaning “abstention“ or “refraining,“ is the next pillar of Islam. It refers to fasting, during which Muslims abstain from food, drink, and marital relations from dawn (Fajr) until sunset (Maghrib) with the intention of seeking Allah’s pleasure.")
+                Text("Sawm, derived from the Arabic word “صَوم“ (Sawm), meaning “abstention“ or “refraining,“ is the next pillar of Islam. It refers to fasting, during which Muslims abstain from food, drink, and marital relations from dawn (Fajr) until sunset (Maghrib) with the intention of seeking Allah’s pleasure.")
                     .font(.body)
                 
                 Text("Fasting during the sacred month of Ramadan is obligatory for all adult Muslims who are physically and mentally capable. Allah (Glorified and Exalted be He) says in the Quran:")
@@ -208,7 +208,7 @@ struct SawmView: View {
             }
             
             Section(header: Text("METHOD")) {
-                Text("The fasting day begins before dawn with a recommended Sunnah meal called **Suhoor** (سُحُور) and ends at sunset with **Iftar** (إِفْطَار), traditionally breaking the fast with dates and water as Prophet Muhammad did (peace and blessings be upon him).")
+                Text("The fasting day begins before dawn with a recommended Sunnah meal called **Suhoor** (سُحُور) and ends at sunset with **Iftar** (إِفطَار), traditionally breaking the fast with dates and water as Prophet Muhammad did (peace and blessings be upon him).")
                     .font(.body)
                 
                 Text("During the fasting hours, Muslims engage in acts of worship such as prayer, Quran recitation, and charity.").font(.body)

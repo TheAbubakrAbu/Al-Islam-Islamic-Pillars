@@ -137,7 +137,7 @@ struct WudhuView: View {
             }
 
             Section(header: Text("GHUSL (MAJOR ABLUTION)")) {
-                Text("Ghusl (غُسْل) is a full-body ritual wash performed in specific circumstances, such as after marital relations, menstruation, or postpartum bleeding.")
+                Text("Ghusl (غُسل) is a full-body ritual wash performed in specific circumstances, such as after marital relations, menstruation, or postpartum bleeding.")
                     .font(.body)
                 Text("It involves washing the entire body thoroughly.")
                     .font(.body)
@@ -182,7 +182,7 @@ struct JumuahView: View {
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
 
-                Text("Jumuah prayer consists of a sermon (**Khutbah - خُطْبَة**) followed by a two-rak’ah Salah led by the Imam. It is obligatory for Muslim men who can attend, though it is not obligatory for women.")
+                Text("Jumuah prayer consists of a sermon (**Khutbah - خُطبَة**) followed by a two-rak’ah Salah led by the Imam. It is obligatory for Muslim men who can attend, though it is not obligatory for women.")
                     .font(.body)
 
                 Text("If Jumuah is missed at the mosque, one performs the full Dhuhr prayer (4 rak’ahs).")
@@ -205,7 +205,7 @@ struct JumuahView: View {
                 Text("Muslims are encouraged to engage in specific acts of worship on Jumuah:")
                     .font(.body)
 
-                Text("1. **Reciting Surah Al-Kahf (سُورَة ٱلْكَهْف):** The Prophet Muhammad (peace and blessings be upon him) said:")
+                Text("1. **Reciting Surah Al-Kahf (سُورَة ٱلكَهف):** The Prophet Muhammad (peace and blessings be upon him) said:")
                     .font(.body)
 
                 Text("“Whoever reads Surah Al-Kahf on Friday will have a light between this Friday and the next” (Mishkat al-Masabih 2175).")
@@ -269,19 +269,19 @@ struct AdhanOtherView: View {
                 HStack {
                     Spacer()
                     Text("""
-                    اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ
-                    اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ
+                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
+                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
 
-                    أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ
-                    أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ
+                    أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
+                    أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
 
-                    أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
-                    أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
+                    أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
+                    أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
 
                     حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الصَّلَاةِ
-                    حَيَّ عَلَى الْفَلَاحِ، حَيَّ عَلَى الْفَلَاحِ
+                    حَيَّ عَلَى الفَلَاحِ، حَيَّ عَلَى الفَلَاحِ
 
-                    اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ
+                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
                     لَا إِلَٰهَ إِلَّا اللَّهُ
                     """)
                     .font(.body)
@@ -330,7 +330,7 @@ struct AdhanOtherView: View {
                 Text("In the Fajr (dawn) Adhan, an additional line is added:")
                     .font(.body)
 
-                Text("الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ")
+                Text("الصَّلَاةُ خَيرٌ مِنَ النَّومِ")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                     .multilineTextAlignment(.trailing)
@@ -367,18 +367,18 @@ struct IqamahView: View {
                 HStack {
                     Spacer()
                     Text("""
-                    اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ
+                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
 
-                    أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ
+                    أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
 
-                    أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
+                    أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
 
-                    حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الْفَلَاحِ
+                    حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الفَلَاحِ
 
-                    قَدْ قَامَتِ الصَّلَاةُ
-                    قَدْ قَامَتِ الصَّلَاةُ
+                    قَد قَامَتِ الصَّلَاةُ
+                    قَد قَامَتِ الصَّلَاةُ
 
-                    اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ
+                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
 
                     لَا إِلَٰهَ إِلَّا اللَّهُ
                     """)
@@ -483,17 +483,17 @@ struct TakbiratView: View {
                 HStack {
                     Spacer()
                     Text("""
-                    اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، لَا إِلَهَ إِلَّا اللَّهُ
+                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، لَا إِلَهَ إِلَّا اللَّهُ
 
-                    اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، وَلِلَّهِ الْحَمْدُ
+                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، وَلِلَّهِ الحَمدُ
 
-                    اللَّهُ أَكْبَرُ كَبِيرًا، وَالْحَمْدُ لِلَّهِ كَثِيرًا، وَسُبْحَانَ اللَّهِ بُكْرَةً وَأَصِيلًا
+                    اللَّهُ أَكبَرُ كَبِيرًا، وَالحَمدُ لِلَّهِ كَثِيرًا، وَسُبحَانَ اللَّهِ بُكرَةً وَأَصِيلًا
 
-                    لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ، صَدَقَ وَعْدَهُ، وَنَصَرَ عَبْدَهُ، وَأَعَزَّ جُنْدَهُ، وَهَزَمَ الْأَحْزَابَ وَحْدَهُ
+                    لَا إِلَهَ إِلَّا اللَّهُ وَحدَهُ، صَدَقَ وَعدَهُ، وَنَصَرَ عَبدَهُ، وَأَعَزَّ جُندَهُ، وَهَزَمَ الأَحزَابَ وَحدَهُ
 
-                    لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعْبُدُ إِلَّا إِيَّاهُ، مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ
+                    لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعبُدُ إِلَّا إِيَّاهُ، مُخلِصِينَ لَهُ الدِّينَ وَلَو كَرِهَ الكَافِرُونَ
 
-                    اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ، وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَصْحَابِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَنْصَارِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَزْوَاجِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى ذُرِّيَّةِ سَيِّدِنَا مُحَمَّدٍ، وَسَلِّمْ تَسْلِيمًا كَثِيرًا
+                    اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ، وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَصحَابِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَنصَارِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَزوَاجِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى ذُرِّيَّةِ سَيِّدِنَا مُحَمَّدٍ، وَسَلِّم تَسلِيمًا كَثِيرًا
                     """)
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
@@ -562,16 +562,16 @@ struct CalendarView: View {
                      
                      1. **Muharram (مُحَرَّم)** – One of the sacred months
                      2. **Safar (صَفَر)** 
-                     3. **Rabi al-Awwal (رَبِيع ٱلْأَوَّل)**
+                     3. **Rabi al-Awwal (رَبِيع ٱلأَوَّل)**
                      4. **Rabi al-Thani (رَبِيع ٱلثَّانِي)** 
-                     5. **Jumada al-Awwal (جُمَادَىٰ ٱلْأَوَّل)** 
+                     5. **Jumada al-Awwal (جُمَادَىٰ ٱلأَوَّل)** 
                      6. **Jumada al-Thani (جُمَادَىٰ ٱلثَّانِي)** 
                      7. **Rajab (رَجَب)** – A sacred month
-                     8. **Shaaban (شَعْبَان)** – The month preceding Ramadan
+                     8. **Shaaban (شَعبَان)** – The month preceding Ramadan
                      9. **Ramadan (رَمَضَان)** – The month of fasting
                      10. **Shawwal (شَوَّال)** – The month following Ramadan
-                     11. **Dhul-Qadah (ذُو ٱلْقَعْدَة)** – A sacred month
-                     12. **Dhul-Hijjah (ذُو ٱلْحِجَّة)** – A sacred month, the month of Hajj and Eid al-Adha
+                     11. **Dhul-Qadah (ذُو ٱلقَعدَة)** – A sacred month
+                     12. **Dhul-Hijjah (ذُو ٱلحِجَّة)** – A sacred month, the month of Hajj and Eid al-Adha
                      """)
                 .font(.body)
                 
@@ -754,7 +754,7 @@ struct TajweedView: View {
     var body: some View {
         List {
             Section(header: Text("DEFINITION")) {
-                Text("Tajweed (تَجْوِيد) means “to beautify or improve.” In the context of the Quran, it refers to the set of rules for proper pronunciation during Quran recitation, ensuring each letter is articulated with precision.")
+                Text("Tajweed (تَجوِيد) means “to beautify or improve.” In the context of the Quran, it refers to the set of rules for proper pronunciation during Quran recitation, ensuring each letter is articulated with precision.")
                     .font(.body)
 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:")
@@ -851,10 +851,10 @@ struct AhrufView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("The Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحْرُف) — the plural of Harf (حَرْف). The word Harf comes from the Arabic root H–r–f (ح ر ف), meaning “edge, border, side, or angle,” referring to a particular “way” or “mode.” Islamically and Quranically, Ahruf refers to the divinely revealed modes of recitation.")
+                Text("The Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحرُف) — the plural of Harf (حَرف). The word Harf comes from the Arabic root H–r–f (ح ر ف), meaning “edge, border, side, or angle,” referring to a particular “way” or “mode.” Islamically and Quranically, Ahruf refers to the divinely revealed modes of recitation.")
                     .font(.body)
 
-                Text("A Harf (حَرْف) — literally meaning “edge/side/aspect,” and in this context “a mode/way of reciting” — refers to a divinely revealed manner of recitation that includes slight differences in pronunciation, vowel patterns, pausing/connection, or permitted word-forms, while preserving the exact same meaning and guidance.")
+                Text("A Harf (حَرف) — literally meaning “edge/side/aspect,” and in this context “a mode/way of reciting” — refers to a divinely revealed manner of recitation that includes slight differences in pronunciation, vowel patterns, pausing/connection, or permitted word-forms, while preserving the exact same meaning and guidance.")
                     .font(.body)
 
                 Text("All seven Ahruf are revelation from Allah (Glorified and Exalted be He). They are not scholarly opinions nor later inventions — they are part of the Quran that Allah (Glorified and Exalted be He) sent down to Prophet Muhammad (peace and blessings be upon him).")
@@ -947,10 +947,10 @@ struct QiraatView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("The Ten Qiraat (قِرَاءَات) — from the root q–r–a (قرأ) meaning “to read/recite” — literally means “readings/recitations.” Islamically and Quranically, a Qiraah (قِرَاءَة) is a specific, verified method of reciting the Quran. The Ten Qiraat are the preserved, mass-transmitted (mutawatir - مُتَوَاتِر) recitations of the Quran — each a precise method taught by Prophet Muhammad (peace and blessings be upon him) and transmitted through authentic chains of narrators (isnad إِسْنَاد). They do not represent different Qurans, but different prophetic ways of reciting the same revelation.")
+                Text("The Ten Qiraat (قِرَاءَات) — from the root q–r–a (قرأ) meaning “to read/recite” — literally means “readings/recitations.” Islamically and Quranically, a Qiraah (قِرَاءَة) is a specific, verified method of reciting the Quran. The Ten Qiraat are the preserved, mass-transmitted (mutawatir - مُتَوَاتِر) recitations of the Quran — each a precise method taught by Prophet Muhammad (peace and blessings be upon him) and transmitted through authentic chains of narrators (isnad إِسنَاد). They do not represent different Qurans, but different prophetic ways of reciting the same revelation.")
                     .font(.body)
 
-                Text("As covered in the previous section, the Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحْرُف) — modes of recitation for ease. Jibril (Gabriel) brought these modes to Prophet Muhammad (peace and blessings be upon him), who taught them to the Ummah. The Qiraat show how those Ahruf were preserved in practice through the Uthmanic rasm (الرَّسْم العُثْمَانِي) — the consonantal skeleton of the mushaf (مُصْحَف).")
+                Text("As covered in the previous section, the Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحرُف) — modes of recitation for ease. Jibril (Gabriel) brought these modes to Prophet Muhammad (peace and blessings be upon him), who taught them to the Ummah. The Qiraat show how those Ahruf were preserved in practice through the Uthmanic rasm (الرَّسم العُثمَانِي) — the consonantal skeleton of the mushaf (مُصحَف).")
                     .font(.body)
             }
 
@@ -1010,14 +1010,14 @@ struct QiraatView: View {
 
                 Group {
                     Text("• Nafi (نَافِع)").font(.body)
-                    Text("• Ibn Kathir (ابْنِ كَثِير)").font(.body)
-                    Text("• Abu Amr (أَبُو عَمْرٍو)").font(.body)
-                    Text("• Ibn Amir (ابْنُ عَامِر)").font(.body)
+                    Text("• Ibn Kathir (ابنِ كَثِير)").font(.body)
+                    Text("• Abu Amr (أَبُو عَمرٍو)").font(.body)
+                    Text("• Ibn Amir (ابنُ عَامِر)").font(.body)
                     Text("• Asim (عَاصِم)").font(.body)
-                    Text("• Hamzah (حَمْزَة)").font(.body)
+                    Text("• Hamzah (حَمزَة)").font(.body)
                     Text("• Al-Kisai (الكِسَائِي)").font(.body)
-                    Text("• Abu Ja'far (أَبُو جَعْفَر)").font(.body)
-                    Text("• Ya'qub (يَعْقُوب)").font(.body)
+                    Text("• Abu Ja'far (أَبُو جَعفَر)").font(.body)
+                    Text("• Ya'qub (يَعقُوب)").font(.body)
                     Text("• Khalaf al-Ashir (خَلَف العَاشِر)").font(.body)
                 }
             }
@@ -1027,37 +1027,37 @@ struct QiraatView: View {
                     .font(.body)
 
                 Group {
-                    Text("• Warsh an Nafi (وَرْش عَنْ نَافِع)").font(.body)
-                    Text("• Qalun an Nafi (قَالُون عَنْ نَافِع)").font(.body)
+                    Text("• Warsh an Nafi (وَرش عَن نَافِع)").font(.body)
+                    Text("• Qalun an Nafi (قَالُون عَن نَافِع)").font(.body)
 
-                    Text("• Al-Bazzi an Ibn Kathir (البَزِّي عَنْ ابْنِ كَثِير)").font(.body)
-                    Text("• Qunbul an Ibn Kathir (قُنْبُل عَنْ ابْنِ كَثِير)").font(.body)
+                    Text("• Al-Bazzi an Ibn Kathir (البَزِّي عَن ابنِ كَثِير)").font(.body)
+                    Text("• Qunbul an Ibn Kathir (قُنبُل عَن ابنِ كَثِير)").font(.body)
 
-                    Text("• Ad-Duri an Abi Amr (الدُّورِي عَنْ أَبِي عَمْرٍو)").font(.body)
-                    Text("• As-Susi an Abi Amr (السُّوسِي عَنْ أَبِي عَمْرٍو)").font(.body)
+                    Text("• Ad-Duri an Abi Amr (الدُّورِي عَن أَبِي عَمرٍو)").font(.body)
+                    Text("• As-Susi an Abi Amr (السُّوسِي عَن أَبِي عَمرٍو)").font(.body)
 
-                    Text("• Hisham an Ibn Amir (هِشَام عَنْ ابْنِ عَامِر)").font(.body)
-                    Text("• Ibn Dhakwan an Ibn Amir (ابْنُ ذَكْوَان عَنْ ابْنِ عَامِر)").font(.body)
+                    Text("• Hisham an Ibn Amir (هِشَام عَن ابنِ عَامِر)").font(.body)
+                    Text("• Ibn Dhakwan an Ibn Amir (ابنُ ذَكوَان عَن ابنِ عَامِر)").font(.body)
 
-                    Text("• Hafs an Asim (حَفْص عَنْ عَاصِم)").font(.body)
-                    Text("• Shu'bah an Asim (شُعْبَة عَنْ عَاصِم)").font(.body)
+                    Text("• Hafs an Asim (حَفص عَن عَاصِم)").font(.body)
+                    Text("• Shu'bah an Asim (شُعبَة عَن عَاصِم)").font(.body)
                 }
 
                 Group {
-                    Text("• Khalaf an Hamzah (خَلَف عَنْ حَمْزَة)").font(.body)
-                    Text("• Khallad an Hamzah (خَلَّاد عَنْ حَمْزَة)").font(.body)
+                    Text("• Khalaf an Hamzah (خَلَف عَن حَمزَة)").font(.body)
+                    Text("• Khallad an Hamzah (خَلَّاد عَن حَمزَة)").font(.body)
 
-                    Text("• Abu al-Harith an Al-Kisai (أَبُو الحَارِث عَنْ الكِسَائِي)").font(.body)
-                    Text("• Ad-Duri an Al-Kisai (الدُّورِي عَنْ الكِسَائِي)").font(.body)
+                    Text("• Abu al-Harith an Al-Kisai (أَبُو الحَارِث عَن الكِسَائِي)").font(.body)
+                    Text("• Ad-Duri an Al-Kisai (الدُّورِي عَن الكِسَائِي)").font(.body)
 
-                    Text("• Ibn Wardān an Abu Ja'far (ابْنُ وَرْدَان عَنْ أَبِي جَعْفَر)").font(.body)
-                    Text("• Ibn Jammaz an Abu Ja'far (ابْنُ جَمَّاز عَنْ أَبِي جَعْفَر)").font(.body)
+                    Text("• Ibn Wardān an Abu Ja'far (ابنُ وَردَان عَن أَبِي جَعفَر)").font(.body)
+                    Text("• Ibn Jammaz an Abu Ja'far (ابنُ جَمَّاز عَن أَبِي جَعفَر)").font(.body)
 
-                    Text("• Ruways an Ya'qub (رُوَيْس عَنْ يَعْقُوب)").font(.body)
-                    Text("• Rawh an Ya'qub (رَوْح عَنْ يَعْقُوب)").font(.body)
+                    Text("• Ruways an Ya'qub (رُوَيس عَن يَعقُوب)").font(.body)
+                    Text("• Rawh an Ya'qub (رَوح عَن يَعقُوب)").font(.body)
 
-                    Text("• Ishaq an Khalaf al-Ashir (إِسْحَاق عَنْ خَلَف العَاشِر)").font(.body)
-                    Text("• Idris an Khalaf al-Ashir (إِدْرِيس عَنْ خَلَف العَاشِر)").font(.body)
+                    Text("• Ishaq an Khalaf al-Ashir (إِسحَاق عَن خَلَف العَاشِر)").font(.body)
+                    Text("• Idris an Khalaf al-Ashir (إِدرِيس عَن خَلَف العَاشِر)").font(.body)
                 }
             }
 
@@ -1110,7 +1110,7 @@ struct FarewellView: View {
         List {
             Section(header: Text("OVERVIEW")) {
                 Text("""
-                     The Farewell Sermon (خُطْبَةُ ٱلْوَدَاعِ), delivered by Prophet Muhammad (peace be upon him), took place on the 9th of Dhu al-Hijjah in the 10th year of Hijrah (632 CE) in the Uranah Valley near Mount Arafat. This sermon is one of the most significant moments in Islamic history, as it encapsulates key teachings and guidance for Muslims.
+                     The Farewell Sermon (خُطبَةُ ٱلوَدَاعِ), delivered by Prophet Muhammad (peace be upon him), took place on the 9th of Dhu al-Hijjah in the 10th year of Hijrah (632 CE) in the Uranah Valley near Mount Arafat. This sermon is one of the most significant moments in Islamic history, as it encapsulates key teachings and guidance for Muslims.
                      """)
                 .font(.body)
 
@@ -1260,7 +1260,7 @@ struct WivesView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("The wives of Prophet Muhammad (peace be upon him) are honored in Islam as the “Mothers of the Believers” (أُمَّهَاتُ الْمُؤْمِنِين).")
+                Text("The wives of Prophet Muhammad (peace be upon him) are honored in Islam as the “Mothers of the Believers” (أُمَّهَاتُ المُؤمِنِين).")
                     .font(.body)
 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:")
@@ -1394,10 +1394,10 @@ struct CaliphatesView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("The Caliphate (ٱلْخِلَافَة) refers to the divinely guided system of governance established after the death of Prophet Muhammad (peace be upon him). It aimed to continue his mission of upholding justice, spreading Islam, and preserving the unity of the Ummah.")
+                Text("The Caliphate (ٱلخِلَافَة) refers to the divinely guided system of governance established after the death of Prophet Muhammad (peace be upon him). It aimed to continue his mission of upholding justice, spreading Islam, and preserving the unity of the Ummah.")
                     .font(.body)
 
-                Text("The Caliph (خَلِيفَة), literally “successor“—was entrusted with political, military, judicial, and spiritual leadership, guided by the Qur’an and Sunnah. The first four caliphs, known as the **Rightly Guided Caliphs (ٱلْخُلَفَاء ٱلرَّاشِدُون)**, are regarded as models of righteous rule.")
+                Text("The Caliph (خَلِيفَة), literally “successor“—was entrusted with political, military, judicial, and spiritual leadership, guided by the Qur’an and Sunnah. The first four caliphs, known as the **Rightly Guided Caliphs (ٱلخُلَفَاء ٱلرَّاشِدُون)**, are regarded as models of righteous rule.")
                     .font(.body)
 
                 Text("The Prophet (peace be upon him) said: “The Caliphate will remain among you for thirty years, then Allah will give the kingdom to whomever He wills” (Sunan Abi Dawud 4646).")
@@ -1439,7 +1439,7 @@ struct CaliphatesView: View {
             }
 
             Section(header: Text("UTHMAN IBN AFFAN (644–656 CE)")) {
-                Text("Uthman (may Allah be pleased with him) was chosen through a **council of six** appointed by Umar. Known for his generosity and modesty, he married two daughters of the Prophet Muhammad (peace be upon him) and was called **Dhu al-Nurayn** (ذُو ٱلنُّورَيْن – the Possessor of Two Lights).")
+                Text("Uthman (may Allah be pleased with him) was chosen through a **council of six** appointed by Umar. Known for his generosity and modesty, he married two daughters of the Prophet Muhammad (peace be upon him) and was called **Dhu al-Nurayn** (ذُو ٱلنُّورَين – the Possessor of Two Lights).")
                     .font(.body)
 
                 Text("He **standardized the Qur’an** to preserve it in one dialect, avoiding future disputes. He sent official copies to major cities and burned differing versions.")
@@ -1484,7 +1484,7 @@ struct CaliphatesView: View {
             }
 
             Section(header: Text("THE UMAYYAD CALIPHATE (661–750 CE)")) {
-                Text("The Umayyads, beginning with Mu'awiyah ibn Abi Sufyan (may Allah be pleased with him), transitioned the caliphate into a **dynastic monarchy**. Their capital was **Damascus (دِمَشْق)**.")
+                Text("The Umayyads, beginning with Mu'awiyah ibn Abi Sufyan (may Allah be pleased with him), transitioned the caliphate into a **dynastic monarchy**. Their capital was **Damascus (دِمَشق)**.")
                     .font(.body)
 
                 Text("They expanded Islam into **al-Andalus (Spain)**, **North Africa**, and **Central Asia**, and made **Arabic** the official administrative language.")
@@ -1495,10 +1495,10 @@ struct CaliphatesView: View {
             }
 
             Section(header: Text("THE ABBASID CALIPHATE (750–1258 CE)")) {
-                Text("The Abbasids overthrew the Umayyads and moved the capital to **Baghdad (بَغْدَاد)**, initiating the **Golden Age of Islam**.")
+                Text("The Abbasids overthrew the Umayyads and moved the capital to **Baghdad (بَغدَاد)**, initiating the **Golden Age of Islam**.")
                     .font(.body)
 
-                Text("They supported **translation**, **science**, **mathematics**, **medicine**, and **philosophy**, and established the renowned **Bayt al-Hikmah (بَيْت ٱلْحِكْمَة – House of Wisdom)**.")
+                Text("They supported **translation**, **science**, **mathematics**, **medicine**, and **philosophy**, and established the renowned **Bayt al-Hikmah (بَيت ٱلحِكمَة – House of Wisdom)**.")
                     .font(.body)
 
                 Text("Although internal divisions weakened the state, their intellectual contributions influenced both the Muslim world and Europe. The empire fell to the Mongols in 1258 CE.")
@@ -1506,10 +1506,10 @@ struct CaliphatesView: View {
             }
 
             Section(header: Text("THE OTTOMAN CALIPHATE (1517–1924 CE)")) {
-                Text("The Ottomans, a Turkish dynasty, were the **first non-Arabs** to assume the Islamic Caliphate. After the fall of the Abbasids in Egypt, the caliphate passed to the Ottomans, whose capital was **Istanbul (إِسْطَنْبُول)**.")
+                Text("The Ottomans, a Turkish dynasty, were the **first non-Arabs** to assume the Islamic Caliphate. After the fall of the Abbasids in Egypt, the caliphate passed to the Ottomans, whose capital was **Istanbul (إِسطَنبُول)**.")
                     .font(.body)
 
-                Text("They ruled a vast empire across **Europe**, **Asia**, and **Africa**, preserved **Islamic law (ٱلشَّرِيعَة)**, and defended the **Two Holy Mosques** in **Makkah (مَكَّة)** and **Madinah (ٱلْمَدِينَة)**.")
+                Text("They ruled a vast empire across **Europe**, **Asia**, and **Africa**, preserved **Islamic law (ٱلشَّرِيعَة)**, and defended the **Two Holy Mosques** in **Makkah (مَكَّة)** and **Madinah (ٱلمَدِينَة)**.")
                     .font(.body)
 
                 Text("The Ottoman Caliphate was officially **abolished in 1924 CE** by Mustafa Kemal Atatürk, ending more than 1,300 years of continuous Islamic political leadership.")
@@ -1527,13 +1527,13 @@ struct MadhabView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("A **madhhab (مَذْهَب)** is a school of Islamic jurisprudence that provides structured guidance on how to derive and apply rulings from the Qur’an and Sunnah. The plural is **madhahib (مَذَاهِب)**.")
+                Text("A **madhhab (مَذهَب)** is a school of Islamic jurisprudence that provides structured guidance on how to derive and apply rulings from the Qur’an and Sunnah. The plural is **madhahib (مَذَاهِب)**.")
                     .font(.body)
 
-                Text("Madhahib developed as scholars preserved and codified fiqh (فِقْه), or Islamic legal reasoning/jurisprudence, to help Muslims navigate daily life, worship, transactions, and society with clarity and consistency.")
+                Text("Madhahib developed as scholars preserved and codified fiqh (فِقه), or Islamic legal reasoning/jurisprudence, to help Muslims navigate daily life, worship, transactions, and society with clarity and consistency.")
                     .font(.body)
 
-                Text("Following a madhhab ensures one is following a valid, peer-reviewed methodology developed by righteous scholars deeply rooted in the Qur’an, Sunnah, consensus (إِجْمَاع), and analogy (قِيَاس). It is not blind following—it is trust in generations of qualified scholarship.")
+                Text("Following a madhhab ensures one is following a valid, peer-reviewed methodology developed by righteous scholars deeply rooted in the Qur’an, Sunnah, consensus (إِجمَاع), and analogy (قِيَاس). It is not blind following—it is trust in generations of qualified scholarship.")
                     .font(.body)
 
                 Text("The Prophet Muhammad (peace be upon him) said: “Scholars are the inheritors of the prophets” (Sunan Abi Dawud 3641).")
@@ -1556,18 +1556,18 @@ struct MadhabView: View {
                 Text("**1. Hanafi (حَنَفِي)** — Founded by Imam Abu Hanifah (d. 767 CE). This school is known for its logical rigor and wide use of analogy. It is the most followed madhhab today, especially in **South Asia, Turkey, Central Asia**, and parts of the Balkans.")
                     .font(.body)
 
-                Text("**2. Maliki (مَالِكِي)** — Founded by Imam Malik ibn Anas (d. 795 CE). It heavily relies on the practice of the people of Madinah (عَمَل أَهْل الْمَدِينَة) and gives weight to communal actions. It is dominant in **North and West Africa**.")
+                Text("**2. Maliki (مَالِكِي)** — Founded by Imam Malik ibn Anas (d. 795 CE). It heavily relies on the practice of the people of Madinah (عَمَل أَهل المَدِينَة) and gives weight to communal actions. It is dominant in **North and West Africa**.")
                     .font(.body)
 
-                Text("**3. Shafi‘i (شَافِعِي)** — Founded by Imam Muhammad ibn Idris al-Shafi‘i (d. 820 CE). Known for its precise legal methodology and systematic approach to usul al-fiqh (أُصُول الْفِقْه). Popular in **East Africa, Indonesia, Malaysia**, and parts of Egypt and Yemen.")
+                Text("**3. Shafi‘i (شَافِعِي)** — Founded by Imam Muhammad ibn Idris al-Shafi‘i (d. 820 CE). Known for its precise legal methodology and systematic approach to usul al-fiqh (أُصُول الفِقه). Popular in **East Africa, Indonesia, Malaysia**, and parts of Egypt and Yemen.")
                     .font(.body)
 
-                Text("**4. Hanbali (حَنْبَلِي)** — Founded by Imam Ahmad ibn Hanbal (d. 855 CE). This school emphasizes hadith and early generation reports, using analogy only when necessary. It is mainly followed in **Saudi Arabia** and parts of the **Gulf region**.")
+                Text("**4. Hanbali (حَنبَلِي)** — Founded by Imam Ahmad ibn Hanbal (d. 855 CE). This school emphasizes hadith and early generation reports, using analogy only when necessary. It is mainly followed in **Saudi Arabia** and parts of the **Gulf region**.")
                     .font(.body)
             }
 
             Section(header: Text("UNITY THROUGH DIVERSITY")) {
-                Text("All four madhahib are valid and respected paths within Ahl al-Sunnah wa al-Jama‘ah (أَهْل السُّنَّة وَالْجَمَاعَة). Though they may differ in legal rulings, they are united in the same ‘aqeedah (عَقِيدَة)—the core beliefs regarding Allah, His names and attributes, prophethood, the Qur’an, the unseen, and the Afterlife.")
+                Text("All four madhahib are valid and respected paths within Ahl al-Sunnah wa al-Jama‘ah (أَهل السُّنَّة وَالجَمَاعَة). Though they may differ in legal rulings, they are united in the same ‘aqeedah (عَقِيدَة)—the core beliefs regarding Allah, His names and attributes, prophethood, the Qur’an, the unseen, and the Afterlife.")
                     .font(.body)
                 
                 Text("This shared creed is why they are all considered part of Ahl al-Sunnah wa al-Jama‘ah. The differences among them are in jurisprudence (fiqh), not faith (‘aqeedah), and reflect the depth and mercy of Islamic legal tradition.")

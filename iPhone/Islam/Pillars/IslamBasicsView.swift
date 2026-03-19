@@ -148,7 +148,7 @@ struct IslamPillarView: View {
     var body: some View {
         List {
             Section(header: Text("INTRODUCTION")) {
-                Text("Islam, derived from the Arabic word “إِسْلَام“ (Islam), meaning “submission” and “peace,” is a complete way of life rooted in the worship of Allah (Glorified and Exalted be He). Muslims believe that the Quran, revealed to Prophet Muhammad (peace and blessings be upon him) over 23 years through the angel Jibreel (Gabriel), is the divine word of Allah. It serves as a comprehensive guide encompassing theology, morality, and legal principles.")
+                Text("Islam, derived from the Arabic word “إِسلَام“ (Islam), meaning “submission” and “peace,” is a complete way of life rooted in the worship of Allah (Glorified and Exalted be He). Muslims believe that the Quran, revealed to Prophet Muhammad (peace and blessings be upon him) over 23 years through the angel Jibreel (Gabriel), is the divine word of Allah. It serves as a comprehensive guide encompassing theology, morality, and legal principles.")
                     .font(.body)
                 
                 Text("The essence of Islam is the belief in Tawheed (absolute monotheism): “There is no deity worthy of worship except Allah.” Allah says in the Quran:").font(.body)
@@ -279,7 +279,7 @@ struct AllahPillarView: View {
     var body: some View {
         List {
             Section(header: Text("INTRODUCTION")) {
-                Text("“Allah” (اللَّهُ) comes from the Arabic word “ٱلْإِلَٰه“ (Al-Ilah), meaning “The God.“ In Islam, Allah (Glorified and Exalted be He) is the unique Creator, Sustainer, and Maintainer of all that exists. He is without partner, associate, or equal and is absolutely One.")
+                Text("“Allah” (اللَّهُ) comes from the Arabic word “ٱلإِلَٰه“ (Al-Ilah), meaning “The God.“ In Islam, Allah (Glorified and Exalted be He) is the unique Creator, Sustainer, and Maintainer of all that exists. He is without partner, associate, or equal and is absolutely One.")
                     .font(.body)
                 
                 Text("The Quran mentions Allah's 99 Names (attributes), such as the Most Gracious, the Most Merciful, the All-Knowing, and the King. These Names describe His perfect qualities and emphasize His absolute transcendence. Allah is beyond human comprehension and far above any need, limitation, or resemblance to His creation.")
@@ -368,7 +368,7 @@ struct QuranPillarView: View {
     var body: some View {
         List {
             Section(header: Text("DEFINITION")) {
-                Text("The Quran, derived from the Arabic word “قُرْءان“ (Quran), meaning “recitation“ or “reading,“ is the holy book of Islam. Muslims believe that it is the literal word of Allah (Glorified and Exalted be He), revealed to Prophet Muhammad (peace and blessings be upon him) through the angel Jibreel (Gabriel) over 23 years. It is the ultimate source of guidance for humanity.")
+                Text("The Quran, derived from the Arabic word “قُرءان“ (Quran), meaning “recitation“ or “reading,“ is the holy book of Islam. Muslims believe that it is the literal word of Allah (Glorified and Exalted be He), revealed to Prophet Muhammad (peace and blessings be upon him) through the angel Jibreel (Gabriel) over 23 years. It is the ultimate source of guidance for humanity.")
                     .font(.body)
                 
                 Text("Unlike previous scriptures sent to specific nations and later altered, the Quran is a universal message for all people and all times. Allah says in the Quran:")

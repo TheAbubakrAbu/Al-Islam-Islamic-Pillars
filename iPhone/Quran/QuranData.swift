@@ -199,6 +199,9 @@ final class QuranData: ObservableObject {
     private var ayahIndex = [[Int:Int]]()
     /// Qiraah key the verse index was built for ("" = Hafs). Rebuild when display qiraah changes.
     private var cachedVerseIndexQiraah: String? = nil
+    /// Qiraah key the boundary model was built for ("" = Hafs). Rebuild when display qiraah changes.
+    private var cachedBoundaryQiraah: String? = nil
+    private var surahBoundaryModels = [Int: SurahBoundaryModel]()
 
     private var loadTask: Task<Void, Never>?
 
@@ -322,6 +325,7 @@ final class QuranData: ObservableObject {
                     )
                 }
             }
+            let boundaryModels = buildBoundaryModels(for: surahsToPublish, displayQiraah: displayQiraah)
 
             await MainActor.run {
                 self.surahIndex = sIndex
@@ -329,6 +333,8 @@ final class QuranData: ObservableObject {
                 self.quran = surahsToPublish
                 self.verseIndex = vIndex
                 self.cachedVerseIndexQiraah = displayQiraah ?? ""
+                self.surahBoundaryModels = boundaryModels
+                self.cachedBoundaryQiraah = displayQiraah ?? ""
             }
         } catch {
             fatalError("Failed to load Quran: \(error)")
@@ -356,6 +362,85 @@ final class QuranData: ObservableObject {
                 )
             }
         }
+    }
+
+    private func rebuildBoundaryModels() {
+        let displayQiraah = settings.displayQiraahForArabic
+        surahBoundaryModels = buildBoundaryModels(for: quran, displayQiraah: displayQiraah)
+        cachedBoundaryQiraah = displayQiraah ?? ""
+    }
+
+    private func boundaryText(from oldAyah: Ayah, to newAyah: Ayah) -> String? {
+        let pageChanged = oldAyah.page != newAyah.page
+        let juzChanged = oldAyah.juz != newAyah.juz
+        guard pageChanged || juzChanged else { return nil }
+
+        if let page = newAyah.page, let juz = newAyah.juz {
+            return juzChanged ? "Page \(page) • Juz \(juz)" : "Page \(page)"
+        }
+        if let page = newAyah.page {
+            return "Page \(page)"
+        }
+        if let juz = newAyah.juz {
+            return "Juz \(juz)"
+        }
+        return nil
+    }
+
+    private func boundaryText(for ayah: Ayah) -> String? {
+        if let page = ayah.page, let juz = ayah.juz {
+            return "Page \(page) - Juz \(juz)"
+        }
+        if let page = ayah.page {
+            return "Page \(page)"
+        }
+        if let juz = ayah.juz {
+            return "Juz \(juz)"
+        }
+        return nil
+    }
+
+    private func buildBoundaryModels(for surahs: [Surah], displayQiraah: String?) -> [Int: SurahBoundaryModel] {
+        var result = [Int: SurahBoundaryModel]()
+        result.reserveCapacity(surahs.count)
+
+        for (index, surah) in surahs.enumerated() {
+            let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(displayQiraah) }
+            guard !ayahsForQiraah.isEmpty else {
+                result[surah.id] = SurahBoundaryModel(startDividerText: nil, dividerBeforeAyah: [:], endDividerText: nil)
+                continue
+            }
+
+            let startDividerText = ayahsForQiraah.first.flatMap { boundaryText(for: $0) }
+
+            var dividerBeforeAyah = [Int: String]()
+            if ayahsForQiraah.count > 1 {
+                for i in 1..<ayahsForQiraah.count {
+                    let prev = ayahsForQiraah[i - 1]
+                    let current = ayahsForQiraah[i]
+                    if let text = boundaryText(from: prev, to: current) {
+                        dividerBeforeAyah[current.id] = text
+                    }
+                }
+            }
+
+            var endDividerText: String? = nil
+            if index + 1 < surahs.count {
+                let nextSurah = surahs[index + 1]
+                if let lastAyah = ayahsForQiraah.last,
+                   let nextFirstAyah = nextSurah.ayahs.first(where: { $0.existsInQiraah(displayQiraah) }) {
+                    endDividerText = boundaryText(from: lastAyah, to: nextFirstAyah)
+                }
+            }
+
+            result[surah.id] = SurahBoundaryModel(
+                startDividerText: startDividerText,
+                dividerBeforeAyah: dividerBeforeAyah,
+                endDividerText: endDividerText
+            )
+        }
+
+        return result
     }
 
     private func buildIndexes(for surahs: [Surah]) -> ([Int:Int], [[Int:Int]]) {
@@ -404,6 +489,14 @@ final class QuranData: ObservableObject {
 
         return results
     }
+
+    func boundaryModel(forSurah surahID: Int) -> SurahBoundaryModel? {
+        let currentKey = settings.displayQiraahForArabic ?? ""
+        if cachedBoundaryQiraah != currentKey {
+            rebuildBoundaryModels()
+        }
+        return surahBoundaryModels[surahID]
+    }
     
     func searchVersesAll(term raw: String) -> [VerseIndexEntry] {
         searchVerses(term: raw, limit: .max, offset: 0)
@@ -425,21 +518,21 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 3,
-            nameArabic: "تِلْكَ ٱلْرُّسُلُ",
+            nameArabic: "تِلكَ ٱلرُّسُلُ",
             nameTransliteration: "Tilka Rusulu",
             startSurah: 2, startAyah: 253,
             endSurah: 3, endAyah: 92
         ),
 
         Juz(id: 4,
-            nameArabic: "لَنْ تَنالُوا",
+            nameArabic: "لَن تَنالُوا",
             nameTransliteration: "Lan Tanaaloo",
             startSurah: 3, startAyah: 93,
             endSurah: 4, endAyah: 23
         ),
 
         Juz(id: 5,
-            nameArabic: "وَٱلْمُحْصَنَاتُ",
+            nameArabic: "وَٱلمُحصَنَاتُ",
             nameTransliteration: "Walmohsanaatu",
             startSurah: 4, startAyah: 24,
             endSurah: 4, endAyah: 147
@@ -460,35 +553,35 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 8,
-            nameArabic: "وَلَوْ أَنَّنَا",
+            nameArabic: "وَلَو أَنَّنَا",
             nameTransliteration: "Walau Annanaa",
             startSurah: 6, startAyah: 111,
             endSurah: 7, endAyah: 87
         ),
 
         Juz(id: 9,
-            nameArabic: "قَالَ ٱلْمَلَأُ",
+            nameArabic: "قَالَ ٱلمَلَأُ",
             nameTransliteration: "Qaalal-Mala'u",
             startSurah: 7, startAyah: 88,
             endSurah: 8, endAyah: 40
         ),
 
         Juz(id: 10,
-            nameArabic: "وَٱعْلَمُواْ",
+            nameArabic: "وَٱعلَمُوا",
             nameTransliteration: "Wa'alamu",
             startSurah: 8, startAyah: 41,
             endSurah: 9, endAyah: 92
         ),
 
         Juz(id: 11,
-            nameArabic: "يَعْتَذِرُونَ",
+            nameArabic: "يَعتَذِرُونَ",
             nameTransliteration: "Ya'atadheroon",
             startSurah: 9, startAyah: 93,
             endSurah: 11, endAyah: 5
         ),
 
         Juz(id: 12,
-            nameArabic: "وَمَا مِنْ دَآبَّةٍ",
+            nameArabic: "وَمَا مِن دَآبَّةٍ",
             nameTransliteration: "Wamaa Min Da'abatin",
             startSurah: 11, startAyah: 6,
             endSurah: 12, endAyah: 52
@@ -509,28 +602,28 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 15,
-            nameArabic: "سُبْحَانَ ٱلَّذِى",
+            nameArabic: "سُبحَانَ ٱلَّذِى",
             nameTransliteration: "Subhana Allathee",
             startSurah: 17, startAyah: 1,
             endSurah: 18, endAyah: 74
         ),
 
         Juz(id: 16,
-            nameArabic: "قَالَ أَلَمْ",
+            nameArabic: "قَالَ أَلَم",
             nameTransliteration: "Qaala Alam",
             startSurah: 18, startAyah: 75,
             endSurah: 20, endAyah: 135
         ),
 
         Juz(id: 17,
-            nameArabic: "ٱقْتَرَبَ لِلْنَّاسِ",
+            nameArabic: "ٱقتَرَبَ لِلنَّاسِ",
             nameTransliteration: "Iqtaraba Linnaasi",
             startSurah: 21, startAyah: 1,
             endSurah: 22, endAyah: 78
         ),
 
         Juz(id: 18,
-            nameArabic: "قَدْ أَفْلَحَ",
+            nameArabic: "قَد أَفلَحَ",
             nameTransliteration: "Qad Aflaha",
             startSurah: 23, startAyah: 1,
             endSurah: 25, endAyah: 20
@@ -544,21 +637,21 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 20,
-            nameArabic: "أَمَّنْ خَلَقَ",
+            nameArabic: "أَمَّن خَلَقَ",
             nameTransliteration: "A'man Khalaqa",
             startSurah: 27, startAyah: 56,
             endSurah: 29, endAyah: 45
         ),
 
         Juz(id: 21,
-            nameArabic: "أُتْلُ مَاأُوْحِیَ",
+            nameArabic: "أُتلُ مَاأُوحِیَ",
             nameTransliteration: "Utlu Maa Oohia",
             startSurah: 29, startAyah: 46,
             endSurah: 33, endAyah: 30
         ),
 
         Juz(id: 22,
-            nameArabic: "وَمَنْ يَّقْنُتْ",
+            nameArabic: "وَمَن يَّقنُت",
             nameTransliteration: "Waman Yaqnut",
             startSurah: 33, startAyah: 31,
             endSurah: 36, endAyah: 27
@@ -572,14 +665,14 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 24,
-            nameArabic: "فَمَنْ أَظْلَمُ",
+            nameArabic: "فَمَن أَظلَمُ",
             nameTransliteration: "Faman Adhlamu",
             startSurah: 39, startAyah: 32,
             endSurah: 41, endAyah: 46
         ),
 
         Juz(id: 25,
-            nameArabic: "إِلَيْهِ يُرَدُّ",
+            nameArabic: "إِلَيهِ يُرَدُّ",
             nameTransliteration: "Ilayhi Yuraddu",
             startSurah: 41, startAyah: 47,
             endSurah: 45, endAyah: 37
@@ -593,14 +686,14 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 27,
-            nameArabic: "قَالَ فَمَا خَطْبُكُم",
+            nameArabic: "قَالَ فَمَا خَطبُكُم",
             nameTransliteration: "Qaala Famaa Khatbukum",
             startSurah: 51, startAyah: 31,
             endSurah: 57, endAyah: 29
         ),
 
         Juz(id: 28,
-            nameArabic: "قَدْ سَمِعَ ٱللهُ",
+            nameArabic: "قَد سَمِعَ ٱللهُ",
             nameTransliteration: "Qadd Samia Allahu",
             startSurah: 58, startAyah: 1,
             endSurah: 66, endAyah: 12

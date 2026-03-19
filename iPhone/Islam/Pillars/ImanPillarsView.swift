@@ -217,7 +217,7 @@ struct BooksView: View {
             }
             
             Section(header: Text("THE QURAN")) {
-                Text("The Quran (الْقُرْآن), meaning “The Recitation,“ is the final and complete revelation from Allah, sent to all of humanity through the Prophet Muhammad (peace and blessings be upon him). It is preserved word for word, as Allah has promised:")
+                Text("The Quran (القُرآن), meaning “The Recitation,“ is the final and complete revelation from Allah, sent to all of humanity through the Prophet Muhammad (peace and blessings be upon him). It is preserved word for word, as Allah has promised:")
                     .font(.body)
                 Text("“Indeed, it is We who sent down the Quran and indeed, We will be its guardian” (Quran 15:9).")
                     .font(.body)
@@ -228,13 +228,13 @@ struct BooksView: View {
             }
             
             Section(header: Text("PREVIOUS SCRIPTURES")) {
-                Text("1. **The Torah (التَّوْرَاة, Tawrah):** Revealed to Musa (Moses, peace be upon him), it contained laws and guidance for the Children of Israel. Over time, the original text was altered, and its authenticity was compromised.")
+                Text("1. **The Torah (التَّورَاة, Tawrah):** Revealed to Musa (Moses, peace be upon him), it contained laws and guidance for the Children of Israel. Over time, the original text was altered, and its authenticity was compromised.")
                     .font(.body)
                 
                 Text("2. **The Psalms (الزَّبُور, Zabur):** Revealed to Dawud (David, peace be upon him), it was a collection of hymns and praises dedicated to Allah.")
                     .font(.body)
                 
-                Text("3. **The Gospel (الإِنْجِيل, Injil):** Revealed to Isa (Jesus, peace be upon him), it confirmed the Torah and brought new guidance. However, the original Gospel has been lost, and what exists today are interpretations and altered accounts.")
+                Text("3. **The Gospel (الإِنجِيل, Injil):** Revealed to Isa (Jesus, peace be upon him), it confirmed the Torah and brought new guidance. However, the original Gospel has been lost, and what exists today are interpretations and altered accounts.")
                     .font(.body)
                 
                 Text("4. **The Scrolls (صُحُف, Suhuf):** Revealed to Ibrahim (Abraham, peace be upon him) and Musa (Moses, peace be upon him), these contained foundational teachings and guidance. They are mentioned in the Quran but no longer exist.")
@@ -368,7 +368,7 @@ struct DayView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Belief in the Day of Judgment (يَوْمُ الْقِيَامَة, Yawm al-Qiyamah) is a cornerstone of Islam and the fifth pillar of Iman (Faith). It is the day when Allah (Glorified and Exalted be He) will resurrect all of creation to hold them accountable for their deeds. This belief is essential for understanding the purpose of life and the consequences of human actions.")
+                Text("Belief in the Day of Judgment (يَومُ القِيَامَة, Yawm al-Qiyamah) is a cornerstone of Islam and the fifth pillar of Iman (Faith). It is the day when Allah (Glorified and Exalted be He) will resurrect all of creation to hold them accountable for their deeds. This belief is essential for understanding the purpose of life and the consequences of human actions.")
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
