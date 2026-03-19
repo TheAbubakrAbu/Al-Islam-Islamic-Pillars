@@ -13,7 +13,7 @@ extension Settings {
     }()
     
     private static let geocoder = CLGeocoder()
-    private static var cachedPlacemark: (coord: CLLocationCoordinate2D, city: String)?
+    private static var cachedPlacemark: (coord: CLLocationCoordinate2D, city: String, countryCode: String)?
     private static let geocodeActor = GeocodeActor()
     
     private static let oneMile: CLLocationDistance = 1609.34   // m
@@ -104,7 +104,8 @@ extension Settings {
         if let cached = Self.cachedPlacemark,
            CLLocation(latitude: cached.coord.latitude, longitude: cached.coord.longitude)
              .distance(from: CLLocation(latitude: coord.latitude, longitude: coord.longitude)) < 100,
-           cached.city == currentLocation?.city {
+                     cached.city == currentLocation?.city,
+                     cached.countryCode == currentCountryCode {
             return
         }
 
@@ -127,14 +128,17 @@ extension Settings {
                 return "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))"
             }()
 
-            if newCity != currentLocation?.city {
+            let detectedCountryCode = placemark.isoCountryCode?.uppercased() ?? ""
+
+            if newCity != currentLocation?.city || detectedCountryCode != currentCountryCode {
                 withAnimation {
                     currentLocation = Location(city: newCity, latitude: latitude, longitude: longitude)
+                    currentCountryCode = detectedCountryCode
                     WidgetCenter.shared.reloadAllTimelines()
                 }
             }
 
-            Self.cachedPlacemark = (coord, newCity)
+            Self.cachedPlacemark = (coord, newCity, detectedCountryCode)
 
         } catch {
             logger.warning("Geocode attempt \(attempt+1) failed: \(error.localizedDescription)")
@@ -142,6 +146,7 @@ extension Settings {
                 withAnimation {
                     currentLocation = Location(city: "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))",
                                                latitude: latitude, longitude: longitude)
+                    currentCountryCode = ""
                     WidgetCenter.shared.reloadAllTimelines()
                 }
                 return
@@ -153,6 +158,111 @@ extension Settings {
     }
     
     private static let travelingNotificationId = "Al-Islam.TravelingMode"
+    private static let calculationNotificationId = "Al-Islam.CalculationMode"
+
+    private static let countryCalculationMap: [String: String] = [
+        // North America method
+        "US": "North America",
+        "CA": "North America",
+        "MX": "North America",
+
+        // United Kingdom
+        "GB": "United Kingdom",
+        "IE": "United Kingdom",
+
+        // Saudi Arabia and nearby countries that commonly follow it
+        "SA": "Saudi Arabia",
+        "BH": "Saudi Arabia",
+        "OM": "Saudi Arabia",
+        "YE": "Saudi Arabia",
+
+        // Egyptian method and nearby region defaults
+        "EG": "Egypt",
+        "LY": "Egypt",
+        "TN": "Egypt",
+        "DZ": "Egypt",
+        "MA": "Egypt",
+        "SD": "Egypt",
+        "SS": "Egypt",
+        "DJ": "Egypt",
+        "ER": "Egypt",
+        "SO": "Egypt",
+        "JO": "Egypt",
+        "LB": "Egypt",
+        "SY": "Egypt",
+        "IQ": "Egypt",
+        "PS": "Egypt",
+
+        // Gulf country-specific methods
+        "AE": "Dubai",
+        "KW": "Kuwait",
+        "QA": "Qatar",
+
+        // Turkey
+        "TR": "Turkey",
+        "CY": "Turkey",
+        "AL": "Turkey",
+        "XK": "Turkey",
+        "BA": "Turkey",
+        "MK": "Turkey",
+
+        // Tehran
+        "IR": "Tehran",
+
+        // Karachi method (South Asia)
+        "PK": "Karachi",
+        "IN": "Karachi",
+        "BD": "Karachi",
+        "AF": "Karachi",
+        "NP": "Karachi",
+        "LK": "Karachi",
+
+        // Singapore method (Southeast Asia)
+        "SG": "Singapore",
+        "MY": "Singapore",
+        "BN": "Singapore",
+        "ID": "Singapore",
+        "TH": "Singapore",
+        "PH": "Singapore"
+    ]
+
+    private func automaticCalculationMethod(for countryCode: String) -> String {
+        Self.countryCalculationMap[countryCode] ?? "Muslim World League"
+    }
+
+    func checkAutomaticPrayerCalculation() {
+        guard Bundle.main.bundleIdentifier?.contains("Widget") != true,
+              calculationAutomatic,
+              let currentLocation = currentLocation,
+              currentLocation.latitude != 1000,
+              currentLocation.longitude != 1000
+        else { return }
+
+        let countryCode = currentCountryCode.uppercased()
+        let detectedMethod = automaticCalculationMethod(for: countryCode)
+
+        guard detectedMethod != prayerCalculation else { return }
+
+        let previousMethod = prayerCalculation
+        withAnimation {
+            prayerCalculation = detectedMethod
+        }
+
+        calculationAutoPreviousMethod = previousMethod
+        calculationAutoDetectedMethod = detectedMethod
+        calculationAutoDetectedCountryCode = countryCode
+        calculationAutoChanged = true
+
+        #if !os(watchOS)
+        let content = UNMutableNotificationContent()
+        content.title = "Al-Islam"
+        content.body = "Prayer calculation switched to \(detectedMethod) for \(currentLocation.city)."
+        content.sound = .default
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let req = UNNotificationRequest(identifier: Self.calculationNotificationId, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(req)
+        #endif
+    }
 
     func checkIfTraveling() {
         guard Bundle.main.bundleIdentifier?.contains("Widget") != true,
@@ -268,8 +378,8 @@ extension Settings {
     private static let calcParams: [String: CalculationParameters] = {
         let map: [(String, CalculationMethod)] = [
             ("Muslim World League", .muslimWorldLeague),
-            ("Moonsight Committee", .moonsightingCommittee),
-            ("Umm Al-Qura",         .ummAlQura),
+            ("United Kingdom",      .moonsightingCommittee),
+            ("Saudi Arabia",        .ummAlQura),
             ("Egypt",               .egyptian),
             ("Dubai",               .dubai),
             ("Kuwait",              .kuwait),
@@ -278,7 +388,11 @@ extension Settings {
             ("Tehran",              .tehran),
             ("Karachi",             .karachi),
             ("Singapore",           .singapore),
-            ("North America",       .northAmerica)
+            ("North America",       .northAmerica),
+            
+            // Legacy labels kept for backward compatibility with saved settings.
+            ("Moonsight Committee", .moonsightingCommittee),
+            ("Umm Al-Qura",         .ummAlQura)
         ]
         return Dictionary(uniqueKeysWithValues: map.map { ($0.0, $0.1.params) })
     }()
@@ -428,6 +542,13 @@ extension Settings {
             checkIfTraveling()
         } else if travelingModeManuallyToggled {
             travelingModeManuallyToggled = false
+        }
+
+        if !isWidget, calculationAutomatic, !calculationManuallyToggled {
+            calculationManuallyToggled = false
+            checkAutomaticPrayerCalculation()
+        } else if calculationManuallyToggled {
+            calculationManuallyToggled = false
         }
         
         // Decide if we need fresh prayers

@@ -376,7 +376,7 @@ final class QuranData: ObservableObject {
         guard pageChanged || juzChanged else { return nil }
 
         if let page = newAyah.page, let juz = newAyah.juz {
-            return juzChanged ? "Page \(page) • Juz \(juz)" : "Page \(page)"
+            return "Page \(page) - Juz \(juz)"
         }
         if let page = newAyah.page {
             return "Page \(page)"
@@ -400,6 +400,45 @@ final class QuranData: ObservableObject {
         return nil
     }
 
+    private func boundaryStyle(pageChanged: Bool, juzChanged: Bool) -> BoundaryDividerStyle {
+        if pageChanged {
+            return juzChanged ? .allAccent : .pageAccentJuzSecondary
+        }
+        if juzChanged {
+            return .allAccent
+        }
+        return .allSecondary
+    }
+
+    private func dividerModel(from text: String, style: BoundaryDividerStyle) -> BoundaryDividerModel {
+        if let juzRange = text.range(of: "Juz ") {
+            let prefix = String(text[..<juzRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if prefix.isEmpty {
+                return BoundaryDividerModel(
+                    text: text,
+                    pageSegment: text,
+                    juzSegment: nil,
+                    style: style
+                )
+            }
+            let pageSegment = prefix.trimmingCharacters(in: CharacterSet(charactersIn: " -•").union(.whitespacesAndNewlines))
+            let juzSegment = String(text[juzRange.lowerBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            return BoundaryDividerModel(
+                text: text,
+                pageSegment: pageSegment,
+                juzSegment: juzSegment,
+                style: style
+            )
+        }
+
+        return BoundaryDividerModel(
+            text: text,
+            pageSegment: text,
+            juzSegment: nil,
+            style: style
+        )
+    }
+
     private func buildBoundaryModels(for surahs: [Surah], displayQiraah: String?) -> [Int: SurahBoundaryModel] {
         var result = [Int: SurahBoundaryModel]()
         result.reserveCapacity(surahs.count)
@@ -408,11 +447,11 @@ final class QuranData: ObservableObject {
             let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(displayQiraah) }
             guard !ayahsForQiraah.isEmpty else {
                 result[surah.id] = SurahBoundaryModel(
-                    startDividerText: nil,
+                    startDivider: nil,
                     startDividerHighlighted: false,
                     dividerBeforeAyah: [:],
-                    endOfSurahDividerText: nil,
-                    endDividerText: nil,
+                    endOfSurahDivider: nil,
+                    endDivider: nil,
                     endDividerHighlighted: false
                 )
                 continue
@@ -427,14 +466,29 @@ final class QuranData: ObservableObject {
                 guard let previousLastAyah else { return false }
                 return previousLastAyah.page != firstAyah.page || previousLastAyah.juz != firstAyah.juz
             }()
+            let startDividerStyle: BoundaryDividerStyle = {
+                if surah.id == 1 { return .allGreen }
+                guard index > 0,
+                      let firstAyah = ayahsForQiraah.first else { return .allSecondary }
+                let previousSurah = surahs[index - 1]
+                let previousLastAyah = previousSurah.ayahs.last { $0.existsInQiraah(displayQiraah) }
+                guard let previousLastAyah else { return .allSecondary }
+                return boundaryStyle(
+                    pageChanged: previousLastAyah.page != firstAyah.page,
+                    juzChanged: previousLastAyah.juz != firstAyah.juz
+                )
+            }()
 
-            var dividerBeforeAyah = [Int: String]()
+            var dividerBeforeAyah = [Int: BoundaryDividerModel]()
             if ayahsForQiraah.count > 1 {
                 for i in 1..<ayahsForQiraah.count {
                     let prev = ayahsForQiraah[i - 1]
                     let current = ayahsForQiraah[i]
                     if let text = boundaryText(from: prev, to: current) {
-                        dividerBeforeAyah[current.id] = text
+                        dividerBeforeAyah[current.id] = dividerModel(
+                            from: text,
+                            style: boundaryStyle(pageChanged: prev.page != current.page, juzChanged: prev.juz != current.juz)
+                        )
                     }
                 }
             }
@@ -443,19 +497,25 @@ final class QuranData: ObservableObject {
             var endDividerHighlighted = false
             var endOfSurahDividerText: String? = nil
             var endBoundaryJuzChanged = false
+            var endBoundaryPageChanged = false
+            var nextFirstAyah: Ayah? = nil
             if index + 1 < surahs.count {
                 let nextSurah = surahs[index + 1]
                 if let lastAyah = ayahsForQiraah.last,
-                   let nextFirstAyah = nextSurah.ayahs.first(where: { $0.existsInQiraah(displayQiraah) }) {
-                    endDividerText = boundaryText(from: lastAyah, to: nextFirstAyah)
-                    endBoundaryJuzChanged = lastAyah.juz != nextFirstAyah.juz
-                    endDividerHighlighted = lastAyah.page != nextFirstAyah.page || lastAyah.juz != nextFirstAyah.juz
+                   let nextAyah = nextSurah.ayahs.first(where: { $0.existsInQiraah(displayQiraah) }) {
+                    nextFirstAyah = nextAyah
+                    endDividerText = boundaryText(from: lastAyah, to: nextAyah)
+                    endBoundaryPageChanged = lastAyah.page != nextAyah.page
+                    endBoundaryJuzChanged = lastAyah.juz != nextAyah.juz
+                    endDividerHighlighted = lastAyah.page != nextAyah.page || lastAyah.juz != nextAyah.juz
                 }
             }
 
-            if let lastAyah = ayahsForQiraah.last {
+            if surah.id == 1, let nextFirstAyah {
+                endOfSurahDividerText = boundaryText(for: nextFirstAyah)
+            } else if let lastAyah = ayahsForQiraah.last {
                 if let page = lastAyah.page {
-                    if endBoundaryJuzChanged, let juz = lastAyah.juz {
+                    if let juz = lastAyah.juz {
                         endOfSurahDividerText = "Page \(page) - Juz \(juz)"
                     } else {
                         endOfSurahDividerText = "Page \(page)"
@@ -464,13 +524,14 @@ final class QuranData: ObservableObject {
                     endOfSurahDividerText = "Juz \(juz)"
                 }
             }
+            let endDividerStyle = boundaryStyle(pageChanged: endBoundaryPageChanged, juzChanged: endBoundaryJuzChanged)
 
             result[surah.id] = SurahBoundaryModel(
-                startDividerText: startDividerText,
+                startDivider: startDividerText.map { dividerModel(from: $0, style: startDividerStyle) },
                 startDividerHighlighted: startDividerHighlighted,
                 dividerBeforeAyah: dividerBeforeAyah,
-                endOfSurahDividerText: endOfSurahDividerText,
-                endDividerText: endDividerText,
+                endOfSurahDivider: endOfSurahDividerText.map { dividerModel(from: $0, style: endDividerStyle) },
+                endDivider: endDividerText.map { dividerModel(from: $0, style: endDividerStyle) },
                 endDividerHighlighted: endDividerHighlighted
             )
         }

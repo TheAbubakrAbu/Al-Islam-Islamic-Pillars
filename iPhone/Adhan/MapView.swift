@@ -1,7 +1,6 @@
 import SwiftUI
 import MapKit
-import CryptoKit
-import ObjectiveC.runtime
+import CoreLocation
 
 struct MapView: View {
     @EnvironmentObject private var settings: Settings
@@ -13,6 +12,7 @@ struct MapView: View {
     @State private var cityItems = [MKMapItem]()
     @State private var selectedItem: MKMapItem?
     @State private var showAlert = false
+    @State private var searchTask: Task<Void, Never>?
     @State var choosingPrayerTimes: Bool
 
     @State private var region = MKCoordinateRegion(
@@ -67,61 +67,73 @@ struct MapView: View {
         return "\(miStr) mi / \(kmStr) km"
     }
 
+    private struct MarkerItem: Identifiable {
+        let id: String
+        let coordinate: CLLocationCoordinate2D
+    }
+
+    private var markers: [MarkerItem] {
+        if let sel = selectedItem {
+            return [MarkerItem(id: "selected", coordinate: sel.placemark.coordinate)]
+        }
+        if let home = settings.homeLocation {
+            return [MarkerItem(id: "home", coordinate: home.coordinate)]
+        }
+        if let cur = settings.currentLocation,
+           cur.latitude != 1000,
+           cur.longitude != 1000 {
+            return [MarkerItem(id: "current", coordinate: .init(latitude: cur.latitude, longitude: cur.longitude))]
+        }
+        return []
+    }
+
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                resultsList
-                    .animation(.easeInOut, value: cityItems)
-
-                let markers: [MKMapItem] = {
-                    if let sel = selectedItem {
-                        return [sel]
-                    }
-                    if let home = settings.homeLocation {
-                        let pm = MKPlacemark(coordinate: home.coordinate)
-                        return [MKMapItem(placemark: pm)]
-                    }
-                    if let cur = settings.currentLocation,
-                       cur.latitude != 1000, cur.longitude != 1000 {
-                        let pm = MKPlacemark(coordinate: .init(latitude: cur.latitude, longitude: cur.longitude))
-                        return [MKMapItem(placemark: pm)]
-                    }
-                    return []
-                }()
-
-                Map(coordinateRegion: $region, annotationItems: markers) {
-                    MapMarker(coordinate: $0.placemark.coordinate)
+            interactiveMap
+            .edgesIgnoringSafeArea(.all)
+            .overlay(alignment: .top) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SearchBar(text: $searchText)
+                    
+                    resultsList
                 }
-                .edgesIgnoringSafeArea(.bottom)
-
+                .conditionalGlassEffect()
+                .padding(.horizontal)
+            }
+            .safeAreaInset(edge: .bottom) {
                 if !choosingPrayerTimes, let home = settings.homeLocation {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Home: \(home.city)", systemImage: "house.fill")
-                            .font(.headline)
-                            .foregroundColor(settings.accentColor.color)
-                        
-                        if let current = settings.currentLocation {
-                            Label("Current: \(current.city)", systemImage: "location.fill")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Home: \(home.city)", systemImage: "house.fill")
                                 .font(.headline)
                                 .foregroundColor(settings.accentColor.color)
                             
-                            if let distance = distanceString {
-                                Label(distance, systemImage: "arrow.right.arrow.left")
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
+                            if let current = settings.currentLocation {
+                                Label("Current: \(current.city)", systemImage: "location.fill")
+                                    .font(.headline)
+                                    .foregroundColor(settings.accentColor.color)
+                                
+                                if let distance = distanceString {
+                                    Label(distance, systemImage: "arrow.right.arrow.left")
+                                        .font(.subheadline)
+                                        .foregroundColor(.primary)
+                                }
                             }
+                            
+                            Text("• Must be at least 48 miles (≈ 77 km) from home to be considered traveling")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                                .multilineTextAlignment(.leading)
                         }
-
-                        Text("• Must be at least 48 miles (≈ 77 km) from home to be considered traveling")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                            .multilineTextAlignment(.leading)
+                        .padding(8)
+                        
+                        useCurrentButton
                     }
-                    .padding(.vertical)
+                    .padding(8)
+                    .conditionalGlassEffect()
+                    .padding([.horizontal, .bottom])
                 }
-
-                useCurrentButton
             }
             .navigationTitle("Select Location")
             .navigationBarTitleDisplayMode(.inline)
@@ -136,13 +148,21 @@ struct MapView: View {
             } message: {
                 Text("Please enable location services to accurately determine prayer times.")
             }
-            .task(id: searchText) { await search(for: searchText) }   // debounce built‑in
+            .onChange(of: searchText) { newText in
+                scheduleSearch(for: newText)
+            }
             .onAppear { configureInitialRegion() }
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .preferredColorScheme(scheme)
         }
         .accentColor(settings.accentColor.color)
         .tint(settings.accentColor.color)
+    }
+
+    @ViewBuilder
+    private var interactiveMap: some View {
+        Map(coordinateRegion: $region, annotationItems: markers) {
+            MapMarker(coordinate: $0.coordinate)
+        }
     }
 
     private var resultsList: some View {
@@ -151,8 +171,8 @@ struct MapView: View {
                 if cityItems.isEmpty {
                     Text("No matches found")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
                         .font(.subheadline)
+                        .padding()
                 } else {
                     ScrollView {
                         VStack(spacing: 0) {
@@ -169,14 +189,14 @@ struct MapView: View {
                             }
                         }
                     }
-                    .frame(height: min(CGFloat(cityItems.count) * 48, 300))
+                    .frame(height: min(CGFloat(cityItems.count) * 55, 300))
                 }
             }
         }
     }
 
     private var useCurrentButton: some View {
-        Button("Automatically Use Current Location") {
+        Button {
             settings.hapticFeedback()
             guard let cur = settings.currentLocation else { return }
 
@@ -191,13 +211,40 @@ struct MapView: View {
             settings.fetchPrayerTimes() {
                 if !settings.locationNeverAskAgain && settings.showLocationAlert { showAlert = true }
             }
+        } label: {
+            Text("Automatically Use Current Location")
+                .foregroundColor(.primary)
+                .buttonStyle(.plain)
+                .clipShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(settings.accentColor.color)
-        .foregroundColor(.white)
-        .cornerRadius(24)
-        .padding(.horizontal, 16)
+        .font(.headline)
+        .foregroundColor(settings.accentColor.color)
+        .padding(18)
+        .background(buttonBackground)
+    }
+    
+    private var buttonBackground: some View {
+        if #available(iOS 26.0, *) {
+            AnyView(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.clear)
+                    .glassEffect(.regular.tint(settings.accentColor.color.opacity(0.15)).interactive(), in: .rect(cornerRadius: 24))
+            )
+        } else {
+            AnyView(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(settings.accentColor.color.opacity(0.15))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(settings.accentColor.color.opacity(0.18), lineWidth: 1)
+                    )
+            )
+        }
     }
 
     private func select(_ item: MKMapItem) {
@@ -222,7 +269,7 @@ struct MapView: View {
     }
 
     private func updateRegion(to coord: CLLocationCoordinate2D) {
-        region = .init(center: coord, span: .init(latitudeDelta: 0.5, longitudeDelta: 0.5))
+        region = .init(center: coord, span: .init(latitudeDelta: 0.2, longitudeDelta: 0.2))
     }
 
     private func configureInitialRegion() {
@@ -234,53 +281,43 @@ struct MapView: View {
     }
 
     private func search(for text: String) async {
-        guard !text.isEmpty else { cityItems = []; return }
+        let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            await MainActor.run { cityItems = [] }
+            return
+        }
 
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = text
+        request.naturalLanguageQuery = query
         
         request.resultTypes = .address
         request.region = region
 
         let response = try? await MKLocalSearch(request: request).start()
-        await MainActor.run { cityItems = response?.mapItems ?? [] }
+        let items = response?.mapItems ?? []
+        var seen = Set<String>()
+        let unique = items.filter {
+            let key = formattedName(for: $0)
+            if seen.contains(key) { return false }
+            seen.insert(key)
+            return true
+        }
+        await MainActor.run { cityItems = Array(unique.prefix(10)) }
+    }
+
+    private func scheduleSearch(for text: String) {
+        searchTask?.cancel()
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled else { return }
+            await search(for: text)
+        }
     }
 
     private func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
     }
-}
-
-private var placemarkUUIDKey: UInt8 = 0
-
-private extension CLPlacemark {
-    var uuid: UUID {
-        if let existing = objc_getAssociatedObject(self, &placemarkUUIDKey) as? UUID {
-            return existing
-        }
-
-        let key = "\(location?.coordinate.latitude ?? 0),\(location?.coordinate.longitude ?? 0)-" +
-                  "\(name ?? "")-\(locality ?? "")-\(administrativeArea ?? "")-\(isoCountryCode ?? "")"
-
-        let digest = Insecure.MD5.hash(data: Data(key.utf8))
-        let uuid: UUID = digest.withUnsafeBytes { rawBuffer in
-            let bytes = rawBuffer.bindMemory(to: UInt8.self)
-            return UUID(uuid: (
-                bytes[0], bytes[1], bytes[2], bytes[3],
-                bytes[4], bytes[5], bytes[6], bytes[7],
-                bytes[8], bytes[9], bytes[10], bytes[11],
-                bytes[12], bytes[13], bytes[14], bytes[15]
-            ))
-        }
-
-        objc_setAssociatedObject(self, &placemarkUUIDKey, uuid, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        return uuid
-    }
-}
-
-extension MKMapItem: @retroactive Identifiable {
-    public var id: UUID { placemark.uuid }
 }
 
 #Preview {

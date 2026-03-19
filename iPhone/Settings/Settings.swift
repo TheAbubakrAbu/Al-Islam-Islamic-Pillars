@@ -289,6 +289,15 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     /// Set by the UI when the user toggles Traveling Mode; fetchPrayerTimes skips checkIfTraveling once so we don’t override or notify.
     var travelingModeManuallyToggled: Bool = false
 
+    @AppStorage("calculationAutomatic") var calculationAutomatic: Bool = true
+    @AppStorage("calculationAutoChanged") var calculationAutoChanged: Bool = false
+    @AppStorage("calculationAutoPreviousMethod") var calculationAutoPreviousMethod: String = ""
+    @AppStorage("calculationAutoDetectedMethod") var calculationAutoDetectedMethod: String = ""
+    @AppStorage("calculationAutoDetectedCountryCode") var calculationAutoDetectedCountryCode: String = ""
+    @AppStorage("currentCountryCode") var currentCountryCode: String = ""
+    /// Set by the UI when the user manually picks a method while automatic mode is enabled.
+    var calculationManuallyToggled: Bool = false
+
     @AppStorage("showLocationAlert") var showLocationAlert: Bool = false {
         willSet { objectWillChange.send() }
     }
@@ -510,5 +519,50 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         default:
             return "system"
         }
+    }
+
+    func automaticTravelMessage(turnOn: Bool) -> String {
+        if turnOn {
+            return "Al-Islam has automatically detected that you are traveling, so your prayers will be shortened."
+        }
+        return "Al-Islam has automatically detected that you are no longer traveling, so your prayers will not be shortened."
+    }
+
+    var automaticCalculationMessage: String {
+        let country = calculationAutoDetectedCountryCode.isEmpty ? "unknown" : calculationAutoDetectedCountryCode
+        return "Al-Islam detected your region as \(country) and switched prayer calculation from \(calculationAutoPreviousMethod) to \(calculationAutoDetectedMethod)."
+    }
+
+    func resetTravelAutomaticFlags() {
+        travelTurnOnAutomatic = false
+        travelTurnOffAutomatic = false
+    }
+
+    func overrideTravelingMode(keepOn: Bool) {
+        travelingModeManuallyToggled = true
+        withAnimation {
+            travelingMode = keepOn
+        }
+        travelAutomatic = false
+        resetTravelAutomaticFlags()
+        fetchPrayerTimes(force: true)
+    }
+
+    func confirmTravelAutomaticChange() {
+        resetTravelAutomaticFlags()
+    }
+
+    func overrideAutomaticCalculationKeepingPrevious() {
+        calculationManuallyToggled = true
+        withAnimation {
+            prayerCalculation = calculationAutoPreviousMethod
+        }
+        calculationAutomatic = false
+        calculationAutoChanged = false
+        fetchPrayerTimes(force: true)
+    }
+
+    func confirmAutomaticCalculationChange() {
+        calculationAutoChanged = false
     }
 }

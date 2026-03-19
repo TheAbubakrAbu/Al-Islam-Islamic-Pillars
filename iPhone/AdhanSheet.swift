@@ -16,6 +16,8 @@ struct AdhanSetupSheet: View {
                         
                         Text("""
                             • You should probably choose the method used in your region (for example, North America, Egypt, etc.).
+                            • Automatic prayer calculation is enabled by default, so Al-Islam can pick based on your detected country.
+                            • If Al-Islam detects a better method for your region, it notifies you and asks for confirmation.
                             • If your country isn’t listed or you’re unsure, a global method like Muslim World League is a safe choice.
                             • It’s best to check with your local mosque to see which method they follow.
                             """
@@ -71,7 +73,6 @@ struct AdhanSetupSheet: View {
         }
     }
 }
-
 
 #Preview {
     AdhanSetupSheet()

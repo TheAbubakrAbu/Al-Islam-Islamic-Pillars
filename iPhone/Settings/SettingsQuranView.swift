@@ -178,6 +178,7 @@ struct SettingsQuranView: View {
                     .font(.subheadline)
                 } else {
                     Toggle("Include English", isOn: includeEnglish.animation(.easeInOut))
+                        .font(.subheadline)
                         .disabled(!settings.isHafsDisplay)
                 }
             }

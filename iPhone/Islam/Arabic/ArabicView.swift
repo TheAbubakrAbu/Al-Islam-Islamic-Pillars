@@ -3,7 +3,34 @@ import SwiftUI
 struct ArabicView: View {
     @EnvironmentObject private var settings: Settings
     @State private var searchText = ""
-    @AppStorage("groupingType") private var groupingType: String = "normal"
+    @AppStorage("arabicFilterMode") private var filterModeRaw: String = ArabicFilterMode.normal.rawValue
+
+    private enum ArabicFilterMode: String, CaseIterable {
+        case normal
+        case similarity
+        case heavyLight
+
+        var title: String {
+            switch self {
+            case .normal: return "Normal Grouping"
+            case .similarity: return "Similar Letters"
+            case .heavyLight: return "Heavy vs Light"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .normal: return "square.grid.2x2"
+            case .similarity: return "square.grid.3x3"
+            case .heavyLight: return "circle.lefthalf.filled"
+            }
+        }
+    }
+
+    private var filterMode: ArabicFilterMode {
+        get { ArabicFilterMode(rawValue: filterModeRaw) ?? .normal }
+        set { filterModeRaw = newValue.rawValue }
+    }
 
     private let similarityGroups: [[String]] = [
         ["ا", "و", "ي"], ["ب", "ت", "ث"], ["ج", "ح", "خ"], ["د", "ذ"],
@@ -55,6 +82,15 @@ struct ArabicView: View {
         return parts.contains { $0.contains(st) }
     }
 
+    private var filteredStandardForMode: [LetterData] {
+        switch filterMode {
+        case .normal, .similarity:
+            return filteredStandard
+        case .heavyLight:
+            return filteredStandard.filter { $0.weight != nil }
+        }
+    }
+
     var body: some View {
         List {
             if searchText.isEmpty, !settings.favoriteLetters.isEmpty {
@@ -66,13 +102,13 @@ struct ArabicView: View {
             }
 
             if searchText.isEmpty {
-                if groupingType == "normal" {
+                if filterMode == .normal {
                     Section("STANDARD ARABIC LETTERS") {
                         ForEach(standardArabicLetters, id: \.letter) {
                             ArabicLetterRow(letterData: $0)
                         }
                     }
-                } else {
+                } else if filterMode == .similarity {
                     ForEach(similarityGroups.indices, id: \.self) { idx in
                         let group = similarityGroups[idx]
                         let header = idx == 0 ? "VOWEL LETTERS" : group.joined(separator: " AND")
@@ -80,6 +116,40 @@ struct ArabicView: View {
                             ForEach(group, id: \.self) { ch in
                                 letterData(for: ch).map(ArabicLetterRow.init)
                             }
+                        }
+                    }
+                } else if filterMode == .heavyLight {
+                    Section("HEAVY LETTERS") {
+                        ForEach(standardArabicLetters.filter { $0.weight == .heavy }, id: \.letter) {
+                            ArabicLetterRow(letterData: $0)
+                        }
+                    }
+
+                    Section("LIGHT LETTERS") {
+                        ForEach((standardArabicLetters + otherArabicLetters).filter {
+                            $0.weight == .light
+                                || $0.transliteration == "taa marbuuTa"
+                                || $0.transliteration.lowercased().contains("hamza")
+                        }, id: \.id) {
+                            ArabicLetterRow(letterData: $0)
+                        }
+                    }
+
+                    Section("CONDITIONAL") {
+                        ForEach(standardArabicLetters.filter { $0.weight == .conditional }, id: \.letter) {
+                            ArabicLetterRow(letterData: $0)
+                        }
+                    }
+
+                    Section("FOLLOWS PREVIOUS") {
+                        ForEach(standardArabicLetters.filter { $0.weight == .followsPrevious }, id: \.letter) {
+                            ArabicLetterRow(letterData: $0)
+                        }
+                    }
+                } else {
+                    Section("STANDARD ARABIC LETTERS") {
+                        ForEach(standardArabicLetters, id: \.letter) {
+                            ArabicLetterRow(letterData: $0)
                         }
                     }
                 }
@@ -90,26 +160,20 @@ struct ArabicView: View {
                     }
                 }
 
-                    Section("TASHKEEL") {
-                        ForEach(tashkeels, id: \.english) { item in
-                            ArabicTashkeelInfoRow(tashkeel: item)
-                        }
-                    }
-
                 Section("ARABIC NUMBERS") {
                     ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
                 }
 
                 tajweedSection
 
-                    Section("NON-ARABIC ARABIC-SCRIPT LETTERS") {
-                        ForEach(nonArabicArabicScriptLetters, id: \.letter) {
-                            ArabicLetterRow(letterData: $0)
-                        }
+                Section("NON-ARABIC LETTERS") {
+                    ForEach(nonArabicArabicScriptLetters, id: \.letter) {
+                        ArabicLetterRow(letterData: $0)
                     }
+                }
             } else {
-                Section("SEARCH RESULTS (\(filteredStandard.count + filteredOther.count))") {
-                    ForEach(filteredStandard) {
+                Section("SEARCH RESULTS (\(filteredStandardForMode.count + filteredOther.count))") {
+                    ForEach(filteredStandardForMode) {
                         ArabicLetterRow(letterData: $0)
                     }
                     
@@ -124,14 +188,39 @@ struct ArabicView: View {
         #else
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
-                Picker("Grouping", selection: $groupingType.animation(.easeInOut)) {
-                    Text("Normal Grouping").tag("normal")
-                    Text("Group by Similarity").tag("similarity")
+                Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
+                    Text("Quranic Font").tag(true)
+                    Text("Basic Font").tag(false)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 8)
-                
-                SearchBar(text: $searchText.animation(.easeInOut))
+
+                HStack {
+                    SearchBar(text: $searchText.animation(.easeInOut))
+
+                    Menu {
+                        Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {
+                            ForEach(ArabicFilterMode.allCases, id: \.rawValue) { mode in
+                                Label(mode.title, systemImage: mode.icon).tag(mode.rawValue)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: filterMode.icon)
+                            .font(.headline)
+                            .foregroundColor(settings.accentColor.color)
+                            .frame(width: 44, height: 44)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.secondary.opacity(0.16))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(settings.accentColor.color.opacity(0.35), lineWidth: 1)
+                            )
+                            .accessibilityLabel("Arabic alphabet filter")
+                    }
+                }
+                .padding(.trailing, 8)
             }
             .padding(.top, 8)
             .conditionalGlassEffect()
@@ -173,38 +262,6 @@ struct ArabicView: View {
     }
 }
 
-struct ArabicTashkeelInfoRow: View {
-    @EnvironmentObject private var settings: Settings
-    let tashkeel: Tashkeel
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(tashkeel.english)
-                    .font(.subheadline.weight(.semibold))
-                Text(tashkeel.arabic)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            if !tashkeel.transliteration.isEmpty {
-                Text(tashkeel.transliteration)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Text(tashkeel.tashkeelMark)
-                .font(settings.useFontArabic
-                      ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
-                      : .title2)
-                .foregroundStyle(settings.accentColor.color)
-                .frame(minWidth: 24, alignment: .center)
-        }
-    }
-}
-
 struct ArabicLetterRow: View {
     @EnvironmentObject private var settings: Settings
     let letterData: LetterData
@@ -220,7 +277,7 @@ struct ArabicLetterRow: View {
                 Spacer()
 
                 Text(letterData.letter)
-                    .font(settings.useFontArabic
+                    .font((settings.useFontArabic && !letterData.isNonArabicScriptLetter)
                           ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
                           : .title2)
                     .foregroundColor(settings.accentColor.color)

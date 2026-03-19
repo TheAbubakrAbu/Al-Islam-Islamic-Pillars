@@ -9,6 +9,7 @@ struct AyahsView: View {
     
     @State private var searchText = ""
     @State private var firstVisibleAyahID: Int? = nil
+    @State private var visibleBoundaryAnchorIDs = Set<Int>()
     @State private var scrollDown: Int? = nil
     @State private var didScrollDown = false
     @State private var showingSettingsSheet = false
@@ -51,11 +52,6 @@ struct AyahsView: View {
         return nil
     }
 
-    private func boundaryChanged(from oldAyah: Ayah?, to newAyah: Ayah?) -> Bool {
-        guard let oldAyah, let newAyah else { return false }
-        return oldAyah.page != newAyah.page || oldAyah.juz != newAyah.juz
-    }
-
     private func parsePageJuzQuery(from raw: String) -> PageJuzQuery {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return PageJuzQuery(page: nil, juz: nil) }
@@ -85,26 +81,66 @@ struct AyahsView: View {
         return PageJuzQuery(page: nil, juz: nil)
     }
 
-    @ViewBuilder
-    private func boundaryDivider(text: String, highlighted: Bool) -> some View {
-        let dividerColor: Color = highlighted ? settings.accentColor.color : .secondary
-        HStack(spacing: 10) {
+    private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false) -> some View {
+        let accent = settings.accentColor.color
+        let dividerColor: Color = {
+            if isOverlay { return .green }
+            switch model.style {
+            case .allGreen: return .green
+            case .allSecondary: return .secondary
+            case .pageAccentJuzSecondary, .allAccent: return accent
+            }
+        }()
+        let pageColor: Color = {
+            if isOverlay { return accent }
+            switch model.style {
+            case .allGreen: return .green
+            case .allSecondary: return .secondary
+            case .pageAccentJuzSecondary, .allAccent: return accent
+            }
+        }()
+        let juzColor: Color = {
+            if isOverlay { return .green }
+            switch model.style {
+            case .allGreen: return .green
+            case .allSecondary: return .secondary
+            case .pageAccentJuzSecondary: return .secondary
+            case .allAccent: return accent
+            }
+        }()
+        let separatorColor: Color = {
+            if isOverlay { return .green }
+            switch model.style {
+            case .allGreen: return .green
+            case .allSecondary: return .secondary
+            case .pageAccentJuzSecondary, .allAccent: return accent
+            }
+        }()
+
+        return HStack(spacing: 10) {
             Rectangle()
-                .fill(dividerColor.opacity(highlighted ? 0.5 : 0.35))
+                .fill(dividerColor.opacity(isOverlay ? 0.55 : 0.45))
                 .frame(height: 1)
                 .frame(minWidth: 18)
 
-            Text(text)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(dividerColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .allowsTightening(true)
-                .layoutPriority(1)
-                .fixedSize(horizontal: false, vertical: true)
+            (
+                Text(model.pageSegment)
+                    .foregroundColor(pageColor)
+                +
+                (model.juzSegment.map {
+                    Text(" - ").foregroundColor(separatorColor)
+                    + Text($0).foregroundColor(juzColor)
+                } ?? Text(""))
+            )
+            .font(.caption.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .allowsTightening(true)
+            .layoutPriority(1)
+            .fixedSize(horizontal: false, vertical: true)
 
             Rectangle()
-                .fill(dividerColor.opacity(highlighted ? 0.5 : 0.35))
+                .fill(dividerColor.opacity(isOverlay ? 0.55 : 0.45))
                 .frame(height: 1)
                 .frame(minWidth: 18)
         }
@@ -151,80 +187,80 @@ struct AyahsView: View {
                     || settings.cleanSearch(a.idArabic).contains(cleanQuery)
                     || Int(cleanQuery) == a.id
             }
-            let nextVisibleAyahIDByID: [Int: Int] = {
-                guard filteredAyahs.count > 1 else { return [:] }
-                var nextMap = [Int: Int](minimumCapacity: filteredAyahs.count - 1)
-                for i in 0..<(filteredAyahs.count - 1) {
-                    nextMap[filteredAyahs[i].id] = filteredAyahs[i + 1].id
-                }
-                return nextMap
-            }()
             let boundaryModel = showBoundaryDividers ? quranData.boundaryModel(forSurah: surah.id) : nil
-            let startOfSurahDividerText: String? = {
+            let startOfSurahDivider: BoundaryDividerModel? = {
                 guard showBoundaryDividers, searchText.isEmpty else { return nil }
-                return boundaryModel?.startDividerText
+                return boundaryModel?.startDivider
             }()
-            let startBoundaryIsHighlighted: Bool = {
-                guard showBoundaryDividers, searchText.isEmpty else { return false }
-                return boundaryModel?.startDividerHighlighted == true
-            }()
-            let endOfSurahDividerText: String? = {
+            let endOfSurahDivider: BoundaryDividerModel? = {
                 guard showBoundaryDividers, searchText.isEmpty else { return nil }
-                return boundaryModel?.endOfSurahDividerText
-            }()
-            let endBoundaryIsHighlighted: Bool = {
-                guard showBoundaryDividers, searchText.isEmpty else { return false }
-                return boundaryModel?.endDividerHighlighted == true
+                return boundaryModel?.endOfSurahDivider
             }()
             let currentFloatingAyah = firstVisibleAyahID
                 .flatMap { visibleID in ayahByID[visibleID] }
                 ?? ayahsForQiraah.first
-            let floatingDividerText: String? = {
+            let floatingDividerModel: BoundaryDividerModel? = {
                 guard showBoundaryDividers, searchText.isEmpty else { return nil }
-                return currentFloatingAyah.flatMap { boundaryText(for: $0) }
-            }()
-            let floatingDividerIsHighlighted: Bool = {
-                guard let currentFloatingAyah,
-                      let firstAyah = ayahsForQiraah.first else { return false }
-                if currentFloatingAyah.id == firstAyah.id {
-                    return startBoundaryIsHighlighted
+                guard let currentFloatingAyah else { return nil }
+                let pageSegment: String
+                if let page = currentFloatingAyah.page {
+                    pageSegment = "Page \(page)"
+                } else if let juz = currentFloatingAyah.juz {
+                    pageSegment = "Juz \(juz)"
+                } else {
+                    return nil
                 }
-                return true
+                let juzSegment = (currentFloatingAyah.page != nil) ? currentFloatingAyah.juz.map { "Juz \($0)" } : nil
+                return BoundaryDividerModel(
+                    text: boundaryText(for: currentFloatingAyah) ?? pageSegment,
+                    pageSegment: pageSegment,
+                    juzSegment: juzSegment,
+                    style: .allAccent
+                )
             }()
-            let keywordDividerTexts: [String] = {
+            let keywordDividerModels: [BoundaryDividerModel] = {
                 guard let mode = dividerKeywordMode else { return [] }
                 guard let boundaryModel else { return [] }
 
-                var allDividerTexts: [String] = []
+                var allDividerModels: [BoundaryDividerModel] = []
 
-                if let start = boundaryModel.startDividerText {
-                    allDividerTexts.append(start)
+                if let start = boundaryModel.startDivider {
+                    allDividerModels.append(start)
                 }
 
                 for ayah in ayahsForQiraah {
-                    if let text = boundaryModel.dividerBeforeAyah[ayah.id] {
-                        allDividerTexts.append(text)
+                    if let model = boundaryModel.dividerBeforeAyah[ayah.id] {
+                        allDividerModels.append(model)
                     }
                 }
 
-                if let end = boundaryModel.endDividerText {
-                    allDividerTexts.append(end)
+                if let end = boundaryModel.endDivider {
+                    allDividerModels.append(end)
                 }
 
                 var seen = Set<String>()
-                return allDividerTexts.filter { text in
+                return allDividerModels.filter { model in
                     let matches: Bool
                     switch mode {
                     case .page:
-                        matches = text.localizedCaseInsensitiveContains("Page")
+                        matches = model.text.localizedCaseInsensitiveContains("Page")
                     case .juz:
-                        matches = text.localizedCaseInsensitiveContains("Juz")
+                        matches = model.text.localizedCaseInsensitiveContains("Juz")
                     }
                     guard matches else { return false }
-                    return seen.insert(text).inserted
+                    return seen.insert(model.text).inserted
                 }
             }()
-            let searchCount = isDividerKeywordSearch ? keywordDividerTexts.count : filteredAyahs.count
+            let searchCount = isDividerKeywordSearch ? keywordDividerModels.count : filteredAyahs.count
+            let syncBoundaryAnchor: () -> Void = {
+                if let topBoundaryAyahID = visibleBoundaryAnchorIDs.min() {
+                    firstVisibleAyahID = topBoundaryAyahID
+                } else if let sel = ayah, ayahByID[sel] != nil {
+                    firstVisibleAyahID = sel
+                } else {
+                    firstVisibleAyahID = ayahsForQiraah.first?.id
+                }
+            }
             
             List {
                 Section {
@@ -288,18 +324,30 @@ struct AyahsView: View {
                 #endif
 
                 if isDividerKeywordSearch {
-                    ForEach(Array(keywordDividerTexts.enumerated()), id: \.offset) { _, dividerText in
+                    ForEach(Array(keywordDividerModels.enumerated()), id: \.offset) { _, dividerModel in
                         Section {
-                            boundaryDivider(text: dividerText, highlighted: true)
+                            boundaryDivider(model: dividerModel)
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
                         #endif
                     }
                 } else {
-                    if let startOfSurahDividerText {
+                    if let startOfSurahDivider {
                         Section {
-                            boundaryDivider(text: startOfSurahDividerText, highlighted: startBoundaryIsHighlighted)
+                            boundaryDivider(model: startOfSurahDivider)
+                        }
+                        .onAppear {
+                            if let first = filteredAyahs.first {
+                                visibleBoundaryAnchorIDs.insert(first.id)
+                                syncBoundaryAnchor()
+                            }
+                        }
+                        .onDisappear {
+                            if let first = filteredAyahs.first {
+                                visibleBoundaryAnchorIDs.remove(first.id)
+                                syncBoundaryAnchor()
+                            }
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
@@ -311,7 +359,15 @@ struct AyahsView: View {
 
                         if let dividerBefore {
                             Section {
-                                boundaryDivider(text: dividerBefore, highlighted: true)
+                                boundaryDivider(model: dividerBefore)
+                            }
+                            .onAppear {
+                                visibleBoundaryAnchorIDs.insert(ayah.id)
+                                syncBoundaryAnchor()
+                            }
+                            .onDisappear {
+                                visibleBoundaryAnchorIDs.remove(ayah.id)
+                                syncBoundaryAnchor()
                             }
                             #if !os(watchOS)
                             .listRowSeparator(.hidden)
@@ -338,15 +394,6 @@ struct AyahsView: View {
                             #endif
                         }
                         .id(ayah.id)
-                        .onAppear {
-                            if firstVisibleAyahID == nil || ayah.id < firstVisibleAyahID! {
-                                firstVisibleAyahID = ayah.id
-                            }
-                        }
-                        .onDisappear {
-                            guard firstVisibleAyahID == ayah.id else { return }
-                            firstVisibleAyahID = nextVisibleAyahIDByID[ayah.id]
-                        }
                         #if !os(watchOS)
                         .onChange(of: scrollDown) { value in
                             guard let target = value else { return }
@@ -377,9 +424,21 @@ struct AyahsView: View {
                         #endif
                     }
 
-                    if let endOfSurahDividerText {
+                    if let endOfSurahDivider {
                         Section {
-                            boundaryDivider(text: endOfSurahDividerText, highlighted: endBoundaryIsHighlighted)
+                            boundaryDivider(model: endOfSurahDivider)
+                        }
+                        .onAppear {
+                            if let last = filteredAyahs.last {
+                                visibleBoundaryAnchorIDs.insert(last.id)
+                                syncBoundaryAnchor()
+                            }
+                        }
+                        .onDisappear {
+                            if let last = filteredAyahs.last {
+                                visibleBoundaryAnchorIDs.remove(last.id)
+                                syncBoundaryAnchor()
+                            }
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
@@ -391,6 +450,13 @@ struct AyahsView: View {
             .compactListSectionSpacing()
             .dismissKeyboardOnScroll()
             .onAppear {
+                visibleBoundaryAnchorIDs.removeAll()
+                if let sel = ayah, ayahByID[sel] != nil {
+                    firstVisibleAyahID = sel
+                } else if firstVisibleAyahID == nil {
+                    firstVisibleAyahID = ayahsForQiraah.first?.id
+                }
+
                 if let sel = ayah, !didScrollDown {
                     didScrollDown = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -413,8 +479,8 @@ struct AyahsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
 
-                    if let floatingDividerText {
-                        boundaryDivider(text: floatingDividerText, highlighted: floatingDividerIsHighlighted)
+                    if let floatingDividerModel {
+                        boundaryDivider(model: floatingDividerModel, isOverlay: true)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(Color.clear.background(.ultraThinMaterial))

@@ -171,14 +171,14 @@ struct CreditsView: View {
                 } label: {
                     Text("Done")
                         .foregroundColor(.primary)
+                        .buttonStyle(.plain)
+                        .clipShape(Rectangle())
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .font(.headline)
                 .foregroundColor(settings.accentColor.color)
                 .padding(18)
                 .background(buttonBackground)
-                .buttonStyle(.plain)
-                .clipShape(Rectangle())
                 .padding(.horizontal)
             }
         }
@@ -189,28 +189,19 @@ struct CreditsView: View {
             AnyView(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(.clear)
-                    .glassEffect(.regular.tint(settings.accentColor.color.opacity(0.25)).interactive(), in: .rect(cornerRadius: 24))
+                    .glassEffect(.regular.tint(settings.accentColor.color.opacity(0.15)).interactive(), in: .rect(cornerRadius: 24))
             )
-        } else if #available(iOS 15.0, *) {
+        } else {
             AnyView(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(.ultraThinMaterial)
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(Color.white.opacity(0.05))
+                            .fill(settings.accentColor.color.opacity(0.15))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    )
-            )
-        } else {
-            AnyView(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white.opacity(0.25))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                            .stroke(settings.accentColor.color.opacity(0.18), lineWidth: 1)
                     )
             )
         }

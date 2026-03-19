@@ -15,6 +15,10 @@ struct LetterData: Identifiable, Codable, Equatable, Comparable {
     static func < (lhs: LetterData, rhs: LetterData) -> Bool {
         return lhs.id < rhs.id
     }
+
+    var isNonArabicScriptLetter: Bool {
+        nonArabicArabicScriptLetters.contains { $0.id == id }
+    }
 }
 
 enum LetterWeight: String, Codable {
@@ -111,8 +115,8 @@ let standardArabicLetters: [LetterData] = [
         transliteration: "waw",
         showTashkeel: true,
         sound: "w",
-        weight: .followsPrevious,
-        weightRule: "As a vowel, it follows the previous letter’s weight; as a consonant, it is light."
+        weight: .light,
+        weightRule: "Waw is pronounced as a light letter in all positions."
     ),
     
     LetterData(
@@ -123,8 +127,8 @@ let standardArabicLetters: [LetterData] = [
         transliteration: "yaa",
         showTashkeel: true,
         sound: "y",
-        weight: .followsPrevious,
-        weightRule: "As a vowel, it follows the previous letter’s weight; as a consonant, it is light."
+        weight: .light,
+        weightRule: "Yaa is pronounced as a light letter in all positions."
     )
 ]
 
@@ -177,28 +181,16 @@ let tashkeels: [Tashkeel] = [
     Tashkeel(english: "Alif", arabic: "أَلِف", tashkeelMark: "َا", transliteration: "aa"),
     Tashkeel(english: "Yaa", arabic: "يَاء", tashkeelMark: "ِي", transliteration: "ii"),
     Tashkeel(english: "Waw", arabic: "وَاو", tashkeelMark: "ُو", transliteration: "uu"),
-    Tashkeel(english: "Dagger Alif", arabic: "ألف خنجرية", tashkeelMark: "َٰ", transliteration: "aa"),
+    Tashkeel(english: "Dagger Alif", arabic: "ألف خنجرية", tashkeelMark: "\u{064E}\u{0670}\u{0640}", transliteration: "aa"),
     Tashkeel(english: "Miniature Yaa",arabic: "يَاء صغيرة", tashkeelMark: "ِۦ", transliteration: "ii"),
     Tashkeel(english: "Miniature Waw",arabic: "واو صغيرة", tashkeelMark: "ُۥ", transliteration: "uu"),
     Tashkeel(english: "Alif Mad", arabic: "أَلِف مَدّ", tashkeelMark: "َآ", transliteration: "aaaa"),
     Tashkeel(english: "Yaa Mad", arabic: "يَاء مَدّ", tashkeelMark: "ِيٓ", transliteration: "iiii"),
     Tashkeel(english: "Waw Mad", arabic: "واو مَدّ", tashkeelMark: "ُوٓ", transliteration: "uuuu"),
-    Tashkeel(english: "Alif Maqsoorah",arabic: "ياء بلا نقاط", tashkeelMark: "َى", transliteration: "aa"),
-    Tashkeel(english: "Maddah Above", arabic: "مَدَّة", tashkeelMark: "ٓ", transliteration: ""),
-    Tashkeel(english: "Hamza Above", arabic: "هَمزَة فَوق", tashkeelMark: "ٔ", transliteration: ""),
-    Tashkeel(english: "Hamza Below", arabic: "هَمزَة تَحت", tashkeelMark: "ٕ", transliteration: ""),
-    Tashkeel(english: "Subscript Kasra", arabic: "كَسرَة صَغيرَة", tashkeelMark: "ٖ", transliteration: ""),
-    Tashkeel(english: "Inverted Damma", arabic: "ضَمَّة صَغيرَة", tashkeelMark: "ٗ", transliteration: ""),
-    Tashkeel(english: "Small Waw", arabic: "واو صَغيرَة", tashkeelMark: "ٞ", transliteration: ""),
-    Tashkeel(english: "Small High Stop", arabic: "عَلَامَة قُرآنية", tashkeelMark: "۠", transliteration: ""),
-    Tashkeel(english: "Jazm Head", arabic: "رَأس خَاء", tashkeelMark: "ۡ", transliteration: ""),
-    Tashkeel(english: "Small High Meem", arabic: "ميم صَغيرَة", tashkeelMark: "ۢ", transliteration: ""),
-    Tashkeel(english: "Small High Seen", arabic: "سين صَغيرَة", tashkeelMark: "ۤ", transliteration: ""),
-    Tashkeel(english: "Small High Noon", arabic: "نون صَغيرَة", tashkeelMark: "ۧ", transliteration: ""),
-    Tashkeel(english: "Small High Noon (Alt)", arabic: "نون صَغيرَة", tashkeelMark: "ۨ", transliteration: ""),
-    Tashkeel(english: "Small High Rounded Zero", arabic: "صِفر صَغير", tashkeelMark: "۪", transliteration: ""),
-    Tashkeel(english: "Rounded High Stop", arabic: "عَلَامَة قُرآنية", tashkeelMark: "۬", transliteration: ""),
-    Tashkeel(english: "Small Low Meem", arabic: "ميم صَغيرَة", tashkeelMark: "ۭ", transliteration: ""),
+    Tashkeel(english: "Alif Maqsoorah", arabic: "ياء بلا نقاط", tashkeelMark: "َى", transliteration: "aa"),
+    Tashkeel(english: "Small Yaa Madd", arabic: "ياء مدّ صغيرة", tashkeelMark: "ِۦٓ", transliteration: "iiii"),
+    Tashkeel(english: "Small Waw Madd", arabic: "واو مدّ صغيرة", tashkeelMark: "ُۥٓ", transliteration: "uuuu"),
     Tashkeel(english: "Shaddah", arabic: "شَدَّة", tashkeelMark: "ّ", transliteration: ""),
-    Tashkeel(english: "Sukoon", arabic: "سُكُون", tashkeelMark: "ْ", transliteration: "")
+    Tashkeel(english: "Sukoon 1", arabic: "سُكُون", tashkeelMark: "ْ", transliteration: ""),
+    Tashkeel(english: "Sukoon 2", arabic: "سكون عثماني", tashkeelMark: "ۡ", transliteration: "")
 ]

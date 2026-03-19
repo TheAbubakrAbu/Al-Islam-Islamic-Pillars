@@ -268,7 +268,12 @@ struct PrayerList: View {
                     RoundedRectangle(cornerRadius: 20)
                         .fill(isCurrent ? settings.accentColor.color.opacity(0.25) : .white.opacity(0.00001))
                         #if !os(watchOS)
-                        .padding(.vertical, isCurrent ? -4 : -8)
+                        .padding(.vertical, {
+                            if #available(iOS 26.0, *) {
+                                return -10.0
+                            }
+                            return -4.0
+                        }())
                         .padding(.horizontal, -12)
                         #else
                         .padding(.horizontal, -10)

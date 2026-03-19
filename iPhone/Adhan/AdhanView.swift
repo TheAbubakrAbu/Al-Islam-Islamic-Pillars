@@ -11,14 +11,15 @@ struct AdhanView: View {
     
     @State private var showAlert: AlertType?
     enum AlertType: Identifiable {
-        case travelTurnOnAutomatic, travelTurnOffAutomatic, locationAlert, notificationAlert
+        case travelTurnOnAutomatic, travelTurnOffAutomatic, calculationAutomaticChanged, locationAlert, notificationAlert
 
         var id: Int {
             switch self {
             case .travelTurnOnAutomatic: return 1
             case .travelTurnOffAutomatic: return 2
-            case .locationAlert: return 3
-            case .notificationAlert: return 4
+            case .calculationAutomaticChanged: return 3
+            case .locationAlert: return 4
+            case .notificationAlert: return 5
             }
         }
     }
@@ -31,6 +32,8 @@ struct AdhanView: View {
                         showAlert = .travelTurnOnAutomatic
                     } else if settings.travelTurnOffAutomatic {
                         showAlert = .travelTurnOffAutomatic
+                    } else if settings.calculationAutoChanged {
+                        showAlert = .calculationAutomaticChanged
                     } else if !settings.locationNeverAskAgain && settings.showLocationAlert {
                         showAlert = .locationAlert
                     } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
@@ -219,36 +222,29 @@ struct AdhanView: View {
             switch showAlert {
             case .travelTurnOnAutomatic:
                 Button("Override: Turn Off", role: .destructive) {
-                    settings.travelingModeManuallyToggled = true
-                    withAnimation {
-                        settings.travelingMode = false
-                    }
-                    settings.travelAutomatic = false
-                    settings.travelTurnOnAutomatic = false
-                    settings.travelTurnOffAutomatic = false
-                    settings.fetchPrayerTimes(force: true)
+                    settings.overrideTravelingMode(keepOn: false)
                 }
                 
                 Button("Confirm: Keep On", role: .cancel) {
-                    settings.travelTurnOnAutomatic = false
-                    settings.travelTurnOffAutomatic = false
+                    settings.confirmTravelAutomaticChange()
                 }
                 
             case .travelTurnOffAutomatic:
                 Button("Override: Keep On", role: .destructive) {
-                    settings.travelingModeManuallyToggled = true
-                    withAnimation {
-                        settings.travelingMode = true
-                    }
-                    settings.travelAutomatic = false
-                    settings.travelTurnOnAutomatic = false
-                    settings.travelTurnOffAutomatic = false
-                    settings.fetchPrayerTimes(force: true)
+                    settings.overrideTravelingMode(keepOn: true)
                 }
                 
                 Button("Confirm: Turn Off", role: .cancel) {
-                    settings.travelTurnOnAutomatic = false
-                    settings.travelTurnOffAutomatic = false
+                    settings.confirmTravelAutomaticChange()
+                }
+
+            case .calculationAutomaticChanged:
+                Button("Override: Keep \(settings.calculationAutoPreviousMethod)", role: .destructive) {
+                    settings.overrideAutomaticCalculationKeepingPrevious()
+                }
+
+                Button("Confirm: Use \(settings.calculationAutoDetectedMethod)", role: .cancel) {
+                    settings.confirmAutomaticCalculationChange()
                 }
 
             case .locationAlert:
@@ -283,9 +279,11 @@ struct AdhanView: View {
         } message: {
             switch showAlert {
             case .travelTurnOnAutomatic:
-                Text("Al-Islam has automatically detected that you are traveling, so your prayers will be shortened.")
+                Text(settings.automaticTravelMessage(turnOn: true))
             case .travelTurnOffAutomatic:
-                Text("Al-Islam has automatically detected that you are no longer traveling, so your prayers will not be shortened.")
+                Text(settings.automaticTravelMessage(turnOn: false))
+            case .calculationAutomaticChanged:
+                Text(settings.automaticCalculationMessage)
             case .locationAlert:
                 Text("Please go to Settings and enable location services to accurately determine prayer times.")
             case .notificationAlert:

@@ -23,12 +23,24 @@ struct LetterSectionHeader: View {
 
 struct ArabicLetterView: View {
     @EnvironmentObject var settings: Settings
-    
-    @Environment(\.scenePhase) private var scenePhase
-    
+
     let letterData: LetterData
-    
-    @State private var tempArabicFont = false
+
+    private var useQuranicFontForLetter: Bool {
+        settings.useFontArabic && !letterData.isNonArabicScriptLetter
+    }
+
+    private var nonArabicBaseSound: String {
+        switch letterData.transliteration {
+        case "pe": return "p"
+        case "che": return "ch"
+        case "ve": return "v"
+        case "gaaf (gaa)": return "g"
+        case "ngaf": return "ng"
+        case "zhe": return "zh"
+        default: return letterData.transliteration
+        }
+    }
         
     var body: some View {
         List {
@@ -44,7 +56,7 @@ struct ArabicLetterView: View {
                         
                         Text(letterData.name)
                             .font(
-                                tempArabicFont
+                                useQuranicFontForLetter
                                 ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                                 : .title2
                             )
@@ -55,7 +67,7 @@ struct ArabicLetterView: View {
                 #if !os(watchOS)
                 .listRowSeparator(.hidden, edges: .bottom)
                 #endif
-                .padding(.vertical, tempArabicFont ? 0 : 2)
+                .padding(.vertical, useQuranicFontForLetter ? 0 : 2)
             }
             
             if let weight = letterData.weight {
@@ -81,12 +93,14 @@ struct ArabicLetterView: View {
                     HStack(alignment: .center) {
                         ForEach(0..<3, id: \.self) { index in
                             Spacer()
+                            
                             Text(letterData.forms[index])
                                 .font(
-                                    tempArabicFont
+                                    useQuranicFontForLetter
                                     ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                                     : .title2
                                 )
+                            
                             Spacer()
                         }
                     }
@@ -94,7 +108,7 @@ struct ArabicLetterView: View {
                 #if !os(watchOS)
                 .listRowSeparator(.hidden, edges: .bottom)
                 #endif
-                .padding(.vertical, tempArabicFont ? 0 : 2)
+                .padding(.vertical, useQuranicFontForLetter ? 0 : 2)
             }
             
             if ["alif", "waw", "yaa"].contains(letterData.transliteration) {
@@ -121,7 +135,7 @@ struct ArabicLetterView: View {
                         .font(.body)
                 }
             }
-            
+
             if letterData.showTashkeel {
                 Section(header: Text("DIFFERENT HARAKAAT (VOWELS)")) {
                     let chunks = tashkeels.chunked(into: 3)
@@ -132,27 +146,47 @@ struct ArabicLetterView: View {
                                 Divider().padding(.trailing, -100)
                             }
                             #endif
-                            
-                            TashkeelRow(letterData: letterData, tashkeels: chunks[idx], tempArabicFont: tempArabicFont)
-                                .padding(.top, 14)
+
+                            TashkeelRow(
+                                letterData: letterData,
+                                tashkeels: chunks[idx],
+                                useQuranicFontForLetter: useQuranicFontForLetter
+                            )
+                            .padding(.top, 14)
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden, edges: .bottom)
                         #endif
                     }
-                    
+
                     #if !os(watchOS)
                     Text("WITH ALIF HAMZA")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
-                        .padding(.bottom, 8)
-                        .listRowSeparator(.hidden, edges: .bottom)
+                    HamzaPracticeRow(
+                        letterData: letterData,
+                        useQuranicFontForLetter: useQuranicFontForLetter
+                    )
+                    .padding(.bottom, 8)
+                    .listRowSeparator(.hidden, edges: .bottom)
                     #else
-                    HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
+                    HamzaPracticeRow(
+                        letterData: letterData,
+                        useQuranicFontForLetter: useQuranicFontForLetter
+                    )
                     #endif
+                }
+            }
+
+            if letterData.isNonArabicScriptLetter {
+                Section(header: Text("SOUND WITH HARAKAAT")) {
+                    NonArabicVowelPracticeRow(
+                        letterData: letterData,
+                        baseSound: nonArabicBaseSound,
+                        useQuranicFontForLetter: useQuranicFontForLetter
+                    )
                 }
             }
             
@@ -166,79 +200,66 @@ struct ArabicLetterView: View {
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .dismissKeyboardOnScroll()
-        #if !os(watchOS)
-        .safeAreaInset(edge: .bottom) {
-            Picker("Arabic Font", selection: $tempArabicFont.animation(.easeInOut)) {
-                Text("Quranic Font").tag(true)
-                Text("Basic Font").tag(false)
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding(.horizontal, 8)
-            .conditionalGlassEffect()
-            .padding([.horizontal, .bottom])
-        }
-        #endif
         .navigationTitle(letterData.letter)
-        .onAppear {
-            withAnimation {
-                tempArabicFont = settings.useFontArabic
-            }
-        }
-        .onDisappear { settings.useFontArabic = tempArabicFont }
-        .onChange(of: scenePhase) { _ in
-            settings.useFontArabic = tempArabicFont
-        }
     }
     
     @ViewBuilder
     private func purposeSection(for data: LetterData) -> some View {
-        switch data.transliteration {
-        case "yaa":
-            Text("In the Uthmani script of the Quran, when 'yaa' is written at the end of a word (or by itself), it is usually written without the two dots underneath.")
-                .font(.body)
-        case "taa marbuuTa":
+        if data.isNonArabicScriptLetter {
             Group {
-                Text("\"Taa marbuuTa\" means \"tied taa\" and is used to indicate the feminine gender in Arabic.")
-                Text("It is typically added to the end of a noun to show that the noun is feminine. For example, the Arabic word for teacher is \"معلم\" (mu'allim) for a male and \"معلمة\" (mu'allima) for a female.")
-                Text("Taa marbuuTa is pronounced as a \"t\" sound in certain cases, such as when the word is in the construct state or has a suffix. Otherwise, it is often silent but affects the preceding vowel, usually creating a short \"ah\" sound, similar to 'ه' (as in \"mu'allimah\").")
+                Text("This letter is used in non-Arabic languages that use Arabic script.")
+                Text("It is not one of the 28 standard Arabic alphabet letters.")
             }
             .font(.body)
-        case "hamzatul waSl":
-            Group {
-                Text("The term \"hamzatul waSl\" translates to \"connecting hamza\" or \"hamza of connection.\"")
-                Text("Hamzatul waSl is always written as an Alif (ا) and is pronounced only if it begins a word at the start of speech. When the word follows another in a sentence, the hamzatul waSl is not pronounced, creating a smooth connection between words.")
-                Text("If a word starts with hamzatul waSl, its pronunciation depends on the third letter of the word. For verbs: if the third letter has a damma, pronounce it with a damma (أُ); if it has a kasra or fatha, pronounce it with a kasra (إِ).")
-                Text("In the Quran, there are seven nouns that start with hamzatul waSl. These nouns always begin with a kasra when pronounced in isolation.")
-                Text("Hamzatul waSl is usually not written with diacritics, but in learner texts or the Quran, it may be marked with a small ص above the Alif, indicating waSl.")
-            }
-            .font(.body)
-        default:
-            if data.transliteration.contains("hamza") {
+        } else {
+            switch data.transliteration {
+            case "yaa":
+                Text("In the Uthmani script of the Quran, when 'yaa' is written at the end of a word (or by itself), it is usually written without the two dots underneath.")
+                    .font(.body)
+            case "taa marbuuTa":
                 Group {
-                    Text("The letter Hamza has multiple forms, depending on its position and the surrounding vowels or diacritics (tashkeel):")
-                    Text("Hamza on its own (ء): Used when Hamza appears in the middle or end of a word without a preceding vowel.")
-                    Text("Hamza on an Alif (أ or إ): When Hamza begins a word, it is written on an Alif. A fatha or damma places it above (أ), while a kasra places it below (إ).")
-                    Text("Hamza on a Waw (ؤ): Appears after a damma or following a Waw.")
-                    Text("Hamza on a Yaa (ئ): Appears after a kasra or following a Yaa.")
-                    Text("Although Hamza takes different forms, it represents the same sound ('ah'). These forms are based on Arabic orthography (spelling conventions) rather than phonetics.")
+                    Text("\"Taa marbuuTa\" means \"tied taa\" and is used to indicate the feminine gender in Arabic.")
+                    Text("It is typically added to the end of a noun to show that the noun is feminine. For example, the Arabic word for teacher is \"معلم\" (mu'allim) for a male and \"معلمة\" (mu'allima) for a female.")
+                    Text("Taa marbuuTa is pronounced as a \"t\" sound in certain cases, such as when the word is in the construct state or has a suffix. Otherwise, it is often silent but affects the preceding vowel, usually creating a short \"ah\" sound, similar to 'ه' (as in \"mu'allimah\").")
                 }
                 .font(.body)
-            } else if data.transliteration.contains("mad") {
+            case "hamzatul waSl":
                 Group {
-                    Text("The wavy line above a vowel letter is called a 'mad'. It elongates the vowel sound, typically lasting 4 counts.")
-                    + (
-                        data.transliteration.contains("alif")
-                        ? Text("\nIf an Alif Mad is followed by a letter with a shaddah, the elongation extends to 6 counts.")
-                        : Text("")
-                    )
+                    Text("The term \"hamzatul waSl\" translates to \"connecting hamza\" or \"hamza of connection.\"")
+                    Text("Hamzatul waSl is always written as an Alif (ا) and is pronounced only if it begins a word at the start of speech. When the word follows another in a sentence, the hamzatul waSl is not pronounced, creating a smooth connection between words.")
+                    Text("If a word starts with hamzatul waSl, its pronunciation depends on the third letter of the word. For verbs: if the third letter has a damma, pronounce it with a damma (أُ); if it has a kasra or fatha, pronounce it with a kasra (إِ).")
+                    Text("In the Quran, there are seven nouns that start with hamzatul waSl. These nouns always begin with a kasra when pronounced in isolation.")
+                    Text("Hamzatul waSl is usually not written with diacritics, but in learner texts or the Quran, it may be marked with a small ص above the Alif, indicating waSl.")
                 }
+                .font(.body)
+            default:
+                if data.transliteration.contains("hamza") {
+                    Group {
+                        Text("The letter Hamza has multiple forms, depending on its position and the surrounding vowels or diacritics (tashkeel):")
+                        Text("Hamza on its own (ء): Used when Hamza appears in the middle or end of a word without a preceding vowel.")
+                        Text("Hamza on an Alif (أ or إ): When Hamza begins a word, it is written on an Alif. A fatha or damma places it above (أ), while a kasra places it below (إ).")
+                        Text("Hamza on a Waw (ؤ): Appears after a damma or following a Waw.")
+                        Text("Hamza on a Yaa (ئ): Appears after a kasra or following a Yaa.")
+                        Text("Although Hamza takes different forms, it represents the same sound ('ah'). These forms are based on Arabic orthography (spelling conventions) rather than phonetics.")
+                    }
                     .font(.body)
-            } else if data.transliteration == "alif maqSoorah" {
-                Text("Alif maqSoorah resembles a Yaa without dots and usually replaces a regular Alif at the end of a word. It is used in certain cases, including some Quranic words and non-Arabic proper nouns. It is the exact same and sounds the same as alif.")
-                    .font(.body)
-            } else if data.transliteration == "laa" {
-                Text("The combination of ل and ا forms a unique shape: لا.")
-                    .font(.body)
+                } else if data.transliteration.contains("mad") {
+                    Group {
+                        Text("The wavy line above a vowel letter is called a 'mad'. It elongates the vowel sound, typically lasting 4 counts.")
+                        + (
+                            data.transliteration.contains("alif")
+                            ? Text("\nIf an Alif Mad is followed by a letter with a shaddah, the elongation extends to 6 counts.")
+                            : Text("")
+                        )
+                    }
+                        .font(.body)
+                } else if data.transliteration == "alif maqSoorah" {
+                    Text("Alif maqSoorah resembles a Yaa without dots and usually replaces a regular Alif at the end of a word. It is used in certain cases, including some Quranic words and non-Arabic proper nouns. It is the exact same and sounds the same as alif.")
+                        .font(.body)
+                } else if data.transliteration == "laa" {
+                    Text("The combination of ل and ا forms a unique shape: لا.")
+                        .font(.body)
+                }
             }
         }
     }
@@ -254,42 +275,51 @@ extension Array {
 
 struct TashkeelRow: View {
     @EnvironmentObject var settings: Settings
-    
+
     let letterData: LetterData
     let tashkeels: [Tashkeel]
-    let tempArabicFont: Bool
+    let useQuranicFontForLetter: Bool
+
+    private var baseSound: String {
+        letterData.sound
+    }
 
     var body: some View {
         HStack(spacing: 20) {
             ForEach(tashkeels, id: \.english) { tk in
-                VStack {
-                    if !tk.transliteration.isEmpty {
-                        Text(letterData.sound + tk.transliteration)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    } else if tk.english == "Shaddah" {
-                        Text(letterData.sound + letterData.sound)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    } else if tk.english == "Sukoon" {
-                        Text(letterData.sound)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                VStack(spacing: useQuranicFontForLetter ? 4 : 8) {
+                    Group {
+                        if !tk.transliteration.isEmpty {
+                            Text(baseSound + tk.transliteration)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else if tk.english == "Shaddah" {
+                            Text(baseSound + baseSound)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else if tk.english.contains("Sukoon") {
+                            Text(baseSound)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+
                     Text(letterData.letter + tk.tashkeelMark)
                         .font(
-                            tempArabicFont
+                            useQuranicFontForLetter
                             ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                             : .title
                         )
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, tempArabicFont ? 0 : 8)
-                    
+
                     #if !os(watchOS)
                     Text(tk.english)
                         .font(.caption2)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                     #endif
                 }
             }
@@ -299,18 +329,18 @@ struct TashkeelRow: View {
 
 struct HamzaPracticeRow: View {
     @EnvironmentObject var settings: Settings
-    
+
     let letterData: LetterData
-    let tempArabicFont: Bool
+    let useQuranicFontForLetter: Bool
 
     private var syllables: [(latin: String, arabic: String)] {
         let s = letterData.sound
         let l = letterData.letter
 
         return [
-            ("A" + s, "أَ" + l + ""),
-            ("I" + s, "إِ" + l + ""),
-            ("U" + s, "أُ" + l + "")
+            ("A" + s, "أَ" + l),
+            ("I" + s, "إِ" + l),
+            ("U" + s, "أُ" + l)
         ]
     }
 
@@ -324,17 +354,53 @@ struct HamzaPracticeRow: View {
 
                     Text(syl.arabic)
                         .font(
-                            tempArabicFont
-                            ? .custom(settings.fontArabic,
-                                      size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
+                            useQuranicFontForLetter
+                            ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                             : .title
                         )
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, tempArabicFont ? 0 : 8)
+                        .padding(.vertical, useQuranicFontForLetter ? 0 : 8)
                 }
             }
         }
         .padding(.top, 6)
+    }
+}
+
+struct NonArabicVowelPracticeRow: View {
+    @EnvironmentObject var settings: Settings
+
+    let letterData: LetterData
+    let baseSound: String
+    let useQuranicFontForLetter: Bool
+
+    private var syllables: [(latin: String, arabic: String)] {
+        [
+            (baseSound + "a", letterData.letter + "َ"),
+            (baseSound + "i", letterData.letter + "ِ"),
+            (baseSound + "u", letterData.letter + "ُ")
+        ]
+    }
+
+    var body: some View {
+        HStack(spacing: 20) {
+            ForEach(syllables, id: \.latin) { syl in
+                VStack {
+                    Text(syl.latin)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text(syl.arabic)
+                        .font(
+                            useQuranicFontForLetter
+                            ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
+                            : .title
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, useQuranicFontForLetter ? 0 : 8)
+                }
+            }
+        }
     }
 }
 

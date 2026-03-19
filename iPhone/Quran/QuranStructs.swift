@@ -29,12 +29,27 @@ struct VerseIndexEntry: Identifiable, Hashable {
     let englishBlob: String
 }
 
+enum BoundaryDividerStyle {
+    case allGreen
+    case allSecondary
+    case pageAccentJuzSecondary
+    case allAccent
+}
+
+struct BoundaryDividerModel {
+    let text: String
+    let pageSegment: String
+    let juzSegment: String?
+    /// Precomputed style for list dividers (overlay may override color).
+    let style: BoundaryDividerStyle
+}
+
 struct SurahBoundaryModel {
-    let startDividerText: String?
+    let startDivider: BoundaryDividerModel?
     let startDividerHighlighted: Bool
-    let dividerBeforeAyah: [Int: String]
-    let endOfSurahDividerText: String?
-    let endDividerText: String?
+    let dividerBeforeAyah: [Int: BoundaryDividerModel]
+    let endOfSurahDivider: BoundaryDividerModel?
+    let endDivider: BoundaryDividerModel?
     let endDividerHighlighted: Bool
 }
 
