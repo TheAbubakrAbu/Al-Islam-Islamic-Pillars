@@ -58,6 +58,60 @@ struct QuranView: View {
         }
         return (nil, nil)
     }
+
+    private struct PageJuzQuery {
+        let page: Int?
+        let juz: Int?
+        let isExplicitPage: Bool
+        let isExplicitJuz: Bool
+    }
+
+    private func parsePageJuzQuery(from raw: String) -> PageJuzQuery {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return PageJuzQuery(page: nil, juz: nil, isExplicitPage: false, isExplicitJuz: false)
+        }
+
+        let lowered = trimmed.lowercased()
+
+        if lowered.hasPrefix("page ") {
+            let valueText = String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
+            let validPage = (n != nil && (1...630).contains(n!)) ? n : nil
+            return PageJuzQuery(page: validPage, juz: nil, isExplicitPage: true, isExplicitJuz: false)
+        }
+
+        if lowered.hasPrefix("juz ") {
+            let valueText = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
+            let validJuz = (n != nil && (1...30).contains(n!)) ? n : nil
+            return PageJuzQuery(page: nil, juz: validJuz, isExplicitPage: false, isExplicitJuz: true)
+        }
+
+        let n = Int(trimmed) ?? arabicToEnglishNumber(trimmed)
+        guard let n else {
+            return PageJuzQuery(page: nil, juz: nil, isExplicitPage: false, isExplicitJuz: false)
+        }
+
+        let page = (1...630).contains(n) ? n : nil
+        let juz = (1...30).contains(n) ? n : nil
+        return PageJuzQuery(page: page, juz: juz, isExplicitPage: false, isExplicitJuz: false)
+    }
+
+    private func firstAyahResult(page: Int? = nil, juz: Int? = nil) -> (surah: Surah, ayah: Ayah)? {
+        guard page != nil || juz != nil else { return nil }
+
+        for surah in quranData.quran {
+            let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
+            if let hit = ayahsForQiraah.first(where: { a in
+                (page != nil && a.page == page) || (juz != nil && a.juz == juz)
+            }) {
+                return (surah, hit)
+            }
+        }
+
+        return nil
+    }
     
     enum QuranRoute: Hashable {
         case ayahs(surahID: Int, ayah: Int?)
@@ -140,6 +194,11 @@ struct QuranView: View {
     var content: some View {
         VStack {
             ScrollViewReader { scrollProxy in
+                let pageJuzQuery = parsePageJuzQuery(from: searchText)
+                let explicitPageOrJuzMode = pageJuzQuery.isExplicitPage || pageJuzQuery.isExplicitJuz
+                let pageSearchResult = firstAyahResult(page: pageJuzQuery.page)
+                let juzSearchResult = firstAyahResult(juz: pageJuzQuery.juz)
+
                 List {
                 let favoriteSurahs = Set(settings.favoriteSurahs)
                 let bookmarkedAyahs = Set(settings.bookmarkedAyahs.map(\.id))
@@ -299,7 +358,8 @@ struct QuranView: View {
                     }
                 }
                 
-                if settings.groupBySurah || (!searchText.isEmpty && settings.searchForSurahs) {
+                if !explicitPageOrJuzMode {
+                    if settings.groupBySurah || (!searchText.isEmpty && settings.searchForSurahs) {
                     let cleanedSearch = settings.cleanSearch(searchText.replacingOccurrences(of: ":", with: ""))
                     let surahAyahPair = searchText.split(separator: ":").map(String.init)
                     let upperQuery = searchText.uppercased()
@@ -463,8 +523,70 @@ struct QuranView: View {
                         .sectionIndexLabelWhenAvailable("\(juz.id)")
                     }
                 }
+                }
                 
                 if !searchText.isEmpty {
+                    if let page = pageJuzQuery.page, let pageResult = pageSearchResult {
+                        Section(header:
+                            HStack {
+                                Text("PAGE SEARCH RESULT")
+
+                                Spacer()
+
+                                Text("Page \(page)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(settings.accentColor.color)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    #if !os(watchOS)
+                                    .background(.ultraThinMaterial)
+                                    #endif
+                                    .clipShape(Capsule())
+                            }
+                            .padding(.vertical, 4)
+                        ) {
+                            AyahSearchResultRow(
+                                surah: pageResult.surah,
+                                ayah: pageResult.ayah,
+                                favoriteSurahs: favoriteSurahs,
+                                bookmarkedAyahs: bookmarkedAyahs,
+                                searchText: $searchText,
+                                scrollToSurahID: $scrollToSurahID
+                            )
+                        }
+                    }
+
+                    if let juz = pageJuzQuery.juz, let juzResult = juzSearchResult {
+                        Section(header:
+                            HStack {
+                                Text("JUZ SEARCH RESULT")
+
+                                Spacer()
+
+                                Text("Juz \(juz)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(settings.accentColor.color)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    #if !os(watchOS)
+                                    .background(.ultraThinMaterial)
+                                    #endif
+                                    .clipShape(Capsule())
+                            }
+                            .padding(.vertical, 4)
+                        ) {
+                            AyahSearchResultRow(
+                                surah: juzResult.surah,
+                                ayah: juzResult.ayah,
+                                favoriteSurahs: favoriteSurahs,
+                                bookmarkedAyahs: bookmarkedAyahs,
+                                searchText: $searchText,
+                                scrollToSurahID: $scrollToSurahID
+                            )
+                        }
+                    }
+
+                    if !explicitPageOrJuzMode {
                     let searchResult = getSurahAndAyah(from: searchText)
                     let surah = searchResult.surah
                     let ayah = searchResult.ayah
@@ -606,6 +728,7 @@ struct QuranView: View {
                                 blockAyahSearchAfterZero = false
                             }
                         }
+                    }
                     }
                 }
             }

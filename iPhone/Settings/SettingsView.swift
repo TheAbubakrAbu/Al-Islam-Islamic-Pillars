@@ -72,7 +72,7 @@ struct SettingsView: View {
                 Section(header: Text("CREDITS")) {
                     Text("Made by Abubakr Elmallah, who was a 17-year-old high school student when this app was made.\n\nSpecial thanks to my parents and to Mr. Joe Silvey, my English teacher and Muslim Student Association Advisor.")
                         .font(.footnote)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.primary)
                     
                     #if !os(watchOS)
                     Button(action: {

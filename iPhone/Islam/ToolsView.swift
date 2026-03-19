@@ -658,9 +658,30 @@ struct NamesView: View {
     }
     
     var body: some View {
-        VStack {
+        let filteredNames = namesData.namesOfAllah.filter(matches)
+        let hasActiveSearch = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        ScrollViewReader { proxy in
             List {
-                Section("DESCRIPTION") {
+                Section(header:
+                    HStack {
+                        Text("DESCRIPTION")
+
+                        Spacer()
+
+                        Text(String(filteredNames.count))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(settings.accentColor.color)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            #if !os(watchOS)
+                            .background(.ultraThinMaterial)
+                            #endif
+                            .clipShape(Capsule())
+                            .opacity(hasActiveSearch ? 1 : 0)
+                    }
+                    .padding(.vertical, 4)
+                ) {
                     Text("Prophet Muhammad ﷺ said, “Allah has 99 names, and whoever believes in their meanings and acts accordingly, will enter Paradise” (Bukhari 6410).")
                     .font(.body)
                     
@@ -669,36 +690,49 @@ struct NamesView: View {
                         .tint(settings.accentColor.color)
                 }
                 
-                ForEach(namesData.namesOfAllah.filter(matches)) { name in
+                ForEach(Array(filteredNames.enumerated()), id: \.element.id) { _, name in
                     Section {
                         NameRow(
                             name: name,
                             showDescription: showDescription,
                             isExpanded: expandedNameNumbers.contains(name.number)
                         ) {
-                            withAnimation {
-                                if expandedNameNumbers.contains(name.number) {
-                                    expandedNameNumbers.remove(name.number)
-                                } else {
-                                    expandedNameNumbers.insert(name.number)
+                            if hasActiveSearch {
+                                let targetID = "name_\(name.number)"
+                                withAnimation {
+                                    searchText = ""
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                    withAnimation {
+                                        proxy.scrollTo(targetID, anchor: .top)
+                                    }
+                                }
+                            } else {
+                                withAnimation {
+                                    if expandedNameNumbers.contains(name.number) {
+                                        expandedNameNumbers.remove(name.number)
+                                    } else {
+                                        expandedNameNumbers.insert(name.number)
+                                    }
                                 }
                             }
                         }
                     }
+                    .id("name_\(name.number)")
                 }
             }
-            #if os(watchOS)
-            .searchable(text: $searchText)
-            #endif
-            .applyConditionalListStyle(defaultView: settings.defaultView)
-            .compactListSectionSpacing()
-            .dismissKeyboardOnScroll()
-            
-            #if !os(watchOS)
+        }
+        #if os(watchOS)
+        .searchable(text: $searchText)
+        #else
+        .safeAreaInset(edge: .bottom) {
             SearchBar(text: $searchText.animation(.easeInOut))
                 .padding(.horizontal, 8)
-            #endif
         }
+        #endif
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .compactListSectionSpacing()
+        .dismissKeyboardOnScroll()
         .navigationTitle("99 Names of Allah")
     }
 }

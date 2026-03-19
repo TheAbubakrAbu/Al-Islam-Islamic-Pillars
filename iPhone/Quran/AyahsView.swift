@@ -27,8 +27,53 @@ struct AyahsView: View {
         #endif
     }
 
-    private var shouldShowBoundaryDividers: Bool {
-        settings.showPageJuzDividers && searchText.isEmpty
+    private static let arFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "ar")
+        return f
+    }()
+
+    private func arabicToEnglishNumber(_ arabicNumber: String) -> Int? {
+        AyahsView.arFormatter.number(from: arabicNumber)?.intValue
+    }
+
+    private struct PageJuzQuery {
+        let page: Int?
+        let juz: Int?
+    }
+
+    private enum DividerKeywordMode {
+        case page
+        case juz
+    }
+
+    private func parsePageJuzQuery(from raw: String) -> PageJuzQuery {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return PageJuzQuery(page: nil, juz: nil) }
+
+        let lowered = trimmed.lowercased()
+
+        if lowered.hasPrefix("page ") {
+            let valueText = String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
+            if let n, (1...630).contains(n) { return PageJuzQuery(page: n, juz: nil) }
+            return PageJuzQuery(page: nil, juz: nil)
+        }
+
+        if lowered.hasPrefix("juz ") {
+            let valueText = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
+            if let n, (1...30).contains(n) { return PageJuzQuery(page: nil, juz: n) }
+            return PageJuzQuery(page: nil, juz: nil)
+        }
+
+        if let n = Int(trimmed) ?? arabicToEnglishNumber(trimmed) {
+            // Bare numeric query in AyahsView maps to page search for focused results.
+            let page = (1...630).contains(n) ? n : nil
+            return PageJuzQuery(page: page, juz: nil)
+        }
+
+        return PageJuzQuery(page: nil, juz: nil)
     }
 
     @ViewBuilder
@@ -37,15 +82,21 @@ struct AyahsView: View {
             Rectangle()
                 .fill(settings.accentColor.color.opacity(0.5))
                 .frame(height: 1)
+                .frame(minWidth: 18)
 
             Text(text)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(settings.accentColor.color)
                 .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .allowsTightening(true)
+                .layoutPriority(1)
+                .fixedSize(horizontal: false, vertical: true)
 
             Rectangle()
                 .fill(settings.accentColor.color.opacity(0.5))
                 .frame(height: 1)
+                .frame(minWidth: 18)
         }
         .padding(.vertical, 6)
     }
@@ -54,9 +105,29 @@ struct AyahsView: View {
         ScrollViewReader { proxy in
             VStack {
                 let cleanQuery = settings.cleanSearch(searchText, whitespace: true)
+                let pageJuzQuery = parsePageJuzQuery(from: searchText)
+                let trimmedLowerSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                let dividerKeywordMode: DividerKeywordMode? = {
+                    if trimmedLowerSearch == "page" || trimmedLowerSearch == "pages" { return .page }
+                    if trimmedLowerSearch == "juz" { return .juz }
+                    return nil
+                }()
+                let isDividerKeywordSearch = dividerKeywordMode != nil
+                let isPageOrJuzSearch = pageJuzQuery.page != nil || pageJuzQuery.juz != nil
+                let showBoundaryDividers = settings.showPageJuzDividers && (searchText.isEmpty || isPageOrJuzSearch || isDividerKeywordSearch)
                 let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
                 let filteredAyahs = ayahsForQiraah.filter { a in
                     guard !cleanQuery.isEmpty else { return true }
+
+                    if isDividerKeywordSearch {
+                        return false
+                    }
+
+                    if isPageOrJuzSearch {
+                        let pageMatch = pageJuzQuery.page != nil && a.page == pageJuzQuery.page
+                        let juzMatch = pageJuzQuery.juz != nil && a.juz == pageJuzQuery.juz
+                        return pageMatch || juzMatch
+                    }
 
                     let rawArabic   = settings.cleanSearch(a.textArabic)
                     let cleanArabic = settings.cleanSearch(a.textCleanArabic)
@@ -70,19 +141,56 @@ struct AyahsView: View {
                         || settings.cleanSearch(a.idArabic).contains(cleanQuery)
                         || Int(cleanQuery) == a.id
                 }
-                let boundaryModel = shouldShowBoundaryDividers ? quranData.boundaryModel(forSurah: surah.id) : nil
+                let boundaryModel = showBoundaryDividers ? quranData.boundaryModel(forSurah: surah.id) : nil
                 let startOfSurahDividerText: String? = {
-                    guard shouldShowBoundaryDividers else { return nil }
+                    guard showBoundaryDividers, searchText.isEmpty else { return nil }
                     return boundaryModel?.startDividerText
                 }()
                 let endOfSurahDividerText: String? = {
-                    guard shouldShowBoundaryDividers else { return nil }
+                    guard showBoundaryDividers, searchText.isEmpty else { return nil }
                     return boundaryModel?.endDividerText
                 }()
+                let keywordDividerTexts: [String] = {
+                    guard let mode = dividerKeywordMode else { return [] }
+                    guard let boundaryModel else { return [] }
+
+                    var allDividerTexts: [String] = []
+
+                    if let start = boundaryModel.startDividerText {
+                        allDividerTexts.append(start)
+                    }
+
+                    for ayah in ayahsForQiraah {
+                        if let text = boundaryModel.dividerBeforeAyah[ayah.id] {
+                            allDividerTexts.append(text)
+                        }
+                    }
+
+                    if let end = boundaryModel.endDividerText {
+                        allDividerTexts.append(end)
+                    }
+
+                    var seen = Set<String>()
+                    return allDividerTexts.filter { text in
+                        let matches: Bool
+                        switch mode {
+                        case .page:
+                            matches = text.localizedCaseInsensitiveContains("Page")
+                        case .juz:
+                            matches = text.localizedCaseInsensitiveContains("Juz")
+                        }
+                        guard matches else { return false }
+                        return seen.insert(text).inserted
+                    }
+                }()
+                let searchCount = isDividerKeywordSearch ? keywordDividerTexts.count : filteredAyahs.count
                 let comparisonBottomPadding: CGFloat = (settings.qiraatComparisonMode && !quranPlayer.isPlaying && !quranPlayer.isPaused)
                     ? (settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa)
                        ? (settings.defaultView ? 4 : 12)
                        : (settings.defaultView ? 16 : 32))
+                    : 0
+                let endDividerExtraComparisonPadding: CGFloat = (settings.qiraatComparisonMode && !quranPlayer.isPlaying && !quranPlayer.isPaused)
+                    ? (settings.defaultView ? 4 : 8)
                     : 0
                 
                 List {
@@ -126,7 +234,7 @@ struct AyahsView: View {
                             HStack {
                                 if !searchText.isEmpty { Spacer() }
                                 
-                                Text(String(filteredAyahs.count))
+                                Text(String(searchCount))
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(settings.accentColor.color)
                                     .padding(.horizontal, 12)
@@ -146,94 +254,105 @@ struct AyahsView: View {
                     .listRowSeparator(.hidden, edges: .bottom)
                     #endif
 
-                    if let startOfSurahDividerText {
-                        Section {
-                            boundaryDivider(text: startOfSurahDividerText)
-                        }
-                        #if !os(watchOS)
-                        .listRowSeparator(.hidden)
-                        #endif
-                    }
-                    
-                    ForEach(filteredAyahs, id: \.id) { ayah in
-                        let dividerBefore = shouldShowBoundaryDividers ? boundaryModel?.dividerBeforeAyah[ayah.id] : nil
-
-                        if let dividerBefore {
+                    if isDividerKeywordSearch {
+                        ForEach(Array(keywordDividerTexts.enumerated()), id: \.offset) { _, dividerText in
                             Section {
-                                boundaryDivider(text: dividerBefore)
+                                boundaryDivider(text: dividerText)
+                            }
+                            #if !os(watchOS)
+                            .listRowSeparator(.hidden)
+                            #endif
+                        }
+                    } else {
+                        if let startOfSurahDividerText {
+                            Section {
+                                boundaryDivider(text: startOfSurahDividerText)
                             }
                             #if !os(watchOS)
                             .listRowSeparator(.hidden)
                             #endif
                         }
 
-                        Group {
-                            #if os(watchOS)
-                            AyahRow(
-                                surah: surah,
-                                ayah: ayah,
-                                scrollDown: $scrollDown,
-                                searchText: $searchText
-                            )
-                            #else
-                            Section {
+                        ForEach(filteredAyahs, id: \.id) { ayah in
+                            let dividerBefore = showBoundaryDividers ? boundaryModel?.dividerBeforeAyah[ayah.id] : nil
+
+                            if let dividerBefore {
+                                Section {
+                                    boundaryDivider(text: dividerBefore)
+                                }
+                                #if !os(watchOS)
+                                .listRowSeparator(.hidden)
+                                #endif
+                            }
+
+                            Group {
+                                #if os(watchOS)
                                 AyahRow(
                                     surah: surah,
                                     ayah: ayah,
                                     scrollDown: $scrollDown,
                                     searchText: $searchText
                                 )
+                                #else
+                                Section {
+                                    AyahRow(
+                                        surah: surah,
+                                        ayah: ayah,
+                                        scrollDown: $scrollDown,
+                                        searchText: $searchText
+                                    )
+                                }
+                                #endif
                             }
+                            .id(ayah.id)
+                            .onAppear {
+                                if !visibleAyahs.contains(ayah.id) { visibleAyahs.append(ayah.id) }
+                            }
+                            .onDisappear {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    visibleAyahs.removeAll { $0 == ayah.id }
+                                }
+                            }
+                            #if !os(watchOS)
+                            .onChange(of: scrollDown) { value in
+                                guard let target = value else { return }
+                                if !searchText.isEmpty {
+                                    settings.hapticFeedback()
+                                    withAnimation {
+                                        searchText = ""
+                                        self.endEditing()
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        withAnimation { proxy.scrollTo(target, anchor: .top) }
+                                    }
+                                }
+                                scrollDown = nil
+                            }
+                            .listRowSeparator(
+                                (ayah.id == filteredAyahs.first?.id && searchText.isEmpty) || settings.defaultView
+                                    ? .hidden : .visible,
+                                edges: .top
+                            )
+                            .listRowSeparator(
+                                ayah.id == filteredAyahs.last?.id || settings.defaultView
+                                    ? .hidden : .visible,
+                                edges: .bottom
+                            )
+                            .padding(.bottom, (ayah.id == filteredAyahs.last?.id && endOfSurahDividerText == nil) ? comparisonBottomPadding : 0)
+                            #else
+                            .padding(.vertical)
                             #endif
                         }
-                        .id(ayah.id)
-                        .onAppear {
-                            if !visibleAyahs.contains(ayah.id) { visibleAyahs.append(ayah.id) }
-                        }
-                        .onDisappear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                visibleAyahs.removeAll { $0 == ayah.id }
-                            }
-                        }
-                        #if !os(watchOS)
-                        .onChange(of: scrollDown) { value in
-                            guard let target = value else { return }
-                            if !searchText.isEmpty {
-                                settings.hapticFeedback()
-                                withAnimation {
-                                    searchText = ""
-                                    self.endEditing()
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                    withAnimation { proxy.scrollTo(target, anchor: .top) }
-                                }
-                            }
-                            scrollDown = nil
-                        }
-                        .listRowSeparator(
-                            (ayah.id == filteredAyahs.first?.id && searchText.isEmpty) || settings.defaultView
-                                ? .hidden : .visible,
-                            edges: .top
-                        )
-                        .listRowSeparator(
-                            ayah.id == filteredAyahs.last?.id || settings.defaultView
-                                ? .hidden : .visible,
-                            edges: .bottom
-                        )
-                        .padding(.bottom, (ayah.id == filteredAyahs.last?.id && endOfSurahDividerText == nil) ? comparisonBottomPadding : 0)
-                        #else
-                        .padding(.vertical)
-                        #endif
-                    }
 
-                    if let endOfSurahDividerText {
-                        Section {
-                            boundaryDivider(text: endOfSurahDividerText)
-                                .padding(.bottom, comparisonBottomPadding)
+                        if let endOfSurahDividerText {
+                            Section {
+                                boundaryDivider(text: endOfSurahDividerText)
+                                    .padding(.bottom, comparisonBottomPadding + endDividerExtraComparisonPadding)
+                            }
+                            #if !os(watchOS)
+                            .listRowSeparator(.hidden)
+                            #endif
                         }
-                        #if !os(watchOS)
-                        .listRowSeparator(.hidden)
-                        #endif
                     }
                 }
                 .applyConditionalListStyle(defaultView: settings.defaultView)
@@ -297,7 +416,7 @@ struct AyahsView: View {
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { _ in saveLastRead() }
         #if !os(watchOS)
-        .overlay(alignment: .top) {
+        .safeAreaInset(edge: .top) {
             SurahSectionHeader(surah: surah)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
@@ -315,6 +434,7 @@ struct AyahsView: View {
                 .opacity(showFloatingHeader ? 1 : 0)
                 .animation(.easeInOut, value: showFloatingHeader)
         }
+        //.safeAreaInset(edge: .bottom) {
         .overlay(alignment: .bottom) {
             if settings.qiraatComparisonMode && !quranPlayer.isPlaying && !quranPlayer.isPaused {
                 HStack {
