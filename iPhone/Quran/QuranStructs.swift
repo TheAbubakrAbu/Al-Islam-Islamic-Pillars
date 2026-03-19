@@ -31,8 +31,11 @@ struct VerseIndexEntry: Identifiable, Hashable {
 
 struct SurahBoundaryModel {
     let startDividerText: String?
+    let startDividerHighlighted: Bool
     let dividerBeforeAyah: [Int: String]
+    let endOfSurahDividerText: String?
     let endDividerText: String?
+    let endDividerHighlighted: Bool
 }
 
 extension String {

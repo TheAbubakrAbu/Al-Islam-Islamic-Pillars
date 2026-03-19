@@ -698,7 +698,9 @@ final class QuranPlayer: ObservableObject {
     private func customRangeTitle(ayahNum: Int, isBismillah: Bool, repeatWithinAyah: Int) -> String {
         let base = "\(customRangeSurahName) \(customRangeSurahNumber):\(ayahNum)"
         guard customRangeRepeatPerAyah > 1 else { return base }
-        return "\(base) (x\(repeatWithinAyah)/\(customRangeRepeatPerAyah))"
+        // Only show the ayah repeat count for this specific ayah, not cumulative repeats across sections
+        let repeatInThisAyah = ((repeatWithinAyah - 1) % customRangeRepeatPerAyah) + 1
+        return "\(base) (x\(repeatInThisAyah)/\(customRangeRepeatPerAyah))"
     }
 
     private func startAyahPlayback(

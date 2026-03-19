@@ -268,7 +268,7 @@ struct PrayerList: View {
                     RoundedRectangle(cornerRadius: 20)
                         .fill(isCurrent ? settings.accentColor.color.opacity(0.25) : .white.opacity(0.00001))
                         #if !os(watchOS)
-                        .padding(.vertical, -8)
+                        .padding(.vertical, isCurrent ? -4 : -8)
                         .padding(.horizontal, -12)
                         #else
                         .padding(.horizontal, -10)
@@ -279,8 +279,8 @@ struct PrayerList: View {
                             Image(systemName: prayer.image)
                                 .font(.title3)
                                 .foregroundColor(listIconColor)
-                                .padding(4)
-                                .padding(.trailing, 8)
+                                .frame(width: 32, alignment: .center)
+                                .padding(.trailing, 2)
                             
                             VStack(alignment: .leading) {
                                 Text(prayer.nameTransliteration)
@@ -471,8 +471,13 @@ struct PrayerList: View {
                     }
                 }
                 .onChange(of: selectedDate) { value in
-                    settings.datePrayers = settings.getPrayerTimes(for: value) ?? []
-                    settings.dateFullPrayers = settings.getPrayerTimes(for: value, fullPrayers: true) ?? []
+                    if let result = settings.getPrayerTimesNormalAndFull(for: value) {
+                        settings.datePrayers = result.normal
+                        settings.dateFullPrayers = result.full
+                    } else {
+                        settings.datePrayers = []
+                        settings.dateFullPrayers = []
+                    }
                     
                     let calendar = Calendar.current
                     

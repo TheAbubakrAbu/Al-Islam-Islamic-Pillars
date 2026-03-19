@@ -4,12 +4,21 @@ struct SearchBar: UIViewRepresentable {
     @Binding var text: String
     
     var onSearchButtonClicked: (() -> Void)?
+    var onFocusChanged: ((Bool) -> Void)?
 
     class Coordinator: NSObject, UISearchBarDelegate {
         @Binding var text: String
+        let onSearchButtonClicked: (() -> Void)?
+        let onFocusChanged: ((Bool) -> Void)?
 
-        init(text: Binding<String>) {
+        init(
+            text: Binding<String>,
+            onSearchButtonClicked: (() -> Void)?,
+            onFocusChanged: ((Bool) -> Void)?
+        ) {
             _text = text
+            self.onSearchButtonClicked = onSearchButtonClicked
+            self.onFocusChanged = onFocusChanged
         }
 
         func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
@@ -18,10 +27,12 @@ struct SearchBar: UIViewRepresentable {
 
         func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
             searchBar.showsCancelButton = true
+            onFocusChanged?(true)
         }
 
         func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
             searchBar.showsCancelButton = false
+            onFocusChanged?(false)
         }
 
         func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
@@ -30,15 +41,23 @@ struct SearchBar: UIViewRepresentable {
             searchBar.resignFirstResponder()
 
             text = ""
+            onFocusChanged?(false)
         }
 
         func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
             searchBar.resignFirstResponder()
+            text = searchBar.text ?? ""
+            onSearchButtonClicked?()
+            onFocusChanged?(false)
         }
     }
 
     func makeCoordinator() -> SearchBar.Coordinator {
-        return Coordinator(text: $text)
+        return Coordinator(
+            text: $text,
+            onSearchButtonClicked: onSearchButtonClicked,
+            onFocusChanged: onFocusChanged
+        )
     }
 
     func makeUIView(context: UIViewRepresentableContext<SearchBar>) -> UISearchBar {

@@ -140,7 +140,17 @@ let otherArabicLetters: [LetterData] = [
     LetterData(id: LetterID.next(), letter: "يٓ", forms: ["ـيٓ", "ـيٓـ", "يٓـ"], name: "يَاء مَدّ", transliteration: "yaa mad", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "وٓ", forms: ["ـوٓ", "ـوٓـ", "وٓـ"], name: "واو مَدّ", transliteration: "waw mad", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "ى", forms: ["ـى", "ـى ـ", "ى ـ"], name: "أَلِف مَقصُورَة", transliteration: "alif maqSoorah", showTashkeel: false, sound: ""),
-    LetterData(id: LetterID.next(), letter: "ل ا - لا", forms: ["ـلا", "ـلا ـ", "لا ـ"], name: "لَاء", transliteration: "laa", showTashkeel: false, sound: "")
+    LetterData(id: LetterID.next(), letter: "ل ا - لا", forms: ["ـلا", "ـلا ـ", "لا ـ"], name: "لَاء", transliteration: "laa", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "ـ", forms: ["ـ", "ـ", "ـ"], name: "تَطوِيل", transliteration: "tatweel", showTashkeel: false, sound: "")
+]
+
+let nonArabicArabicScriptLetters: [LetterData] = [
+    LetterData(id: LetterID.next(), letter: "پ", forms: ["ـپ", "ـپـ", "پـ"], name: "پے", transliteration: "pe", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "چ", forms: ["ـچ", "ـچـ", "چـ"], name: "چے", transliteration: "che", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "ڤ", forms: ["ـڤ", "ـڤـ", "ڤـ"], name: "ڤے", transliteration: "ve", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "گ", forms: ["ـگ", "ـگـ", "گـ"], name: "گاف", transliteration: "gaaf (gaa)", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "ڭ", forms: ["ـڭ", "ـڭـ", "ڭـ"], name: "ڭاف", transliteration: "ngaf", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "ژ", forms: ["ـژ", "ـژ ـ", "ژ ـ"], name: "ژے", transliteration: "zhe", showTashkeel: false, sound: "")
 ]
 
 let numbers = [
@@ -174,6 +184,21 @@ let tashkeels: [Tashkeel] = [
     Tashkeel(english: "Yaa Mad", arabic: "يَاء مَدّ", tashkeelMark: "ِيٓ", transliteration: "iiii"),
     Tashkeel(english: "Waw Mad", arabic: "واو مَدّ", tashkeelMark: "ُوٓ", transliteration: "uuuu"),
     Tashkeel(english: "Alif Maqsoorah",arabic: "ياء بلا نقاط", tashkeelMark: "َى", transliteration: "aa"),
+    Tashkeel(english: "Maddah Above", arabic: "مَدَّة", tashkeelMark: "ٓ", transliteration: ""),
+    Tashkeel(english: "Hamza Above", arabic: "هَمزَة فَوق", tashkeelMark: "ٔ", transliteration: ""),
+    Tashkeel(english: "Hamza Below", arabic: "هَمزَة تَحت", tashkeelMark: "ٕ", transliteration: ""),
+    Tashkeel(english: "Subscript Kasra", arabic: "كَسرَة صَغيرَة", tashkeelMark: "ٖ", transliteration: ""),
+    Tashkeel(english: "Inverted Damma", arabic: "ضَمَّة صَغيرَة", tashkeelMark: "ٗ", transliteration: ""),
+    Tashkeel(english: "Small Waw", arabic: "واو صَغيرَة", tashkeelMark: "ٞ", transliteration: ""),
+    Tashkeel(english: "Small High Stop", arabic: "عَلَامَة قُرآنية", tashkeelMark: "۠", transliteration: ""),
+    Tashkeel(english: "Jazm Head", arabic: "رَأس خَاء", tashkeelMark: "ۡ", transliteration: ""),
+    Tashkeel(english: "Small High Meem", arabic: "ميم صَغيرَة", tashkeelMark: "ۢ", transliteration: ""),
+    Tashkeel(english: "Small High Seen", arabic: "سين صَغيرَة", tashkeelMark: "ۤ", transliteration: ""),
+    Tashkeel(english: "Small High Noon", arabic: "نون صَغيرَة", tashkeelMark: "ۧ", transliteration: ""),
+    Tashkeel(english: "Small High Noon (Alt)", arabic: "نون صَغيرَة", tashkeelMark: "ۨ", transliteration: ""),
+    Tashkeel(english: "Small High Rounded Zero", arabic: "صِفر صَغير", tashkeelMark: "۪", transliteration: ""),
+    Tashkeel(english: "Rounded High Stop", arabic: "عَلَامَة قُرآنية", tashkeelMark: "۬", transliteration: ""),
+    Tashkeel(english: "Small Low Meem", arabic: "ميم صَغيرَة", tashkeelMark: "ۭ", transliteration: ""),
     Tashkeel(english: "Shaddah", arabic: "شَدَّة", tashkeelMark: "ّ", transliteration: ""),
-    Tashkeel(english: "Sukoon", arabic: "سُكُون", tashkeelMark: "", transliteration: "")
+    Tashkeel(english: "Sukoon", arabic: "سُكُون", tashkeelMark: "ْ", transliteration: "")
 ]

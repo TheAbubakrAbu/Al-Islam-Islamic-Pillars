@@ -18,9 +18,10 @@ struct ArabicView: View {
     }
     
     private var filteredOther: [LetterData] {
-        guard !searchText.isEmpty else { return otherArabicLetters }
+        let allOtherLetters = otherArabicLetters + nonArabicArabicScriptLetters
+        guard !searchText.isEmpty else { return allOtherLetters }
         let st = searchText.lowercased()
-        return otherArabicLetters.filter {
+        return allOtherLetters.filter {
             $0.letter.lowercased().contains(st) ||
             $0.name.lowercased().contains(st)  ||
             $0.transliteration.lowercased().contains(st)
@@ -55,82 +56,97 @@ struct ArabicView: View {
     }
 
     var body: some View {
-        VStack {
-            List {
-                if searchText.isEmpty, !settings.favoriteLetters.isEmpty {
-                    Section("FAVORITE LETTERS") {
-                        ForEach(settings.favoriteLetters.sorted(), id: \.id) {
-                            ArabicLetterRow(letterData: $0)
-                        }
+        List {
+            if searchText.isEmpty, !settings.favoriteLetters.isEmpty {
+                Section("FAVORITE LETTERS") {
+                    ForEach(settings.favoriteLetters.sorted(), id: \.id) {
+                        ArabicLetterRow(letterData: $0)
                     }
                 }
+            }
 
-                if searchText.isEmpty {
-                    if groupingType == "normal" {
-                        Section("STANDARD ARABIC LETTERS") {
-                            ForEach(standardArabicLetters, id: \.letter) {
-                                ArabicLetterRow(letterData: $0)
-                            }
-                        }
-                    } else {
-                        ForEach(similarityGroups.indices, id: \.self) { idx in
-                            let group = similarityGroups[idx]
-                            let header = idx == 0 ? "VOWEL LETTERS" : group.joined(separator: " AND")
-                            Section(header) {
-                                ForEach(group, id: \.self) { ch in
-                                    letterData(for: ch).map(ArabicLetterRow.init)
-                                }
-                            }
-                        }
-                    }
-
-                    Section("SPECIAL ARABIC LETTERS") {
-                        ForEach(otherArabicLetters, id: \.letter) {
+            if searchText.isEmpty {
+                if groupingType == "normal" {
+                    Section("STANDARD ARABIC LETTERS") {
+                        ForEach(standardArabicLetters, id: \.letter) {
                             ArabicLetterRow(letterData: $0)
                         }
                     }
-
-                    Section("ARABIC NUMBERS") {
-                        ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
-                    }
-
-                    tajweedSection
                 } else {
-                    Section("SEARCH RESULTS (\(filteredStandard.count + filteredOther.count))") {
-                        ForEach(filteredStandard) {
-                            ArabicLetterRow(letterData: $0)
-                        }
-                        
-                        ForEach(filteredOther) {
-                            ArabicLetterRow(letterData: $0)
+                    ForEach(similarityGroups.indices, id: \.self) { idx in
+                        let group = similarityGroups[idx]
+                        let header = idx == 0 ? "VOWEL LETTERS" : group.joined(separator: " AND")
+                        Section(header) {
+                            ForEach(group, id: \.self) { ch in
+                                letterData(for: ch).map(ArabicLetterRow.init)
+                            }
                         }
                     }
                 }
-            }
-            #if os(watchOS)
-            .searchable(text: $searchText)
-            #endif
-            .applyConditionalListStyle(defaultView: settings.defaultView)
-            .dismissKeyboardOnScroll()
 
-            #if !os(watchOS)
-            Picker("Grouping", selection: $groupingType.animation(.easeInOut)) {
-                Text("Normal Grouping").tag("normal")
-                Text("Group by Similarity").tag("similarity")
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
+                Section("SPECIAL ARABIC LETTERS") {
+                    ForEach(otherArabicLetters, id: \.letter) {
+                        ArabicLetterRow(letterData: $0)
+                    }
+                }
 
-            SearchBar(text: $searchText.animation(.easeInOut))
-                .padding(.horizontal, 8)
-            #endif
+                    Section("TASHKEEL") {
+                        ForEach(tashkeels, id: \.english) { item in
+                            ArabicTashkeelInfoRow(tashkeel: item)
+                        }
+                    }
+
+                Section("ARABIC NUMBERS") {
+                    ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
+                }
+
+                tajweedSection
+
+                    Section("NON-ARABIC ARABIC-SCRIPT LETTERS") {
+                        ForEach(nonArabicArabicScriptLetters, id: \.letter) {
+                            ArabicLetterRow(letterData: $0)
+                        }
+                    }
+            } else {
+                Section("SEARCH RESULTS (\(filteredStandard.count + filteredOther.count))") {
+                    ForEach(filteredStandard) {
+                        ArabicLetterRow(letterData: $0)
+                    }
+                    
+                    ForEach(filteredOther) {
+                        ArabicLetterRow(letterData: $0)
+                    }
+                }
+            }
         }
+        #if os(watchOS)
+        .searchable(text: $searchText)
+        #else
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 8) {
+                Picker("Grouping", selection: $groupingType.animation(.easeInOut)) {
+                    Text("Normal Grouping").tag("normal")
+                    Text("Group by Similarity").tag("similarity")
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 8)
+                
+                SearchBar(text: $searchText.animation(.easeInOut))
+            }
+            .padding(.top, 8)
+            .conditionalGlassEffect()
+            .padding([.horizontal, .bottom])
+        }
+        #endif
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .dismissKeyboardOnScroll()
         .navigationTitle("Arabic Alphabet")
     }
 
     private func letterData(for glyph: String) -> LetterData? {
         standardArabicLetters.first { $0.letter == glyph } ??
-        otherArabicLetters.first   { $0.letter == glyph }
+        otherArabicLetters.first   { $0.letter == glyph } ??
+        nonArabicArabicScriptLetters.first { $0.letter == glyph }
     }
 
     @ViewBuilder
@@ -153,6 +169,38 @@ struct ArabicView: View {
                 .font(.subheadline)
                 .foregroundColor(settings.accentColor.color)
             }
+        }
+    }
+}
+
+struct ArabicTashkeelInfoRow: View {
+    @EnvironmentObject private var settings: Settings
+    let tashkeel: Tashkeel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tashkeel.english)
+                    .font(.subheadline.weight(.semibold))
+                Text(tashkeel.arabic)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if !tashkeel.transliteration.isEmpty {
+                Text(tashkeel.transliteration)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(tashkeel.tashkeelMark)
+                .font(settings.useFontArabic
+                      ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
+                      : .title2)
+                .foregroundStyle(settings.accentColor.color)
+                .frame(minWidth: 24, alignment: .center)
         }
     }
 }

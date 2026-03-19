@@ -727,7 +727,8 @@ struct NamesView: View {
         #else
         .safeAreaInset(edge: .bottom) {
             SearchBar(text: $searchText.animation(.easeInOut))
-                .padding(.horizontal, 8)
+                .conditionalGlassEffect()
+                .padding([.horizontal, .bottom])
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
@@ -981,4 +982,5 @@ private struct WallpaperCell: View {
         .environmentObject(Settings.shared)
         .environmentObject(QuranData.shared)
         .environmentObject(QuranPlayer.shared)
+        .environmentObject(NamesViewModel.shared)
 }

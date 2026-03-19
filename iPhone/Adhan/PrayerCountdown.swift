@@ -6,7 +6,8 @@ struct PrayerCountdown: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var progress : Double = 0
-    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    @State private var updateTimer: Timer?
+    private let timerInterval: TimeInterval = 30  // Update every 30 seconds
 
     private var current: Prayer? { settings.currentPrayer }
     private var next   : Prayer? { settings.nextPrayer }
@@ -15,17 +16,39 @@ struct PrayerCountdown: View {
         guard var start = current?.time, var end = next?.time else { return 0 }
 
         let now = Date()
+        
+        // Adjust for day boundaries (if current prayer is after midnight compared to now)
         if start > now { start.addTimeInterval(-86_400) }
 
+        // Ensure end is after start (can span into next day)
         if end <= start { end.addTimeInterval(86_400) }
 
         let total = end.timeIntervalSince(start)
+        guard total > 0 else { return 0 }  // Avoid division by zero
+        
         let remaining = end.timeIntervalSince(now)
         return max(0, min(1, 1 - remaining / total))
     }
 
     private func updateProgress() {
         progress = calcProgress()
+    }
+    
+    private func startTimer() {
+        stopTimer()
+        updateTimer = Timer.scheduledTimer(withTimeInterval: timerInterval, repeats: true) { _ in
+            DispatchQueue.main.async {
+                // Update progress
+                updateProgress()
+                // Update current/next prayers in case they changed
+                settings.updateCurrentAndNextPrayer()
+            }
+        }
+    }
+    
+    private func stopTimer() {
+        updateTimer?.invalidate()
+        updateTimer = nil
     }
 
     var body: some View {
@@ -73,10 +96,32 @@ struct PrayerCountdown: View {
                     .minimumScaleFactor(0.25)
                 }
             }
-            .onReceive(timer) { _ in updateProgress() }
-            .onAppear(perform: updateProgress)
-            .onChange(of: scenePhase) { _ in updateProgress() }
-            .onChange(of: settings.prayers) { _ in updateProgress() }
+            .onAppear {
+                updateProgress()
+                startTimer()
+            }
+            .onDisappear {
+                stopTimer()
+            }
+            .onChange(of: scenePhase) { phase in
+                if phase == .active {
+                    updateProgress()
+                    settings.updateCurrentAndNextPrayer()
+                    startTimer()
+                } else {
+                    stopTimer()
+                }
+            }
+            .onChange(of: settings.prayers) { _ in
+                updateProgress()
+                settings.updateCurrentAndNextPrayer()
+            }
+            .onChange(of: current) { _ in
+                updateProgress()
+            }
+            .onChange(of: next) { _ in
+                updateProgress()
+            }
             .buttonStyle(.plain)
             .contentShape(Rectangle())
             .onTapGesture {

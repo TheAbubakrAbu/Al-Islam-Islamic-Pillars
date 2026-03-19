@@ -47,7 +47,7 @@ struct NowPlayingView: View {
             }
             .contextMenu { contextMenu(for: surah, ayah: ayahNum) }
             .cornerRadius(24)
-            .padding(.horizontal)
+            .padding(.horizontal, 8)
             .transition(.opacity)
         )
         #else

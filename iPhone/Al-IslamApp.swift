@@ -24,19 +24,22 @@ struct AlIslamApp: App {
                     LaunchScreen(isLaunching: $isLaunching)
                 } else {
                     TabView {
-                        VStack {
-                            AdhanView()
-                            
-                            if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                NowPlayingView(quranView: false)
-                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                    .padding(.bottom, 9)
+                        AdhanView()
+                            .safeAreaInset(edge: .bottom) {
+                                VStack(spacing: 4) {
+                                    if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                        NowPlayingView(quranView: false)
+                                    }
+                                }
+                                .padding(.vertical, 8)
+                                .conditionalGlassEffect()
+                                .padding([.horizontal, .bottom])
+                                .animation(.easeInOut, value: quranPlayer.isPlaying)
                             }
-                        }
-                        .tabItem {
-                            Image(systemName: "safari")
-                            Text("Adhan")
-                        }
+                            .tabItem {
+                                Image(systemName: "safari")
+                                Text("Adhan")
+                            }
                         
                         QuranView()
                             .tabItem {
@@ -44,29 +47,39 @@ struct AlIslamApp: App {
                                 Text("Quran")
                             }
                         
-                        VStack {
-                            IslamView()
-                            
-                            NowPlayingView(quranView: false)
+                        IslamView()
+                            .safeAreaInset(edge: .bottom) {
+                                VStack(spacing: 4) {
+                                    if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                        NowPlayingView(quranView: false)
+                                    }
+                                }
+                                .padding(.vertical, 8)
+                                .conditionalGlassEffect()
+                                .padding([.horizontal, .bottom])
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                .padding(.bottom, 9)
-                        }
-                        .tabItem {
-                            Image(systemName: "moon.stars")
-                            Text("Islam")
-                        }
+                            }
+                            .tabItem {
+                                Image(systemName: "moon.stars")
+                                Text("Islam")
+                            }
                         
-                        VStack {
-                            SettingsView()
-                            
-                            NowPlayingView(quranView: false)
+                        SettingsView()
+                            .safeAreaInset(edge: .bottom) {
+                                VStack(spacing: 4) {
+                                    if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                        NowPlayingView(quranView: false)
+                                    }
+                                }
+                                .padding(.vertical, 8)
+                                .conditionalGlassEffect()
+                                .padding([.horizontal, .bottom])
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                .padding(.bottom, 9)
-                        }
-                        .tabItem {
-                            Image(systemName: "gearshape")
-                            Text("Settings")
-                        }
+                            }
+                            .tabItem {
+                                Image(systemName: "gearshape")
+                                Text("Settings")
+                            }
                     }
                     .onAppear {
                         if firstLaunchSheet {

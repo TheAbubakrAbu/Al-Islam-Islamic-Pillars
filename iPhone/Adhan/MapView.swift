@@ -17,7 +17,7 @@ struct MapView: View {
 
     @State private var region = MKCoordinateRegion(
         // Kaaba
-        center: .init(latitude: 21.4225, longitude: 39.8262),
+        center: .init(latitude: 21.422445, longitude: 39.826388),
         span: .init(latitudeDelta: 0.5, longitudeDelta: 0.5)
     )
 
@@ -34,7 +34,7 @@ struct MapView: View {
             if let cur  = s.currentLocation, cur.latitude != 1000, cur.longitude != 1000 {
                 return cur.coordinate
             }
-            return .init(latitude: 21.4225, longitude: 39.8262)   // Kaaba fallback
+            return .init(latitude: 21.422445, longitude: 39.826388)   // Kaaba fallback
         }()
 
         _region = State(initialValue:

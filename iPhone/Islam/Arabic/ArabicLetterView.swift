@@ -31,152 +31,153 @@ struct ArabicLetterView: View {
     @State private var tempArabicFont = false
         
     var body: some View {
-        VStack {
-            List {
-                Section(header: LetterSectionHeader(letterData: letterData)) {
-                    VStack {
-                        HStack(alignment: .center) {
+        List {
+            Section(header: LetterSectionHeader(letterData: letterData)) {
+                VStack {
+                    HStack(alignment: .center) {
+                        Spacer()
+                        
+                        Text(letterData.transliteration)
+                            .font(.subheadline)
+                        
+                        Spacer()
+                        
+                        Text(letterData.name)
+                            .font(
+                                tempArabicFont
+                                ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
+                                : .title2
+                            )
+                        
+                        Spacer()
+                    }
+                }
+                #if !os(watchOS)
+                .listRowSeparator(.hidden, edges: .bottom)
+                #endif
+                .padding(.vertical, tempArabicFont ? 0 : 2)
+            }
+            
+            if let weight = letterData.weight {
+                Section(header: Text("LIGHT / HEAVY PRONUNCIATION")) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(weight == .heavy ? "Heavy letter (Tafkhīm)"
+                             : weight == .light ? "Light letter (Tarqīq)"
+                             : weight == .conditional ? "Conditional letter"
+                             : "Follows previous letter")
+                            .font(.headline)
+
+                        if let weightRule = letterData.weightRule {
+                            Text(weightRule)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            
+            Section(header: Text("DIFFERENT FORMS")) {
+                VStack {
+                    HStack(alignment: .center) {
+                        ForEach(0..<3, id: \.self) { index in
                             Spacer()
-                            
-                            Text(letterData.transliteration)
-                                .font(.subheadline)
-                            
-                            Spacer()
-                            
-                            Text(letterData.name)
+                            Text(letterData.forms[index])
                                 .font(
                                     tempArabicFont
                                     ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
                                     : .title2
                                 )
-                            
                             Spacer()
                         }
                     }
-                    #if !os(watchOS)
-                    .listRowSeparator(.hidden, edges: .bottom)
-                    #endif
-                    .padding(.vertical, tempArabicFont ? 0 : 2)
                 }
-                
-                if let weight = letterData.weight {
-                    Section(header: Text("LIGHT / HEAVY PRONUNCIATION")) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(weight == .heavy ? "Heavy letter (Tafkhīm)"
-                                 : weight == .light ? "Light letter (Tarqīq)"
-                                 : weight == .conditional ? "Conditional letter"
-                                 : "Follows previous letter")
-                                .font(.headline)
-
-                            if let weightRule = letterData.weightRule {
-                                Text(weightRule)
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                }
-                
-                Section(header: Text("DIFFERENT FORMS")) {
-                    VStack {
-                        HStack(alignment: .center) {
-                            ForEach(0..<3, id: \.self) { index in
-                                Spacer()
-                                Text(letterData.forms[index])
-                                    .font(
-                                        tempArabicFont
-                                        ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title1).pointSize)
-                                        : .title2
-                                    )
-                                Spacer()
-                            }
-                        }
-                    }
-                    #if !os(watchOS)
-                    .listRowSeparator(.hidden, edges: .bottom)
-                    #endif
-                    .padding(.vertical, tempArabicFont ? 0 : 2)
-                }
-                
-                if ["alif", "waw", "yaa"].contains(letterData.transliteration) {
-                    Section(header: Text("SPECIAL ROLE OF VOWEL LETTERS")) {
-                        Text("In Arabic, three letters (Alif, Waw, and Yaa) have a special dual role:")
-                            .font(.body)
-                        
-                        if letterData.transliteration == "alif" {
-                            Text("- **Alif (ا)**: Functions as a long vowel 'aa' when used after a letter with a fatha. For example, كِتَاب (kitaab - book). Alif never carries tashkeel unless it represents Hamza.")
-                                .font(.body)
-                        }
-                        
-                        if letterData.transliteration == "waw" {
-                            Text("- **Waw (و)**: Functions as a long vowel 'uu' when used after a letter with a damma, like in رَسُول (rasool - messenger). As a consonant, it makes the 'w' sound, like in وَقَفَ (waqafa - stood).")
-                                .font(.body)
-                        }
-                        
-                        if letterData.transliteration == "yaa" {
-                            Text("- **Yaa (ي)**: Functions as a long vowel 'ii' when used after a letter with a kasra, like in كِتَابِي (kitaabi - my book). As a consonant, it makes the 'y' sound, like in يَد (yad - hand).")
-                                .font(.body)
-                        }
-                        
-                        Text("These letters serve as vowels when they follow specific diacritics, and as consonants when they begin a word or are preceded by a sukoon.")
-                            .font(.body)
-                    }
-                }
-                
-                if letterData.showTashkeel {
-                    Section(header: Text("DIFFERENT HARAKAAT (VOWELS)")) {
-                        let chunks = tashkeels.chunked(into: 3)
-                        ForEach(chunks.indices, id: \.self) { idx in
-                            VStack {
-                                #if !os(watchOS)
-                                if idx > 0 {
-                                    Divider().padding(.trailing, -100)
-                                }
-                                #endif
-                                
-                                TashkeelRow(letterData: letterData, tashkeels: chunks[idx], tempArabicFont: tempArabicFont)
-                                    .padding(.top, 14)
-                            }
-                            #if !os(watchOS)
-                            .listRowSeparator(.hidden, edges: .bottom)
-                            #endif
-                        }
-                        
-                        #if !os(watchOS)
-                        Text("WITH ALIF HAMZA")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
-                            .padding(.bottom, 8)
-                            .listRowSeparator(.hidden, edges: .bottom)
-                        #else
-                        HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
-                        #endif
-                    }
-                }
-                
-                if (!letterData.showTashkeel && letterData.transliteration != "alif")
-                    || letterData.transliteration == "yaa" {
+                #if !os(watchOS)
+                .listRowSeparator(.hidden, edges: .bottom)
+                #endif
+                .padding(.vertical, tempArabicFont ? 0 : 2)
+            }
+            
+            if ["alif", "waw", "yaa"].contains(letterData.transliteration) {
+                Section(header: Text("SPECIAL ROLE OF VOWEL LETTERS")) {
+                    Text("In Arabic, three letters (Alif, Waw, and Yaa) have a special dual role:")
+                        .font(.body)
                     
-                    Section(header: Text("PURPOSE")) {
-                        purposeSection(for: letterData)
+                    if letterData.transliteration == "alif" {
+                        Text("- **Alif (ا)**: Functions as a long vowel 'aa' when used after a letter with a fatha. For example, كِتَاب (kitaab - book). Alif never carries tashkeel unless it represents Hamza.")
+                            .font(.body)
                     }
+                    
+                    if letterData.transliteration == "waw" {
+                        Text("- **Waw (و)**: Functions as a long vowel 'uu' when used after a letter with a damma, like in رَسُول (rasool - messenger). As a consonant, it makes the 'w' sound, like in وَقَفَ (waqafa - stood).")
+                            .font(.body)
+                    }
+                    
+                    if letterData.transliteration == "yaa" {
+                        Text("- **Yaa (ي)**: Functions as a long vowel 'ii' when used after a letter with a kasra, like in كِتَابِي (kitaabi - my book). As a consonant, it makes the 'y' sound, like in يَد (yad - hand).")
+                            .font(.body)
+                    }
+                    
+                    Text("These letters serve as vowels when they follow specific diacritics, and as consonants when they begin a word or are preceded by a sukoon.")
+                        .font(.body)
                 }
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
-            .dismissKeyboardOnScroll()
             
-            #if !os(watchOS)
+            if letterData.showTashkeel {
+                Section(header: Text("DIFFERENT HARAKAAT (VOWELS)")) {
+                    let chunks = tashkeels.chunked(into: 3)
+                    ForEach(chunks.indices, id: \.self) { idx in
+                        VStack {
+                            #if !os(watchOS)
+                            if idx > 0 {
+                                Divider().padding(.trailing, -100)
+                            }
+                            #endif
+                            
+                            TashkeelRow(letterData: letterData, tashkeels: chunks[idx], tempArabicFont: tempArabicFont)
+                                .padding(.top, 14)
+                        }
+                        #if !os(watchOS)
+                        .listRowSeparator(.hidden, edges: .bottom)
+                        #endif
+                    }
+                    
+                    #if !os(watchOS)
+                    Text("WITH ALIF HAMZA")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
+                        .padding(.bottom, 8)
+                        .listRowSeparator(.hidden, edges: .bottom)
+                    #else
+                    HamzaPracticeRow(letterData: letterData, tempArabicFont: tempArabicFont)
+                    #endif
+                }
+            }
+            
+            if (!letterData.showTashkeel && letterData.transliteration != "alif")
+                || letterData.transliteration == "yaa" {
+                
+                Section(header: Text("PURPOSE")) {
+                    purposeSection(for: letterData)
+                }
+            }
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .dismissKeyboardOnScroll()
+        #if !os(watchOS)
+        .safeAreaInset(edge: .bottom) {
             Picker("Arabic Font", selection: $tempArabicFont.animation(.easeInOut)) {
                 Text("Quranic Font").tag(true)
                 Text("Basic Font").tag(false)
             }
             .pickerStyle(SegmentedPickerStyle())
-            .padding([.horizontal, .bottom], 12)
-            #endif
+            .padding(.horizontal, 8)
+            .conditionalGlassEffect()
+            .padding([.horizontal, .bottom])
         }
+        #endif
         .navigationTitle(letterData.letter)
         .onAppear {
             withAnimation {

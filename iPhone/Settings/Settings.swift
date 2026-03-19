@@ -448,6 +448,16 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
     @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
+
+    @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()
+    var quranSearchHistory: [String] {
+        get {
+            (try? Self.decoder.decode([String].self, from: quranSearchHistoryData)) ?? []
+        }
+        set {
+            quranSearchHistoryData = (try? Self.encoder.encode(Array(newValue.prefix(5)))) ?? Data()
+        }
+    }
     
     @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
 
@@ -463,6 +473,21 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func isLetterFavorite(letterData: LetterData) -> Bool {
         return favoriteLetters.contains(where: {$0.id == letterData.id})
+    }
+
+    func addQuranSearchHistory(_ query: String) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        var history = quranSearchHistory.filter {
+            $0.caseInsensitiveCompare(trimmed) != .orderedSame
+        }
+        history.insert(trimmed, at: 0)
+        quranSearchHistory = Array(history.prefix(5))
+    }
+
+    func removeQuranSearchHistory(_ query: String) {
+        quranSearchHistory.removeAll { $0.caseInsensitiveCompare(query) == .orderedSame }
     }
     
     func colorSchemeFromString(_ colorScheme: String) -> ColorScheme? {

@@ -322,7 +322,35 @@ extension Settings {
     
     /// Ultra‑fast prayer generator. Returns `nil` if location is not valid.
     func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
-        guard let here = currentLocation, here.latitude != 1000, here.longitude != 1000 else { return nil }
+        let rawPrayers = _computeRawPrayers(for: date)
+        guard !rawPrayers.isEmpty else { return nil }
+        
+        // Filter based on mode: return full list if fullPrayers requested OR not in traveling mode
+        // Otherwise return condensed traveling mode list
+        if fullPrayers || !travelingMode {
+            return rawPrayers  // Full list: Fajr, Sunrise, Dhuhr/Jumuah, Asr, Maghrib, Isha
+        } else {
+            // Traveling mode condensed: Fajr, Sunrise, Dhuhr/Asr combo, Maghrib/Isha combo
+            guard rawPrayers.count >= 4 else { return rawPrayers }
+            return [rawPrayers[0], rawPrayers[1], rawPrayers[2], rawPrayers[rawPrayers.count - 1]]
+        }
+    }    
+    /// Optimized getter that computes both normal and full prayer lists in a single calculation pass
+    func getPrayerTimesNormalAndFull(for date: Date) -> (normal: [Prayer], full: [Prayer])? {
+        let rawPrayers = _computeRawPrayers(for: date)
+        guard !rawPrayers.isEmpty else { return nil }
+        
+        let fullList = rawPrayers
+        let normalList: [Prayer] = travelingMode && rawPrayers.count >= 4 
+            ? [rawPrayers[0], rawPrayers[1], rawPrayers[2], rawPrayers[rawPrayers.count - 1]]
+            : rawPrayers
+        
+        return (normal: normalList, full: fullList)
+    }    
+    /// Computes the raw unfiltered prayer times for a given date. This internal function
+    /// handles all PrayerTimes calculation logic once, avoiding duplicate computations.
+    private func _computeRawPrayers(for date: Date) -> [Prayer] {
+        guard let here = currentLocation, here.latitude != 1000, here.longitude != 1000 else { return [] }
 
         var params = Self.calcParams[prayerCalculation] ?? Self.calcParams["Muslim World League"]!
         params.madhab = hanafiMadhab ? Madhab.hanafi : Madhab.shafi
@@ -334,7 +362,7 @@ extension Settings {
                 date: comps,
                 calculationParameters: params
         )
-        else { return nil }
+        else { return [] }
 
         @inline(__always) func off(_ d: Date, by m: Int) -> Date {
             d.addingTimeInterval(Double(m) * 60)
@@ -346,47 +374,37 @@ extension Settings {
         let asr      = off(raw.asr,      by: offsetAsr)
         let maghrib  = off(raw.maghrib,  by: offsetMaghrib)
         let isha     = off(raw.isha,     by: offsetIsha)
-        let dhAsr    = off(raw.dhuhr,    by: offsetDhurhAsr)
-        let mgIsha   = off(raw.maghrib,  by: offsetMaghribIsha)
 
         let isFriday = Self.gregorian.component(.weekday, from: date) == 6
 
-        if fullPrayers || !travelingMode {
-            var list: [Prayer] = [
-                prayer(from: "Fajr",    time: fajr),
-                prayer(from: "Sunrise", time: sunrise)
-            ]
+        var list: [Prayer] = [
+            prayer(from: "Fajr",    time: fajr),
+            prayer(from: "Sunrise", time: sunrise)
+        ]
 
-            // Dhuhr / Jumuah switch
-            if isFriday {
-                list.append(
-                    Prayer(nameArabic: "الجُمُعَة",
-                           nameTransliteration: "Jumuah",
-                           nameEnglish: "Friday",
-                           time: dhuhr,
-                           image: "sun.max.fill",
-                           rakah: "2",
-                           sunnahBefore: "0",
-                           sunnahAfter: "2 and 2")
-                )
-            } else {
-                list.append(prayer(from: "Dhuhr", time: dhuhr))
-            }
-
-            list += [
-                prayer(from: "Asr",     time: asr),
-                prayer(from: "Maghrib", time: maghrib),
-                prayer(from: "Isha",    time: isha)
-            ]
-            return list
+        // Dhuhr / Jumuah switch
+        if isFriday {
+            list.append(
+                Prayer(nameArabic: "الجُمُعَة",
+                       nameTransliteration: "Jumuah",
+                       nameEnglish: "Friday",
+                       time: dhuhr,
+                       image: "sun.max.fill",
+                       rakah: "2",
+                       sunnahBefore: "0",
+                       sunnahAfter: "2 and 2")
+            )
         } else {
-            return [
-                prayer(from: "Fajr",    time: fajr),
-                prayer(from: "Sunrise", time: sunrise),
-                prayer(from: "Dhuhr/Asr",   time: dhAsr),
-                prayer(from: "Maghrib/Isha",   time: mgIsha)
-            ]
+            list.append(prayer(from: "Dhuhr", time: dhuhr))
         }
+
+        list += [
+            prayer(from: "Asr",     time: asr),
+            prayer(from: "Maghrib", time: maghrib),
+            prayer(from: "Isha",    time: isha)
+        ]
+        
+        return list
     }
 
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, calledFrom: StaticString = #function, completion: (() -> Void)? = nil) {
@@ -423,8 +441,10 @@ extension Settings {
         if needsFetch {
             logger.debug("Fetching prayer times – caller: \(calledFrom)")
             
-            let todayPrayers  = getPrayerTimes(for: today) ?? []
-            let fullPrayers   = getPrayerTimes(for: today, fullPrayers: true) ?? []
+            // Single calculation – both filtered and full lists derived from same source
+            let rawPrayers    = _computeRawPrayers(for: today)
+            let todayPrayers  = travelingMode ? _filterTravelingMode(rawPrayers) : rawPrayers
+            let fullPrayers   = rawPrayers  // Full list already computed
             
             prayers = Prayers(
                 day: today,
@@ -447,7 +467,13 @@ extension Settings {
         completion?()
     }
     
-    private func updateCurrentAndNextPrayer() {
+    /// Efficiently filters raw prayers to traveling mode format (condensed list)
+    private func _filterTravelingMode(_ rawPrayers: [Prayer]) -> [Prayer] {
+        guard rawPrayers.count >= 4 else { return rawPrayers }
+        return [rawPrayers[0], rawPrayers[1], rawPrayers[2], rawPrayers[rawPrayers.count - 1]]
+    }
+    
+    func updateCurrentAndNextPrayer() {
         guard let p = prayers?.prayers, !p.isEmpty else {
             logger.debug("No prayer list to compute current/next")
             return
@@ -464,12 +490,18 @@ extension Settings {
             // past last prayer – peek at tomorrow for “next”
             currentPrayer = p.last
             if let tmr = Calendar.current.date(byAdding: .day, value: 1, to: now),
-               let firstTomorrow = getPrayerTimes(for: tmr)?.first {
+               let firstTomorrow = _getFirstPrayerOfDay(for: tmr) {
                 nextPrayer = firstTomorrow
             } else {
                 nextPrayer = nil
             }
         }
+    }
+    
+    /// Efficiently gets just the first prayer of a given day (optimized for getting tomorrow's Fajr)
+    private func _getFirstPrayerOfDay(for date: Date) -> Prayer? {
+        let raw = _computeRawPrayers(for: date)
+        return raw.first  // Fajr is always first regardless of mode
     }
     
     @MainActor
