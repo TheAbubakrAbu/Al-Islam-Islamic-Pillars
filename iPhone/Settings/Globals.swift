@@ -109,39 +109,28 @@ extension String {
     func removeDiacriticsFromLastLetter() -> String {
         guard !isEmpty else { return self }
 
-        let shaddah: UInt32 = 0x0651
+        let shaddah = UnicodeScalar(0x0651)!
         let scalars = Array(unicodeScalars)
         var idx = scalars.count
-        var removedAny = false
         var trailingShaddahCount = 0
+        var removedNonShaddah = false
 
-        while idx > 0 {
-            let scalar = scalars[idx - 1]
-            guard quranStripScalars.contains(scalar) else { break }
-
-            if scalar.value == shaddah {
+        // Remove trailing Arabic marks from final letter cluster, but keep shaddah.
+        while idx > 0, quranStripScalars.contains(scalars[idx - 1]) {
+            if scalars[idx - 1] == shaddah {
                 trailingShaddahCount += 1
             } else {
-                removedAny = true
+                removedNonShaddah = true
             }
             idx -= 1
         }
 
-        guard removedAny else { return self }
+        guard removedNonShaddah else { return self }
 
         var out = String.UnicodeScalarView()
-        out.reserveCapacity(scalars.count)
-
-        if idx > 0 {
-            for scalar in scalars[0..<idx] { out.append(scalar) }
-        }
-
-        if trailingShaddahCount > 0 {
-            if let shaddahScalar = UnicodeScalar(shaddah) {
-                for _ in 0..<trailingShaddahCount { out.append(shaddahScalar) }
-            }
-        }
-
+        out.reserveCapacity(idx + trailingShaddahCount)
+        for scalar in scalars[0..<idx] { out.append(scalar) }
+        for _ in 0..<trailingShaddahCount { out.append(shaddah) }
         return String(out)
     }
 

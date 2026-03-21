@@ -9,7 +9,11 @@ struct AyahsView: View {
     
     @State private var searchText = ""
     @State private var firstVisibleAyahID: Int? = nil
-    @State private var visibleBoundaryAnchorIDs = Set<Int>()
+    @State private var visibleAyahIDs = Set<Int>()
+    @State private var cachedAyahsForQiraah: [Ayah] = []
+    @State private var cachedAyahByID: [Int: Ayah] = [:]
+    @State private var overlayDividerByAyahID: [Int: BoundaryDividerModel] = [:]
+    @State private var cacheQiraahKey: String = ""
     @State private var scrollDown: Int? = nil
     @State private var didScrollDown = false
     @State private var showingSettingsSheet = false
@@ -81,7 +85,50 @@ struct AyahsView: View {
         return PageJuzQuery(page: nil, juz: nil)
     }
 
-    private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false) -> some View {
+    private func rebuildQiraahCaches() {
+        let key = settings.displayQiraahForArabic ?? ""
+        guard key != cacheQiraahKey || cachedAyahsForQiraah.isEmpty else { return }
+
+        let ayahs = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
+        cachedAyahsForQiraah = ayahs
+        cachedAyahByID = Dictionary(uniqueKeysWithValues: ayahs.map { ($0.id, $0) })
+
+        var overlayMap: [Int: BoundaryDividerModel] = [:]
+        overlayMap.reserveCapacity(ayahs.count)
+
+        for ayah in ayahs {
+            let pageSegment: String
+            if let page = ayah.page {
+                pageSegment = "Page \(page)"
+            } else if let juz = ayah.juz {
+                pageSegment = "Juz \(juz)"
+            } else {
+                continue
+            }
+
+            let juzSegment = (ayah.page != nil) ? ayah.juz.map { "Juz \($0)" } : nil
+            overlayMap[ayah.id] = BoundaryDividerModel(
+                text: boundaryText(for: ayah) ?? pageSegment,
+                pageSegment: pageSegment,
+                juzSegment: juzSegment,
+                style: .allAccent
+            )
+        }
+
+        overlayDividerByAyahID = overlayMap
+        cacheQiraahKey = key
+
+        let fallbackID = ayahs.first?.id
+        if let firstVisibleAyahID {
+            if cachedAyahByID[firstVisibleAyahID] == nil {
+                self.firstVisibleAyahID = fallbackID
+            }
+        } else {
+            self.firstVisibleAyahID = fallbackID
+        }
+    }
+
+    private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false, nextAyahID: Int? = nil) -> some View {
         let accent = settings.accentColor.color
         let dividerColor: Color = {
             if isOverlay { return .green }
@@ -117,7 +164,7 @@ struct AyahsView: View {
             }
         }()
 
-        return HStack(spacing: 10) {
+        let dividerContent = HStack(spacing: 10) {
             Rectangle()
                 .fill(dividerColor.opacity(isOverlay ? 0.55 : 0.45))
                 .frame(height: 1)
@@ -145,6 +192,22 @@ struct AyahsView: View {
                 .frame(minWidth: 18)
         }
         .padding(.vertical, 6)
+        
+        #if !os(watchOS)
+        if !searchText.isEmpty, let ayahID = nextAyahID {
+            return AnyView(
+                Button { 
+                    settings.hapticFeedback()
+                    scrollDown = ayahID
+                } label: {
+                    dividerContent
+                }
+                .buttonStyle(.plain)
+            )
+        }
+        #endif
+        
+        return AnyView(dividerContent)
     }
     
     var body: some View {
@@ -160,8 +223,12 @@ struct AyahsView: View {
             let isDividerKeywordSearch = dividerKeywordMode != nil
             let isPageOrJuzSearch = pageJuzQuery.page != nil || pageJuzQuery.juz != nil
             let showBoundaryDividers = settings.showPageJuzDividers && (searchText.isEmpty || isPageOrJuzSearch || isDividerKeywordSearch)
-            let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
-            let ayahByID = Dictionary(uniqueKeysWithValues: ayahsForQiraah.map { ($0.id, $0) })
+            let ayahsForQiraah = cachedAyahsForQiraah.isEmpty
+                ? surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
+                : cachedAyahsForQiraah
+            let ayahByID = cachedAyahByID.isEmpty
+                ? Dictionary(uniqueKeysWithValues: ayahsForQiraah.map { ($0.id, $0) })
+                : cachedAyahByID
             let filteredAyahs = ayahsForQiraah.filter { a in
                 guard !cleanQuery.isEmpty else { return true }
 
@@ -188,6 +255,21 @@ struct AyahsView: View {
                     || Int(cleanQuery) == a.id
             }
             let boundaryModel = showBoundaryDividers ? quranData.boundaryModel(forSurah: surah.id) : nil
+            let trailingSearchBoundaryDivider: BoundaryDividerModel? = {
+                guard showBoundaryDividers, isPageOrJuzSearch, !isDividerKeywordSearch else { return nil }
+                guard let boundaryModel else { return nil }
+                guard let lastFilteredAyahID = filteredAyahs.last?.id else { return nil }
+
+                if let idx = ayahsForQiraah.firstIndex(where: { $0.id == lastFilteredAyahID }) {
+                    let nextIndex = ayahsForQiraah.index(after: idx)
+                    if nextIndex < ayahsForQiraah.endIndex {
+                        let nextAyah = ayahsForQiraah[nextIndex]
+                        return boundaryModel.dividerBeforeAyah[nextAyah.id]
+                    }
+                }
+
+                return boundaryModel.endDivider
+            }()
             let startOfSurahDivider: BoundaryDividerModel? = {
                 guard showBoundaryDividers, searchText.isEmpty else { return nil }
                 return boundaryModel?.startDivider
@@ -202,21 +284,7 @@ struct AyahsView: View {
             let floatingDividerModel: BoundaryDividerModel? = {
                 guard showBoundaryDividers, searchText.isEmpty else { return nil }
                 guard let currentFloatingAyah else { return nil }
-                let pageSegment: String
-                if let page = currentFloatingAyah.page {
-                    pageSegment = "Page \(page)"
-                } else if let juz = currentFloatingAyah.juz {
-                    pageSegment = "Juz \(juz)"
-                } else {
-                    return nil
-                }
-                let juzSegment = (currentFloatingAyah.page != nil) ? currentFloatingAyah.juz.map { "Juz \($0)" } : nil
-                return BoundaryDividerModel(
-                    text: boundaryText(for: currentFloatingAyah) ?? pageSegment,
-                    pageSegment: pageSegment,
-                    juzSegment: juzSegment,
-                    style: .allAccent
-                )
+                return overlayDividerByAyahID[currentFloatingAyah.id]
             }()
             let keywordDividerModels: [BoundaryDividerModel] = {
                 guard let mode = dividerKeywordMode else { return [] }
@@ -241,20 +309,25 @@ struct AyahsView: View {
                 var seen = Set<String>()
                 return allDividerModels.filter { model in
                     let matches: Bool
+                    let dedupeKey: String
                     switch mode {
                     case .page:
                         matches = model.text.localizedCaseInsensitiveContains("Page")
+                        dedupeKey = model.text
                     case .juz:
                         matches = model.text.localizedCaseInsensitiveContains("Juz")
+                        // For juz keyword search, collapse repeated page rows within the same Juz.
+                        dedupeKey = model.juzSegment
+                            ?? (model.pageSegment.localizedCaseInsensitiveContains("Juz") ? model.pageSegment : model.text)
                     }
                     guard matches else { return false }
-                    return seen.insert(model.text).inserted
+                    return seen.insert(dedupeKey).inserted
                 }
             }()
             let searchCount = isDividerKeywordSearch ? keywordDividerModels.count : filteredAyahs.count
-            let syncBoundaryAnchor: () -> Void = {
-                if let topBoundaryAyahID = visibleBoundaryAnchorIDs.min() {
-                    firstVisibleAyahID = topBoundaryAyahID
+            let syncVisibleAyahAnchor: () -> Void = {
+                if let topVisibleAyahID = visibleAyahIDs.min() {
+                    firstVisibleAyahID = topVisibleAyahID
                 } else if let sel = ayah, ayahByID[sel] != nil {
                     firstVisibleAyahID = sel
                 } else {
@@ -326,7 +399,7 @@ struct AyahsView: View {
                 if isDividerKeywordSearch {
                     ForEach(Array(keywordDividerModels.enumerated()), id: \.offset) { _, dividerModel in
                         Section {
-                            boundaryDivider(model: dividerModel)
+                            boundaryDivider(model: dividerModel, nextAyahID: filteredAyahs.first?.id)
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
@@ -335,19 +408,7 @@ struct AyahsView: View {
                 } else {
                     if let startOfSurahDivider {
                         Section {
-                            boundaryDivider(model: startOfSurahDivider)
-                        }
-                        .onAppear {
-                            if let first = filteredAyahs.first {
-                                visibleBoundaryAnchorIDs.insert(first.id)
-                                syncBoundaryAnchor()
-                            }
-                        }
-                        .onDisappear {
-                            if let first = filteredAyahs.first {
-                                visibleBoundaryAnchorIDs.remove(first.id)
-                                syncBoundaryAnchor()
-                            }
+                            boundaryDivider(model: startOfSurahDivider, nextAyahID: filteredAyahs.first?.id)
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
@@ -359,15 +420,7 @@ struct AyahsView: View {
 
                         if let dividerBefore {
                             Section {
-                                boundaryDivider(model: dividerBefore)
-                            }
-                            .onAppear {
-                                visibleBoundaryAnchorIDs.insert(ayah.id)
-                                syncBoundaryAnchor()
-                            }
-                            .onDisappear {
-                                visibleBoundaryAnchorIDs.remove(ayah.id)
-                                syncBoundaryAnchor()
+                                boundaryDivider(model: dividerBefore, nextAyahID: ayah.id)
                             }
                             #if !os(watchOS)
                             .listRowSeparator(.hidden)
@@ -394,6 +447,14 @@ struct AyahsView: View {
                             #endif
                         }
                         .id(ayah.id)
+                        .onAppear {
+                            visibleAyahIDs.insert(ayah.id)
+                            syncVisibleAyahAnchor()
+                        }
+                        .onDisappear {
+                            visibleAyahIDs.remove(ayah.id)
+                            syncVisibleAyahAnchor()
+                        }
                         #if !os(watchOS)
                         .onChange(of: scrollDown) { value in
                             guard let target = value else { return }
@@ -426,19 +487,16 @@ struct AyahsView: View {
 
                     if let endOfSurahDivider {
                         Section {
-                            boundaryDivider(model: endOfSurahDivider)
+                            boundaryDivider(model: endOfSurahDivider, nextAyahID: nil)
                         }
-                        .onAppear {
-                            if let last = filteredAyahs.last {
-                                visibleBoundaryAnchorIDs.insert(last.id)
-                                syncBoundaryAnchor()
-                            }
-                        }
-                        .onDisappear {
-                            if let last = filteredAyahs.last {
-                                visibleBoundaryAnchorIDs.remove(last.id)
-                                syncBoundaryAnchor()
-                            }
+                        #if !os(watchOS)
+                        .listRowSeparator(.hidden)
+                        #endif
+                    }
+
+                    if let trailingSearchBoundaryDivider {
+                        Section {
+                            boundaryDivider(model: trailingSearchBoundaryDivider, nextAyahID: nil)
                         }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
@@ -450,7 +508,8 @@ struct AyahsView: View {
             .compactListSectionSpacing()
             .dismissKeyboardOnScroll()
             .onAppear {
-                visibleBoundaryAnchorIDs.removeAll()
+                rebuildQiraahCaches()
+                visibleAyahIDs.removeAll()
                 if let sel = ayah, ayahByID[sel] != nil {
                     firstVisibleAyahID = sel
                 } else if firstVisibleAyahID == nil {
@@ -469,6 +528,11 @@ struct AyahsView: View {
                     withAnimation { proxy.scrollTo(id, anchor: .top) }
                 }
             }
+            .onChange(of: settings.displayQiraah) { _ in
+                cacheQiraahKey = ""
+                rebuildQiraahCaches()
+                visibleAyahIDs.removeAll()
+            }
             #if !os(watchOS)
             .overlay(alignment: .top) {
                 VStack(spacing: 6) {
@@ -478,6 +542,7 @@ struct AyahsView: View {
                         .background(Color.clear.background(.ultraThinMaterial))
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                        .conditionalGlassEffect(clear: false)
 
                     if let floatingDividerModel {
                         boundaryDivider(model: floatingDividerModel, isOverlay: true)
@@ -485,6 +550,7 @@ struct AyahsView: View {
                             .padding(.vertical, 2)
                             .background(Color.clear.background(.ultraThinMaterial))
                             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .conditionalGlassEffect(clear: false)
                     }
                 }
                 .padding(.top, 6)
@@ -513,7 +579,8 @@ struct AyahsView: View {
                                 .background(Color.clear.background(.ultraThinMaterial))
                                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                                .padding(.horizontal, 16)
+                                .conditionalGlassEffect(clear: false)
+                                .padding(.horizontal, 20)
                         }
                     }
                 
@@ -521,7 +588,6 @@ struct AyahsView: View {
                         if quranPlayer.isPlaying || quranPlayer.isPaused {
                             NowPlayingView(quranView: false)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                .padding(.top)
                                 .onTapGesture {
                                     guard
                                         let curSurah = quranPlayer.currentSurahNumber,
@@ -546,13 +612,17 @@ struct AyahsView: View {
                         }
                         
                         HStack {
-                            SearchBar(text: $searchText.animation(.easeInOut))
+//                            SearchBar(text: $searchText.animation(.easeInOut)).conditionalGlassEffect(clear: false)
+                            
+                            GlassSearchBar(searchText: $searchText.animation(.easeInOut))
                             
                             playButton(proxy: proxy)
+                                .padding()
+                                .conditionalGlassEffect(clear: false)
                         }
                     }
-                    .conditionalGlassEffect()
-                    .padding([.horizontal, .bottom])
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
                     .animation(.easeInOut, value: quranPlayer.isPlaying)
                 }
             }
@@ -608,7 +678,7 @@ struct AyahsView: View {
     private func playButton(proxy: ScrollViewProxy) -> some View {
         let playerIdle = !quranPlayer.isLoading && !quranPlayer.isPlaying && !quranPlayer.isPaused
         let canResumeLast = settings.lastListenedSurah?.surahNumber == surah.id
-        let repeatCounts  = [2, 3, 5, 10, 15, 20]
+        let repeatCounts  = [20, 15, 10, 5, 3, 2]
 
         if playerIdle {
             Menu {
@@ -638,6 +708,13 @@ struct AyahsView: View {
                 Menu {
                     Button {
                         settings.hapticFeedback()
+                        showCustomRangeSheet = true
+                    } label: {
+                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
+                    }
+                    
+                    Button {
+                        settings.hapticFeedback()
                         quranPlayer.playAyah(
                             surahNumber: surah.id,
                             ayahNumber: 1,
@@ -645,13 +722,6 @@ struct AyahsView: View {
                         )
                     } label: {
                         Label("Play Ayah by Ayah", systemImage: "list.number")
-                    }
-
-                    Button {
-                        settings.hapticFeedback()
-                        showCustomRangeSheet = true
-                    } label: {
-                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
                     }
                     
                     Button {
@@ -690,8 +760,6 @@ struct AyahsView: View {
             } label: {
                 playIcon()
             }
-            .padding(.trailing, 28)
-
         } else {
             Button {
                 settings.hapticFeedback()
@@ -706,7 +774,6 @@ struct AyahsView: View {
             } label: {
                 playIcon()
             }
-            .padding(.trailing, 28)
         }
     }
     
@@ -753,14 +820,20 @@ struct AyahsView: View {
     #endif
     
     private func saveLastRead() {
-        DispatchQueue.main.async {
-            withAnimation {
-                settings.lastReadSurah = surah.id
-                if let firstVisible = firstVisibleAyahID {
-                    settings.lastReadAyah = firstVisible
-                }
-            }
+        let topVisible = visibleAyahIDs.min()
+        let targetAyah = topVisible
+            ?? firstVisibleAyahID
+            ?? ayah
+            ?? cachedAyahsForQiraah.first?.id
+
+        guard let targetAyah else { return }
+
+        if settings.lastReadSurah == surah.id, settings.lastReadAyah == targetAyah {
+            return
         }
+
+        settings.lastReadSurah = surah.id
+        settings.lastReadAyah = targetAyah
     }
 }
 

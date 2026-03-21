@@ -1,6 +1,7 @@
 import SwiftUI
 import Adhan
 import CoreLocation
+import Network
 import UserNotifications
 import WidgetKit
 
@@ -15,12 +16,54 @@ extension Settings {
     private static let geocoder = CLGeocoder()
     private static var cachedPlacemark: (coord: CLLocationCoordinate2D, city: String, countryCode: String)?
     private static let geocodeActor = GeocodeActor()
+    private static let networkMonitor = NWPathMonitor()
+    private static let networkMonitorQueue = DispatchQueue(label: "com.Quran.Elmallah.Islamic-Pillars.NetworkMonitor")
+    private static var didStartNetworkMonitor = false
+    private static var isNetworkReachable = true
+    private static var pendingGeocodeCoord: CLLocationCoordinate2D?
     
     private static let oneMile: CLLocationDistance = 1609.34   // m
     private static let halfMile: CLLocationDistance = 500      // m
     private static let maxAge: TimeInterval = 180              // s
     
     private static let travelThresholdM: CLLocationDistance = 48 * oneMile   // ≈ 77 112 m
+
+    private static func ensureNetworkMonitorStarted() {
+        guard !didStartNetworkMonitor else { return }
+        didStartNetworkMonitor = true
+
+        networkMonitor.pathUpdateHandler = { path in
+            let isNowReachable = (path.status == .satisfied)
+            let becameReachable = isNowReachable && !isNetworkReachable
+            isNetworkReachable = isNowReachable
+
+            guard becameReachable else { return }
+
+            let pending = pendingGeocodeCoord
+            pendingGeocodeCoord = nil
+            guard let pending else { return }
+
+            Task { @MainActor in
+                await Settings.shared.updateCity(latitude: pending.latitude, longitude: pending.longitude)
+                Settings.shared.fetchPrayerTimes(force: true)
+            }
+        }
+
+        networkMonitor.start(queue: networkMonitorQueue)
+    }
+
+    private func queueGeocodeForReconnect(_ coord: CLLocationCoordinate2D) {
+        Self.pendingGeocodeCoord = coord
+    }
+
+    private func isNetworkGeocodeError(_ error: Error) -> Bool {
+        if let clError = error as? CLError {
+            return clError.code == .network
+        }
+
+        let nsError = error as NSError
+        return nsError.domain == kCLErrorDomain && nsError.code == CLError.Code.network.rawValue
+    }
     
     // AUTHORIZATION CHANGES
     func locationManager(_ mgr: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
@@ -72,6 +115,8 @@ extension Settings {
 
     // PERMISSION REQUEST
     func requestLocationAuthorization() {
+        Self.ensureNetworkMonitorStarted()
+
         switch Self.locationManager.authorizationStatus {
         case .notDetermined:
             Self.locationManager.requestAlwaysAuthorization()
@@ -99,7 +144,22 @@ extension Settings {
     /// Reverse‑geocode utilities
     @MainActor
     func updateCity(latitude: Double, longitude: Double, attempt: Int = 0, maxAttempts: Int = 3) async {
+        Self.ensureNetworkMonitorStarted()
+
         let coord = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+
+        if !Self.isNetworkReachable {
+            queueGeocodeForReconnect(coord)
+
+            // Keep coordinates usable for prayer calculations while waiting for connectivity.
+            if currentLocation == nil || currentLocation?.city.contains("(") == true {
+                withAnimation {
+                    currentLocation = Location(city: "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))",
+                                               latitude: latitude, longitude: longitude)
+                }
+            }
+            return
+        }
 
         if let cached = Self.cachedPlacemark,
            CLLocation(latitude: cached.coord.latitude, longitude: cached.coord.longitude)
@@ -141,6 +201,12 @@ extension Settings {
             Self.cachedPlacemark = (coord, newCity, detectedCountryCode)
 
         } catch {
+            if isNetworkGeocodeError(error) || !Self.isNetworkReachable {
+                queueGeocodeForReconnect(coord)
+                logger.warning("Geocode deferred until network returns")
+                return
+            }
+
             logger.warning("Geocode attempt \(attempt+1) failed: \(error.localizedDescription)")
             guard attempt + 1 < maxAttempts else {
                 withAnimation {
@@ -378,8 +444,8 @@ extension Settings {
     private static let calcParams: [String: CalculationParameters] = {
         let map: [(String, CalculationMethod)] = [
             ("Muslim World League", .muslimWorldLeague),
-            ("United Kingdom",      .moonsightingCommittee),
-            ("Saudi Arabia",        .ummAlQura),
+            ("Britain (Moonsighting Committee)",      .moonsightingCommittee),
+            ("Saudi Arabia (Umm Al-Qura)",        .ummAlQura),
             ("Egypt",               .egyptian),
             ("Dubai",               .dubai),
             ("Kuwait",              .kuwait),
@@ -522,6 +588,7 @@ extension Settings {
     }
 
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, calledFrom: StaticString = #function, completion: (() -> Void)? = nil) {
+        Self.ensureNetworkMonitorStarted()
         updateDates()
         
         guard let loc = currentLocation, loc.latitude  != 1000, loc.longitude != 1000 else {
@@ -531,8 +598,14 @@ extension Settings {
         }
         
         if force || loc.city.contains("(") {
-            Task { @MainActor in
-                await updateCity(latitude: loc.latitude, longitude: loc.longitude)
+            let coord = CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude)
+            if Self.isNetworkReachable {
+                Task { @MainActor in
+                    await updateCity(latitude: loc.latitude, longitude: loc.longitude)
+                }
+            } else {
+                queueGeocodeForReconnect(coord)
+                logger.debug("Skipping geocode while offline; will retry on reconnect")
             }
         }
         

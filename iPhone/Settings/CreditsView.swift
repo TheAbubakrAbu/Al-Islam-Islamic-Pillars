@@ -179,7 +179,8 @@ struct CreditsView: View {
                 .foregroundColor(settings.accentColor.color)
                 .padding(18)
                 .background(buttonBackground)
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
             }
         }
     }

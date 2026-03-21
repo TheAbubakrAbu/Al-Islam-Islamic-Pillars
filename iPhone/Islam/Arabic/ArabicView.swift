@@ -193,10 +193,11 @@ struct ArabicView: View {
                     Text("Basic Font").tag(false)
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, 8)
+                .conditionalGlassEffect(clear: false)
 
                 HStack {
-                    SearchBar(text: $searchText.animation(.easeInOut))
+//                    SearchBar(text: $searchText.animation(.easeInOut)).conditionalGlassEffect(clear: false)
+                    GlassSearchBar(searchText: $searchText.animation(.easeInOut))
 
                     Menu {
                         Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {
@@ -206,25 +207,18 @@ struct ArabicView: View {
                         }
                     } label: {
                         Image(systemName: filterMode.icon)
-                            .font(.headline)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 25, height: 25)
                             .foregroundColor(settings.accentColor.color)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.secondary.opacity(0.16))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(settings.accentColor.color.opacity(0.35), lineWidth: 1)
-                            )
-                            .accessibilityLabel("Arabic alphabet filter")
+                            .transition(.opacity)
                     }
+                    .padding()
+                    .conditionalGlassEffect(clear: false)
                 }
-                .padding(.trailing, 8)
             }
-            .padding(.top, 8)
-            .conditionalGlassEffect()
-            .padding([.horizontal, .bottom])
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)

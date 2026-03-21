@@ -4,13 +4,34 @@ struct ConditionalGlassEffect: ViewModifier {
     @EnvironmentObject var settings: Settings
     
     var clear: Bool = false
+    var rectangle: Bool = false
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, watchOS 26.0, visionOS 26.0, macOS 26.0, *) {
-            if clear {
-                content.glassEffect(.clear.interactive(), in: .rect(cornerRadius: 24))
+            if rectangle {
+                if clear {
+                    content.glassEffect(
+                        .clear.interactive(),
+                        in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    )
+                } else {
+                    content.glassEffect(
+                        .regular.interactive(),
+                        in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    )
+                }
             } else {
-                content.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 24))
+                if clear {
+                    content.glassEffect(
+                        .clear.interactive(),
+                        in: .capsule
+                    )
+                } else {
+                    content.glassEffect(
+                        .regular.interactive(),
+                        in: .capsule
+                    )
+                }
             }
         } else {
             let fallbackBaseFill: Color = {
@@ -39,7 +60,7 @@ struct ConditionalGlassEffect: ViewModifier {
 }
 
 extension View {
-    func conditionalGlassEffect(clear: Bool = false) -> some View {
-        modifier(ConditionalGlassEffect(clear: clear))
+    func conditionalGlassEffect(clear: Bool = false, rectangle: Bool = false) -> some View {
+        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle))
     }
 }

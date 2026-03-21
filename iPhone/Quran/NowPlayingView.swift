@@ -9,7 +9,7 @@ struct NowPlayingView: View {
     @Binding private var searchText: String
     
     init(
-        quranView: Bool,
+        quranView: Bool = false,
         scrollDown: Binding<Int> = .constant(-1),
         searchText: Binding<String> = .constant("")
     ) {
@@ -49,6 +49,7 @@ struct NowPlayingView: View {
             .cornerRadius(24)
             .padding(.horizontal, 8)
             .transition(.opacity)
+            .conditionalGlassEffect(clear: false)
         )
         #else
         return AnyView(
@@ -111,22 +112,18 @@ struct NowPlayingView: View {
         }
     }
 
-    private func customRangeSubtitle(start: Int, end: Int) -> String {
-        let perAyah = quranPlayer.customRangeRepeatPerAyah
-        let section = quranPlayer.customRangeRepeatSection
-        let pos: String
-        if let cur = quranPlayer.customRangeCurrentIndex,
-           let total = quranPlayer.customRangeTotalItems,
-           total > 0 {
-            pos = " (\(cur)/\(total))"
-        } else {
-            pos = ""
-        }
-        #if os(watchOS)
-        return "Ayah \(start)–\(end) · ×\(perAyah) · ×\(section)\(pos)"
-        #else
-        return "Ayah \(start)–\(end) · each ×\(perAyah) · section ×\(section)\(pos)"
-        #endif
+    private func customRangeLineOne(start: Int, end: Int) -> String {
+        let current = quranPlayer.customRangeCurrentIndex ?? 1
+        let total = quranPlayer.customRangeTotalItems ?? max(1, (end - start + 1) * quranPlayer.customRangeRepeatPerAyah * quranPlayer.customRangeRepeatSection)
+        return "Ayahs \(start)-\(end) (\(current)/\(total))"
+    }
+
+    private func customRangeLineTwo() -> String {
+        let ayahProgress = quranPlayer.customRangeCurrentRepeatWithinAyah ?? 1
+        let ayahTotal = max(1, quranPlayer.customRangeRepeatPerAyah)
+        let sectionProgress = quranPlayer.customRangeRepeatSectionIndex ?? 1
+        let sectionTotal = max(1, quranPlayer.customRangeRepeatSection)
+        return "Ayah \(ayahProgress)/\(ayahTotal) · Section \(sectionProgress)/\(sectionTotal)"
     }
 
     @ViewBuilder
@@ -148,10 +145,17 @@ struct NowPlayingView: View {
             if quranPlayer.isPlayingCustomRange,
                let start = quranPlayer.customRangeStartAyah,
                let end = quranPlayer.customRangeEndAyah {
-                Text(customRangeSubtitle(start: start, end: end))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                VStack(spacing: 1) {
+                    Text(customRangeLineOne(start: start, end: end))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+
+                    Text(customRangeLineTwo())
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             HStack(spacing: 12) {
@@ -197,10 +201,17 @@ struct NowPlayingView: View {
                 if quranPlayer.isPlayingCustomRange,
                    let start = quranPlayer.customRangeStartAyah,
                    let end = quranPlayer.customRangeEndAyah {
-                    Text(customRangeSubtitle(start: start, end: end))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(customRangeLineOne(start: start, end: end))
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+
+                        Text(customRangeLineTwo())
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -211,8 +222,6 @@ struct NowPlayingView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(24)
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying)
         .confirmationDialog("Remove bookmark and delete note?", isPresented: $confirmRemoveNote, titleVisibility: .visible) {
@@ -325,7 +334,7 @@ struct NowPlayingView: View {
 }
 
 #Preview {
-    NowPlayingView(quranView: false)
+    NowPlayingView()
         .environmentObject(Settings.shared)
         .environmentObject(QuranData.shared)
         .environmentObject(QuranPlayer.shared)

@@ -58,10 +58,12 @@ struct SettingsQuranView: View {
                     Text("End Recitation").tag("End Recitation")
                 }
                 .font(.subheadline)
-                
-                Text("The Quran recitations are streamed online and not downloaded, which may consume a lot of data if used frequently, especially when using cellular data.")
+
+                #if !os(watchOS)
+                Text("The Quran recitations are streamed online by default. You can open Choose Reciter to download full surahs per reciter for offline playback and reduced data use.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                #endif
             }
 
             Section(header: Text("ARABIC TEXT")) {
@@ -204,7 +206,7 @@ struct SettingsQuranView: View {
                     .font(.caption)
                     .foregroundColor(.primary)
                     .padding(.top, 4)
-                
+
                 VStack(alignment: .leading) {
                     Toggle("Comparison mode", isOn: $settings.qiraatComparisonMode.animation(.easeInOut))
                         .font(.subheadline)
@@ -248,36 +250,101 @@ struct SettingsQuranView: View {
 struct ReciterListView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.presentationMode) private var presentationMode
+    #if !os(watchOS)
+    @StateObject private var downloadManager = ReciterDownloadManager.shared
+    @State private var showDownloadedOnly = false
+    #endif
 
     private static let defaultReciter = "Muhammad Al-Minshawi (Murattal)"
 
     var body: some View {
         ScrollViewReader { proxy in
             List {
-                if !recitersMinshawi.isEmpty {
+                #if !os(watchOS)
+                Section(header: Text("DOWNLOADED SURAHS")) {
+                    Picker("Reciter Filter", selection: $showDownloadedOnly.animation(.easeInOut)) {
+                        Text("All Reciters").tag(false)
+                        Text("Downloaded Only").tag(true)
+                    }
+                    #if !os(watchOS)
+                    .pickerStyle(.segmented)
+                    #endif
+
+                    Text("Downloads are full-reciter packages (all 114 surahs).")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text("Ayah download is not supported, only surah download.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    let downloadedCount = reciters.filter { downloadManager.stateSnapshot(for: $0).completedSurahs > 0 }.count
+                    Text("Downloaded reciters: \(downloadedCount)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    if downloadedCount > 0 {
+                        Button("Delete All Downloads", role: .destructive) {
+                            settings.hapticFeedback()
+                            downloadManager.deleteAllDownloads()
+                        }
+                        .font(.caption)
+                        .buttonStyle(.borderless)
+                    }
+                }
+                #endif
+
+                if !filteredReciters(recitersMinshawi).isEmpty {
                     Section(header: Text("MUHAMMAD SIDDIQ AL-MINSHAWI")) {
-                        reciterButtons(recitersMinshawi)
+                        reciterButtons(filteredReciters(recitersMinshawi))
                     }
                 }
                 
-                if !recitersMujawwad.isEmpty {
+                if !filteredReciters(recitersMujawwad).isEmpty {
                     Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
-                        reciterButtons(recitersMujawwad)
+                        reciterButtons(filteredReciters(recitersMujawwad))
                     }
                 }
 
-                if !recitersMuallim.isEmpty {
+                if !filteredReciters(recitersMuallim).isEmpty {
                     Section(header: Text("TEACHING (MUʿALLIM)")) {
-                        reciterButtons(recitersMuallim)
+                        reciterButtons(filteredReciters(recitersMuallim))
                     }
                 }
 
-                if !recitersMurattal.isEmpty {
+                if !filteredReciters(recitersMurattal).isEmpty {
                     Section(header: Text("NORMAL (MURATTAL)")) {
-                        reciterButtons(recitersMurattal)
+                        reciterButtons(filteredReciters(recitersMurattal))
                     }
                 }
                 
+                #if os(watchOS)
+                Section(header: Text("ABOUT QIRAAT"), footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
+                    VStack(alignment: .leading) {
+                        Text("""
+                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+
+                        The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+
+                        To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
+                        """)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+
+                        Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                            .padding(.top, 4)
+
+                        Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    }
+                    .padding(.vertical, 4)
+                }
+                #else
+                if !showDownloadedOnly {
                 Section(header: Text("ABOUT QIRAAT"), footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
                     VStack(alignment: .leading) {
                         Text("""
@@ -302,40 +369,42 @@ struct ReciterListView: View {
                     }
                     .padding(.vertical, 4)
                 }
+                }
+                #endif
                 
-                if !recitersKhalaf.isEmpty {
+                if !filteredReciters(recitersKhalaf).isEmpty {
                     Section(header: Text("KHALAF AN HAMZAH")) {
-                        reciterButtons(recitersKhalaf, qiraah: true)
+                        reciterButtons(filteredReciters(recitersKhalaf), qiraah: true)
                     }
                 }
 
-                if !recitersWarsh.isEmpty {
+                if !filteredReciters(recitersWarsh).isEmpty {
                     Section(header: Text("WARSH AN NAFI")) {
-                        reciterButtons(recitersWarsh, qiraah: true)
+                        reciterButtons(filteredReciters(recitersWarsh), qiraah: true)
                     }
                 }
 
-                if !recitersQaloon.isEmpty {
+                if !filteredReciters(recitersQaloon).isEmpty {
                     Section(header: Text("QALOON AN NAFI")) {
-                        reciterButtons(recitersQaloon, qiraah: true)
+                        reciterButtons(filteredReciters(recitersQaloon), qiraah: true)
                     }
                 }
 
-                if !recitersBuzzi.isEmpty {
+                if !filteredReciters(recitersBuzzi).isEmpty {
                     Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
-                        reciterButtons(recitersBuzzi, qiraah: true)
+                        reciterButtons(filteredReciters(recitersBuzzi), qiraah: true)
                     }
                 }
 
-                if !recitersQunbul.isEmpty {
+                if !filteredReciters(recitersQunbul).isEmpty {
                     Section(header: Text("QUNBUL AN IBN KATHIR")) {
-                        reciterButtons(recitersQunbul, qiraah: true)
+                        reciterButtons(filteredReciters(recitersQunbul), qiraah: true)
                     }
                 }
 
-                if !recitersDuri.isEmpty {
+                if !filteredReciters(recitersDuri).isEmpty {
                     Section(header: Text("AD-DURI AN ABI AMR")) {
-                        reciterButtons(recitersDuri, qiraah: true)
+                        reciterButtons(filteredReciters(recitersDuri), qiraah: true)
                     }
                 }
             }
@@ -347,6 +416,11 @@ struct ReciterListView: View {
                         settings.reciter = Self.defaultReciter
                     }
                 }
+
+                #if !os(watchOS)
+                reciters.forEach { downloadManager.ensureStateLoaded(for: $0) }
+                #endif
+
                 let target = settings.reciter
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     withAnimation {
@@ -355,6 +429,15 @@ struct ReciterListView: View {
                 }
             }
         }
+    }
+
+    private func filteredReciters(_ list: [Reciter]) -> [Reciter] {
+        #if os(watchOS)
+        return list
+        #else
+        guard showDownloadedOnly else { return list }
+        return list.filter { downloadManager.stateSnapshot(for: $0).completedSurahs > 0 }
+        #endif
     }
 
     @ViewBuilder
@@ -366,6 +449,7 @@ struct ReciterListView: View {
 
     @ViewBuilder
     private func reciterRow(_ reciter: Reciter, qiraah: Bool) -> some View {
+        #if os(watchOS)
         Button {
             settings.hapticFeedback()
             withAnimation {
@@ -396,6 +480,74 @@ struct ReciterListView: View {
             .padding(.vertical, 4)
         }
         .id(reciter.name)
+        #else
+        let state = downloadManager.stateSnapshot(for: reciter)
+        let hasDownloads = state.completedSurahs > 0
+
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                settings.hapticFeedback()
+                withAnimation {
+                    settings.reciter = reciter.name
+                    presentationMode.wrappedValue.dismiss()
+                }
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(reciter.name)
+                            .font(.subheadline)
+                            .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
+                            .multilineTextAlignment(.leading)
+
+                        Spacer()
+
+                        HStack(spacing: 8) {
+                            Button {
+                                settings.hapticFeedback()
+                                if state.isDownloading {
+                                    downloadManager.cancelDownload(for: reciter)
+                                } else if !hasDownloads {
+                                    downloadManager.beginDownloadAll(for: reciter)
+                                }
+                            } label: {
+                                Image(systemName: state.isDownloading ? "icloud.and.arrow.down.fill" : "icloud.and.arrow.down")
+                                    .foregroundColor(hasDownloads ? settings.accentColor.color : .secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(hasDownloads && !state.isDownloading)
+
+                            Image(systemName: "checkmark")
+                                .foregroundColor(settings.accentColor.color)
+                                .opacity(reciter.name == settings.reciter ? 1 : 0)
+                        }
+                    }
+
+                    if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
+                        Text("This reciter is only available for surah recitation. Defaults to Minshawi (Murattal) for ayahs.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if hasDownloads {
+                        Text("Storage used: \(downloadManager.storageText(bytes: state.totalBytes))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let errorMessage = state.errorMessage, !errorMessage.isEmpty {
+                        Text("Download error: \(errorMessage)")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .onAppear {
+            downloadManager.ensureStateLoaded(for: reciter)
+        }
+        .id(reciter.name)
+        #endif
     }
 }
 

@@ -978,7 +978,22 @@ struct QiraatView: View {
                 Text("Example: “Hafs ‘an Asim” means the riwayah (narration) of Hafs (حفص) from the Qiraah (recitation) of Asim (عاصم). “Warsh ‘an Nafi” means the riwayah of Warsh (ورش) from the Qiraah of Nafi (نافع).")
                     .font(.body)
 
-                Text("Hafs ‘an Asim is the most widespread globally today; that does not mean it is the only right one. All Ten Qiraat (and their 20 riwayaat) are valid, mutawatir, and from Prophet Muhammad (peace and blessings be upon him).")
+                Text("Hafs ‘an Asim is the most widespread globally today; that does not mean it is the only right one. All Ten Qiraat (and their Twenty Riwayaat) are valid, mutawatir, and from Prophet Muhammad (peace and blessings be upon him).")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+
+            Section(header: Text("COMMON CLARIFICATIONS")) {
+                Text("Many people hear about 7 and 10 together. Both references are used by scholars: the famous seven canonical recitations (al-Sab'ah) and the full ten canonical Qiraat (7 + 3), all preserved through reliable transmission.")
+                    .font(.body)
+
+                Text("The original seven were famously codified by Imam Abu Bakr Ibn Mujahid. Their Imams are: Nafi' (Madinah), Ibn Kathir (Makkah), Abu 'Amr (Basra), Ibn 'Amir (Damascus), 'Asim (Kufa), Hamzah (Kufa), and Al-Kisa'i (Kufa).")
+                    .font(.body)
+
+                Text("Hafs is a riwayah from 'Asim, and Warsh is a riwayah from Nafi'. So when people say Hafs or Warsh, they are naming a narration path within the canonical recitation tradition.")
+                    .font(.body)
+
+                Text("Today, Hafs 'an 'Asim is the most widely recited globally (often estimated around 90%+), while other canonical recitations such as Warsh remain authentic and practiced.")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -1084,7 +1099,7 @@ struct QiraatView: View {
             }
 
             Section(header: Text("RECAP")) {
-                Text("“The Ten Qiraat are the preserved, mass-transmitted (mutawatir) recitations taught by Prophet Muhammad (peace and blessings be upon him), passed down through authentic chains. Each Qiraah is a specific, verified method of reciting the Quran — not a different text. They reflect how the Ahruf were preserved in writing and oral transmission. All Ten Qiraat — and their 20 riwayaat — return to Prophet Muhammad (peace and blessings be upon him).”")
+                Text("“The Ten Qiraat are the preserved, mass-transmitted (mutawatir) recitations taught by Prophet Muhammad (peace and blessings be upon him), passed down through authentic chains. Each Qiraah is a specific, verified method of reciting the Quran — not a different text. They reflect how the Ahruf were preserved in writing and oral transmission. All Ten Qiraat (and their Twenty Riwayaat) return to Prophet Muhammad (peace and blessings be upon him).”")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -1097,7 +1112,7 @@ struct QiraatView: View {
                     .font(.caption)
             }
         }
-        .navigationTitle("Ten Qiraat & 20 Riwayaat")
+        .navigationTitle("Ten Qiraat (Recitations)")
         .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }

@@ -28,12 +28,11 @@ struct AlIslamApp: App {
                             .safeAreaInset(edge: .bottom) {
                                 VStack(spacing: 4) {
                                     if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                        NowPlayingView(quranView: false)
+                                        NowPlayingView()
                                     }
                                 }
-                                .padding(.vertical, 8)
-                                .conditionalGlassEffect()
-                                .padding([.horizontal, .bottom])
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                             }
                             .tabItem {
@@ -51,12 +50,11 @@ struct AlIslamApp: App {
                             .safeAreaInset(edge: .bottom) {
                                 VStack(spacing: 4) {
                                     if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                        NowPlayingView(quranView: false)
+                                        NowPlayingView()
                                     }
                                 }
-                                .padding(.vertical, 8)
-                                .conditionalGlassEffect()
-                                .padding([.horizontal, .bottom])
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                             }
                             .tabItem {
@@ -68,12 +66,11 @@ struct AlIslamApp: App {
                             .safeAreaInset(edge: .bottom) {
                                 VStack(spacing: 4) {
                                     if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                        NowPlayingView(quranView: false)
+                                        NowPlayingView()
                                     }
                                 }
-                                .padding(.vertical, 8)
-                                .conditionalGlassEffect()
-                                .padding([.horizontal, .bottom])
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                             }
                             .tabItem {

@@ -424,9 +424,29 @@ struct AyahRow: View {
                 }
             }
             
+            Button {
+                settings.hapticFeedback()
+                if !isBookmarked {
+                    settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                }
+                draftNote = currentNote
+                showingNoteSheet = true
+            } label: {
+                Label(currentNote.isEmpty ? "Add Note" : "Edit Note", systemImage: "note.text")
+            }
+
+            if !currentNote.isEmpty {
+                Button(role: .destructive) {
+                    settings.hapticFeedback()
+                    removeNote()
+                } label: {
+                    Label("Remove Note", systemImage: "trash")
+                }
+            }
+            
+            Divider()
+            
             if settings.isHafsDisplay {
-                Divider()
-                
                 Menu {
                     ForEach(repeatOptions, id: \.self) { count in
                         Button {
@@ -474,28 +494,6 @@ struct AyahRow: View {
                 
                 Divider()
             }
-                        
-            Button {
-                settings.hapticFeedback()
-                if !isBookmarked {
-                    settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
-                }
-                draftNote = currentNote
-                showingNoteSheet = true
-            } label: {
-                Label(currentNote.isEmpty ? "Add Note" : "Edit Note", systemImage: "note.text")
-            }
-
-            if !currentNote.isEmpty {
-                Button(role: .destructive) {
-                    settings.hapticFeedback()
-                    removeNote()
-                } label: {
-                    Label("Remove Note", systemImage: "trash")
-                }
-            }
-            
-            Divider()
 
             Button {
                 settings.hapticFeedback()

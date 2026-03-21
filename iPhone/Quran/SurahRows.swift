@@ -199,6 +199,8 @@ struct LastListenedSurahRow: View {
                     if !quranPlayer.listeningHistory.isEmpty {
                         Image(systemName: showListeningHistory ? "minus.circle" : "plus.circle")
                             .foregroundColor(settings.accentColor.color)
+                            .padding(4)
+                            .conditionalGlassEffect()
                             .onTapGesture {
                                 withAnimation {
                                     settings.hapticFeedback()
@@ -401,6 +403,8 @@ struct LastReadAyahRow: View {
                 if !quranPlayer.readingHistory.isEmpty {
                     Image(systemName: showReadingHistory ? "minus.circle" : "plus.circle")
                         .foregroundColor(settings.accentColor.color)
+                        .padding(4)
+                        .conditionalGlassEffect()
                         .onTapGesture {
                             withAnimation {
                                 settings.hapticFeedback()

@@ -726,9 +726,11 @@ struct NamesView: View {
         .searchable(text: $searchText)
         #else
         .safeAreaInset(edge: .bottom) {
-            SearchBar(text: $searchText.animation(.easeInOut))
-                .conditionalGlassEffect()
-                .padding([.horizontal, .bottom])
+//            SearchBar(text: $searchText.animation(.easeInOut)).conditionalGlassEffect(clear: false)
+            
+            GlassSearchBar(searchText: $searchText.animation(.easeInOut))
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)

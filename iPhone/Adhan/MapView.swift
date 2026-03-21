@@ -93,7 +93,8 @@ struct MapView: View {
             .edgesIgnoringSafeArea(.all)
             .overlay(alignment: .top) {
                 VStack(alignment: .leading, spacing: 0) {
-                    SearchBar(text: $searchText)
+                    //SearchBar(text: $searchText)
+                    GlassSearchBar(searchText: $searchText.animation(.easeInOut))
                     
                     resultsList
                 }
@@ -132,7 +133,8 @@ struct MapView: View {
                     }
                     .padding(8)
                     .conditionalGlassEffect()
-                    .padding([.horizontal, .bottom])
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
                 }
             }
             .navigationTitle("Select Location")

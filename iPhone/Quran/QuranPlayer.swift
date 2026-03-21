@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import MediaPlayer
+import Foundation
 
 final class QuranPlayer: ObservableObject {
     static let shared = QuranPlayer()
@@ -29,6 +30,7 @@ final class QuranPlayer: ObservableObject {
     @Published private(set) var customRangeCurrentIndex: Int?
     @Published private(set) var customRangeTotalItems: Int?
     @Published private(set) var customRangeCurrentRepeatWithinAyah: Int?
+    @Published private(set) var customRangeRepeatSectionIndex: Int?
 
     @Published var listeningHistory: [ListeningHistoryItem] = [] {
         didSet { persistListeningHistory() }
@@ -59,6 +61,8 @@ final class QuranPlayer: ObservableObject {
     
     var nowPlayingTitle: String?
     var nowPlayingReciter: String?
+
+    private let reciterDownloadManager = ReciterDownloadManager.shared
     
     private init() {
         NotificationCenter.default.addObserver(
@@ -298,6 +302,7 @@ final class QuranPlayer: ObservableObject {
         customRangeCurrentIndex = nil
         customRangeTotalItems = nil
         customRangeCurrentRepeatWithinAyah = nil
+        customRangeRepeatSectionIndex = nil
 
         updateNowPlayingInfo(clear: true)
 
@@ -358,11 +363,13 @@ final class QuranPlayer: ObservableObject {
             ? settings.lastListenedSurah!.reciter
             : reciterPref
 
-        let urlStr = "\(reciter.surahLink)\(String(format: "%03d", surahNumber)).mp3"
-        guard let url = URL(string: urlStr) else {
+        let remoteURLString = "\(reciter.surahLink)\(String(format: "%03d", surahNumber)).mp3"
+        guard let remoteURL = URL(string: remoteURLString) else {
             presentPlaybackFailure("The recitation link appears invalid. Please try another reciter.")
             return
         }
+
+        let url = reciterDownloadManager.localSurahURL(reciter: reciter, surahNumber: surahNumber) ?? remoteURL
 
         setupAudioSession()
         isLoading = true
@@ -600,6 +607,7 @@ final class QuranPlayer: ObservableObject {
         customRangeCurrentIndex = 1
         customRangeTotalItems = sequence.count
         customRangeCurrentRepeatWithinAyah = 1
+        customRangeRepeatSectionIndex = 1
 
         withAnimation {
             currentSurahNumber = surahNumber
@@ -612,27 +620,33 @@ final class QuranPlayer: ObservableObject {
         setupAudioSession()
         isLoading = true
 
-        var items: [AVPlayerItem] = []
-        for (ayahNum, isBismillah) in sequence {
-            guard let item = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNum, isBismillah: isBismillah) else {
-                isLoading = false
-                presentPlaybackFailure("One or more ayah audio files could not be prepared. Please try again.", title: "Range Playback Failed")
-                customRangeSequence = []
-                customRangeStartAyah = nil
-                customRangeEndAyah = nil
-                return
-            }
-            item.preferredForwardBufferDuration = 8
-            items.append(item)
+        guard let firstItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: first.ayahNumber, isBismillah: first.isBismillah) else {
+            isLoading = false
+            presentPlaybackFailure("Unable to prepare the first ayah for this range.", title: "Range Playback Failed")
+            customRangeSequence = []
+            customRangeStartAyah = nil
+            customRangeEndAyah = nil
+            return
         }
+        firstItem.preferredForwardBufferDuration = 8
 
-        let q = AVQueuePlayer(items: items)
+        let q = AVQueuePlayer()
         q.actionAtItemEnd = .advance
         q.automaticallyWaitsToMinimizeStalling = true
+        q.insert(firstItem, after: nil)
+
+        if sequence.count > 1 {
+            let second = sequence[1]
+            if let secondItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: second.ayahNumber, isBismillah: second.isBismillah) {
+                secondItem.preferredForwardBufferDuration = 8
+                q.insert(secondItem, after: firstItem)
+            }
+        }
+
         queuePlayer = q
         player = q
 
-        statusObserver = items[0].observe(\.status) { [weak self] itm, _ in
+        statusObserver = firstItem.observe(\.status) { [weak self] itm, _ in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 withAnimation {
@@ -643,7 +657,6 @@ final class QuranPlayer: ObservableObject {
                         self.isPlaying = true
                         self.isPaused = false
                         let (ayahNum, isBismillah) = self.customRangeSequence[0]
-                        self.customRangeCurrentRepeatWithinAyah = 1
                         let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, repeatWithinAyah: 1)
                         self.nowPlayingTitle = base
                         self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
@@ -656,51 +669,63 @@ final class QuranPlayer: ObservableObject {
             }
         }
 
-        queuePlayerItemObserver = q.observe(\.currentItem, options: [.old, .new]) { [weak self] qPlayer, _ in
+        queuePlayerItemObserver = q.observe(\.currentItem, options: [.old, .new]) { [weak self] qPlayer, change in
             guard let self = self else { return }
             DispatchQueue.main.async {
-                if qPlayer.currentItem == nil || qPlayer.items().isEmpty {
+                guard self.isPlayingCustomRange else { return }
+
+                guard let currentItem = qPlayer.currentItem else {
                     self.stop()
                     return
                 }
-                let remaining = qPlayer.items().count
-                let playedCount = self.customRangeSequence.count - remaining
-                guard playedCount >= 0, playedCount < self.customRangeSequence.count else { return }
-                let (ayahNum, isBismillah) = self.customRangeSequence[playedCount]
-                let repeatWithinAyah = (0...playedCount).filter { self.customRangeSequence[$0].ayahNumber == ayahNum }.count
+
+                if change.oldValue != nil {
+                    self.customRangeCurrentIndex = min((self.customRangeCurrentIndex ?? 1) + 1, self.customRangeSequence.count)
+                }
+
+                let currentIndex = max(1, self.customRangeCurrentIndex ?? 1)
+                let zeroBasedIndex = currentIndex - 1
+                guard zeroBasedIndex >= 0, zeroBasedIndex < self.customRangeSequence.count else {
+                    self.stop()
+                    return
+                }
+
+                let (ayahNum, isBismillah) = self.customRangeSequence[zeroBasedIndex]
+                let repeatWithinAyah = ((zeroBasedIndex % self.customRangeRepeatPerAyah) + 1)
+                let numAyahsInRange = (self.customRangeEndAyah ?? 1) - (self.customRangeStartAyah ?? 1) + 1
+                let itemsPerSection = numAyahsInRange * self.customRangeRepeatPerAyah
+                let sectionIndex = (zeroBasedIndex / max(1, itemsPerSection)) + 1
+
                 let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, repeatWithinAyah: repeatWithinAyah)
                 withAnimation {
                     self.currentAyahNumber = ayahNum
-                    self.customRangeCurrentIndex = playedCount + 1
+                    self.customRangeCurrentIndex = currentIndex
                     self.customRangeCurrentRepeatWithinAyah = repeatWithinAyah
+                    self.customRangeRepeatSectionIndex = sectionIndex
                     self.nowPlayingTitle = base
                     self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
                         ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
                     self.updateNowPlayingInfo()
                 }
-            }
-        }
 
-        // When the last item in the custom range finishes, stop and clear Control Center (backup for currentItem observer).
-        if let lastItem = items.last {
-            let endObs = NotificationCenter.default.addObserver(
-                forName: .AVPlayerItemDidPlayToEndTime,
-                object: lastItem,
-                queue: .main
-            ) { [weak self] _ in
-                guard let self = self, self.isPlayingCustomRange else { return }
-                self.stop()
+                // Keep only a lightweight queue (current + next) to prevent large-memory lag spikes.
+                if qPlayer.items().count < 2 {
+                    let nextIndex = zeroBasedIndex + qPlayer.items().count
+                    if nextIndex < self.customRangeSequence.count {
+                        let next = self.customRangeSequence[nextIndex]
+                        if let nextItem = self.makeItem(forSurah: surah, reciter: reciter, ayahNumber: next.ayahNumber, isBismillah: next.isBismillah) {
+                            nextItem.preferredForwardBufferDuration = 8
+                            qPlayer.insert(nextItem, after: currentItem)
+                        }
+                    }
+                }
             }
-            notificationObservers.append(endObs)
         }
     }
 
     private func customRangeTitle(ayahNum: Int, isBismillah: Bool, repeatWithinAyah: Int) -> String {
         let base = "\(customRangeSurahName) \(customRangeSurahNumber):\(ayahNum)"
-        guard customRangeRepeatPerAyah > 1 else { return base }
-        // Only show the ayah repeat count for this specific ayah, not cumulative repeats across sections
-        let repeatInThisAyah = ((repeatWithinAyah - 1) % customRangeRepeatPerAyah) + 1
-        return "\(base) (x\(repeatInThisAyah)/\(customRangeRepeatPerAyah))"
+        return base
     }
 
     private func startAyahPlayback(
@@ -1052,6 +1077,11 @@ final class QuranPlayer: ObservableObject {
         if let lastSavedListeningSurahNumber, lastSavedListeningSurahNumber == surahNumber {
             return
         }
+        
+        // Don't save if it matches the current last listened surah
+        if let lastListened = settings.lastListenedSurah, lastListened.surahNumber == surahNumber {
+            return
+        }
 
         let item = ListeningHistoryItem(
             surahNumber: surahNumber,
@@ -1074,11 +1104,17 @@ final class QuranPlayer: ObservableObject {
     
     /// Records reading history with hybrid deduplication.
     /// Only saves if switching to different Surah OR moving 5+ ayahs away within same Surah.
+    /// Also prevents saving if it matches the current last read ayah.
     func recordReadingHistory(surahNumber: Int, surahName: String, ayahNumber: Int) {
         let normalizedAyah = max(1, ayahNumber)
 
         // Don't save duplicates already in history.
         if readingHistory.contains(where: { $0.surahNumber == surahNumber && $0.ayahNumber == normalizedAyah }) {
+            return
+        }
+        
+        // Don't save if it matches the current last read ayah
+        if settings.lastReadSurah == surahNumber && settings.lastReadAyah == normalizedAyah {
             return
         }
         
@@ -1216,5 +1252,270 @@ final class QuranPlayer: ObservableObject {
         #if !os(watchOS)
         UIApplication.shared.isIdleTimerDisabled = disabled
         #endif
+    }
+}
+
+final class ReciterDownloadManager: ObservableObject {
+    static let shared = ReciterDownloadManager()
+
+    struct DownloadState {
+        var isDownloading = false
+        var completedSurahs = 0
+        var totalSurahs = 114
+        var totalBytes: Int64 = 0
+        var errorMessage: String?
+    }
+
+    @Published private(set) var statesByReciterID: [String: DownloadState] = [:]
+
+    private var activeTasks: [String: Task<Void, Never>] = [:]
+    private let fileManager = FileManager.default
+
+    private init() {}
+
+    func state(for reciter: Reciter) -> DownloadState {
+        return statesByReciterID[reciter.id] ?? DownloadState()
+    }
+
+    /// Read-only snapshot for SwiftUI rendering. Does not publish any state changes.
+    func stateSnapshot(for reciter: Reciter) -> DownloadState {
+        if let existing = statesByReciterID[reciter.id] {
+            return existing
+        }
+        let (count, bytes) = downloadedStats(for: reciter)
+        return DownloadState(
+            isDownloading: false,
+            completedSurahs: count,
+            totalSurahs: 114,
+            totalBytes: bytes,
+            errorMessage: nil
+        )
+    }
+
+    func ensureStateLoaded(for reciter: Reciter) {
+        guard statesByReciterID[reciter.id] == nil else { return }
+        let (count, bytes) = downloadedStats(for: reciter)
+        statesByReciterID[reciter.id] = DownloadState(
+            isDownloading: false,
+            completedSurahs: count,
+            totalSurahs: 114,
+            totalBytes: bytes,
+            errorMessage: nil
+        )
+    }
+
+    func localSurahURL(reciter: Reciter, surahNumber: Int) -> URL? {
+        let url = localSurahFileURL(reciter: reciter, surahNumber: surahNumber)
+        return fileManager.fileExists(atPath: url.path) ? url : nil
+    }
+
+    func beginDownloadAll(for reciter: Reciter) {
+        ensureStateLoaded(for: reciter)
+        let reciterID = reciter.id
+
+        if activeTasks[reciterID] != nil {
+            return
+        }
+
+        var nextState = statesByReciterID[reciterID] ?? DownloadState()
+        nextState.isDownloading = true
+        nextState.errorMessage = nil
+        statesByReciterID[reciterID] = nextState
+
+        let task = Task.detached(priority: .utility) { [weak self] in
+            guard let self else { return }
+
+            do {
+                try self.ensureReciterDirectoryExists(reciter: reciter)
+
+                for surahNumber in 1...114 {
+                    if Task.isCancelled {
+                        self.finishCancellation(for: reciterID)
+                        return
+                    }
+
+                    let targetURL = self.localSurahFileURL(reciter: reciter, surahNumber: surahNumber)
+                    if self.fileManager.fileExists(atPath: targetURL.path) {
+                        self.refreshState(for: reciter)
+                        continue
+                    }
+
+                    let remoteString = "\(reciter.surahLink)\(String(format: "%03d", surahNumber)).mp3"
+                    guard let remoteURL = URL(string: remoteString) else {
+                        self.finishWithError(for: reciterID, message: "Invalid reciter link.")
+                        return
+                    }
+
+                    let (data, response) = try await URLSession.shared.data(from: remoteURL)
+                    if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                        self.finishWithError(for: reciterID, message: "Download failed (HTTP \(http.statusCode)).")
+                        return
+                    }
+
+                    try data.write(to: targetURL, options: .atomic)
+                    self.refreshState(for: reciter)
+                }
+
+                self.finishSuccess(for: reciter)
+            } catch is CancellationError {
+                self.finishCancellation(for: reciterID)
+            } catch {
+                self.finishWithError(for: reciterID, message: error.localizedDescription)
+            }
+        }
+
+        activeTasks[reciterID] = task
+    }
+
+    func cancelDownload(for reciter: Reciter) {
+        let reciterID = reciter.id
+        activeTasks[reciterID]?.cancel()
+        activeTasks[reciterID] = nil
+
+        guard var state = statesByReciterID[reciterID] else { return }
+        state.isDownloading = false
+        statesByReciterID[reciterID] = state
+    }
+
+    func deleteDownloads(for reciter: Reciter) {
+        cancelDownload(for: reciter)
+        do {
+            let dir = reciterDirectoryURL(reciter: reciter)
+            if fileManager.fileExists(atPath: dir.path) {
+                try fileManager.removeItem(at: dir)
+            }
+        } catch {
+            var state = statesByReciterID[reciter.id] ?? DownloadState()
+            state.errorMessage = error.localizedDescription
+            statesByReciterID[reciter.id] = state
+        }
+
+        statesByReciterID[reciter.id] = DownloadState()
+    }
+
+    func deleteAllDownloads() {
+        for reciterID in activeTasks.keys {
+            activeTasks[reciterID]?.cancel()
+        }
+        activeTasks.removeAll()
+
+        do {
+            let root = baseDirectoryURL()
+            if fileManager.fileExists(atPath: root.path) {
+                try fileManager.removeItem(at: root)
+            }
+        } catch {
+            logger.warning("Failed to delete all reciter downloads: \(error.localizedDescription)")
+        }
+
+        statesByReciterID.removeAll()
+    }
+
+    func storageText(for reciter: Reciter) -> String {
+        let state = stateSnapshot(for: reciter)
+        return storageText(bytes: state.totalBytes)
+    }
+
+    func storageText(bytes: Int64) -> String {
+        return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
+
+    private func finishSuccess(for reciter: Reciter) {
+        refreshState(for: reciter)
+        DispatchQueue.main.async {
+            self.activeTasks[reciter.id] = nil
+            var state = self.statesByReciterID[reciter.id] ?? DownloadState()
+            state.isDownloading = false
+            state.errorMessage = nil
+            self.statesByReciterID[reciter.id] = state
+        }
+    }
+
+    private func finishWithError(for reciterID: String, message: String) {
+        DispatchQueue.main.async {
+            self.activeTasks[reciterID] = nil
+            var state = self.statesByReciterID[reciterID] ?? DownloadState()
+            state.isDownloading = false
+            state.errorMessage = message
+            self.statesByReciterID[reciterID] = state
+        }
+    }
+
+    private func finishCancellation(for reciterID: String) {
+        DispatchQueue.main.async {
+            self.activeTasks[reciterID] = nil
+            var state = self.statesByReciterID[reciterID] ?? DownloadState()
+            state.isDownloading = false
+            self.statesByReciterID[reciterID] = state
+        }
+    }
+
+    private func refreshState(for reciter: Reciter) {
+        let (count, bytes) = downloadedStats(for: reciter)
+        DispatchQueue.main.async {
+            var state = self.statesByReciterID[reciter.id] ?? DownloadState()
+            state.completedSurahs = count
+            state.totalBytes = bytes
+            self.statesByReciterID[reciter.id] = state
+        }
+    }
+
+    private func downloadedStats(for reciter: Reciter) -> (count: Int, bytes: Int64) {
+        let dir = reciterDirectoryURL(reciter: reciter)
+        guard let urls = try? fileManager.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else {
+            return (0, 0)
+        }
+
+        var count = 0
+        var totalBytes: Int64 = 0
+
+        for surahNumber in 1...114 {
+            let fileURL = localSurahFileURL(reciter: reciter, surahNumber: surahNumber)
+            guard fileManager.fileExists(atPath: fileURL.path) else { continue }
+            count += 1
+        }
+
+        for url in urls where url.pathExtension.lowercased() == "mp3" {
+            if let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
+               let size = values.fileSize {
+                totalBytes += Int64(size)
+            }
+        }
+
+        return (count, totalBytes)
+    }
+
+    private func ensureReciterDirectoryExists(reciter: Reciter) throws {
+        let dir = reciterDirectoryURL(reciter: reciter)
+        if !fileManager.fileExists(atPath: dir.path) {
+            try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+    }
+
+    private func reciterDirectoryURL(reciter: Reciter) -> URL {
+        let root = baseDirectoryURL()
+        return root.appendingPathComponent(safeDirectoryName(for: reciter), isDirectory: true)
+    }
+
+    private func localSurahFileURL(reciter: Reciter, surahNumber: Int) -> URL {
+        let filename = String(format: "%03d.mp3", surahNumber)
+        return reciterDirectoryURL(reciter: reciter).appendingPathComponent(filename, isDirectory: false)
+    }
+
+    private func baseDirectoryURL() -> URL {
+        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let root = appSupport.appendingPathComponent("ReciterDownloads", isDirectory: true)
+        if !fileManager.fileExists(atPath: root.path) {
+            try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        }
+        return root
+    }
+
+    private func safeDirectoryName(for reciter: Reciter) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        let sanitized = reciter.id.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" }
+        let joined = String(sanitized)
+        return joined.isEmpty ? "reciter" : String(joined.prefix(180))
     }
 }

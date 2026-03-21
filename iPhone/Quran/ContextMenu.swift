@@ -183,7 +183,27 @@ struct AyahContextMenuModifier: ViewModifier {
                         systemImage: isBookmarked ? "bookmark.fill" : "bookmark"
                     )
                 }
+                
+                Button {
+                    settings.hapticFeedback()
+                    if !isBookmarked {
+                        settings.toggleBookmark(surah: surah, ayah: ayah)
+                    }
+                    draftNote = currentNote
+                    showingNoteSheet = true
+                } label: {
+                    Label(currentNote.isEmpty ? "Add Note" : "Edit Note", systemImage: "note.text")
+                }
 
+                if !currentNote.isEmpty {
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        removeNote()
+                    } label: {
+                        Label("Remove Note", systemImage: "trash")
+                    }
+                }
+                
                 if settings.isHafsDisplay {
                     Menu {
                         Button {
@@ -211,32 +231,8 @@ struct AyahContextMenuModifier: ViewModifier {
                     } label: {
                         Label("Play Ayah", systemImage: "play.circle")
                     }
-                    
-                    Divider()
                 }
                 
-                Button {
-                    settings.hapticFeedback()
-                    if !isBookmarked {
-                        settings.toggleBookmark(surah: surah, ayah: ayah)
-                    }
-                    draftNote = currentNote
-                    showingNoteSheet = true
-                } label: {
-                    Label(currentNote.isEmpty ? "Add Note" : "Edit Note", systemImage: "note.text")
-                }
-
-                if !currentNote.isEmpty {
-                    Button(role: .destructive) {
-                        settings.hapticFeedback()
-                        removeNote()
-                    } label: {
-                        Label("Remove Note", systemImage: "trash")
-                    }
-                }
-                
-                Divider()
-
                 Button {
                     settings.hapticFeedback()
                     ShareAyahSheet.copyAyahToPasteboard(surahNumber: surah, ayahNumber: ayah, settings: settings, quranData: quranData)

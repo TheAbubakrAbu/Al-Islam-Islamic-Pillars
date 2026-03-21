@@ -11,6 +11,8 @@ struct QuranView: View {
     @State private var showingSettingsSheet = false
     @State private var showListeningHistory = false
     @State private var showReadingHistory = false
+    @State private var searchHistorySaveTask: Task<Void, Never>?
+    @State private var lastSavedSearchQuery = ""
     
     @State private var verseHits: [VerseIndexEntry] = []
     @State private var hasMoreHits = true
@@ -113,6 +115,30 @@ struct QuranView: View {
 
         return nil
     }
+
+    private func persistQuranSearchHistoryIfNeeded(_ rawQuery: String, requireMinLength: Bool = false) {
+        let trimmed = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if requireMinLength && trimmed.count < 3 { return }
+
+        // Avoid repeatedly writing the same query while user is editing.
+        if lastSavedSearchQuery.caseInsensitiveCompare(trimmed) == .orderedSame { return }
+
+        settings.addQuranSearchHistory(trimmed)
+        lastSavedSearchQuery = trimmed
+    }
+
+    private func scheduleDebouncedQuranSearchHistorySave(for query: String) {
+        searchHistorySaveTask?.cancel()
+        let snapshot = query
+        searchHistorySaveTask = Task {
+            try? await Task.sleep(nanoseconds: 900_000_000)
+            if Task.isCancelled { return }
+            await MainActor.run {
+                persistQuranSearchHistoryIfNeeded(snapshot, requireMinLength: true)
+            }
+        }
+    }
     
     enum QuranRoute: Hashable {
         case ayahs(surahID: Int, ayah: Int?)
@@ -192,7 +218,7 @@ struct QuranView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .conditionalGlassEffect()
+        .conditionalGlassEffect(rectangle: true)
         .padding(.horizontal, 16)
         .padding(.top, 8)
     }
@@ -297,7 +323,8 @@ struct QuranView: View {
                                 withAnimation { settings.showBookmarks.toggle() }
                             }
                             .buttonStyle(.plain)
-                            .clipShape(Rectangle())
+                            .padding(4)
+                            .conditionalGlassEffect()
                     }
                 ) {
                     if settings.showBookmarks {
@@ -367,7 +394,8 @@ struct QuranView: View {
                                 withAnimation { settings.showFavorites.toggle() }
                             }
                             .buttonStyle(.plain)
-                            .clipShape(Rectangle())
+                            .padding(4)
+                            .conditionalGlassEffect()
                     }
                 ) {
                     if settings.showFavorites {
@@ -754,7 +782,10 @@ struct QuranView: View {
                 .onChange(of: searchText) { txt in
                     let q = txt.trimmingCharacters(in: .whitespacesAndNewlines)
 
+                    scheduleDebouncedQuranSearchHistorySave(for: q)
+
                     guard !q.isEmpty else {
+                        searchHistorySaveTask?.cancel()
                         withAnimation {
                             verseHits = []
                             hasMoreHits = false
@@ -799,9 +830,6 @@ struct QuranView: View {
                 }
             }
         }
-        .overlay(alignment: .top) {
-            searchHelpOverlay
-        }
         }
         .navigationTitle("Al-Quran")
         #if !os(watchOS)
@@ -816,8 +844,15 @@ struct QuranView: View {
         .sheet(isPresented: $showingSettingsSheet) {
             NavigationView { SettingsQuranView(showEdits: false) }
         }
+        .onDisappear {
+            searchHistorySaveTask?.cancel()
+            persistQuranSearchHistoryIfNeeded(searchText)
+        }
+        .overlay(alignment: .top) {
+            searchHelpOverlay
+        }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 4) {
+            VStack(spacing: 8) {
                 if isQuranSearchFocused && !settings.quranSearchHistory.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -858,15 +893,12 @@ struct QuranView: View {
                                 )
                             }
                         }
-                        .padding(.horizontal, 8)
+                        .conditionalGlassEffect(clear: false)
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 4)
                 }
                 
                 if quranPlayer.isPlaying || quranPlayer.isPaused {
                     NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
-                        .padding(.bottom, 8)
                 }
                 
                 Picker("Sort Type", selection: $settings.groupBySurah.animation(.easeInOut)) {
@@ -874,10 +906,10 @@ struct QuranView: View {
                     Text("Sort by Juz").tag(false)
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal, 8)
+                .conditionalGlassEffect(clear: false)
                 
                 HStack {
-                    SearchBar(
+                    /*SearchBar(
                         text: $searchText.animation(.easeInOut),
                         onSearchButtonClicked: {
                             settings.addQuranSearchHistory(searchText)
@@ -888,21 +920,90 @@ struct QuranView: View {
                             }
                         }
                     )
+                    .conditionalGlassEffect(clear: false)*/
                     
-                    if quranPlayer.isLoading || quranPlayer.isPlaying || quranPlayer.isPaused {
-                        Button {
-                            settings.hapticFeedback()
-                            if quranPlayer.isLoading {
-                                quranPlayer.isLoading = false
-                                quranPlayer.pause(saveInfo: false)
-                            } else {
-                                quranPlayer.stop()
+                    GlassSearchBar(
+                        text: $searchText.animation(.easeInOut),
+                        onSearchButtonClicked: {
+                            persistQuranSearchHistoryIfNeeded(searchText)
+                        },
+                        onFocusChanged: { focused in
+                            withAnimation {
+                                isQuranSearchFocused = focused
                             }
-                        } label: {
-                            if quranPlayer.isLoading {
-                                RotatingGearView().transition(.opacity)
-                            } else {
-                                Image(systemName: "xmark.circle.fill")
+                            if !focused {
+                                persistQuranSearchHistoryIfNeeded(searchText)
+                            }
+                        }
+                    )
+                    
+                    VStack {
+                        if quranPlayer.isLoading || quranPlayer.isPlaying || quranPlayer.isPaused {
+                            Button {
+                                settings.hapticFeedback()
+                                if quranPlayer.isLoading {
+                                    quranPlayer.isLoading = false
+                                    quranPlayer.pause(saveInfo: false)
+                                } else {
+                                    quranPlayer.stop()
+                                }
+                            } label: {
+                                if quranPlayer.isLoading {
+                                    RotatingGearView().transition(.opacity)
+                                } else {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 25, height: 25)
+                                        .foregroundColor(settings.accentColor.color)
+                                        .transition(.opacity)
+                                }
+                            }
+                        } else {
+                            Menu {
+                                if let last = settings.lastListenedSurah, let surah = quranData.quran.first(where: { $0.id == last.surahNumber }) {
+                                    Button {
+                                        settings.hapticFeedback()
+                                        quranPlayer.playSurah(
+                                            surahNumber: last.surahNumber,
+                                            surahName: last.surahName,
+                                            certainReciter: true
+                                        )
+                                    } label: {
+                                        Label("Play Last Listened Surah (\(surah.nameTransliteration))", systemImage: "play.fill")
+                                    }
+                                }
+                                
+                                Button {
+                                    settings.hapticFeedback()
+                                    if let randomSurah = quranData.quran.randomElement() {
+                                        quranPlayer.playSurah(surahNumber: randomSurah.id, surahName: randomSurah.nameTransliteration)
+                                    } else {
+                                        let n = Int.random(in: 1...114)
+                                        let name = quranData.quran.first(where: { $0.id == n })?.nameTransliteration ?? "Random Surah"
+                                        quranPlayer.playSurah(surahNumber: n, surahName: name)
+                                    }
+                                } label: {
+                                    Label("Play Random Surah", systemImage: "shuffle")
+                                }
+                                
+                                Button {
+                                    settings.hapticFeedback()
+                                    
+                                    if let randomSurah = quranData.quran.randomElement() {
+                                        if let randomAyah = randomSurah.ayahs.randomElement() {
+                                            quranPlayer.playAyah(
+                                                surahNumber: randomSurah.id,
+                                                ayahNumber: randomAyah.id,
+                                                continueRecitation: true
+                                            )
+                                        }
+                                    }
+                                } label: {
+                                    Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
+                                }
+                            } label: {
+                                Image(systemName: "play.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 25, height: 25)
@@ -910,65 +1011,13 @@ struct QuranView: View {
                                     .transition(.opacity)
                             }
                         }
-                        .padding(.trailing, 28)
-                    } else {
-                        Menu {
-                            if let last = settings.lastListenedSurah, let surah = quranData.quran.first(where: { $0.id == last.surahNumber }) {
-                                Button {
-                                    settings.hapticFeedback()
-                                    quranPlayer.playSurah(
-                                        surahNumber: last.surahNumber,
-                                        surahName: last.surahName,
-                                        certainReciter: true
-                                    )
-                                } label: {
-                                    Label("Play Last Listened Surah (\(surah.nameTransliteration))", systemImage: "play.fill")
-                                }
-                            }
-                            
-                            Button {
-                                settings.hapticFeedback()
-                                if let randomSurah = quranData.quran.randomElement() {
-                                    quranPlayer.playSurah(surahNumber: randomSurah.id, surahName: randomSurah.nameTransliteration)
-                                } else {
-                                    let n = Int.random(in: 1...114)
-                                    let name = quranData.quran.first(where: { $0.id == n })?.nameTransliteration ?? "Random Surah"
-                                    quranPlayer.playSurah(surahNumber: n, surahName: name)
-                                }
-                            } label: {
-                                Label("Play Random Surah", systemImage: "shuffle")
-                            }
-                            
-                            Button {
-                                settings.hapticFeedback()
-                                
-                                if let randomSurah = quranData.quran.randomElement() {
-                                    if let randomAyah = randomSurah.ayahs.randomElement() {
-                                        quranPlayer.playAyah(
-                                            surahNumber: randomSurah.id,
-                                            ayahNumber: randomAyah.id,
-                                            continueRecitation: true
-                                        )
-                                    }
-                                }
-                            } label: {
-                                Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
-                            }
-                        } label: {
-                            Image(systemName: "play.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(settings.accentColor.color)
-                                .transition(.opacity)
-                        }
-                        .padding(.trailing, 28)
                     }
+                    .padding()
+                    .conditionalGlassEffect(clear: false)
                 }
             }
-            .padding(.top, 8)
-            .conditionalGlassEffect()
-            .padding([.horizontal, .bottom])
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
             .animation(.easeInOut, value: quranPlayer.isPlaying)
         }
         #endif

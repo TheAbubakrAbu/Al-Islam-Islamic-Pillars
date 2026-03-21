@@ -76,6 +76,13 @@ struct PillarsView: View {
                         .font(.headline)
                 }
                 .padding(.vertical, 4)
+
+                NavigationLink(destination: QiraatView()) {
+                    Text("What are the 10 Qiraat?")
+                        .foregroundColor(settings.accentColor.color)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
             }
             
             IslamicPillarsView()

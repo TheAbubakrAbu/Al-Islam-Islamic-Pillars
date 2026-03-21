@@ -68,10 +68,6 @@ struct SearchBar: UIViewRepresentable {
         
         searchBar.backgroundImage = UIImage()
         
-        if #available(iOS 26.0, visionOS 26.0, macOS 26.0, *) {
-            searchBar.searchTextField.backgroundColor = .clear
-        }
-        
         return searchBar
     }
 
@@ -83,6 +79,67 @@ struct SearchBar: UIViewRepresentable {
         searchBar.resignFirstResponder()
         DispatchQueue.main.async {
             self.text = searchBar.text ?? ""
+        }
+    }
+}
+
+struct GlassSearchBar: View {
+    @Binding var searchText: String
+    var onSearchButtonClicked: (() -> Void)?
+    var onFocusChanged: ((Bool) -> Void)?
+
+    @FocusState private var isFocused: Bool
+
+    init(
+        searchText: Binding<String>,
+        onSearchButtonClicked: (() -> Void)? = nil,
+        onFocusChanged: ((Bool) -> Void)? = nil
+    ) {
+        self._searchText = searchText
+        self.onSearchButtonClicked = onSearchButtonClicked
+        self.onFocusChanged = onFocusChanged
+    }
+
+    init(
+        text: Binding<String>,
+        onSearchButtonClicked: (() -> Void)? = nil,
+        onFocusChanged: ((Bool) -> Void)? = nil
+    ) {
+        self._searchText = text
+        self.onSearchButtonClicked = onSearchButtonClicked
+        self.onFocusChanged = onFocusChanged
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.primary)
+
+            TextField("Search", text: $searchText.animation(.easeInOut))
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .focused($isFocused)
+                .onSubmit {
+                    onSearchButtonClicked?()
+                    isFocused = false
+                }
+
+            if !searchText.isEmpty {
+                Button {
+                    withAnimation {
+                        searchText = ""
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding()
+        .conditionalGlassEffect(clear: false)
+        .onChange(of: isFocused) { focused in
+            onFocusChanged?(focused)
         }
     }
 }

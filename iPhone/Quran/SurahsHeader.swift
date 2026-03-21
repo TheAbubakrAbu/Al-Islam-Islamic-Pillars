@@ -27,7 +27,8 @@ struct SurahsHeader: View {
             } label: {
                 Image(systemName: "shuffle")
                     .buttonStyle(.plain)
-                    .clipShape(Rectangle())
+                    .padding(4)
+                    .conditionalGlassEffect()
             }
             #endif
         }
@@ -84,7 +85,8 @@ struct JuzHeader: View {
             } label: {
                 Image(systemName: "shuffle")
                     .buttonStyle(.plain)
-                    .clipShape(Rectangle())
+                    .padding(4)
+                    .conditionalGlassEffect()
             }
             #endif
         }

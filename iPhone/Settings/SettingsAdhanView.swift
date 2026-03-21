@@ -235,8 +235,8 @@ struct SettingsAdhanView: View {
 let calculationOptions: [String] = {
     let preferred = "Muslim World League"
     let rest = [
-        "United Kingdom",
-        "Saudi Arabia",
+        "Britain (Moonsighting Committee)",
+        "Saudi Arabia (Umm Al-Qura)",
         "Egypt",
         "Dubai",
         "Kuwait",
