@@ -172,7 +172,7 @@ struct ArabicView: View {
                     }
                 }
             } else {
-                Section("SEARCH RESULTS (\(filteredStandardForMode.count + filteredOther.count))") {
+                Section {
                     ForEach(filteredStandardForMode) {
                         ArabicLetterRow(letterData: $0)
                     }
@@ -180,6 +180,24 @@ struct ArabicView: View {
                     ForEach(filteredOther) {
                         ArabicLetterRow(letterData: $0)
                     }
+                } header: {
+                    HStack {
+                        Text("ARABIC SEARCH RESULTS")
+
+                        Spacer()
+
+                        Text("\(filteredStandardForMode.count + filteredOther.count)")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(settings.accentColor.color)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            #if !os(watchOS)
+                            .background(.ultraThinMaterial)
+                            #endif
+                            .clipShape(Capsule())
+                            .conditionalGlassEffect(clear: false)
+                    }
+                    .padding(.vertical, 4)
                 }
             }
         }

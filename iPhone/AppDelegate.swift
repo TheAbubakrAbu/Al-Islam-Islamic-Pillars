@@ -19,6 +19,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         scheduleAppRefresh()
     }
 
+    func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+        if identifier == "com.Quran.Elmallah.Islamic-Pillars.reciter-downloads" {
+            ReciterDownloadManager.shared.backgroundSessionCompletionHandler(completionHandler)
+        } else {
+            completionHandler()
+        }
+    }
+
     private func scheduleAppRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: taskID)
         request.earliestBeginDate = nextRunDate()

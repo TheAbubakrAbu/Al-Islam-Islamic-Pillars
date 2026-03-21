@@ -631,7 +631,6 @@ struct NamesView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var namesData: NamesViewModel
     
-    @AppStorage("showDescription") private var showDescription = false
     @State private var searchText = ""
     @State private var expandedNameNumbers = Set<Int>()
     
@@ -678,6 +677,7 @@ struct NamesView: View {
                             .background(.ultraThinMaterial)
                             #endif
                             .clipShape(Capsule())
+                            .conditionalGlassEffect(clear: false)
                             .opacity(hasActiveSearch ? 1 : 0)
                     }
                     .padding(.vertical, 4)
@@ -685,7 +685,7 @@ struct NamesView: View {
                     Text("Prophet Muhammad ﷺ said, “Allah has 99 names, and whoever believes in their meanings and acts accordingly, will enter Paradise” (Bukhari 6410).")
                     .font(.body)
                     
-                    Toggle("Show Description", isOn: $showDescription.animation(.easeInOut))
+                    Toggle("Show Description", isOn: $settings.showDescription.animation(.easeInOut))
                         .font(.subheadline)
                         .tint(settings.accentColor.color)
                 }
@@ -694,7 +694,7 @@ struct NamesView: View {
                     Section {
                         NameRow(
                             name: name,
-                            showDescription: showDescription,
+                            showDescription: settings.showDescription,
                             isExpanded: expandedNameNumbers.contains(name.number)
                         ) {
                             if hasActiveSearch {

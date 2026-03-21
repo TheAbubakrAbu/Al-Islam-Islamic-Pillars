@@ -110,20 +110,15 @@ struct AyahRow: View {
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
+                HStack(spacing: -2) {
                     Text("\(surah.id):\(ayah.id)")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(settings.accentColor.color.opacity(0.12))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .strokeBorder(settings.accentColor.color.opacity(0.3), lineWidth: 1)
-                        )
+                        .padding(4)
+                        .frame(width: 54, height: 32)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .conditionalGlassEffect()
                         #if !os(watchOS)
                         .onTapGesture {
                             settings.hapticFeedback()
@@ -148,15 +143,33 @@ struct AyahRow: View {
                             .font(.system(size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
                             .transition(.opacity)
                     }
+
+                    if settings.isHafsDisplay {
+                        Menu {
+                            playbackMenuBlock()
+                        } label: {
+                            ZStack(alignment: .trailing) {
+                                Rectangle().fill(.clear).frame(width: 32, height: 32)
+                                
+                                Image(systemName: "play.circle")
+                                    .font(.title2)
+                                    .foregroundColor(settings.accentColor.color)
+                                    .conditionalGlassEffect()
+                                    .padding(.trailing, -2)
+                            }
+                        }
+                    }
                     
                     Menu {
-                        menuBlock(isBookmarked: isBookmarked)
+                        menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: false)
                     } label: {
                         ZStack(alignment: .trailing) {
                             Rectangle().fill(.clear).frame(width: 32, height: 32)
+                            
                             Image(systemName: "ellipsis.circle")
-                                .font(.system(size: UIFont.preferredFont(forTextStyle: .title2).pointSize))
+                                .font(.title2)
                                 .foregroundColor(settings.accentColor.color)
+                                .conditionalGlassEffect()
                                 .padding(.trailing, -2)
                         }
                     }
@@ -185,8 +198,8 @@ struct AyahRow: View {
                     }
                     #endif
                 }
-                .padding(.top, 0)
-                .padding(.bottom, settings.showArabicText ? 6 : 2)
+                .padding(.bottom, settings.showArabicText ? 8 : 2)
+                .padding(.trailing, 1)
                 
                 Group {
                     #if !os(watchOS)
@@ -222,7 +235,7 @@ struct AyahRow: View {
         .lineLimit(nil)
         #if !os(watchOS)
         .contextMenu {
-            menuBlock(isBookmarked: isBookmarked)
+            menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: true)
         }
         #endif
         .animation(.easeInOut, value: quranPlayer.currentAyahNumber)
@@ -276,7 +289,7 @@ struct AyahRow: View {
         let prefixOnSaheeh    = groupHasEnglishOrTranslit && !showTranslit && showEnglishSaheeh
         let prefixOnMustafa   = groupHasEnglishOrTranslit && !showTranslit && !showEnglishSaheeh && showEnglishMustafa
 
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             if !currentNote.isEmpty {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "note.text")
@@ -394,22 +407,110 @@ struct AyahRow: View {
         }
     }
 
+    #if !os(watchOS)
     @ViewBuilder
-    private func menuBlock(isBookmarked: Bool) -> some View {
-        #if !os(watchOS)
+    private func playbackMenuBlock() -> some View {
         let repeatOptions = [2, 3, 5, 10, 15, 20]
 
-        VStack(alignment: .leading) {
-            Button(role: isBookmarked ? .destructive : nil) {
-                settings.hapticFeedback()
-                toggleBookmarkWithNoteGuard()
+        Group {
+            Menu {
+                ForEach(repeatOptions, id: \.self) { count in
+                    Button {
+                        settings.hapticFeedback()
+                        quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: count)
+                    } label: {
+                        Label("Repeat \(count)×", systemImage: "\(count).circle")
+                    }
+                }
+
+                Button {
+                    settings.hapticFeedback()
+                    showCustomRangeSheet = true
+                } label: {
+                    Label("Play Custom Range", systemImage: "slider.horizontal.3")
+                }
             } label: {
-                Label(
-                    isBookmarked ? "Unbookmark Ayah" : "Bookmark Ayah",
-                    systemImage: isBookmarked ? "bookmark.fill" : "bookmark"
-                )
+                Label("Repeat Ayah", systemImage: "repeat")
             }
             
+            Button {
+                settings.hapticFeedback()
+                showCustomRangeSheet = true
+            } label: {
+                Label("Play Custom Range", systemImage: "slider.horizontal.3")
+            }
+
+            Button {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
+            } label: {
+                Label("Play From Ayah", systemImage: "play.circle.fill")
+            }
+            
+            Button {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+            } label: {
+                Label("Play This Ayah", systemImage: "play.circle")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func contextPlaybackMenuBlock() -> some View {
+        let repeatOptions = [2, 3, 5, 10, 15, 20]
+
+        Menu {
+            ForEach(repeatOptions, id: \.self) { count in
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: count)
+                } label: {
+                    Label("Repeat \(count)×", systemImage: "\(count).circle")
+                }
+            }
+
+            Button {
+                settings.hapticFeedback()
+                showCustomRangeSheet = true
+            } label: {
+                Label("Play Custom Range", systemImage: "slider.horizontal.3")
+            }
+        } label: {
+            Label("Repeat Ayah", systemImage: "repeat")
+        }
+
+        Menu {
+            Button {
+                settings.hapticFeedback()
+                showCustomRangeSheet = true
+            } label: {
+                Label("Play Custom Range", systemImage: "slider.horizontal.3")
+            }
+
+            Button {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
+            } label: {
+                Label("Play From Ayah", systemImage: "play.circle.fill")
+            }
+            
+            Button {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+            } label: {
+                Label("Play This Ayah", systemImage: "play.circle")
+            }
+        } label: {
+            Label("Play Ayah", systemImage: "play.circle")
+        }
+    }
+    #endif
+
+    @ViewBuilder
+    private func menuBlock(isBookmarked: Bool, includePlaybackOptions: Bool) -> some View {
+        #if !os(watchOS)
+        VStack(alignment: .leading) {
             if settings.showArabicText && !settings.beginnerMode {
                 Button {
                     settings.hapticFeedback()
@@ -422,6 +523,16 @@ struct AyahRow: View {
                           ? "textformat.size.larger.ar"
                           : "textformat.size.ar")
                 }
+            }
+            
+            Button(role: isBookmarked ? .destructive : nil) {
+                settings.hapticFeedback()
+                toggleBookmarkWithNoteGuard()
+            } label: {
+                Label(
+                    isBookmarked ? "Unbookmark Ayah" : "Bookmark Ayah",
+                    systemImage: isBookmarked ? "bookmark.fill" : "bookmark"
+                )
             }
             
             Button {
@@ -446,52 +557,8 @@ struct AyahRow: View {
             
             Divider()
             
-            if settings.isHafsDisplay {
-                Menu {
-                    ForEach(repeatOptions, id: \.self) { count in
-                        Button {
-                            settings.hapticFeedback()
-                            quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: count)
-                        } label: {
-                            Label("Repeat \(count)×", systemImage: "\(count).circle")
-                        }
-                    }
-
-                    Button {
-                        settings.hapticFeedback()
-                        showCustomRangeSheet = true
-                    } label: {
-                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
-                    }
-                } label: {
-                    Label("Repeat Ayah", systemImage: "repeat")
-                }
-                
-                Menu {
-                    Button {
-                        settings.hapticFeedback()
-                        quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
-                    } label: {
-                        Label("Play This Ayah", systemImage: "play.circle")
-                    }
-                    
-                    Button {
-                        settings.hapticFeedback()
-                        quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
-                    } label: {
-                        Label("Play From Ayah", systemImage: "play.circle.fill")
-                    }
-                    
-                    Button {
-                        settings.hapticFeedback()
-                        showCustomRangeSheet = true
-                    } label: {
-                        Label("Play Custom Range", systemImage: "slider.horizontal.3")
-                    }
-                } label: {
-                    Label("Play Ayah", systemImage: "play.circle")
-                }
-                
+            if includePlaybackOptions && settings.isHafsDisplay {
+                contextPlaybackMenuBlock()
                 Divider()
             }
 

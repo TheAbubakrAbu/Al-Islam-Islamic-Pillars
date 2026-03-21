@@ -484,6 +484,7 @@ struct QuranView: View {
                                     .background(.ultraThinMaterial)
                                     #endif
                                     .clipShape(Capsule())
+                                    .conditionalGlassEffect(clear: false)
                             }
                             .padding(.vertical, 4)
                         }
@@ -693,6 +694,7 @@ struct QuranView: View {
                             .background(.ultraThinMaterial)
                             #endif
                             .clipShape(Capsule())
+                            .conditionalGlassEffect(clear: false)
                     }
                     .padding(.vertical, 4)
                 ) {
@@ -891,9 +893,9 @@ struct QuranView: View {
                                     Capsule(style: .continuous)
                                         .stroke(settings.accentColor.color.opacity(0.25), lineWidth: 1)
                                 )
+                                .conditionalGlassEffect(clear: false)
                             }
                         }
-                        .conditionalGlassEffect(clear: false)
                     }
                 }
                 

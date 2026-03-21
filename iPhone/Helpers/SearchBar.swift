@@ -131,9 +131,11 @@ struct GlassSearchBar: View {
                     }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .clipShape(Rectangle())
             }
         }
         .padding()

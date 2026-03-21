@@ -43,6 +43,44 @@ struct AyahsView: View {
         case juz
     }
 
+    private func boundaryDividerStyleEquals(_ lhs: BoundaryDividerStyle, _ rhs: BoundaryDividerStyle) -> Bool {
+        switch (lhs, rhs) {
+        case (.allGreen, .allGreen),
+             (.allSecondary, .allSecondary),
+             (.pageAccentJuzSecondary, .pageAccentJuzSecondary),
+             (.allAccent, .allAccent):
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func boundaryDividerEquals(_ lhs: BoundaryDividerModel?, _ rhs: BoundaryDividerModel?) -> Bool {
+        switch (lhs, rhs) {
+        case (nil, nil):
+            return true
+        case let (l?, r?):
+            return l.text == r.text &&
+                l.pageSegment == r.pageSegment &&
+                l.juzSegment == r.juzSegment &&
+                boundaryDividerStyleEquals(l.style, r.style)
+        default:
+            return false
+        }
+    }
+
+    private func boundaryDividerID(_ model: BoundaryDividerModel) -> String {
+        let juz = model.juzSegment ?? ""
+        let style: String
+        switch model.style {
+        case .allGreen: style = "allGreen"
+        case .allSecondary: style = "allSecondary"
+        case .pageAccentJuzSecondary: style = "pageAccentJuzSecondary"
+        case .allAccent: style = "allAccent"
+        }
+        return "\(model.text)|\(model.pageSegment)|\(juz)|\(style)"
+    }
+
     private func boundaryText(for ayah: Ayah) -> String? {
         if let page = ayah.page, let juz = ayah.juz {
             return "Page \(page) - Juz \(juz)"
@@ -74,12 +112,6 @@ struct AyahsView: View {
             let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
             if let n, (1...30).contains(n) { return PageJuzQuery(page: nil, juz: n) }
             return PageJuzQuery(page: nil, juz: nil)
-        }
-
-        if let n = Int(trimmed) ?? arabicToEnglishNumber(trimmed) {
-            // Bare numeric query in AyahsView maps to page search for focused results.
-            let page = (1...630).contains(n) ? n : nil
-            return PageJuzQuery(page: page, juz: nil)
         }
 
         return PageJuzQuery(page: nil, juz: nil)
@@ -164,11 +196,11 @@ struct AyahsView: View {
             }
         }()
 
-        let dividerContent = HStack(spacing: 10) {
+        let dividerContent = HStack(spacing: isOverlay ? 8 : 10) {
             Rectangle()
                 .fill(dividerColor.opacity(isOverlay ? 0.55 : 0.45))
                 .frame(height: 1)
-                .frame(minWidth: 18)
+                .frame(minWidth: isOverlay ? 12 : 18)
 
             (
                 Text(model.pageSegment)
@@ -179,9 +211,9 @@ struct AyahsView: View {
                     + Text($0).foregroundColor(juzColor)
                 } ?? Text(""))
             )
-            .font(.caption.weight(.semibold))
+            .font((isOverlay ? Font.subheadline : Font.caption).weight(.semibold))
             .lineLimit(1)
-            .minimumScaleFactor(0.6)
+            .minimumScaleFactor(isOverlay ? 0.8 : 0.6)
             .allowsTightening(true)
             .layoutPriority(1)
             .fixedSize(horizontal: false, vertical: true)
@@ -189,7 +221,7 @@ struct AyahsView: View {
             Rectangle()
                 .fill(dividerColor.opacity(isOverlay ? 0.55 : 0.45))
                 .frame(height: 1)
-                .frame(minWidth: 18)
+                .frame(minWidth: isOverlay ? 12 : 18)
         }
         .padding(.vertical, 6)
         
@@ -326,12 +358,26 @@ struct AyahsView: View {
             }()
             let searchCount = isDividerKeywordSearch ? keywordDividerModels.count : filteredAyahs.count
             let syncVisibleAyahAnchor: () -> Void = {
+                let nextVisibleAyahID: Int?
                 if let topVisibleAyahID = visibleAyahIDs.min() {
-                    firstVisibleAyahID = topVisibleAyahID
+                    nextVisibleAyahID = topVisibleAyahID
                 } else if let sel = ayah, ayahByID[sel] != nil {
-                    firstVisibleAyahID = sel
+                    nextVisibleAyahID = sel
                 } else {
-                    firstVisibleAyahID = ayahsForQiraah.first?.id
+                    nextVisibleAyahID = ayahsForQiraah.first?.id
+                }
+
+                guard nextVisibleAyahID != firstVisibleAyahID else { return }
+
+                let currentOverlay = firstVisibleAyahID.flatMap { overlayDividerByAyahID[$0] }
+                let nextOverlay = nextVisibleAyahID.flatMap { overlayDividerByAyahID[$0] }
+
+                if boundaryDividerEquals(currentOverlay, nextOverlay) {
+                    firstVisibleAyahID = nextVisibleAyahID
+                } else {
+                    withAnimation {
+                        firstVisibleAyahID = nextVisibleAyahID
+                    }
                 }
             }
             
@@ -385,6 +431,7 @@ struct AyahsView: View {
                                 .background(.ultraThinMaterial)
                                 #endif
                                 .clipShape(Capsule())
+                                .conditionalGlassEffect(clear: false)
                                 .opacity(searchText.isEmpty ? 0 : 1)
                         }
                     }
@@ -539,17 +586,16 @@ struct AyahsView: View {
                     SurahSectionHeader(surah: surah)
                         .padding(.horizontal)
                         .padding(.vertical, 8)
-                        .background(Color.clear.background(.ultraThinMaterial))
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                         .conditionalGlassEffect(clear: false)
 
                     if let floatingDividerModel {
                         boundaryDivider(model: floatingDividerModel, isOverlay: true)
+                            .id(boundaryDividerID(floatingDividerModel))
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.clear.background(.ultraThinMaterial))
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                             .conditionalGlassEffect(clear: false)
                     }
                 }
@@ -557,7 +603,7 @@ struct AyahsView: View {
                 .padding(.horizontal, settings.defaultView ? 20 : 16)
                 .background(Color.clear)
                 .opacity(showFloatingHeader ? 1 : 0)
-                .padding(.horizontal, 60)
+                .padding(.horizontal, 30)
                 .zIndex(1)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .offset(y: showFloatingHeader ? 0 : -80)
@@ -832,8 +878,10 @@ struct AyahsView: View {
             return
         }
 
-        settings.lastReadSurah = surah.id
-        settings.lastReadAyah = targetAyah
+        withAnimation {
+            settings.lastReadSurah = surah.id
+            settings.lastReadAyah = targetAyah
+        }
     }
 }
 

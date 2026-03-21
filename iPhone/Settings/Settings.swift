@@ -217,6 +217,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
+    @AppStorage("showDescription") var showDescription = false
     
     @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
     @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false

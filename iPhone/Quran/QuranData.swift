@@ -511,7 +511,7 @@ final class QuranData: ObservableObject {
                 }
             }
 
-            if surah.id == 1, let nextFirstAyah {
+            if let nextFirstAyah {
                 endOfSurahDividerText = boundaryText(for: nextFirstAyah)
             } else if let lastAyah = ayahsForQiraah.last {
                 if let page = lastAyah.page {

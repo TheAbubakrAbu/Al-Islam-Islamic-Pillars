@@ -284,12 +284,17 @@ struct ReciterListView: View {
                         .foregroundColor(.secondary)
 
                     if downloadedCount > 0 {
-                        Button("Delete All Downloads", role: .destructive) {
+                        Button(role: .destructive) {
                             settings.hapticFeedback()
-                            downloadManager.deleteAllDownloads()
+                            withAnimation(.easeInOut) {
+                                downloadManager.deleteAllDownloads()
+                            }
+                        } label: {
+                            Label("Delete All Downloads", systemImage: "trash.fill")
+                                .frame(maxWidth: .infinity)
                         }
-                        .font(.caption)
                         .buttonStyle(.borderless)
+                        .font(.caption.weight(.semibold))
                     }
                 }
                 #endif
@@ -483,43 +488,23 @@ struct ReciterListView: View {
         #else
         let state = downloadManager.stateSnapshot(for: reciter)
         let hasDownloads = state.completedSurahs > 0
+        let isDownloading = state.isDownloading
+        let overallProgress = min(
+            max((Double(state.completedSurahs) + state.currentSurahProgress) / Double(max(state.totalSurahs, 1)), 0),
+            1
+        )
 
         VStack(alignment: .leading, spacing: 8) {
-            Button {
-                settings.hapticFeedback()
-                withAnimation {
-                    settings.reciter = reciter.name
-                    presentationMode.wrappedValue.dismiss()
-                }
-            } label: {
+            HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(reciter.name)
-                            .font(.subheadline)
-                            .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
-                            .multilineTextAlignment(.leading)
+                    Text(reciter.name)
+                        .font(.subheadline)
+                        .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
+                        .multilineTextAlignment(.leading)
 
-                        Spacer()
-
-                        HStack(spacing: 8) {
-                            Button {
-                                settings.hapticFeedback()
-                                if state.isDownloading {
-                                    downloadManager.cancelDownload(for: reciter)
-                                } else if !hasDownloads {
-                                    downloadManager.beginDownloadAll(for: reciter)
-                                }
-                            } label: {
-                                Image(systemName: state.isDownloading ? "icloud.and.arrow.down.fill" : "icloud.and.arrow.down")
-                                    .foregroundColor(hasDownloads ? settings.accentColor.color : .secondary)
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(hasDownloads && !state.isDownloading)
-
-                            Image(systemName: "checkmark")
-                                .foregroundColor(settings.accentColor.color)
-                                .opacity(reciter.name == settings.reciter ? 1 : 0)
-                        }
+                    if isDownloading {
+                        ProgressView(value: overallProgress)
+                            .frame(maxWidth: 120, alignment: .leading)
                     }
 
                     if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
@@ -527,20 +512,70 @@ struct ReciterListView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
 
-                    if hasDownloads {
-                        Text("Storage used: \(downloadManager.storageText(bytes: state.totalBytes))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let errorMessage = state.errorMessage, !errorMessage.isEmpty {
-                        Text("Download error: \(errorMessage)")
-                            .font(.caption)
-                            .foregroundColor(.red)
+                VStack(alignment: .trailing, spacing: 10) {
+                    HStack(spacing: 8) {
+                        if isDownloading {
+                            Button {
+                                settings.hapticFeedback()
+                                downloadManager.cancelDownload(for: reciter)
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(.plain)
+                        } else if hasDownloads {
+                            Button(role: .destructive) {
+                                settings.hapticFeedback()
+                                withAnimation(.easeInOut) {
+                                    downloadManager.deleteDownloads(for: reciter)
+                                }
+                            } label: {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Button {
+                                settings.hapticFeedback()
+                                downloadManager.beginDownloadAll(for: reciter)
+                            } label: {
+                                Image(systemName: "icloud.and.arrow.down")
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.top, 4)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                withAnimation {
+                    settings.reciter = reciter.name
+                }
+            }
+
+            if isDownloading {
+                Text("Downloading surah \(state.currentSurahNumber ?? max(state.completedSurahs + 1, 1)) of \(state.totalSurahs) (\(Int(overallProgress * 100))%)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            if hasDownloads {
+                Text("Storage used: \(downloadManager.storageText(bytes: state.totalBytes))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            if let errorMessage = state.errorMessage, !errorMessage.isEmpty {
+                Text("Download error: \(errorMessage)")
+                    .font(.caption)
+                    .foregroundColor(.red)
             }
         }
         .onAppear {

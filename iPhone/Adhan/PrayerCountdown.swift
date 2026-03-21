@@ -82,6 +82,7 @@ struct PrayerCountdown: View {
                         }
                         
                         ProgressView(value: progress)
+                            .padding(.vertical, 4)
                             .tint(settings.accentColor.color)
                             .padding(.top, 4)
                         
