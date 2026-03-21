@@ -292,6 +292,8 @@ struct ReciterListView: View {
                         } label: {
                             Label("Delete All Downloads", systemImage: "trash.fill")
                                 .frame(maxWidth: .infinity)
+                                .foregroundColor(settings.accentColor.color)
+                                .tint(settings.accentColor.color)
                         }
                         .buttonStyle(.borderless)
                         .font(.caption.weight(.semibold))

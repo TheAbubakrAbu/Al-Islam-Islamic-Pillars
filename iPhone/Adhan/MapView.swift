@@ -73,18 +73,29 @@ struct MapView: View {
     }
 
     private var markers: [MarkerItem] {
-        if let sel = selectedItem {
-            return [MarkerItem(id: "selected", coordinate: sel.placemark.coordinate)]
-        }
-        if let home = settings.homeLocation {
-            return [MarkerItem(id: "home", coordinate: home.coordinate)]
-        }
+        var items: [MarkerItem] = []
+
         if let cur = settings.currentLocation,
            cur.latitude != 1000,
            cur.longitude != 1000 {
-            return [MarkerItem(id: "current", coordinate: .init(latitude: cur.latitude, longitude: cur.longitude))]
+            items.append(
+                MarkerItem(
+                    id: "current",
+                    coordinate: .init(latitude: cur.latitude, longitude: cur.longitude)
+                )
+            )
         }
-        return []
+
+        if let sel = selectedItem {
+            items.append(MarkerItem(id: "selected", coordinate: sel.placemark.coordinate))
+            return items
+        }
+
+        if let home = settings.homeLocation {
+            items.append(MarkerItem(id: "home", coordinate: home.coordinate))
+        }
+
+        return items
     }
 
     var body: some View {
@@ -98,12 +109,12 @@ struct MapView: View {
                     
                     resultsList
                 }
-                .conditionalGlassEffect()
+                .conditionalGlassEffect(rectangle: true)
                 .padding(.horizontal)
             }
             .safeAreaInset(edge: .bottom) {
                 if !choosingPrayerTimes, let home = settings.homeLocation {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .center, spacing: 8) {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Home: \(home.city)", systemImage: "house.fill")
                                 .font(.headline)
@@ -127,14 +138,14 @@ struct MapView: View {
                                 .padding(.top, 4)
                                 .multilineTextAlignment(.leading)
                         }
-                        .padding(8)
+                        .padding()
+                        .conditionalGlassEffect(rectangle: true)
                         
                         useCurrentButton
+                            .conditionalGlassEffect()
+                            .padding(.horizontal, 20)
                     }
-                    .padding(8)
-                    .conditionalGlassEffect()
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 24)
                 }
             }
             .navigationTitle("Select Location")
@@ -223,30 +234,7 @@ struct MapView: View {
         .font(.headline)
         .foregroundColor(settings.accentColor.color)
         .padding(18)
-        .background(buttonBackground)
-    }
-    
-    private var buttonBackground: some View {
-        if #available(iOS 26.0, *) {
-            AnyView(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.clear)
-                    .glassEffect(.regular.tint(settings.accentColor.color.opacity(0.15)).interactive(), in: .rect(cornerRadius: 24))
-            )
-        } else {
-            AnyView(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(settings.accentColor.color.opacity(0.15))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(settings.accentColor.color.opacity(0.18), lineWidth: 1)
-                    )
-            )
-        }
+        .conditionalGlassEffect(useColor: true)
     }
 
     private func select(_ item: MKMapItem) {

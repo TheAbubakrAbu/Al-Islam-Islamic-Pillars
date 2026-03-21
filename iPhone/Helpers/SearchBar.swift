@@ -139,7 +139,7 @@ struct GlassSearchBar: View {
             }
         }
         .padding()
-        .conditionalGlassEffect(clear: false)
+        .conditionalGlassEffect()
         .onChange(of: isFocused) { focused in
             onFocusChanged?(focused)
         }

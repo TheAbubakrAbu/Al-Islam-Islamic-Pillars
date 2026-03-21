@@ -8,7 +8,49 @@ struct IslamView: View {
     var body: some View {
         NavigationView {
             List {
-                ToolsView()
+                Section(header: Text("ISLAMIC RESOURCES")) {
+                    NavigationLink(destination: ArabicView()) {
+                        toolLabel("Arabic Alphabet", systemImage: "textformat.size.ar")
+                    }
+
+                    NavigationLink(destination: TajweedFoundationsView()) {
+                        toolLabel("Tajweed Foundations", systemImage: "waveform")
+                    }
+
+                    NavigationLink(destination: AdhkarView()) {
+                        toolLabel("Common Adhkar", systemImage: "book.closed")
+                    }
+
+                    NavigationLink(destination: DuaView()) {
+                        toolLabel("Common Duas", systemImage: "text.book.closed")
+                    }
+
+                    NavigationLink(destination: TasbihView()) {
+                        toolLabel("Tasbih Counter", systemImage: "circles.hexagonpath.fill")
+                    }
+
+                    NavigationLink(destination: NamesView()) {
+                        toolLabel("99 Names of Allah", systemImage: "signature")
+                    }
+
+                    #if !os(watchOS)
+                    NavigationLink(destination: DateView()) {
+                        toolLabel("Hijri Calendar Converter", systemImage: "calendar")
+                    }
+
+                    NavigationLink(destination: MasjidLocatorView()) {
+                        toolLabel("Masjid Locator", systemImage: "mappin.and.ellipse")
+                    }
+                    #endif
+
+                    NavigationLink(destination: WallpaperView()) {
+                        toolLabel("Islamic Wallpapers", systemImage: "photo.on.rectangle")
+                    }
+
+                    NavigationLink(destination: PillarsView()) {
+                        toolLabel("Islamic Pillars and Basics", systemImage: "moon.stars")
+                    }
+                }
                 
                 ProphetQuote()
                 
@@ -20,81 +62,17 @@ struct IslamView: View {
             ArabicView()
         }
     }
-}
-
-struct PillarsView: View {
-    @EnvironmentObject var settings: Settings
     
-    var body: some View {
-        List {
-            Section(header: Text("THE BASICS")) {
-                NavigationLink(destination: GodPillarView()) {
-                    Text("Does God Exist?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-                
-                NavigationLink(destination: IslamPillarView()) {
-                    Text("What is Islam?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-                
-                NavigationLink(destination: AllahPillarView()) {
-                    Text("Who is Allah?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-                
-                NavigationLink(destination: QuranPillarView()) {
-                    Text("What is the Quran?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-                
-                NavigationLink(destination: ProphetPillarView()) {
-                    Text("Who is Prophet Muhammad?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-                
-                NavigationLink(destination: SunnahPillarView()) {
-                    Text("What is the Sunnah?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-                
-                NavigationLink(destination: HadithPillarView()) {
-                    Text("What are Hadiths?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-
-                NavigationLink(destination: QiraatView()) {
-                    Text("What are the 10 Qiraat?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
+    private func toolLabel(_ title: String, systemImage: String) -> some View {
+        Label(
+            title: { Text(title) },
+            icon: {
+                Image(systemName: systemImage)
+                    .foregroundColor(settings.accentColor.color)
             }
-            
-            IslamicPillarsView()
-            
-            ImanPillarsView()
-                                
-            MosquesView()
-            
-            PillarsOtherView()
-        }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Islamic Pillars")
+        )
+        .padding(.vertical, 4)
+        .accentColor(settings.accentColor.color)
     }
 }
 

@@ -5,32 +5,63 @@ struct ConditionalGlassEffect: ViewModifier {
     
     var clear: Bool = false
     var rectangle: Bool = false
+    var useColor: Bool = false
 
     func body(content: Content) -> some View {
+        let tintColor = settings.accentColor.color.opacity(0.25)
+
         if #available(iOS 26.0, watchOS 26.0, visionOS 26.0, macOS 26.0, *) {
             if rectangle {
                 if clear {
-                    content.glassEffect(
-                        .clear.interactive(),
-                        in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    )
+                    if useColor {
+                        content.glassEffect(
+                            .clear.tint(tintColor).interactive(),
+                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        )
+                    } else {
+                        content.glassEffect(
+                            .clear.interactive(),
+                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        )
+                    }
                 } else {
-                    content.glassEffect(
-                        .regular.interactive(),
-                        in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    )
+                    if useColor {
+                        content.glassEffect(
+                            .regular.tint(tintColor).interactive(),
+                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        )
+                    } else {
+                        content.glassEffect(
+                            .regular.interactive(),
+                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        )
+                    }
                 }
             } else {
                 if clear {
-                    content.glassEffect(
-                        .clear.interactive(),
-                        in: .capsule
-                    )
+                    if useColor {
+                        content.glassEffect(
+                            .clear.tint(tintColor).interactive(),
+                            in: .capsule
+                        )
+                    } else {
+                        content.glassEffect(
+                            .clear.interactive(),
+                            in: .capsule
+                        )
+                    }
                 } else {
-                    content.glassEffect(
-                        .regular.interactive(),
-                        in: .capsule
-                    )
+                    if useColor {
+                        content.glassEffect(
+                            .regular.tint(tintColor).interactive(),
+                            in: .capsule
+                        )
+                    } else {
+                        content.glassEffect(
+                            .regular.interactive(),
+                            in: .capsule
+                        )
+                    }
                 }
             }
         } else {
@@ -42,25 +73,24 @@ struct ConditionalGlassEffect: ViewModifier {
                 #endif
             }()
 
+            let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+
             content
                 .background(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(fallbackBaseFill)
+                    shape.fill(fallbackBaseFill)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color.clear)
+                    shape.fill(useColor ? tintColor : Color.clear)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                    shape.stroke(Color.primary.opacity(0.12), lineWidth: 1)
                 )
         }
     }
 }
 
 extension View {
-    func conditionalGlassEffect(clear: Bool = false, rectangle: Bool = false) -> some View {
-        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle))
+    func conditionalGlassEffect(clear: Bool = false, rectangle: Bool = false, useColor: Bool = false) -> some View {
+        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, useColor: useColor))
     }
 }

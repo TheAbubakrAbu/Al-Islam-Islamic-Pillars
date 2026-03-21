@@ -484,7 +484,7 @@ struct QuranView: View {
                                     .background(.ultraThinMaterial)
                                     #endif
                                     .clipShape(Capsule())
-                                    .conditionalGlassEffect(clear: false)
+                                    .conditionalGlassEffect()
                             }
                             .padding(.vertical, 4)
                         }
@@ -694,7 +694,7 @@ struct QuranView: View {
                             .background(.ultraThinMaterial)
                             #endif
                             .clipShape(Capsule())
-                            .conditionalGlassEffect(clear: false)
+                            .conditionalGlassEffect()
                     }
                     .padding(.vertical, 4)
                 ) {
@@ -893,7 +893,7 @@ struct QuranView: View {
                                     Capsule(style: .continuous)
                                         .stroke(settings.accentColor.color.opacity(0.25), lineWidth: 1)
                                 )
-                                .conditionalGlassEffect(clear: false)
+                                .conditionalGlassEffect()
                             }
                         }
                     }
@@ -908,7 +908,7 @@ struct QuranView: View {
                     Text("Sort by Juz").tag(false)
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .conditionalGlassEffect(clear: false)
+                .conditionalGlassEffect()
                 
                 HStack {
                     /*SearchBar(
@@ -922,7 +922,7 @@ struct QuranView: View {
                             }
                         }
                     )
-                    .conditionalGlassEffect(clear: false)*/
+                    .conditionalGlassEffect()*/
                     
                     GlassSearchBar(
                         text: $searchText.animation(.easeInOut),
@@ -1015,7 +1015,7 @@ struct QuranView: View {
                         }
                     }
                     .padding()
-                    .conditionalGlassEffect(clear: false)
+                    .conditionalGlassEffect()
                 }
             }
             .padding(.horizontal, 20)

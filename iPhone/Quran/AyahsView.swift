@@ -431,7 +431,7 @@ struct AyahsView: View {
                                 .background(.ultraThinMaterial)
                                 #endif
                                 .clipShape(Capsule())
-                                .conditionalGlassEffect(clear: false)
+                                .conditionalGlassEffect()
                                 .opacity(searchText.isEmpty ? 0 : 1)
                         }
                     }
@@ -587,7 +587,7 @@ struct AyahsView: View {
                         .padding(.horizontal)
                         .padding(.vertical, 8)
                         .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                        .conditionalGlassEffect(clear: false)
+                        .conditionalGlassEffect()
 
                     if let floatingDividerModel {
                         boundaryDivider(model: floatingDividerModel, isOverlay: true)
@@ -596,7 +596,7 @@ struct AyahsView: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                            .conditionalGlassEffect(clear: false)
+                            .conditionalGlassEffect()
                     }
                 }
                 .padding(.top, 6)
@@ -625,7 +625,7 @@ struct AyahsView: View {
                                 .background(Color.clear.background(.ultraThinMaterial))
                                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                                .conditionalGlassEffect(clear: false)
+                                .conditionalGlassEffect()
                                 .padding(.horizontal, 20)
                         }
                     }
@@ -658,13 +658,13 @@ struct AyahsView: View {
                         }
                         
                         HStack {
-//                            SearchBar(text: $searchText.animation(.easeInOut)).conditionalGlassEffect(clear: false)
+//                            SearchBar(text: $searchText.animation(.easeInOut)).conditionalGlassEffect()
                             
                             GlassSearchBar(searchText: $searchText.animation(.easeInOut))
                             
                             playButton(proxy: proxy)
                                 .padding()
-                                .conditionalGlassEffect(clear: false)
+                                .conditionalGlassEffect()
                         }
                     }
                     .padding(.horizontal, 20)
