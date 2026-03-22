@@ -49,7 +49,7 @@ struct NowPlayingView: View {
             .cornerRadius(24)
             .padding(.horizontal, 8)
             .transition(.opacity)
-            .conditionalGlassEffect()
+            .conditionalGlassEffect(rectangle: quranPlayer.isPlayingCustomRange)
         )
         #else
         return AnyView(

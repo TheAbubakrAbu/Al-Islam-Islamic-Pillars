@@ -310,6 +310,7 @@ struct PrayerList: View {
 
                         #if !os(watchOS)
                         prayerBell(for: prayer, rowColor: bellRowColor)
+                            .conditionalGlassEffect()
                         #endif
                     }
                 }
@@ -447,6 +448,7 @@ struct PrayerList: View {
                                     fullPrayers.toggle()
                                 }
                             }
+                            .conditionalGlassEffect()
                         
                         #if os(watchOS)
                         Text("Traveling mode is on. If you are traveling more than 48 mi, then you can pray Qasr, where you combine prayers. You can customize and learn more in settings.")
@@ -473,6 +475,7 @@ struct PrayerList: View {
                                     selectedDate = Date()
                                 }
                             }
+                            .conditionalGlassEffect()
                     }
                 }
                 .onChange(of: selectedDate) { value in

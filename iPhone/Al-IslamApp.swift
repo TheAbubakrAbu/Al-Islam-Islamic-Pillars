@@ -109,8 +109,6 @@ struct AlIslamApp: App {
             .accentColor(settings.accentColor.color)
             .tint(settings.accentColor.color)
             .preferredColorScheme(settings.colorScheme)
-            .transition(.opacity)
-            .animation(.easeInOut, value: isLaunching)
             .animation(.easeInOut, value: settings.firstLaunch)
             .appReviewPrompt()
             .onAppear {

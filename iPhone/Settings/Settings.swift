@@ -437,6 +437,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     /// When on, AyahsView shows a qiraat picker above the search bar to compare riwayat in that view.
     @AppStorage("qiraatComparisonMode") var qiraatComparisonMode: Bool = false
 
+    /// When on, ReciterListView reveals non-Hafs qiraat reciters.
+    @AppStorage("showOtherQiraatReciters") var showOtherQiraatReciters: Bool = false
+
     /// Pass to Ayah.displayArabic(qiraah:clean:). Nil means Hafs.
     var displayQiraahForArabic: String? {
         (displayQiraah.isEmpty || displayQiraah == "Hafs") ? nil : displayQiraah
@@ -465,7 +468,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             (try? Self.decoder.decode([String].self, from: quranSearchHistoryData)) ?? []
         }
         set {
-            quranSearchHistoryData = (try? Self.encoder.encode(Array(newValue.prefix(5)))) ?? Data()
+            quranSearchHistoryData = (try? Self.encoder.encode(Array(newValue.prefix(10)))) ?? Data()
         }
     }
     
@@ -493,7 +496,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             $0.caseInsensitiveCompare(trimmed) != .orderedSame
         }
         history.insert(trimmed, at: 0)
-        quranSearchHistory = Array(history.prefix(5))
+        quranSearchHistory = Array(history.prefix(10))
     }
 
     func removeQuranSearchHistory(_ query: String) {

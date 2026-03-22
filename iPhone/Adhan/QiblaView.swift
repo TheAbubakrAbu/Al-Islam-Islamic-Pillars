@@ -49,9 +49,13 @@ struct QiblaView: View {
         let kaaba  = max(20, size * 0.40)
 
         let score = 1.0 - (min(20.0, distToQibla) / 20.0)
+        let showsExtraDetail = size > 60
 
         ZStack {
             GlassyQiblaRing(size: size, tint: ringColour, alignmentScore: score)
+            if showsExtraDetail {
+                QiblaCenterHub(size: size, tint: ringColour, alignmentScore: score)
+            }
 
             VStack(spacing: -(size * 0.40)) {
                 QiblaArrow(width: arrowW, height: arrowH, tint: arrowColour)
@@ -124,12 +128,15 @@ struct GlassyQiblaRing: View {
     }
 
     var body: some View {
+        let showsNorthMarker = size > 60
         let ringWidth   = max(1, size * 0.045)
         let glossWidth  = size * 0.16
         let outerGlowW  = size * 0.085
         let shadowR     = max(1, size * 0.10)
         let innerLine   = max(1, size * 0.06)
         let innerBlur   = max(0.5, size * 0.04)
+        let northMarkerW = max(3, size * 0.05)
+        let northMarkerH = max(8, size * 0.11)
 
         ZStack {
             glassFill
@@ -161,6 +168,14 @@ struct GlassyQiblaRing: View {
                 )
                 .shadow(color: Color.black.opacity(0.18), radius: shadowR, x: 0, y: max(0.5, size * 0.04))
 
+            if showsNorthMarker {
+                Capsule()
+                    .fill(tint.opacity(0.9))
+                    .frame(width: northMarkerW, height: northMarkerH)
+                    .offset(y: -(size * 0.5) + northMarkerH)
+                    .shadow(color: tint.opacity(0.22), radius: 3)
+            }
+
             Circle()
                 .strokeBorder(
                     AngularGradient(
@@ -184,6 +199,52 @@ struct GlassyQiblaRing: View {
         .compositingGroup()
         .scaleEffect(1.0 + 0.03 * alignmentScore)
         .animation(.spring(response: 0.38, dampingFraction: 0.78), value: alignmentScore)
+    }
+}
+
+struct QiblaCenterHub: View {
+    let size: CGFloat
+    let tint: Color
+    let alignmentScore: Double
+
+    @ViewBuilder
+    private var hubFill: some View {
+        #if os(watchOS)
+        Circle().fill(Color.white.opacity(0.12))
+        #else
+        Circle().fill(.ultraThinMaterial)
+        #endif
+    }
+
+    var body: some View {
+        let hubSize = size * 0.22
+
+        hubFill
+            .overlay(
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.25),
+                                .clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .scaleEffect(0.94)
+            )
+            .overlay(
+                Circle()
+                    .stroke(Color.white.opacity(0.22), lineWidth: max(1, size * 0.012))
+            )
+            .overlay(
+                Circle()
+                    .stroke(tint.opacity(0.12 + 0.2 * alignmentScore), lineWidth: max(1, size * 0.016))
+                    .blur(radius: max(0.5, size * 0.01))
+            )
+            .frame(width: hubSize, height: hubSize)
+            .shadow(color: Color.black.opacity(0.1), radius: max(1, size * 0.03), y: 1)
     }
 }
 

@@ -63,28 +63,30 @@ struct PrayerCountdown: View {
                 }) {
                     VStack {
                         HStack(alignment: .top) {
-                            CurrentPrayerCell(prayer: current, showHeader: true, showInfo: false)
+                            CurrentPrayerCell(prayer: current)
                             
                             Divider().background(settings.accentColor.color)
                             
-                            UpcomingPrayerCell(prayer: next, progress: progress, showHeader: true, showInfo: false)
+                            UpcomingPrayerCell(prayer: next)
                         }
 
                         if settings.showPrayerInfo {
-                            Divider()
-                                .background(settings.accentColor.color)
-
-                            HStack(alignment: .top) {
-                                CurrentPrayerCell(prayer: current, showHeader: false, showInfo: true)
-
-                                UpcomingPrayerCell(prayer: next, progress: progress, showHeader: false, showInfo: true)
+                            VStack {
+                                Divider()
+                                    .background(settings.accentColor.color)
+                                
+                                HStack(alignment: .top) {
+                                    CurrentPrayerInfoView(prayer: current)
+                                    
+                                    UpcomingPrayerInfoView(prayer: next)
+                                }
                             }
                         }
                         
                         ProgressView(value: progress)
-                            .padding(.vertical, 4)
                             .tint(settings.accentColor.color)
-                            .padding(.top, 4)
+                            //.scaleEffect(x: 1, y: 2, anchor: .center)
+                            .conditionalGlassEffect()
                         
                         HStack {
                             Text("Time Left: \(next.time, style: .timer)")
@@ -138,23 +140,14 @@ private struct CurrentPrayerCell: View {
     @EnvironmentObject var settings: Settings
     
     let prayer: Prayer
-    var showHeader: Bool = true
-    var showInfo: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            if showHeader {
-                title
-                subtitle
-                
-                Text("Started at \(prayer.time, style: .time)")
-                    .font(.headline)
-            }
+            title
+            subtitle
             
-            if showInfo && settings.showPrayerInfo {
-                rakahInfo
-                sunnahInfo
-            }
+            Text("Started at \(prayer.time, style: .time)")
+                .font(.headline)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .multilineTextAlignment(.leading)
@@ -184,59 +177,20 @@ private struct CurrentPrayerCell: View {
             .font(.title3)
             .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
     }
-
-    @ViewBuilder private var rakahInfo: some View {
-        if prayer.rakah != "0" {
-            Text("Prayer Rakahs: \(prayer.rakah)")
-                #if !os(watchOS)
-                .font(.caption)
-                #else
-                .font(.caption2)
-                #endif
-                .foregroundColor(.primary)
-        } else {
-            Text("Shurooq is not a prayer, but marks the end of Fajr")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    @ViewBuilder private var sunnahInfo: some View {
-        if prayer.sunnahBefore != "0" {
-            Text("Sunnah Rakahs Before: \(prayer.sunnahBefore)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-        if prayer.sunnahAfter != "0" {
-            Text("Sunnah Rakahs After: \(prayer.sunnahAfter)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-    }
 }
 
 private struct UpcomingPrayerCell: View {
     @EnvironmentObject var settings: Settings
     
     let prayer: Prayer
-    let progress: Double
-    var showHeader: Bool = true
-    var showInfo: Bool = true
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 5) {
-            if showHeader {
-                title
-                subtitle
-                
-                Text("Starts at \(prayer.time, style: .time)")
-                    .font(.headline)
-            }
+            title
+            subtitle
             
-            if showInfo && settings.showPrayerInfo {
-                rakahInfo
-                sunnahInfo
-            }
+            Text("Starts at \(prayer.time, style: .time)")
+                .font(.headline)
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
         .multilineTextAlignment(.trailing)
@@ -262,33 +216,87 @@ private struct UpcomingPrayerCell: View {
             .font(.title3)
             .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
     }
+}
 
-    @ViewBuilder private var rakahInfo: some View {
-        if prayer.rakah != "0" {
-            Text("Prayer Rakahs: \(prayer.rakah)")
-                #if !os(watchOS)
-                .font(.caption)
-                #else
-                .font(.caption2)
-                #endif
-                .foregroundColor(.primary)
-        } else {
-            Text("Shurooq is not a prayer, but marks the end of Fajr")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+private struct CurrentPrayerInfoView: View {
+    let prayer: Prayer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            PrayerRakahInfoView(prayer: prayer, captionFont: .caption, alignment: .leading)
+            PrayerSunnahInfoView(prayer: prayer, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .multilineTextAlignment(.leading)
+    }
+}
+
+private struct UpcomingPrayerInfoView: View {
+    let prayer: Prayer
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 5) {
+            PrayerRakahInfoView(prayer: prayer, captionFont: .caption, alignment: .trailing)
+            PrayerSunnahInfoView(prayer: prayer, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .multilineTextAlignment(.trailing)
+    }
+}
+
+private struct PrayerRakahInfoView: View {
+    let prayer: Prayer
+    let captionFont: Font
+    let alignment: Alignment
+
+    var body: some View {
+        Group {
+            if prayer.rakah != "0" {
+                Text("Prayer Rakahs: \(prayer.rakah)")
+                    #if !os(watchOS)
+                    .font(captionFont)
+                    #else
+                    .font(.caption2)
+                    #endif
+                    .foregroundColor(.primary)
+            } else {
+                Text("Shurooq is not a prayer, but marks the end of Fajr")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: alignment)
+    }
+}
+
+private struct PrayerSunnahInfoView: View {
+    let prayer: Prayer
+    let alignment: Alignment
+
+    var body: some View {
+        VStack(alignment: horizontalAlignment, spacing: 5) {
+            if prayer.sunnahBefore != "0" {
+                Text("Sunnah Rakahs Before: \(prayer.sunnahBefore)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            if prayer.sunnahAfter != "0" {
+                Text("Sunnah Rakahs After: \(prayer.sunnahAfter)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: alignment)
     }
 
-    @ViewBuilder private var sunnahInfo: some View {
-        if prayer.sunnahBefore != "0" {
-            Text("Sunnah Rakahs Before: \(prayer.sunnahBefore)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-        if prayer.sunnahAfter != "0" {
-            Text("Sunnah Rakahs After: \(prayer.sunnahAfter)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+    private var horizontalAlignment: HorizontalAlignment {
+        switch alignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        default:
+            return .center
         }
     }
 }

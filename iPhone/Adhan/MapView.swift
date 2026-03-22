@@ -70,6 +70,8 @@ struct MapView: View {
     private struct MarkerItem: Identifiable {
         let id: String
         let coordinate: CLLocationCoordinate2D
+        let tint: Color
+        let systemImage: String
     }
 
     private var markers: [MarkerItem] {
@@ -81,18 +83,34 @@ struct MapView: View {
             items.append(
                 MarkerItem(
                     id: "current",
-                    coordinate: .init(latitude: cur.latitude, longitude: cur.longitude)
+                    coordinate: .init(latitude: cur.latitude, longitude: cur.longitude),
+                    tint: .cyan,
+                    systemImage: "location.fill"
                 )
             )
         }
 
         if let sel = selectedItem {
-            items.append(MarkerItem(id: "selected", coordinate: sel.placemark.coordinate))
+            items.append(
+                MarkerItem(
+                    id: "selected",
+                    coordinate: sel.placemark.coordinate,
+                    tint: .green,
+                    systemImage: "mappin.circle.fill"
+                )
+            )
             return items
         }
 
         if let home = settings.homeLocation {
-            items.append(MarkerItem(id: "home", coordinate: home.coordinate))
+            items.append(
+                MarkerItem(
+                    id: "home",
+                    coordinate: home.coordinate,
+                    tint: settings.accentColor.color,
+                    systemImage: "house.fill"
+                )
+            )
         }
 
         return items
@@ -103,10 +121,22 @@ struct MapView: View {
             interactiveMap
             .edgesIgnoringSafeArea(.all)
             .overlay(alignment: .top) {
-                VStack(alignment: .leading, spacing: 0) {
-                    //SearchBar(text: $searchText)
-                    GlassSearchBar(searchText: $searchText.animation(.easeInOut))
-                    
+                VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        SearchBar(searchText: $searchText.animation(.easeInOut))
+
+                        if !searchText.isEmpty {
+                            HStack {
+                                Text("\(cityItems.count) match\(cityItems.count == 1 ? "" : "es") found")
+                                Spacer()
+                            }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(settings.accentColor.color)
+                            .padding(.horizontal, 6)
+                        }
+                    }
+                    .padding(8)
+
                     resultsList
                 }
                 .conditionalGlassEffect(rectangle: true)
@@ -115,42 +145,46 @@ struct MapView: View {
             .safeAreaInset(edge: .bottom) {
                 if !choosingPrayerTimes, let home = settings.homeLocation {
                     VStack(alignment: .center, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Home: \(home.city)", systemImage: "house.fill")
-                                .font(.headline)
-                                .foregroundColor(settings.accentColor.color)
-                            
-                            if let current = settings.currentLocation {
-                                Label("Current: \(current.city)", systemImage: "location.fill")
+                        HStack {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("Home: \(home.city)", systemImage: "house.fill")
                                     .font(.headline)
                                     .foregroundColor(settings.accentColor.color)
                                 
-                                if let distance = distanceString {
-                                    Label(distance, systemImage: "arrow.right.arrow.left")
-                                        .font(.subheadline)
-                                        .foregroundColor(.primary)
+                                if let current = settings.currentLocation {
+                                    Label("Current: \(current.city)", systemImage: "location.fill")
+                                        .font(.headline)
+                                        .foregroundColor(settings.accentColor.color)
+                                    
+                                    if let distance = distanceString {
+                                        Label(distance, systemImage: "arrow.right.arrow.left")
+                                            .font(.subheadline)
+                                            .foregroundColor(.primary)
+                                    }
                                 }
+                                
+                                Text("• Must be at least 48 miles (≈ 77 km) from home to be considered traveling")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                                    .multilineTextAlignment(.leading)
                             }
+                            .padding()
                             
-                            Text("• Must be at least 48 miles (≈ 77 km) from home to be considered traveling")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                                .multilineTextAlignment(.leading)
+                            Spacer()
                         }
-                        .padding()
                         .conditionalGlassEffect(rectangle: true)
                         
                         useCurrentButton
-                            .conditionalGlassEffect()
                             .padding(.horizontal, 20)
                     }
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 26)
                 }
             }
             .navigationTitle("Select Location")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing: Button("Done") { settings.hapticFeedback(); dismiss() })
+            .dismissKeyboardOnScroll()
             .confirmationDialog(
                 "Location Access Denied",
                 isPresented: $showAlert
@@ -173,9 +207,24 @@ struct MapView: View {
 
     @ViewBuilder
     private var interactiveMap: some View {
-        Map(coordinateRegion: $region, annotationItems: markers) {
-            MapMarker(coordinate: $0.coordinate)
+        Map(coordinateRegion: $region, annotationItems: markers) { item in
+            MapAnnotation(coordinate: item.coordinate) {
+                markerBubble(for: item)
+            }
         }
+    }
+
+    private func markerBubble(for item: MarkerItem) -> some View {
+        Image(systemName: item.systemImage)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(9)
+            .background(Circle().fill(item.tint))
+            .overlay(
+                Circle()
+                    .stroke(Color.white.opacity(0.9), lineWidth: 2)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
     }
 
     private var resultsList: some View {
@@ -190,19 +239,45 @@ struct MapView: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             ForEach(Array(cityItems.enumerated()), id: \.offset) { _, item in
-                                Button { select(item) } label: {
-                                    HStack {
-                                        Image(systemName: "mappin.circle.fill")
-                                        Text(formattedName(for: item))
-                                        Spacer()
+                                HStack(alignment: .top, spacing: 10) {
+                                    HStack(alignment: .top, spacing: 10) {
+                                        Image(systemName: "mappin.and.ellipse")
+                                            .foregroundColor(settings.accentColor.color)
+
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(primaryLocationName(for: item))
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundColor(.primary)
+                                                .multilineTextAlignment(.leading)
+
+                                            Text(secondaryLocationName(for: item))
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .multilineTextAlignment(.leading)
+                                        }
                                     }
-                                    .foregroundColor(settings.accentColor.color)
-                                    .padding()
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        select(item)
+                                    }
+
+                                    Button {
+                                        settings.hapticFeedback()
+                                        select(item)
+                                    } label: {
+                                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                            .font(.headline)
+                                            .foregroundColor(settings.accentColor.color)
+                                            .frame(width: 36, height: 36)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
+                                .padding()
                             }
                         }
                     }
-                    .frame(height: min(CGFloat(cityItems.count) * 55, 300))
+                    .frame(height: min(CGFloat(cityItems.count) * 76, 150))
                 }
             }
         }
@@ -256,6 +331,17 @@ struct MapView: View {
         let state = item.placemark.administrativeArea ?? ""
         let name  = state.isEmpty ? city : "\(city), \(state)"
         return name + ", " + (item.placemark.country ?? "")
+    }
+
+    private func primaryLocationName(for item: MKMapItem) -> String {
+        item.placemark.locality ?? item.placemark.name ?? "Unknown"
+    }
+
+    private func secondaryLocationName(for item: MKMapItem) -> String {
+        let state = item.placemark.administrativeArea ?? ""
+        let country = item.placemark.country ?? ""
+        let parts = [state, country].filter { !$0.isEmpty }
+        return parts.isEmpty ? formattedName(for: item) : parts.joined(separator: ", ")
     }
 
     private func updateRegion(to coord: CLLocationCoordinate2D) {

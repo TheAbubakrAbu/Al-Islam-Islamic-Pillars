@@ -214,7 +214,7 @@ struct ArabicView: View {
                 .conditionalGlassEffect()
 
                 HStack {
-                    GlassSearchBar(searchText: $searchText.animation(.easeInOut))
+                    SearchBar(searchText: $searchText.animation(.easeInOut))
 
                     Menu {
                         Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {

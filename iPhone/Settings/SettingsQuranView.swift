@@ -197,10 +197,20 @@ struct SettingsQuranView: View {
 
                 The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
+                To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
                 """)
                 .font(.caption)
                 .foregroundColor(.primary)
+
+                NavigationLink(destination: AhrufView()) {
+                    Text("The 7 Ahruf (Modes)")
+                }
+                .font(.caption)
+
+                NavigationLink(destination: QiraatView()) {
+                    Text("The 10 Qiraat (Recitations)")
+                }
+                .font(.caption)
 
                 Text("***Hafs An Asim* is the most common and widespread Qiraah in the world today.**")
                     .font(.caption)
@@ -250,12 +260,14 @@ struct SettingsQuranView: View {
 struct ReciterListView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.presentationMode) private var presentationMode
+    @State private var didAutoScrollToSelection = false
     #if !os(watchOS)
     @StateObject private var downloadManager = ReciterDownloadManager.shared
     @State private var showDownloadedOnly = false
     #endif
 
     private static let defaultReciter = "Muhammad Al-Minshawi (Murattal)"
+    private let featuredMinshawiIDs = Set(recitersMinshawi.map(\.id))
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -278,7 +290,11 @@ struct ReciterListView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    let downloadedCount = reciters.filter { downloadManager.stateSnapshot(for: $0).completedSurahs > 0 }.count
+                    let downloadedCount = Set(
+                        reciters
+                            .filter { downloadManager.stateSnapshot(for: $0).completedSurahs > 0 }
+                            .map(\.id)
+                    ).count
                     Text("Downloaded reciters: \(downloadedCount)")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -307,111 +323,143 @@ struct ReciterListView: View {
                     }
                 }
                 
-                if !filteredReciters(recitersMujawwad).isEmpty {
+                if !filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: true).isEmpty {
                     Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
-                        reciterButtons(filteredReciters(recitersMujawwad))
+                        reciterButtons(filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: true))
                     }
                 }
 
-                if !filteredReciters(recitersMuallim).isEmpty {
+                if !filteredReciters(recitersMuallim, excludingFeaturedMinshawi: true).isEmpty {
                     Section(header: Text("TEACHING (MUʿALLIM)")) {
-                        reciterButtons(filteredReciters(recitersMuallim))
+                        reciterButtons(filteredReciters(recitersMuallim, excludingFeaturedMinshawi: true))
                     }
                 }
 
-                if !filteredReciters(recitersMurattal).isEmpty {
+                if !filteredReciters(recitersMurattal, excludingFeaturedMinshawi: true).isEmpty {
                     Section(header: Text("NORMAL (MURATTAL)")) {
-                        reciterButtons(filteredReciters(recitersMurattal))
+                        reciterButtons(filteredReciters(recitersMurattal, excludingFeaturedMinshawi: true))
                     }
                 }
                 
                 #if os(watchOS)
                 Section(header: Text("ABOUT QIRAAT"), footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
-                    VStack(alignment: .leading) {
-                        Text("""
-                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+                    Text("""
+                    The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
-                        The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+                    The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                        To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
-                        """)
+                    To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                    """)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                    NavigationLink(destination: AhrufView()) {
+                        Text("The 7 Ahruf (Modes)")
+                    }
+                    .font(.subheadline)
+
+                    NavigationLink(destination: QiraatView()) {
+                        Text("The 10 Qiraat (Recitations)")
+                    }
+                    .font(.subheadline)
+
+                    Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
                         .font(.subheadline)
                         .foregroundColor(.primary)
+                        .padding(.top, 4)
 
-                        Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                            .padding(.top, 4)
-
-                        Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                    }
-                    .padding(.vertical, 4)
+                    Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
                 }
                 #else
                 if !showDownloadedOnly {
                 Section(header: Text("ABOUT QIRAAT"), footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
-                    VStack(alignment: .leading) {
-                        Text("""
-                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+                    Text("""
+                    The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
-                        The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+                    The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                        To learn more about the Seven Ahruf and the Ten Qiraat, see the detailed sections inside Al-Islam Pillars.
-                        """)
+                    To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                    """)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                    NavigationLink(destination: AhrufView()) {
+                        Text("The 7 Ahruf (Modes)")
+                    }
+                    .font(.subheadline)
+
+                    NavigationLink(destination: QiraatView()) {
+                        Text("The 10 Qiraat (Recitations)")
+                    }
+                    .font(.subheadline)
+
+                    Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
                         .font(.subheadline)
                         .foregroundColor(.primary)
-
-                        Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                            .padding(.top, 4)
-                        
-                        Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                    }
-                    .padding(.vertical, 4)
+                        .padding(.top, 4)
+                    
+                    Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
                 }
                 }
                 #endif
-                
-                if !filteredReciters(recitersKhalaf).isEmpty {
-                    Section(header: Text("KHALAF AN HAMZAH")) {
-                        reciterButtons(filteredReciters(recitersKhalaf), qiraah: true)
-                    }
-                }
 
-                if !filteredReciters(recitersWarsh).isEmpty {
-                    Section(header: Text("WARSH AN NAFI")) {
-                        reciterButtons(filteredReciters(recitersWarsh), qiraah: true)
+                if settings.showOtherQiraatReciters {
+                    if !filteredReciters(recitersKhalaf).isEmpty {
+                        Section(header: Text("KHALAF AN HAMZAH")) {
+                            reciterButtons(filteredReciters(recitersKhalaf), qiraah: true)
+                        }
                     }
-                }
 
-                if !filteredReciters(recitersQaloon).isEmpty {
-                    Section(header: Text("QALOON AN NAFI")) {
-                        reciterButtons(filteredReciters(recitersQaloon), qiraah: true)
+                    if !filteredReciters(recitersWarsh).isEmpty {
+                        Section(header: Text("WARSH AN NAFI")) {
+                            reciterButtons(filteredReciters(recitersWarsh), qiraah: true)
+                        }
                     }
-                }
 
-                if !filteredReciters(recitersBuzzi).isEmpty {
-                    Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
-                        reciterButtons(filteredReciters(recitersBuzzi), qiraah: true)
+                    if !filteredReciters(recitersQaloon).isEmpty {
+                        Section(header: Text("QALOON AN NAFI")) {
+                            reciterButtons(filteredReciters(recitersQaloon), qiraah: true)
+                        }
                     }
-                }
 
-                if !filteredReciters(recitersQunbul).isEmpty {
-                    Section(header: Text("QUNBUL AN IBN KATHIR")) {
-                        reciterButtons(filteredReciters(recitersQunbul), qiraah: true)
+                    if !filteredReciters(recitersBuzzi).isEmpty {
+                        Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
+                            reciterButtons(filteredReciters(recitersBuzzi), qiraah: true)
+                        }
                     }
-                }
 
-                if !filteredReciters(recitersDuri).isEmpty {
-                    Section(header: Text("AD-DURI AN ABI AMR")) {
-                        reciterButtons(filteredReciters(recitersDuri), qiraah: true)
+                    if !filteredReciters(recitersQunbul).isEmpty {
+                        Section(header: Text("QUNBUL AN IBN KATHIR")) {
+                            reciterButtons(filteredReciters(recitersQunbul), qiraah: true)
+                        }
+                    }
+
+                    if !filteredReciters(recitersDuri).isEmpty {
+                        Section(header: Text("AD-DURI AN ABI AMR")) {
+                            reciterButtons(filteredReciters(recitersDuri), qiraah: true)
+                        }
+                    }
+                } else {
+                    Section {
+                        Button {
+                            settings.hapticFeedback()
+                            withAnimation(.easeInOut) {
+                                settings.showOtherQiraatReciters = true
+                            }
+                        } label: {
+                            HStack {
+                                Text("Show Other Qiraat Reciters")
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                            }
+                            .foregroundColor(settings.accentColor.color)
+                        }
                     }
                 }
             }
@@ -428,22 +476,30 @@ struct ReciterListView: View {
                 reciters.forEach { downloadManager.ensureStateLoaded(for: $0) }
                 #endif
 
-                let target = settings.reciter
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation {
-                        proxy.scrollTo(target, anchor: .top)
+                if !didAutoScrollToSelection {
+                    let target = settings.reciter
+                    didAutoScrollToSelection = true
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation {
+                            proxy.scrollTo(target, anchor: .top)
+                        }
                     }
                 }
             }
         }
     }
 
-    private func filteredReciters(_ list: [Reciter]) -> [Reciter] {
+    private func filteredReciters(_ list: [Reciter], excludingFeaturedMinshawi: Bool = false) -> [Reciter] {
+        let baseList = excludingFeaturedMinshawi
+            ? list.filter { !featuredMinshawiIDs.contains($0.id) }
+            : list
+
         #if os(watchOS)
-        return list
+        return baseList
         #else
-        guard showDownloadedOnly else { return list }
-        return list.filter { downloadManager.stateSnapshot(for: $0).completedSurahs > 0 }
+        guard showDownloadedOnly else { return baseList }
+        return baseList.filter { downloadManager.stateSnapshot(for: $0).completedSurahs > 0 }
         #endif
     }
 

@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import MediaPlayer
 import Foundation
+import CryptoKit
 
 final class QuranPlayer: ObservableObject {
     static let shared = QuranPlayer()
@@ -63,6 +64,9 @@ final class QuranPlayer: ObservableObject {
     var nowPlayingReciter: String?
 
     private let reciterDownloadManager = ReciterDownloadManager.shared
+    private let localSurahStartupBuffer: TimeInterval = 0.03
+    private let remoteSurahStartupBuffer: TimeInterval = 0.75
+    private let ayahStartupBuffer: TimeInterval = 0.6
     
     private init() {
         NotificationCenter.default.addObserver(
@@ -384,14 +388,14 @@ final class QuranPlayer: ObservableObject {
             return
         }
 
-        let url = reciterDownloadManager.localSurahURL(reciter: reciter, surahNumber: surahNumber) ?? remoteURL
+        let localURL = reciterDownloadManager.localSurahURL(reciter: reciter, surahNumber: surahNumber)
+        let url = localURL ?? remoteURL
 
         setupAudioSession()
         isLoading = true
         player?.pause(); removeAllObservers()
 
-        let isLocalFile = reciterDownloadManager.localSurahURL(reciter: reciter, surahNumber: surahNumber) != nil
-        let startupBuffer: TimeInterval = isLocalFile ? 0.15 : 1.5
+        let startupBuffer: TimeInterval = localURL != nil ? localSurahStartupBuffer : remoteSurahStartupBuffer
 
         let item = makeFastStartItem(url: url, bufferDuration: startupBuffer)
         let avPlayer = AVPlayer(playerItem: item)
@@ -648,7 +652,7 @@ final class QuranPlayer: ObservableObject {
             customRangeEndAyah = nil
             return
         }
-        firstItem.preferredForwardBufferDuration = 2
+        firstItem.preferredForwardBufferDuration = ayahStartupBuffer
 
         let q = AVQueuePlayer()
         q.actionAtItemEnd = .advance
@@ -658,7 +662,7 @@ final class QuranPlayer: ObservableObject {
         if sequence.count > 1 {
             let second = sequence[1]
             if let secondItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: second.ayahNumber, isBismillah: second.isBismillah) {
-                secondItem.preferredForwardBufferDuration = 2
+                secondItem.preferredForwardBufferDuration = ayahStartupBuffer
                 q.insert(secondItem, after: firstItem)
             }
         }
@@ -734,7 +738,7 @@ final class QuranPlayer: ObservableObject {
                     if nextIndex < self.customRangeSequence.count {
                         let next = self.customRangeSequence[nextIndex]
                         if let nextItem = self.makeItem(forSurah: surah, reciter: reciter, ayahNumber: next.ayahNumber, isBismillah: next.isBismillah) {
-                            nextItem.preferredForwardBufferDuration = 2
+                            nextItem.preferredForwardBufferDuration = self.ayahStartupBuffer
                             qPlayer.insert(nextItem, after: currentItem)
                         }
                     }
@@ -776,11 +780,11 @@ final class QuranPlayer: ObservableObject {
                 presentPlaybackFailure("Unable to load this ayah audio. Check your internet connection and try again.")
                 return
             }
-            firstItem.preferredForwardBufferDuration = 2
+            firstItem.preferredForwardBufferDuration = ayahStartupBuffer
 
             let single = AVPlayer(playerItem: firstItem)
             single.actionAtItemEnd = .none
-            configureFastStartPlayer(single, bufferDuration: 2)
+            configureFastStartPlayer(single, bufferDuration: ayahStartupBuffer)
             player = single
 
             statusObserver = firstItem.observe(\.status) { [weak self] itm, _ in
@@ -847,12 +851,12 @@ final class QuranPlayer: ObservableObject {
             presentPlaybackFailure("Unable to load this ayah audio. Check your internet connection and try again.")
             return
         }
-        firstItem.preferredForwardBufferDuration = 2
+        firstItem.preferredForwardBufferDuration = ayahStartupBuffer
 
         var nextItem: AVPlayerItem?
         if ayahNumber < surah.numberOfAyahs {
             nextItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: ayahNumber + 1)
-            nextItem?.preferredForwardBufferDuration = 2
+            nextItem?.preferredForwardBufferDuration = ayahStartupBuffer
         }
 
         let q = AVQueuePlayer()
@@ -929,7 +933,7 @@ final class QuranPlayer: ObservableObject {
                     let nextAyah = self.currentAyahNumber! + 1
                     if nextAyah <= sur.numberOfAyahs,
                        let upcoming = self.makeItem(forSurah: sur, reciter: rec, ayahNumber: nextAyah) {
-                        upcoming.preferredForwardBufferDuration = 2
+                        upcoming.preferredForwardBufferDuration = ayahStartupBuffer
                         qPlayer.insert(upcoming, after: newItem)
                     } else {}
                 }
@@ -949,7 +953,7 @@ final class QuranPlayer: ObservableObject {
             presentPlaybackFailure("A valid audio link could not be created for this ayah.")
             return nil
         }
-        return makeFastStartItem(url: url, bufferDuration: 2)
+        return makeFastStartItem(url: url, bufferDuration: ayahStartupBuffer)
     }
     
     private func incrementAyahIfNeeded() {
@@ -1296,6 +1300,7 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
     private var activeTasks: [String: URLSessionDownloadTask] = [:]
     private var taskInfoByIdentifier: [Int: (reciter: Reciter, surahNumber: Int)] = [:]
     private var backgroundCompletionHandler: (() -> Void)?
+    private let dedupeQueue = DispatchQueue(label: "com.Quran.Elmallah.Islamic-Pillars.reciter-dedupe", qos: .utility)
 
     private lazy var session: URLSession = {
         let configuration = URLSessionConfiguration.background(withIdentifier: sessionIdentifier)
@@ -1307,7 +1312,11 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
 
     private override init() {
         super.init()
+        configureBaseDirectory()
         restoreOngoingDownloads()
+        dedupeQueue.async {
+            self.deduplicateExistingDownloadsIfNeeded()
+        }
     }
 
     func state(for reciter: Reciter) -> DownloadState {
@@ -1381,6 +1390,7 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
             if fileManager.fileExists(atPath: dir.path) {
                 try fileManager.removeItem(at: dir)
             }
+            try pruneUnusedSharedAudioFiles()
         } catch {
             var state = statesByReciterID[reciter.id] ?? DownloadState()
             state.errorMessage = error.localizedDescription
@@ -1591,12 +1601,8 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         guard let context = taskContext(for: downloadTask) else { return }
         do {
-            try ensureReciterDirectoryExists(reciter: context.reciter)
             let targetURL = localSurahFileURL(reciter: context.reciter, surahNumber: context.surahNumber)
-            if fileManager.fileExists(atPath: targetURL.path) {
-                try fileManager.removeItem(at: targetURL)
-            }
-            try fileManager.moveItem(at: location, to: targetURL)
+            try installDownloadedFile(from: location, to: targetURL, reciter: context.reciter)
         } catch {
             finishWithError(for: context.reciter.id, message: error.localizedDescription)
         }
@@ -1660,6 +1666,132 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
         if !fileManager.fileExists(atPath: dir.path) {
             try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
         }
+    }
+
+    private func installDownloadedFile(from temporaryURL: URL, to targetURL: URL, reciter: Reciter) throws {
+        try ensureReciterDirectoryExists(reciter: reciter)
+        try ensureSharedAudioDirectoryExists()
+
+        if fileManager.fileExists(atPath: targetURL.path) {
+            try fileManager.removeItem(at: targetURL)
+        }
+
+        let sharedURL = try canonicalSharedFileURL(forDownloadedFileAt: temporaryURL)
+        if fileManager.fileExists(atPath: sharedURL.path) {
+            try? fileManager.removeItem(at: temporaryURL)
+        } else {
+            try fileManager.moveItem(at: temporaryURL, to: sharedURL)
+        }
+
+        do {
+            try fileManager.linkItem(at: sharedURL, to: targetURL)
+        } catch {
+            try fileManager.copyItem(at: sharedURL, to: targetURL)
+        }
+    }
+
+    private func deduplicateExistingDownloadsIfNeeded() {
+        let defaults = UserDefaults.standard
+        let currentVersion = 1
+        guard defaults.integer(forKey: "ReciterDownloadManagerDedupeVersion") < currentVersion else { return }
+        try? ensureSharedAudioDirectoryExists()
+
+        let root = baseDirectoryURL()
+        guard let reciterDirectories = try? fileManager.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        for directory in reciterDirectories where directory.lastPathComponent != "SharedAudio" {
+            guard let files = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            for fileURL in files where fileURL.pathExtension.lowercased() == "mp3" {
+                do {
+                    let sharedURL = try canonicalSharedFileURL(forDownloadedFileAt: fileURL)
+                    if fileURL.standardizedFileURL == sharedURL.standardizedFileURL {
+                        continue
+                    }
+
+                    if !fileManager.fileExists(atPath: sharedURL.path) {
+                        try fileManager.moveItem(at: fileURL, to: sharedURL)
+                    } else {
+                        try fileManager.removeItem(at: fileURL)
+                    }
+
+                    do {
+                        try fileManager.linkItem(at: sharedURL, to: fileURL)
+                    } catch {
+                        try fileManager.copyItem(at: sharedURL, to: fileURL)
+                    }
+                } catch {
+                    logger.warning("Failed to deduplicate \(fileURL.lastPathComponent): \(error.localizedDescription)")
+                }
+            }
+        }
+
+        defaults.set(currentVersion, forKey: "ReciterDownloadManagerDedupeVersion")
+    }
+
+    private func canonicalSharedFileURL(forDownloadedFileAt fileURL: URL) throws -> URL {
+        let hash = try sha256Hash(for: fileURL)
+        let ext = fileURL.pathExtension.isEmpty ? "mp3" : fileURL.pathExtension.lowercased()
+        return sharedAudioDirectoryURL().appendingPathComponent("\(hash).\(ext)", isDirectory: false)
+    }
+
+    private func sha256Hash(for fileURL: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: fileURL)
+        defer { try? handle.close() }
+
+        var hasher = SHA256()
+        while true {
+            let chunk = try handle.read(upToCount: 1_048_576) ?? Data()
+            if chunk.isEmpty { break }
+            hasher.update(data: chunk)
+        }
+
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func configureBaseDirectory() {
+        var root = baseDirectoryURL()
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? root.setResourceValues(values)
+    }
+
+    private func ensureSharedAudioDirectoryExists() throws {
+        let dir = sharedAudioDirectoryURL()
+        if !fileManager.fileExists(atPath: dir.path) {
+            try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+    }
+
+    private func pruneUnusedSharedAudioFiles() throws {
+        let sharedDir = sharedAudioDirectoryURL()
+        guard fileManager.fileExists(atPath: sharedDir.path) else { return }
+
+        let sharedFiles = try fileManager.contentsOfDirectory(
+            at: sharedDir,
+            includingPropertiesForKeys: [.linkCountKey],
+            options: [.skipsHiddenFiles]
+        )
+
+        for fileURL in sharedFiles where fileURL.pathExtension.lowercased() == "mp3" {
+            let values = try? fileURL.resourceValues(forKeys: [.linkCountKey])
+            let linkCount = values?.linkCount ?? 1
+            if linkCount <= 1 {
+                try? fileManager.removeItem(at: fileURL)
+            }
+        }
+    }
+
+    private func sharedAudioDirectoryURL() -> URL {
+        baseDirectoryURL().appendingPathComponent("SharedAudio", isDirectory: true)
     }
 
     private func reciterDirectoryURL(reciter: Reciter) -> URL {

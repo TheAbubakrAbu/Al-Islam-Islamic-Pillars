@@ -10,6 +10,7 @@ struct AyahsView: View {
     @State private var searchText = ""
     @State private var firstVisibleAyahID: Int? = nil
     @State private var visibleAyahIDs = Set<Int>()
+    @State private var visibleBoundaryAyahIDs = Set<Int>()
     @State private var cachedAyahsForQiraah: [Ayah] = []
     @State private var cachedAyahByID: [Int: Ayah] = [:]
     @State private var overlayDividerByAyahID: [Int: BoundaryDividerModel] = [:]
@@ -197,10 +198,19 @@ struct AyahsView: View {
         }()
 
         let dividerContent = HStack(spacing: isOverlay ? 8 : 10) {
-            Rectangle()
-                .fill(dividerColor.opacity(isOverlay ? 0.55 : 0.45))
-                .frame(height: 1)
-                .frame(minWidth: isOverlay ? 12 : 18)
+            Group {
+                if isOverlay {
+                    Rectangle()
+                        .fill(dividerColor.opacity(0.55))
+                        .frame(maxWidth: .infinity)
+                        .frame(minWidth: 10, maxHeight: 1)
+                } else {
+                    Rectangle()
+                        .fill(dividerColor.opacity(0.45))
+                        .frame(height: 1)
+                        .frame(minWidth: 18)
+                }
+            }
 
             (
                 Text(model.pageSegment)
@@ -211,19 +221,30 @@ struct AyahsView: View {
                     + Text($0).foregroundColor(juzColor)
                 } ?? Text(""))
             )
-            .font((isOverlay ? Font.subheadline : Font.caption).weight(.semibold))
+            .font((isOverlay ? Font.caption : Font.caption).weight(.semibold))
             .lineLimit(1)
-            .minimumScaleFactor(isOverlay ? 0.8 : 0.6)
-            .allowsTightening(true)
-            .layoutPriority(1)
-            .fixedSize(horizontal: false, vertical: true)
+            .minimumScaleFactor(isOverlay ? 0.5 : 0.6)
+            .allowsTightening(!isOverlay)
+            .layoutPriority(2)
+            .fixedSize(horizontal: isOverlay, vertical: true)
 
-            Rectangle()
-                .fill(dividerColor.opacity(isOverlay ? 0.55 : 0.45))
-                .frame(height: 1)
-                .frame(minWidth: isOverlay ? 12 : 18)
+            Group {
+                if isOverlay {
+                    Rectangle()
+                        .fill(dividerColor.opacity(0.55))
+                        .frame(maxWidth: .infinity)
+                        .frame(minWidth: 10, maxHeight: 1)
+                } else {
+                    Rectangle()
+                        .fill(dividerColor.opacity(0.45))
+                        .frame(height: 1)
+                        .frame(minWidth: 18)
+                }
+            }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, isOverlay ? 4 : 6)
+        .padding(.horizontal, isOverlay ? 10 : 0)
+        .frame(maxWidth: isOverlay ? .infinity : nil)
         
         #if !os(watchOS)
         if !searchText.isEmpty, let ayahID = nextAyahID {
@@ -359,7 +380,7 @@ struct AyahsView: View {
             let searchCount = isDividerKeywordSearch ? keywordDividerModels.count : filteredAyahs.count
             let syncVisibleAyahAnchor: () -> Void = {
                 let nextVisibleAyahID: Int?
-                if let topVisibleAyahID = visibleAyahIDs.min() {
+                if let topVisibleAyahID = (visibleAyahIDs.union(visibleBoundaryAyahIDs)).min() {
                     nextVisibleAyahID = topVisibleAyahID
                 } else if let sel = ayah, ayahByID[sel] != nil {
                     nextVisibleAyahID = sel
@@ -375,9 +396,7 @@ struct AyahsView: View {
                 if boundaryDividerEquals(currentOverlay, nextOverlay) {
                     firstVisibleAyahID = nextVisibleAyahID
                 } else {
-                    withAnimation {
-                        firstVisibleAyahID = nextVisibleAyahID
-                    }
+                    firstVisibleAyahID = nextVisibleAyahID
                 }
             }
             
@@ -415,8 +434,16 @@ struct AyahsView: View {
                     ZStack {
                         if searchText.isEmpty {
                             SurahSectionHeader(surah: surah)
-                                .onAppear { withAnimation { showFloatingHeader = false } }
-                                .onDisappear { withAnimation { showFloatingHeader = true } }
+                                .onAppear {
+                                    withAnimation {
+                                        showFloatingHeader = false
+                                    }
+                                }
+                                .onDisappear {
+                                    withAnimation {
+                                        showFloatingHeader = true
+                                    }
+                                }
                         }
                         
                         HStack {
@@ -457,6 +484,18 @@ struct AyahsView: View {
                         Section {
                             boundaryDivider(model: startOfSurahDivider, nextAyahID: filteredAyahs.first?.id)
                         }
+                        .onAppear {
+                            if let nextID = filteredAyahs.first?.id {
+                                visibleBoundaryAyahIDs.insert(nextID)
+                                syncVisibleAyahAnchor()
+                            }
+                        }
+                        .onDisappear {
+                            if let nextID = filteredAyahs.first?.id {
+                                visibleBoundaryAyahIDs.remove(nextID)
+                                syncVisibleAyahAnchor()
+                            }
+                        }
                         #if !os(watchOS)
                         .listRowSeparator(.hidden)
                         #endif
@@ -468,6 +507,14 @@ struct AyahsView: View {
                         if let dividerBefore {
                             Section {
                                 boundaryDivider(model: dividerBefore, nextAyahID: ayah.id)
+                            }
+                            .onAppear {
+                                visibleBoundaryAyahIDs.insert(ayah.id)
+                                syncVisibleAyahAnchor()
+                            }
+                            .onDisappear {
+                                visibleBoundaryAyahIDs.remove(ayah.id)
+                                syncVisibleAyahAnchor()
                             }
                             #if !os(watchOS)
                             .listRowSeparator(.hidden)
@@ -557,6 +604,7 @@ struct AyahsView: View {
             .onAppear {
                 rebuildQiraahCaches()
                 visibleAyahIDs.removeAll()
+                visibleBoundaryAyahIDs.removeAll()
                 if let sel = ayah, ayahByID[sel] != nil {
                     firstVisibleAyahID = sel
                 } else if firstVisibleAyahID == nil {
@@ -579,6 +627,7 @@ struct AyahsView: View {
                 cacheQiraahKey = ""
                 rebuildQiraahCaches()
                 visibleAyahIDs.removeAll()
+                visibleBoundaryAyahIDs.removeAll()
             }
             #if !os(watchOS)
             .overlay(alignment: .top) {
@@ -592,23 +641,19 @@ struct AyahsView: View {
                     if let floatingDividerModel {
                         boundaryDivider(model: floatingDividerModel, isOverlay: true)
                             .id(boundaryDividerID(floatingDividerModel))
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                            .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                             .conditionalGlassEffect()
                     }
                 }
-                .padding(.top, 6)
+                .padding(.top, 4)
                 .padding(.horizontal, settings.defaultView ? 20 : 16)
                 .background(Color.clear)
                 .opacity(showFloatingHeader ? 1 : 0)
-                .padding(.horizontal, 30)
+                .padding(.horizontal, 20)
                 .zIndex(1)
-                .transition(.move(edge: .top).combined(with: .opacity))
                 .offset(y: showFloatingHeader ? 0 : -80)
                 .opacity(showFloatingHeader ? 1 : 0)
-                .animation(.easeInOut, value: showFloatingHeader)
             }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 8) {
@@ -660,7 +705,7 @@ struct AyahsView: View {
                         HStack {
 //                            SearchBar(text: $searchText.animation(.easeInOut)).conditionalGlassEffect()
                             
-                            GlassSearchBar(searchText: $searchText.animation(.easeInOut))
+                            SearchBar(searchText: $searchText.animation(.easeInOut))
                             
                             playButton(proxy: proxy)
                                 .padding()
@@ -781,7 +826,7 @@ struct AyahsView: View {
                             )
                         }
                     } label: {
-                        Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
+                        Label("Play Random Ayah", systemImage: "shuffle")
                     }
                     
                     Menu {
@@ -924,7 +969,7 @@ struct ArabicTextRiwayahPicker: View {
     ]
 
     var body: some View {
-        Picker("Arabic Text Riwayah", selection: $selection) {
+        Picker("Arabic Riwayah", selection: $selection) {
             ForEach(Self.options, id: \.tag) { option in
                 Text(option.label).tag(option.tag)
             }

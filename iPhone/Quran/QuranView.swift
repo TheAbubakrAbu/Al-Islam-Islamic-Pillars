@@ -856,10 +856,19 @@ struct QuranView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
                 if isQuranSearchFocused && !settings.quranSearchHistory.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Recent Searches")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 4)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LazyHStack(spacing: 8) {
                             ForEach(settings.quranSearchHistory, id: \.self) { query in
-                                HStack(spacing: 4) {
+                                HStack(spacing: 6) {
                                     Button {
                                         settings.hapticFeedback()
                                         searchText = query
@@ -870,33 +879,38 @@ struct QuranView: View {
                                             .font(.caption)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
+                                            .padding(.leading, 12)
+                                            .padding(.trailing, 2)
+                                            .padding(.vertical, 8)
                                     }
 
                                     Button {
                                         settings.hapticFeedback()
                                         settings.removeQuranSearchHistory(query)
                                     } label: {
-                                        Image(systemName: "xmark")
-                                            .font(.caption2.bold())
-                                            .padding(.trailing, 4)
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(settings.accentColor.color.opacity(0.85))
+                                            .padding(.trailing, 8)
+                                            .padding(.vertical, 8)
                                     }
+                                    .buttonStyle(.plain)
                                     .accessibilityLabel("Remove \(query) from search history")
                                 }
                                 .foregroundStyle(settings.accentColor.color)
                                 .background(
                                     Capsule(style: .continuous)
-                                        .fill(settings.accentColor.color.opacity(0.12))
+                                        .fill(settings.accentColor.color.opacity(0.1))
                                 )
                                 .overlay(
                                     Capsule(style: .continuous)
-                                        .stroke(settings.accentColor.color.opacity(0.25), lineWidth: 1)
+                                        .stroke(settings.accentColor.color.opacity(0.22), lineWidth: 1)
                                 )
-                                .conditionalGlassEffect()
                             }
                         }
+                        }
                     }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 
                 if quranPlayer.isPlaying || quranPlayer.isPaused {
@@ -911,21 +925,8 @@ struct QuranView: View {
                 .conditionalGlassEffect()
                 
                 HStack {
-                    /*SearchBar(
-                        text: $searchText.animation(.easeInOut),
-                        onSearchButtonClicked: {
-                            settings.addQuranSearchHistory(searchText)
-                        },
-                        onFocusChanged: { focused in
-                            withAnimation {
-                                isQuranSearchFocused = focused
-                            }
-                        }
-                    )
-                    .conditionalGlassEffect()*/
-                    
-                    GlassSearchBar(
-                        text: $searchText.animation(.easeInOut),
+                    SearchBar(
+                        searchText: $searchText.animation(.easeInOut),
                         onSearchButtonClicked: {
                             persistQuranSearchHistoryIfNeeded(searchText)
                         },
@@ -1002,7 +1003,7 @@ struct QuranView: View {
                                         }
                                     }
                                 } label: {
-                                    Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
+                                    Label("Play Random Ayah", systemImage: "shuffle")
                                 }
                             } label: {
                                 Image(systemName: "play.fill")

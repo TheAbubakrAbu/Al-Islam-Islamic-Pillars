@@ -1,119 +1,18 @@
 import SwiftUI
 
-struct SearchBar: UIViewRepresentable {
-    @Binding var text: String
-    
-    var onSearchButtonClicked: (() -> Void)?
-    var onFocusChanged: ((Bool) -> Void)?
-
-    class Coordinator: NSObject, UISearchBarDelegate {
-        @Binding var text: String
-        let onSearchButtonClicked: (() -> Void)?
-        let onFocusChanged: ((Bool) -> Void)?
-
-        init(
-            text: Binding<String>,
-            onSearchButtonClicked: (() -> Void)?,
-            onFocusChanged: ((Bool) -> Void)?
-        ) {
-            _text = text
-            self.onSearchButtonClicked = onSearchButtonClicked
-            self.onFocusChanged = onFocusChanged
-        }
-
-        func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-            text = searchText
-        }
-
-        func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
-            searchBar.showsCancelButton = true
-            onFocusChanged?(true)
-        }
-
-        func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
-            searchBar.showsCancelButton = false
-            onFocusChanged?(false)
-        }
-
-        func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-            searchBar.showsCancelButton = false
-            searchBar.text = ""
-            searchBar.resignFirstResponder()
-
-            text = ""
-            onFocusChanged?(false)
-        }
-
-        func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-            searchBar.resignFirstResponder()
-            text = searchBar.text ?? ""
-            onSearchButtonClicked?()
-            onFocusChanged?(false)
-        }
-    }
-
-    func makeCoordinator() -> SearchBar.Coordinator {
-        return Coordinator(
-            text: $text,
-            onSearchButtonClicked: onSearchButtonClicked,
-            onFocusChanged: onFocusChanged
-        )
-    }
-
-    func makeUIView(context: UIViewRepresentableContext<SearchBar>) -> UISearchBar {
-        let searchBar = UISearchBar(frame: .zero)
-        searchBar.delegate = context.coordinator
-        searchBar.placeholder = "Search"
-        searchBar.autocorrectionType = .no
-        
-        searchBar.backgroundImage = UIImage()
-        
-        return searchBar
-    }
-
-    func updateUIView(_ uiView: UISearchBar, context: UIViewRepresentableContext<SearchBar>) {
-        uiView.text = text
-    }
-    
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        searchBar.resignFirstResponder()
-        DispatchQueue.main.async {
-            self.text = searchBar.text ?? ""
-        }
-    }
-}
-
-struct GlassSearchBar: View {
+struct SearchBar: View {
     @Binding var searchText: String
+
     var onSearchButtonClicked: (() -> Void)?
     var onFocusChanged: ((Bool) -> Void)?
 
+    @Environment(\.layoutDirection) private var layoutDirection
     @FocusState private var isFocused: Bool
-
-    init(
-        searchText: Binding<String>,
-        onSearchButtonClicked: (() -> Void)? = nil,
-        onFocusChanged: ((Bool) -> Void)? = nil
-    ) {
-        self._searchText = searchText
-        self.onSearchButtonClicked = onSearchButtonClicked
-        self.onFocusChanged = onFocusChanged
-    }
-
-    init(
-        text: Binding<String>,
-        onSearchButtonClicked: (() -> Void)? = nil,
-        onFocusChanged: ((Bool) -> Void)? = nil
-    ) {
-        self._searchText = text
-        self.onSearchButtonClicked = onSearchButtonClicked
-        self.onFocusChanged = onFocusChanged
-    }
 
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(.primary)
+                .foregroundStyle(.secondary)
 
             TextField("Search", text: $searchText.animation(.easeInOut))
                 .autocorrectionDisabled()
@@ -122,30 +21,63 @@ struct GlassSearchBar: View {
                 .onSubmit {
                     onSearchButtonClicked?()
                     isFocused = false
+                    dismissKeyboard()
                 }
 
-            if !searchText.isEmpty {
-                Button {
-                    withAnimation {
-                        searchText = ""
+            if isFocused || !searchText.isEmpty {
+                HStack(spacing: 4) {
+                    if !searchText.isEmpty {
+                        Button {
+                            withAnimation(.easeInOut) {
+                                searchText = ""
+                            }
+                            isFocused = false
+                            dismissKeyboard()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 20, height: 20)
+                                .padding(.horizontal, 8)
+                        }
+                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
                     }
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
+
+                    if isFocused {
+                        Button {
+                            isFocused = false
+                            dismissKeyboard()
+                        } label: {
+                            Image(systemName: "keyboard.chevron.compact.down")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 20, height: 20)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                        }
+                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
-                .clipShape(Rectangle())
+                .padding(.trailing, 2)
             }
         }
-        .padding()
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .conditionalGlassEffect()
         .onChange(of: isFocused) { focused in
             onFocusChanged?(focused)
         }
     }
+
+    private func dismissKeyboard() {
+        #if !os(watchOS)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
+    }
 }
 
 #Preview {
-    SearchBar(text: .constant("Search"))
+    SearchBar(searchText: .constant(""))
 }

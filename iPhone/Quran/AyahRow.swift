@@ -105,8 +105,6 @@ struct AyahRow: View {
                     #if !os(watchOS)
                     .padding(.vertical, -11)
                     #endif
-                    .transition(.opacity)
-                    .animation(.easeInOut, value: currentAyah == ayah.id)
             }
             
             VStack(alignment: .leading, spacing: 0) {
@@ -114,11 +112,11 @@ struct AyahRow: View {
                     Text("\(surah.id):\(ayah.id)")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
-                        .padding(4)
+                        .padding(6)
                         .frame(width: 54, height: 32)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .conditionalGlassEffect()
+                        .conditionalGlassEffect(useColor: true)
                         #if !os(watchOS)
                         .onTapGesture {
                             settings.hapticFeedback()
@@ -238,7 +236,6 @@ struct AyahRow: View {
             menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: true)
         }
         #endif
-        .animation(.easeInOut, value: quranPlayer.currentAyahNumber)
         .confirmationDialog("Note not saved", isPresented: $showRespectAlert, titleVisibility: .visible) {
             Button("OK", role: .cancel) { }
         } message: {

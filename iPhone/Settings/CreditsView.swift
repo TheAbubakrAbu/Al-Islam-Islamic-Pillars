@@ -178,35 +178,12 @@ struct CreditsView: View {
                 .font(.headline)
                 .foregroundColor(settings.accentColor.color)
                 .padding(18)
-                .background(buttonBackground)
+                .conditionalGlassEffect(useColor: true)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }
         }
-    }
-    
-    private var buttonBackground: some View {
-        if #available(iOS 26.0, *) {
-            AnyView(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.clear)
-                    .glassEffect(.regular.tint(settings.accentColor.color.opacity(0.15)).interactive(), in: .rect(cornerRadius: 24))
-            )
-        } else {
-            AnyView(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(settings.accentColor.color.opacity(0.15))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(settings.accentColor.color.opacity(0.18), lineWidth: 1)
-                    )
-            )
-        }
-    }
+    }    
 }
 
 let appsByAbubakr: [AppItem] = [

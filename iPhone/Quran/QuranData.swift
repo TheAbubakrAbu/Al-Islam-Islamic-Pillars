@@ -621,8 +621,8 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 4,
-            nameArabic: "لَن تَنالُوا",
-            nameTransliteration: "Lan Tanaaloo",
+            nameArabic: "كُلُّ ٱلطَّعَامِ",
+            nameTransliteration: "Kullu al-ta'am",
             startSurah: 3, startAyah: 93,
             endSurah: 4, endAyah: 23
         ),
@@ -642,8 +642,8 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 7,
-            nameArabic: "وَإِذَا سَمِعُوا",
-            nameTransliteration: "Waidhaa Samioo",
+            nameArabic: "لَتَجِدَنَّ أَشَدَّ",
+            nameTransliteration: "Latajidanna Ashadd",
             startSurah: 5, startAyah: 82,
             endSurah: 6, endAyah: 110
         ),
@@ -670,8 +670,8 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 11,
-            nameArabic: "يَعتَذِرُونَ",
-            nameTransliteration: "Ya'atadheroon",
+            nameArabic: "إِنَّمَا ٱلسَّبِيلُ",
+            nameTransliteration: "Innama al-sabeel",
             startSurah: 9, startAyah: 93,
             endSurah: 11, endAyah: 5
         ),
@@ -733,15 +733,15 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 20,
-            nameArabic: "أَمَّن خَلَقَ",
-            nameTransliteration: "A'man Khalaqa",
+            nameArabic: "فَمَا كَانَ جَوَابَ",
+            nameTransliteration: "Fama kana jawaab",
             startSurah: 27, startAyah: 56,
             endSurah: 29, endAyah: 45
         ),
 
         Juz(id: 21,
-            nameArabic: "أُتلُ مَاأُوحِیَ",
-            nameTransliteration: "Utlu Maa Oohia",
+            nameArabic: "وَلَا تُجَٰدِلُوٓاْ",
+            nameTransliteration: "Wa la tujadiloo",
             startSurah: 29, startAyah: 46,
             endSurah: 33, endAyah: 30
         ),
@@ -754,8 +754,8 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 23,
-            nameArabic: "وَمَآ لِي",
-            nameTransliteration: "Wamaa Lee",
+            nameArabic: "وَمَآ أَنزَلۡنَا",
+            nameTransliteration: "Wa ma anzalna",
             startSurah: 36, startAyah: 28,
             endSurah: 39, endAyah: 31
         ),

@@ -43,7 +43,7 @@ struct SurahContextMenu: View {
                 }
             }
         } label: {
-            Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
+            Label("Play Random Ayah", systemImage: "shuffle")
         }
         
         if lastListened == nil {

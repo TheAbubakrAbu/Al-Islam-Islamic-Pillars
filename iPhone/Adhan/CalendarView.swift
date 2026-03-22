@@ -45,9 +45,7 @@ struct HijriCalendarView: View {
                 }
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
-                .background(Color.clear.background(.ultraThinMaterial))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(color: .primary.opacity(0.12), radius: 2, x: 0, y: 1)
+                .conditionalGlassEffect()
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
             }

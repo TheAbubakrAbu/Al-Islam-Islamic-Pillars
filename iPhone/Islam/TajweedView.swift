@@ -58,23 +58,30 @@ struct TajweedFoundationsView: View {
 
                     Text("As a result, some rules explained in this guide may not apply identically to other riwayat. These variations in tajweed application and pronunciation reflect the diversity of classical Arabic dialects that were all correctly recited and approved by the Prophet ﷺ, and have been preserved exactly through continuous transmission. They highlight the richness, flexibility, and authenticity of the Quranic recitation tradition.")
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Learn More About Qiraat, Riwayat, and Ahruf")
-                            .font(.subheadline.weight(.semibold))
-
-                        NavigationLink(destination: QiraatView()) {
-                            Text("What are the 10 Qiraat?")
-                                .foregroundColor(settings.accentColor.color)
-                        }
-
-                        NavigationLink(destination: QuranPillarView()) {
-                            Text("What is the Quran?")
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                    }
-                    .padding(.top, 4)
                 }
                 .font(.body)
+
+                Text("Learn More About Qiraat, Riwayat, and Ahruf")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("See below and in Al-Islam View > Islamic Pillars and Basics.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                NavigationLink(destination: AhrufView()) {
+                    Text("What are the 7 Ahruf?")
+                        .foregroundColor(settings.accentColor.color)
+                }
+
+                NavigationLink(destination: QiraatView()) {
+                    Text("What are the 10 Qiraat?")
+                        .foregroundColor(settings.accentColor.color)
+                }
+
+                NavigationLink(destination: QuranPillarView()) {
+                    Text("What is the Quran?")
+                        .foregroundColor(settings.accentColor.color)
+                }
             }
 
             Section("TAJWEED TOPICS") {

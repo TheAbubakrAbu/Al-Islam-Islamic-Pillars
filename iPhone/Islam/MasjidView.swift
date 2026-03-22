@@ -1,6 +1,7 @@
 import SwiftUI
 import MapKit
 import CoreLocation
+import UIKit
 
 struct MasjidLocatorView: View {
     @EnvironmentObject private var settings: Settings
@@ -42,6 +43,7 @@ struct MasjidLocatorView: View {
         let id: String
         let coordinate: CLLocationCoordinate2D
         let tint: Color
+        let systemImage: String
     }
 
     private var markers: [MarkerItem] {
@@ -54,7 +56,8 @@ struct MasjidLocatorView: View {
                 MarkerItem(
                     id: "current",
                     coordinate: cur.coordinate,
-                    tint: .blue
+                    tint: .cyan,
+                    systemImage: "location.fill"
                 )
             )
         }
@@ -63,7 +66,8 @@ struct MasjidLocatorView: View {
             MarkerItem(
                 id: "result-\(index)-\(item.placemark.coordinate.latitude)-\(item.placemark.coordinate.longitude)",
                 coordinate: item.placemark.coordinate,
-                tint: settings.accentColor.color
+                tint: settings.accentColor.color,
+                systemImage: "mappin.circle.fill"
             )
         }
 
@@ -72,7 +76,8 @@ struct MasjidLocatorView: View {
                 MarkerItem(
                     id: "selected",
                     coordinate: selectedItem.placemark.coordinate,
-                    tint: .green
+                    tint: .green,
+                    systemImage: "mappin.circle.fill"
                 ),
                 at: 0
             )
@@ -83,12 +88,32 @@ struct MasjidLocatorView: View {
 
     var body: some View {
         Map(coordinateRegion: $region, annotationItems: markers) { item in
-            MapMarker(coordinate: item.coordinate, tint: item.tint)
+            MapAnnotation(coordinate: item.coordinate) {
+                markerBubble(for: item)
+            }
         }
         .edgesIgnoringSafeArea(.all)
         .overlay(alignment: .top) {
             VStack(alignment: .leading, spacing: 10) {
-                GlassSearchBar(searchText: $searchText.animation(.easeInOut))
+                VStack(alignment: .leading, spacing: 8) {
+                    SearchBar(searchText: $searchText.animation(.easeInOut))
+
+                    if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
+                        HStack {
+                            if isSearching {
+                                Text("Searching nearby masajid…")
+                            } else {
+                                Text("\(results.count) match\(results.count == 1 ? "" : "es") found")
+                            }
+
+                            Spacer()
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(settings.accentColor.color)
+                        .padding(.horizontal, 6)
+                    }
+                }
+                .padding(8)
 
                 if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
                     resultsPanel
@@ -108,7 +133,7 @@ struct MasjidLocatorView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(settings.accentColor.color)
                     .padding(18)
                     .conditionalGlassEffect()
 
@@ -121,7 +146,7 @@ struct MasjidLocatorView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(settings.accentColor.color)
                     .padding(18)
                     .conditionalGlassEffect()
                 }
@@ -144,11 +169,12 @@ struct MasjidLocatorView: View {
                     .padding(.horizontal, 20)
                 }
             }
-            .padding(.bottom, 24)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .padding(.bottom, 26)
         }
         .navigationTitle("Masjid Locator")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarItems(trailing: Button("Done") { settings.hapticFeedback(); dismiss() })
         .onAppear {
             configureInitialRegion()
             scheduleSearch(for: "", force: true)
@@ -159,6 +185,19 @@ struct MasjidLocatorView: View {
         .preferredColorScheme(scheme)
         .accentColor(settings.accentColor.color)
         .tint(settings.accentColor.color)
+    }
+
+    private func markerBubble(for item: MarkerItem) -> some View {
+        Image(systemName: item.systemImage)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(9)
+            .background(Circle().fill(item.tint))
+            .overlay(
+                Circle()
+                    .stroke(Color.white.opacity(0.9), lineWidth: 2)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
     }
 
     private var resultsPanel: some View {
@@ -180,9 +219,7 @@ struct MasjidLocatorView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(Array(results.enumerated()), id: \.offset) { _, item in
-                            Button {
-                                select(item)
-                            } label: {
+                            HStack(alignment: .top, spacing: 10) {
                                 HStack(alignment: .top, spacing: 10) {
                                     Image(systemName: "mappin.and.ellipse")
                                         .foregroundColor(settings.accentColor.color)
@@ -197,17 +234,49 @@ struct MasjidLocatorView: View {
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                             .multilineTextAlignment(.leading)
-                                    }
 
-                                    Spacer()
+                                        if let distance = distanceFromCurrentLocation(to: item) {
+                                            Label(distance, systemImage: "location")
+                                                .font(.caption2)
+                                                .foregroundColor(settings.accentColor.color)
+                                        }
+                                    }
                                 }
-                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    select(item)
+                                }
+
+                                Button {
+                                    settings.hapticFeedback()
+                                    openInMaps(item)
+                                } label: {
+                                    Image(systemName: "map.fill")
+                                        .font(.headline)
+                                        .foregroundColor(settings.accentColor.color)
+                                        .frame(width: 36, height: 36)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
+                            .padding()
+                            .contextMenu {
+                                Button("Copy Name") {
+                                    UIPasteboard.general.string = item.name ?? "Masjid"
+                                }
+
+                                Button("Copy Address") {
+                                    UIPasteboard.general.string = formattedAddress(for: item)
+                                }
+
+                                Button("Copy Full Address") {
+                                    UIPasteboard.general.string = fullAddress(for: item)
+                                }
+                            }
                         }
                     }
                 }
-                .frame(height: min(CGFloat(results.count) * 76, 320))
+                .frame(height: min(CGFloat(results.count) * 76, 150))
             }
         }
     }
@@ -228,11 +297,25 @@ struct MasjidLocatorView: View {
         }
     }
 
+    private func openInMaps(_ item: MKMapItem) {
+        item.openInMaps(launchOptions: [
+            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
+        ])
+    }
+
     private func formattedAddress(for item: MKMapItem) -> String {
+        let streetParts = [
+            item.placemark.subThoroughfare,
+            item.placemark.thoroughfare
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+        let street = streetParts.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+
         let parts = [
-            item.placemark.title,
+            street.isEmpty ? nil : street,
             item.placemark.locality,
-            item.placemark.administrativeArea,
             item.placemark.country
         ]
         .compactMap { $0 }
@@ -243,6 +326,48 @@ struct MasjidLocatorView: View {
         }
 
         return Array(NSOrderedSet(array: parts)).compactMap { $0 as? String }.joined(separator: ", ")
+    }
+
+    private func fullAddress(for item: MKMapItem) -> String {
+        let streetParts = [
+            item.placemark.subThoroughfare,
+            item.placemark.thoroughfare
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+        let street = streetParts.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let parts = [
+            street.isEmpty ? nil : street,
+            item.placemark.locality,
+            item.placemark.administrativeArea,
+            item.placemark.postalCode,
+            item.placemark.country
+        ]
+        .compactMap { $0 }
+        .filter { !$0.isEmpty }
+
+        if parts.isEmpty {
+            return formattedAddress(for: item)
+        }
+
+        return Array(NSOrderedSet(array: parts)).compactMap { $0 as? String }.joined(separator: ", ")
+    }
+
+    private func distanceFromCurrentLocation(to item: MKMapItem) -> String? {
+        guard let cur = settings.currentLocation,
+              cur.latitude != 1000,
+              cur.longitude != 1000 else { return nil }
+
+        let here = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
+        let there = CLLocation(
+            latitude: item.placemark.coordinate.latitude,
+            longitude: item.placemark.coordinate.longitude
+        )
+
+        let miles = here.distance(from: there) / 1_609.344
+        return String(format: "%.1f miles away", miles)
     }
 
     private func updateRegion(to coord: CLLocationCoordinate2D) {
@@ -257,18 +382,43 @@ struct MasjidLocatorView: View {
         await MainActor.run { isSearching = true }
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let query = trimmed.isEmpty ? "mosque" : "\(trimmed) mosque"
+        let queries: [String] = {
+            if trimmed.isEmpty {
+                return ["mosque", "masjid", "islamic center", "muslim", "rahma"]
+            } else {
+                return Array(NSOrderedSet(array: [
+                    trimmed,
+                    "\(trimmed) mosque",
+                    "\(trimmed) masjid",
+                    "\(trimmed) islamic",
+                    "\(trimmed) islamic center",
+                    "\(trimmed) muslim",
+                    "\(trimmed) rahma"
+                ])).compactMap { $0 as? String }
+            }
+        }()
 
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = query
-        request.resultTypes = .pointOfInterest
-        request.region = region
+        var combinedItems: [MKMapItem] = []
 
-        let response = try? await MKLocalSearch(request: request).start()
-        let items = (response?.mapItems ?? []).filter { item in
+        for query in queries {
+            guard !Task.isCancelled else { return }
+
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = query
+            request.resultTypes = .pointOfInterest
+            request.region = region
+
+            let response = try? await MKLocalSearch(request: request).start()
+            combinedItems.append(contentsOf: response?.mapItems ?? [])
+        }
+
+        let items = combinedItems.filter { item in
             let name = (item.name ?? "").lowercased()
             let title = (item.placemark.title ?? "").lowercased()
-            return name.contains("masjid") || name.contains("mosque") || title.contains("masjid") || title.contains("mosque")
+            let keywords = ["masjid", "mosque", "islam", "islamic", "muslim", "rahma"]
+            return keywords.contains { keyword in
+                name.contains(keyword) || title.contains(keyword)
+            }
         }
 
         var seen = Set<String>()

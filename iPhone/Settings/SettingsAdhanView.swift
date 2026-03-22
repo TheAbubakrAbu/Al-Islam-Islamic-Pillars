@@ -262,7 +262,7 @@ struct PrayerOffsetsView: View {
                     .frame(width: 22, alignment: .center)
 
                 Text(title)
-                    .foregroundColor(settings.accentColor.color)
+                    .foregroundColor(.primary)
 
                 Spacer()
 
