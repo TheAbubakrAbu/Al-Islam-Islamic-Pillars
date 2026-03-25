@@ -85,7 +85,7 @@ struct SettingsQuranView: View {
                     .font(.subheadline)
                     .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
 
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 8) {
                     Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
                         .font(.subheadline)
 

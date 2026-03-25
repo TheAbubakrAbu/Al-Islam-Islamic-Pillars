@@ -80,7 +80,7 @@ final class NamesViewModel: ObservableObject {
     private init() { loadJSON() }
 
     private func loadJSON() {
-        guard let url = Bundle.main.url(forResource: "99_Names_Of_Allah", withExtension: "json") else {
+        guard let url = Bundle.main.url(forResource: "NamesOfAllah", withExtension: "json") else {
             logger.debug("❌ 99 Names JSON not found."); return
         }
         DispatchQueue.global(qos: .utility).async {

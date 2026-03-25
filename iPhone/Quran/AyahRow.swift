@@ -116,7 +116,7 @@ struct AyahRow: View {
                         .frame(width: 54, height: 32)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .conditionalGlassEffect(useColor: 0.05)
+                        .conditionalGlassEffect(useColor: 0.1)
                         #if !os(watchOS)
                         .onTapGesture {
                             settings.hapticFeedback()

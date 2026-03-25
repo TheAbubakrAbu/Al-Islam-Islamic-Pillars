@@ -1016,8 +1016,8 @@ struct QuranView: View {
             .contentShape(Rectangle())
             .background(
                 Rectangle()
-                    .fill(Color.clear)
-                    .padding(.bottom, -20)
+                    .fill(Color.white.opacity(0.00001))
+                    .padding([.horizontal, .bottom], -30)
                     .contentShape(Rectangle())
                     .onTapGesture { }
             )

@@ -205,7 +205,7 @@ struct MapView: View {
                         useCurrentButton
                     }
                     .padding(.bottom, 26)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal)
                 }
             }
             .navigationTitle("Select Location")

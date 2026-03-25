@@ -151,7 +151,7 @@ struct MasjidLocatorView: View {
         }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
-                HStack(spacing: 10) {
+                HStack {
                     Button {
                         settings.hapticFeedback()
                         scheduleSearch(for: searchText, force: true)
@@ -196,7 +196,7 @@ struct MasjidLocatorView: View {
             }
             .lineLimit(1)
             .minimumScaleFactor(0.5)
-            .padding(.horizontal, 24)
+            .padding(.horizontal)
             .padding(.bottom, 26)
         }
         .navigationTitle("Masjid Locator")
