@@ -162,12 +162,10 @@ private struct CurrentPrayerCell: View {
                 .font(.subheadline)
                 #endif
             
+            #if !os(watchOS)
             Text(prayer.nameTransliteration)
-                #if !os(watchOS)
                 .font(.title)
-                #else
-                .font(.title3)
-                #endif
+            #endif
         }
         .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
     }
@@ -187,7 +185,10 @@ private struct UpcomingPrayerCell: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 5) {
             title
+            
+            #if !os(watchOS)
             subtitle
+            #endif
             
             Text("Starts at \(prayer.time, style: .time)")
                 .font(.headline)

@@ -26,12 +26,12 @@ struct AlIslamApp: App {
                     TabView {
                         AdhanView()
                             .safeAreaInset(edge: .bottom) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 6) {
                                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                                         NowPlayingView()
                                     }
                                 }
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal)
                                 .padding(.bottom, 8)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                             }
@@ -48,12 +48,12 @@ struct AlIslamApp: App {
                         
                         IslamView()
                             .safeAreaInset(edge: .bottom) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 6) {
                                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                                         NowPlayingView()
                                     }
                                 }
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal)
                                 .padding(.bottom, 8)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                             }
@@ -64,12 +64,12 @@ struct AlIslamApp: App {
                         
                         SettingsView()
                             .safeAreaInset(edge: .bottom) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 6) {
                                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                                         NowPlayingView()
                                     }
                                 }
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal)
                                 .padding(.bottom, 8)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
                             }

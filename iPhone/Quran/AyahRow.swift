@@ -108,7 +108,7 @@ struct AyahRow: View {
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: -2) {
+                HStack(spacing: 2) {
                     Text("\(surah.id):\(ayah.id)")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
@@ -116,7 +116,7 @@ struct AyahRow: View {
                         .frame(width: 54, height: 32)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .conditionalGlassEffect(useColor: true)
+                        .conditionalGlassEffect(useColor: 0.05)
                         #if !os(watchOS)
                         .onTapGesture {
                             settings.hapticFeedback()
@@ -129,16 +129,13 @@ struct AyahRow: View {
                     #if os(watchOS)
                     Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                         .foregroundColor(settings.accentColor.color)
-                        .font(.system(size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
-                        .onTapGesture {
-                            settings.hapticFeedback()
-                            settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
-                        }
+                        .frame(width: 32, height: 32)
+                        
                     #else
                     if isBookmarked {
                         Image(systemName: "bookmark.fill")
+                            .frame(width: 32, height: 32)
                             .foregroundColor(settings.accentColor.color)
-                            .font(.system(size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
                             .transition(.opacity)
                     }
 
@@ -146,30 +143,20 @@ struct AyahRow: View {
                         Menu {
                             playbackMenuBlock()
                         } label: {
-                            ZStack(alignment: .trailing) {
-                                Rectangle().fill(.clear).frame(width: 32, height: 32)
-                                
-                                Image(systemName: "play.circle")
-                                    .font(.title2)
-                                    .foregroundColor(settings.accentColor.color)
-                                    .conditionalGlassEffect()
-                                    .padding(.trailing, -2)
-                            }
+                            Image(systemName: "play.circle")
+                                .frame(width: 32, height: 32)
+                                .foregroundColor(settings.accentColor.color)
+                                .conditionalGlassEffect()
                         }
                     }
                     
                     Menu {
                         menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: false)
                     } label: {
-                        ZStack(alignment: .trailing) {
-                            Rectangle().fill(.clear).frame(width: 32, height: 32)
-                            
-                            Image(systemName: "ellipsis.circle")
-                                .font(.title2)
-                                .foregroundColor(settings.accentColor.color)
-                                .conditionalGlassEffect()
-                                .padding(.trailing, -2)
-                        }
+                        Image(systemName: "ellipsis.circle")
+                            .frame(width: 32, height: 32)
+                            .foregroundColor(settings.accentColor.color)
+                            .conditionalGlassEffect()
                     }
                     .sheet(isPresented: $showingAyahSheet) {
                         ShareAyahSheet(

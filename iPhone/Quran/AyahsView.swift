@@ -84,7 +84,7 @@ struct AyahsView: View {
 
     private func boundaryText(for ayah: Ayah) -> String? {
         if let page = ayah.page, let juz = ayah.juz {
-            return "Page \(page) - Juz \(juz)"
+            return "Page \(page) • Juz \(juz)"
         }
         if let page = ayah.page {
             return "Page \(page)"
@@ -217,7 +217,7 @@ struct AyahsView: View {
                     .foregroundColor(pageColor)
                 +
                 (model.juzSegment.map {
-                    Text(" - ").foregroundColor(separatorColor)
+                    Text(" • ").foregroundColor(separatorColor)
                     + Text($0).foregroundColor(juzColor)
                 } ?? Text(""))
             )
@@ -335,10 +335,11 @@ struct AyahsView: View {
                 .flatMap { visibleID in ayahByID[visibleID] }
                 ?? ayahsForQiraah.first
             let floatingDividerModel: BoundaryDividerModel? = {
-                guard showBoundaryDividers, searchText.isEmpty else { return nil }
+                guard showBoundaryDividers, settings.showPageJuzOverlay, searchText.isEmpty else { return nil }
                 guard let currentFloatingAyah else { return nil }
                 return overlayDividerByAyahID[currentFloatingAyah.id]
             }()
+            let floatingDividerAnimationKey = floatingDividerModel.map(boundaryDividerID) ?? "none"
             let keywordDividerModels: [BoundaryDividerModel] = {
                 guard let mode = dividerKeywordMode else { return [] }
                 guard let boundaryModel else { return [] }
@@ -632,21 +633,25 @@ struct AyahsView: View {
             #if !os(watchOS)
             .overlay(alignment: .top) {
                 VStack(spacing: 6) {
-                    SurahSectionHeader(surah: surah)
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
+                    SurahSectionHeader(surah: surah, compact: true)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
                         .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                         .conditionalGlassEffect()
 
-                    if let floatingDividerModel {
-                        boundaryDivider(model: floatingDividerModel, isOverlay: true)
-                            .id(boundaryDividerID(floatingDividerModel))
-                            .padding(.vertical, 2)
-                            .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                            .conditionalGlassEffect()
+                    ZStack {
+                        if let floatingDividerModel {
+                            boundaryDivider(model: floatingDividerModel, isOverlay: true)
+                                .id(boundaryDividerID(floatingDividerModel))
+                                .padding(.vertical, 2)
+                                .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                                .conditionalGlassEffect()
+                                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        }
                     }
+                    .animation(.easeInOut(duration: 0.18), value: floatingDividerAnimationKey)
                 }
-                .padding(.top, 4)
+                .padding(.top, 2)
                 .padding(.horizontal, settings.defaultView ? 20 : 16)
                 .background(Color.clear)
                 .opacity(showFloatingHeader ? 1 : 0)
@@ -656,7 +661,7 @@ struct AyahsView: View {
                 .opacity(showFloatingHeader ? 1 : 0)
             }
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 8) {
+                VStack(spacing: 4) {
                     if settings.qiraatComparisonMode {
                         HStack {
                             Spacer()
@@ -670,12 +675,12 @@ struct AyahsView: View {
                                 .background(Color.clear.background(.ultraThinMaterial))
                                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                                .conditionalGlassEffect()
+                                .conditionalGlassEffect(useColor: 0.25)
                                 .padding(.horizontal, 20)
                         }
                     }
                 
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         if quranPlayer.isPlaying || quranPlayer.isPaused {
                             NowPlayingView(quranView: false)
                                 .animation(.easeInOut, value: quranPlayer.isPlaying)
@@ -702,17 +707,17 @@ struct AyahsView: View {
                                 }
                         }
                         
-                        HStack {
-//                            SearchBar(text: $searchText.animation(.easeInOut)).conditionalGlassEffect()
-                            
-                            SearchBar(searchText: $searchText.animation(.easeInOut))
+                        HStack(spacing: 0) {
+                            SearchBar(text: $searchText.animation(.easeInOut))
                             
                             playButton(proxy: proxy)
-                                .padding()
+                                .frame(width: 22, height: 22)
+                                .padding(12)
                                 .conditionalGlassEffect()
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal)
+                    .padding(.trailing, 8)
                     .padding(.bottom, 8)
                     .animation(.easeInOut, value: quranPlayer.isPlaying)
                 }
@@ -876,14 +881,12 @@ struct AyahsView: View {
             Image(systemName: "xmark.circle.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 25, height: 25)
                 .foregroundColor(settings.accentColor.color)
                 .transition(.opacity)
         } else {
             Image(systemName: "play.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 25, height: 25)
                 .foregroundColor(settings.accentColor.color)
                 .transition(.opacity)
         }

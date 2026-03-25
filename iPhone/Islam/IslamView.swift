@@ -6,61 +6,86 @@ struct IslamView: View {
     @EnvironmentObject var namesData: NamesViewModel
     
     var body: some View {
-        NavigationView {
-            List {
-                Section(header: Text("ISLAMIC RESOURCES")) {
-                    NavigationLink(destination: ArabicView()) {
-                        toolLabel("Arabic Alphabet", systemImage: "textformat.size.ar")
+        Group {
+            #if os(iOS)
+            if #available(iOS 16.0, *) {
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    NavigationSplitView {
+                        islamList
+                    } detail: {
+                        ArabicView()
                     }
-
-                    NavigationLink(destination: TajweedFoundationsView()) {
-                        toolLabel("Tajweed Foundations", systemImage: "waveform")
-                    }
-
-                    NavigationLink(destination: AdhkarView()) {
-                        toolLabel("Common Adhkar", systemImage: "book.closed")
-                    }
-
-                    NavigationLink(destination: DuaView()) {
-                        toolLabel("Common Duas", systemImage: "text.book.closed")
-                    }
-
-                    NavigationLink(destination: TasbihView()) {
-                        toolLabel("Tasbih Counter", systemImage: "circles.hexagonpath.fill")
-                    }
-
-                    NavigationLink(destination: NamesView()) {
-                        toolLabel("99 Names of Allah", systemImage: "signature")
-                    }
-
-                    #if !os(watchOS)
-                    NavigationLink(destination: DateView()) {
-                        toolLabel("Hijri Calendar Converter", systemImage: "calendar")
-                    }
-
-                    NavigationLink(destination: MasjidLocatorView()) {
-                        toolLabel("Masjid Locator", systemImage: "mappin.and.ellipse")
-                    }
-                    #endif
-
-                    NavigationLink(destination: WallpaperView()) {
-                        toolLabel("Islamic Wallpapers", systemImage: "photo.on.rectangle")
-                    }
-
-                    NavigationLink(destination: PillarsView()) {
-                        toolLabel("Islamic Pillars and Basics", systemImage: "moon.stars")
+                } else {
+                    NavigationStack {
+                        islamList
                     }
                 }
-                
-                ProphetQuote()
-                
-                AlIslamAppsSection()
+            } else {
+                NavigationView {
+                    islamList
+                }
+                .navigationViewStyle(.stack)
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
-            .navigationTitle("Al-Islam")
-            
-            ArabicView()
+            #else
+            NavigationView {
+                islamList
+            }
+            #endif
         }
+    }
+
+    private var islamList: some View {
+        List {
+            Section(header: Text("ISLAMIC RESOURCES")) {
+                NavigationLink(destination: ArabicView()) {
+                    toolLabel("Arabic Alphabet", systemImage: "textformat.size.ar")
+                }
+
+                NavigationLink(destination: TajweedFoundationsView()) {
+                    toolLabel("Tajweed Foundations", systemImage: "waveform")
+                }
+
+                NavigationLink(destination: AdhkarView()) {
+                    toolLabel("Common Adhkar", systemImage: "book.closed")
+                }
+
+                NavigationLink(destination: DuaView()) {
+                    toolLabel("Common Duas", systemImage: "text.book.closed")
+                }
+
+                NavigationLink(destination: TasbihView()) {
+                    toolLabel("Tasbih Counter", systemImage: "circles.hexagonpath.fill")
+                }
+
+                NavigationLink(destination: NamesView()) {
+                    toolLabel("99 Names of Allah", systemImage: "signature")
+                }
+
+                #if !os(watchOS)
+                NavigationLink(destination: DateView()) {
+                    toolLabel("Hijri Calendar Converter", systemImage: "calendar")
+                }
+
+                NavigationLink(destination: MasjidLocatorView()) {
+                    toolLabel("Masjid Locator", systemImage: "mappin.and.ellipse")
+                }
+                #endif
+
+                NavigationLink(destination: WallpaperView()) {
+                    toolLabel("Islamic Wallpapers", systemImage: "photo.on.rectangle")
+                }
+
+                NavigationLink(destination: PillarsView()) {
+                    toolLabel("Islamic Pillars and Basics", systemImage: "moon.stars")
+                }
+            }
+            
+            ProphetQuote()
+            
+            AlIslamAppsSection()
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle("Al-Islam")
     }
     
     private func toolLabel(_ title: String, systemImage: String) -> some View {
@@ -173,6 +198,7 @@ struct AlIslamAppsSection: View {
 private struct Card: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
+    @State private var showActions = false
     
     let title: String
     let url: URL
@@ -190,31 +216,39 @@ private struct Card: View {
     }
 
     var body: some View {
-        VStack {
-            Image(title)
-                .resizable()
-                .scaledToFit()
-                .cornerRadius(18)
-                .shadow(radius: 4)
-
-            #if !os(watchOS)
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .padding(.top, 4)
-            #endif
-        }
-        .frame(maxWidth: .infinity)
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onTapGesture {
+        Button {
             settings.hapticFeedback()
             openURL(url)
+        } label: {
+            VStack {
+                Image(title)
+                    .resizable()
+                    .scaledToFit()
+                    .cornerRadius(18)
+                    .shadow(radius: 4)
+
+                #if !os(watchOS)
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.top, 4)
+                #endif
+            }
         }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                settings.hapticFeedback()
+                showActions = true
+            }
+        )
         #if !os(watchOS)
-        .contextMenu {
+        .confirmationDialog(title, isPresented: $showActions, titleVisibility: .visible) {
             Button {
                 UIPasteboard.general.string = url.absoluteString
                 settings.hapticFeedback()
@@ -230,6 +264,8 @@ private struct Card: View {
                     Label("Download App Icon", systemImage: "square.and.arrow.down")
                 }
             }
+
+            Button("Cancel", role: .cancel) {}
         }
         #endif
     }

@@ -276,6 +276,19 @@ struct PrayerOffsetsView: View {
     }
     
     var body: some View {
+        Section(header: Text("HIJRI DATE")) {
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle("Switch Hijri Date at Maghrib", isOn: $settings.switchHijriDateAtMaghrib.animation(.easeInOut))
+                    .font(.subheadline)
+                    .tint(settings.accentColor.color)
+
+                Text("When enabled, the displayed Hijri date changes at the calculated Maghrib time instead of at midnight. Off by default.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
+        }
+        
         Section(header: Text("PRAYER OFFSETS")) {
             offsetStepper(title: "Fajr", icon: "sunrise", value: $settings.offsetFajr)
             offsetStepper(title: "Sunrise", icon: "sunrise.fill", value: $settings.offsetSunrise)

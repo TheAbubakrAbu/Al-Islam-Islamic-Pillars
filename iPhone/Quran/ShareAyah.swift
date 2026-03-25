@@ -299,8 +299,13 @@ struct ShareAyahSheet: View {
                 .padding(.vertical, 4)
                 
                 HStack(spacing: 12) {
-                    actionButton("Copy")   { performCopyOrGenerate() }
-                    actionButton("Share", isAnimating: isSharing)  { performShareOrGenerate() }
+                    actionButton("Copy") {
+                        performCopyOrGenerate()
+                    }
+                    
+                    actionButton("Share", isAnimating: isSharing)  {
+                        performShareOrGenerate()
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom)
@@ -366,16 +371,16 @@ struct ShareAyahSheet: View {
     
     private func actionButton(_ title: String, isAnimating: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: {
-            settings.hapticFeedback(); action()
+            settings.hapticFeedback()
+            action()
         }) {
             Text(title)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(settings.accentColor.color)
-                .cornerRadius(24)
                 .foregroundColor(.primary)
                 .scaleEffect(isAnimating ? 0.96 : 1)
         }
+        .conditionalGlassEffect(useColor: 0.25)
     }
     
     private func copyMenu(image: UIImage?) -> some View {

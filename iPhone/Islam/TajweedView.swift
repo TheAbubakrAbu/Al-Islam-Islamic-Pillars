@@ -68,6 +68,16 @@ struct TajweedFoundationsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
+                NavigationLink(destination: QuranPillarView()) {
+                    Text("What is the Quran?")
+                        .foregroundColor(settings.accentColor.color)
+                }
+                
+                NavigationLink(destination: TajweedView()) {
+                    Text("What is Tajweed?")
+                        .foregroundColor(settings.accentColor.color)
+                }
+                
                 NavigationLink(destination: AhrufView()) {
                     Text("What are the 7 Ahruf?")
                         .foregroundColor(settings.accentColor.color)
@@ -75,11 +85,6 @@ struct TajweedFoundationsView: View {
 
                 NavigationLink(destination: QiraatView()) {
                     Text("What are the 10 Qiraat?")
-                        .foregroundColor(settings.accentColor.color)
-                }
-
-                NavigationLink(destination: QuranPillarView()) {
-                    Text("What is the Quran?")
                         .foregroundColor(settings.accentColor.color)
                 }
             }

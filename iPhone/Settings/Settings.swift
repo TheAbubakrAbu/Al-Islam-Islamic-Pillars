@@ -238,6 +238,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
     
+    @AppStorage("switchHijriDateAtMaghrib") var switchHijriDateAtMaghrib: Bool = false {
+        didSet { self.updateDates() }
+    }
+    
     @AppStorage("lastScheduledHijriYear") private var lastScheduledHijriYear: Int = 0
     
     var hijriCalendar: Calendar = {
@@ -247,7 +251,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }()
     
     var specialEvents: [(String, DateComponents, String, String)] {
-        let currentHijriYear = hijriCalendar.component(.year, from: Date())
+        let currentHijriYear = hijriCalendar.component(.year, from: effectiveHijriReferenceDate())
         return [
             ("Islamic New Year", DateComponents(year: currentHijriYear, month: 1, day: 1), "Start of Hijri year", "The first day of the Islamic calendar; no special acts of worship or celebration are prescribed."),
             ("Day Before Ashura", DateComponents(year: currentHijriYear, month: 1, day: 9), "Recommended to fast", "The Prophet ﷺ intended to fast the 9th to differ from the Jews, making it Sunnah to do so before Ashura."),
@@ -461,7 +465,8 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
     @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
-
+    @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = true
+    
     @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()
     var quranSearchHistory: [String] {
         get {

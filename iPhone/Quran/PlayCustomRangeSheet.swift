@@ -556,63 +556,6 @@ struct PlayCustomRangeSheet: View {
 
     private var playButtonBar: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Each ayah")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 4) {
-                        Text("\(repeatPerAyah)")
-                            .font(.title3.monospacedDigit().weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                        Text("repetition\(repeatPerAyah == 1 ? "" : "s")")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                Divider()
-                    .frame(height: 40)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Section")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    HStack(spacing: 4) {
-                        Text("\(repeatSection)")
-                            .font(.title3.monospacedDigit().weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                        Text("repetition\(repeatSection == 1 ? "" : "s")")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Total")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    HStack(spacing: 2) {
-                        Text("\(repeatPerAyah * repeatSection)")
-                            .font(.title3.monospacedDigit().weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                        Text("plays/ayah")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(UIColor.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .padding(.horizontal, 20)
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-
             Button {
                 settings.hapticFeedback()
                 commitBothAyahFields()

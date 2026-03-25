@@ -33,6 +33,20 @@ struct SettingsQuranView: View {
             }
         )
     }
+
+    private var pageJuzDividers: Binding<Bool> {
+        Binding(
+            get: { settings.showPageJuzDividers },
+            set: { newValue in
+                withAnimation {
+                    settings.showPageJuzDividers = newValue
+                    if newValue {
+                        settings.showPageJuzOverlay = true
+                    }
+                }
+            }
+        )
+    }
     
     var body: some View {
         List {
@@ -71,8 +85,15 @@ struct SettingsQuranView: View {
                     .font(.subheadline)
                     .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
 
-                Toggle("Show Page and Juz Dividers", isOn: $settings.showPageJuzDividers.animation(.easeInOut))
-                    .font(.subheadline)
+                VStack(alignment: .leading) {
+                    Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
+                        .font(.subheadline)
+
+                    if settings.showPageJuzDividers {
+                        Toggle("Show Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
+                            .font(.caption)
+                    }
+                }
                 
                 if settings.showArabicText {
                     VStack(alignment: .leading) {
@@ -308,8 +329,8 @@ struct ReciterListView: View {
                         } label: {
                             Label("Delete All Downloads", systemImage: "trash.fill")
                                 .frame(maxWidth: .infinity)
-                                .foregroundColor(settings.accentColor.color)
-                                .tint(settings.accentColor.color)
+                                .foregroundColor(.red)
+                                .tint(.red)
                         }
                         .buttonStyle(.borderless)
                         .font(.caption.weight(.semibold))

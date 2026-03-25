@@ -163,6 +163,8 @@ struct PrayerList: View {
                 .rotationEffect(bellRotation(for: prayer))
         }
         .buttonStyle(.plain)
+        .padding(4)
+        .conditionalGlassEffect()
         .padding(.leading, 6)
         #if !os(watchOS)
         .contextMenu {
@@ -310,7 +312,6 @@ struct PrayerList: View {
 
                         #if !os(watchOS)
                         prayerBell(for: prayer, rowColor: bellRowColor)
-                            .conditionalGlassEffect()
                         #endif
                     }
                 }

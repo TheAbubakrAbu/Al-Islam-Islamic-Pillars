@@ -205,16 +205,17 @@ struct ArabicView: View {
         .searchable(text: $searchText)
         #else
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
+            VStack(spacing: 4) {
                 Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
                     Text("Quranic Font").tag(true)
                     Text("Basic Font").tag(false)
                 }
                 .pickerStyle(.segmented)
                 .conditionalGlassEffect()
+                .padding(.horizontal, 8)
 
-                HStack {
-                    SearchBar(searchText: $searchText.animation(.easeInOut))
+                HStack(spacing: 0) {
+                    SearchBar(text: $searchText.animation(.easeInOut))
 
                     Menu {
                         Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {
@@ -226,15 +227,16 @@ struct ArabicView: View {
                         Image(systemName: filterMode.icon)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 25, height: 25)
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
                     }
-                    .padding()
+                    .frame(width: 22, height: 22)
+                    .padding(12)
                     .conditionalGlassEffect()
+                    .padding(.trailing, 8)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal)
             .padding(.bottom, 8)
         }
         #endif

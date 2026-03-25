@@ -425,19 +425,28 @@ extension Settings {
     func formatDate(_ date: Date) -> String {
         DateFormatter.timeEN.string(from: date)
     }
+
+    func effectiveHijriReferenceDate(now: Date = Date()) -> Date {
+        guard switchHijriDateAtMaghrib else { return now }
+        guard let prayers = getPrayerTimes(for: now, fullPrayers: true) else { return now }
+        guard let maghrib = prayers.first(where: { $0.nameTransliteration == "Maghrib" })?.time else { return now }
+        guard now >= maghrib else { return now }
+        return Self.gregorian.date(byAdding: .day, value: 1, to: now) ?? now
+    }
     
     func updateDates() {
         let now = Date()
-        if let h = hijriDate, h.date.isSameDay(as: now) {
+        let effectiveDate = effectiveHijriReferenceDate(now: now)
+        if let h = hijriDate, Self.gregorian.isDate(h.date, inSameDayAs: effectiveDate) {
             return
         }
 
-        let base = Self.hijriCalendarAR.date(byAdding: .day, value: hijriOffset, to: now) ?? now
+        let base = Self.hijriCalendarAR.date(byAdding: .day, value: hijriOffset, to: effectiveDate) ?? effectiveDate
         let arabic = arabicNumberString(from: Self.hijriFormatterAR.string(from: base)) + " هـ"
         let english = Self.hijriFormatterEN.string(from: base)
 
         withAnimation {
-            hijriDate = HijriDate(english: english, arabic: arabic, date: now)
+            hijriDate = HijriDate(english: english, arabic: arabic, date: effectiveDate)
         }
     }
     

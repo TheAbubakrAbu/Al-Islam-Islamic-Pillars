@@ -184,37 +184,45 @@ struct QuranView: View {
 
     private var searchHelpOverlayCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Search for Surahs")
-                .font(.subheadline.bold())
-                .foregroundStyle(settings.accentColor.color)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Search for Surahs")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(settings.accentColor.color)
+                
+                Text("Search by surah number, Arabic name, English translation, or transliteration.")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+            }
 
-            Text("Search by surah number, Arabic name, English translation, or transliteration.")
-                .font(.caption)
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Search for Ayahs")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(settings.accentColor.color)
+                
+                Text("Search ayah like X:Y, or by Arabic, English translation, and transliteration.")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+            }
 
-            Text("Search for Ayahs")
-                .font(.subheadline.bold())
-                .foregroundStyle(settings.accentColor.color)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Search by page or juz")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(settings.accentColor.color)
+                
+                Text("Use 'page X', 'juz X', or plain numbers to match page/juz results.")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+            }
 
-            Text("Search ayah like X:Y, or by Arabic, English translation, and transliteration.")
-                .font(.caption)
-                .foregroundStyle(.primary)
-
-            Text("Search by page or juz")
-                .font(.subheadline.bold())
-                .foregroundStyle(settings.accentColor.color)
-
-            Text("Use 'page X', 'juz X', or plain numbers to match page/juz results.")
-                .font(.caption)
-                .foregroundStyle(.primary)
-
-            Text("Tips")
-                .font(.subheadline.bold())
-                .foregroundStyle(settings.accentColor.color)
-
-            Text("You can scroll to a surah from loaded surah or ayah results, and use the context menu on items to see more actions and info.")
-                .font(.caption)
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Tips")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(settings.accentColor.color)
+                
+                Text("You can scroll to a surah from loaded surah or ayah results, and use the context menu on items to see more actions and info.")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -222,7 +230,7 @@ struct QuranView: View {
         .padding(.horizontal, 16)
         .padding(.top, 8)
     }
-     
+
     var body: some View {
         Group {
             #if os(iOS)
@@ -238,15 +246,15 @@ struct QuranView: View {
                                     } else {
                                         AyahsView(surah: quranData.quran[0])
                                     }
-                                }
                             }
+                        }
                     }
                 } else {
-                    NavigationView {
+                    NavigationSplitView {
                         content
+                    } detail: {
                         detailFallback
                     }
-                    .navigationViewStyle(.columns)
                 }
             } else {
                 if UIDevice.current.userInterfaceIdiom == .pad {
@@ -854,21 +862,12 @@ struct QuranView: View {
             searchHelpOverlay
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
+            VStack(spacing: 4) {
                 if isQuranSearchFocused && !settings.quranSearchHistory.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Recent Searches")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 4)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            LazyHStack(spacing: 8) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
                             ForEach(settings.quranSearchHistory, id: \.self) { query in
-                                HStack(spacing: 6) {
+                                HStack(spacing: 4) {
                                     Button {
                                         settings.hapticFeedback()
                                         searchText = query
@@ -879,38 +878,34 @@ struct QuranView: View {
                                             .font(.caption)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
-                                            .padding(.leading, 12)
-                                            .padding(.trailing, 2)
-                                            .padding(.vertical, 8)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
                                     }
 
                                     Button {
                                         settings.hapticFeedback()
                                         settings.removeQuranSearchHistory(query)
                                     } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.caption.weight(.bold))
-                                            .foregroundStyle(settings.accentColor.color.opacity(0.85))
-                                            .padding(.trailing, 8)
-                                            .padding(.vertical, 8)
+                                        Image(systemName: "xmark")
+                                            .font(.caption2.bold())
+                                            .padding(.trailing, 4)
                                     }
-                                    .buttonStyle(.plain)
                                     .accessibilityLabel("Remove \(query) from search history")
                                 }
                                 .foregroundStyle(settings.accentColor.color)
                                 .background(
                                     Capsule(style: .continuous)
-                                        .fill(settings.accentColor.color.opacity(0.1))
+                                        .fill(settings.accentColor.color.opacity(0.12))
                                 )
                                 .overlay(
                                     Capsule(style: .continuous)
-                                        .stroke(settings.accentColor.color.opacity(0.22), lineWidth: 1)
+                                        .stroke(settings.accentColor.color.opacity(0.25), lineWidth: 1)
                                 )
+                                .conditionalGlassEffect()
                             }
                         }
-                        }
                     }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(.horizontal, 8)
                 }
                 
                 if quranPlayer.isPlaying || quranPlayer.isPaused {
@@ -923,10 +918,11 @@ struct QuranView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .conditionalGlassEffect()
+                .padding(.horizontal, 8)
                 
-                HStack {
+                HStack(spacing: 0) {
                     SearchBar(
-                        searchText: $searchText.animation(.easeInOut),
+                        text: $searchText.animation(.easeInOut),
                         onSearchButtonClicked: {
                             persistQuranSearchHistoryIfNeeded(searchText)
                         },
@@ -957,7 +953,6 @@ struct QuranView: View {
                                     Image(systemName: "xmark.circle.fill")
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
-                                        .frame(width: 25, height: 25)
                                         .foregroundColor(settings.accentColor.color)
                                         .transition(.opacity)
                                 }
@@ -1009,17 +1004,18 @@ struct QuranView: View {
                                 Image(systemName: "play.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
-                                    .frame(width: 25, height: 25)
                                     .foregroundColor(settings.accentColor.color)
                                     .transition(.opacity)
                             }
                         }
                     }
-                    .padding()
+                    .frame(width: 22, height: 22)
+                    .padding(12)
                     .conditionalGlassEffect()
+                    .padding(.trailing, 8)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal)
             .padding(.bottom, 8)
             .animation(.easeInOut, value: quranPlayer.isPlaying)
         }

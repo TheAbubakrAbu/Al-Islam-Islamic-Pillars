@@ -74,6 +74,33 @@ struct MapView: View {
         let systemImage: String
     }
 
+    private struct AnimatedMarkerBubble: View {
+        let tint: Color
+        let systemImage: String
+
+        @State private var isVisible = false
+
+        var body: some View {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(9)
+                .background(Circle().fill(tint))
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.9), lineWidth: 2)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+                .scaleEffect(isVisible ? 1 : 0.72)
+                .opacity(isVisible ? 1 : 0)
+                .onAppear {
+                    withAnimation(.spring(response: 0.24, dampingFraction: 0.82)) {
+                        isVisible = true
+                    }
+                }
+        }
+    }
+
     private var markers: [MarkerItem] {
         var items: [MarkerItem] = []
 
@@ -123,7 +150,7 @@ struct MapView: View {
             .overlay(alignment: .top) {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 8) {
-                        SearchBar(searchText: $searchText.animation(.easeInOut))
+                        SearchBar(text: $searchText.animation(.easeInOut))
 
                         if !searchText.isEmpty {
                             HStack {
@@ -144,7 +171,7 @@ struct MapView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 if !choosingPrayerTimes, let home = settings.homeLocation {
-                    VStack(alignment: .center, spacing: 8) {
+                    VStack(alignment: .center, spacing: 6) {
                         HStack {
                             VStack(alignment: .leading, spacing: 8) {
                                 Label("Home: \(home.city)", systemImage: "house.fill")
@@ -176,9 +203,9 @@ struct MapView: View {
                         .conditionalGlassEffect(rectangle: true)
                         
                         useCurrentButton
-                            .padding(.horizontal, 20)
                     }
                     .padding(.bottom, 26)
+                    .padding(.horizontal, 20)
                 }
             }
             .navigationTitle("Select Location")
@@ -215,16 +242,7 @@ struct MapView: View {
     }
 
     private func markerBubble(for item: MarkerItem) -> some View {
-        Image(systemName: item.systemImage)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(9)
-            .background(Circle().fill(item.tint))
-            .overlay(
-                Circle()
-                    .stroke(Color.white.opacity(0.9), lineWidth: 2)
-            )
-            .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+        AnimatedMarkerBubble(tint: item.tint, systemImage: item.systemImage)
     }
 
     private var resultsList: some View {
@@ -241,7 +259,7 @@ struct MapView: View {
                             ForEach(Array(cityItems.enumerated()), id: \.offset) { _, item in
                                 HStack(alignment: .top, spacing: 10) {
                                     HStack(alignment: .top, spacing: 10) {
-                                        Image(systemName: "mappin.and.ellipse")
+                                        Image(systemName: cityIconName(for: item))
                                             .foregroundColor(settings.accentColor.color)
 
                                         VStack(alignment: .leading, spacing: 3) {
@@ -266,7 +284,7 @@ struct MapView: View {
                                         settings.hapticFeedback()
                                         select(item)
                                     } label: {
-                                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        Image(systemName: "checkmark.circle")
                                             .font(.headline)
                                             .foregroundColor(settings.accentColor.color)
                                             .frame(width: 36, height: 36)
@@ -309,7 +327,7 @@ struct MapView: View {
         .font(.headline)
         .foregroundColor(settings.accentColor.color)
         .padding(18)
-        .conditionalGlassEffect(useColor: true)
+        .conditionalGlassEffect(useColor: 0.25)
     }
 
     private func select(_ item: MKMapItem) {
@@ -342,6 +360,14 @@ struct MapView: View {
         let country = item.placemark.country ?? ""
         let parts = [state, country].filter { !$0.isEmpty }
         return parts.isEmpty ? formattedName(for: item) : parts.joined(separator: ", ")
+    }
+
+    private func cityIconName(for item: MKMapItem) -> String {
+        guard let home = settings.homeLocation else { return "location" }
+        let coord = item.placemark.coordinate
+        let latMatches = abs(coord.latitude - home.latitude) < 0.0001
+        let lonMatches = abs(coord.longitude - home.longitude) < 0.0001
+        return (latMatches && lonMatches) ? "house.fill" : "location"
     }
 
     private func updateRegion(to coord: CLLocationCoordinate2D) {

@@ -269,9 +269,9 @@ struct LaunchScreen: View {
                     contentBlur = 8
                 }
                 
-                try? await Task.sleep(nanoseconds: 210_000_000)
+                try? await Task.sleep(nanoseconds: 205_000_000)
 
-                withAnimation(.easeInOut(duration: 0.15)) {
+                withAnimation {
                     triggerHapticFeedback(.soft)
                     isLaunching = false
                 }

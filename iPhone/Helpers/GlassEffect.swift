@@ -5,15 +5,15 @@ struct ConditionalGlassEffect: ViewModifier {
     
     var clear: Bool = false
     var rectangle: Bool = false
-    var useColor: Bool = false
+    var useColor: Double? = nil
 
     func body(content: Content) -> some View {
-        let tintColor = settings.accentColor.color.opacity(0.15)
+        let tintColor = useColor.map { settings.accentColor.color.opacity($0) }
 
         if #available(iOS 26.0, watchOS 26.0, *) {
             if rectangle {
                 if clear {
-                    if useColor {
+                    if let tintColor {
                         content.glassEffect(
                             .clear.tint(tintColor).interactive(),
                             in: RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -25,7 +25,7 @@ struct ConditionalGlassEffect: ViewModifier {
                         )
                     }
                 } else {
-                    if useColor {
+                    if let tintColor {
                         content.glassEffect(
                             .regular.tint(tintColor).interactive(),
                             in: RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -39,7 +39,7 @@ struct ConditionalGlassEffect: ViewModifier {
                 }
             } else {
                 if clear {
-                    if useColor {
+                    if let tintColor {
                         content.glassEffect(
                             .clear.tint(tintColor).interactive(),
                             in: .capsule
@@ -51,7 +51,7 @@ struct ConditionalGlassEffect: ViewModifier {
                         )
                     }
                 } else {
-                    if useColor {
+                    if let tintColor {
                         content.glassEffect(
                             .regular.tint(tintColor).interactive(),
                             in: .capsule
@@ -74,7 +74,7 @@ struct ConditionalGlassEffect: ViewModifier {
             }()
 
             let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
-            let fallbackOverlayColor = useColor ? tintColor : Color.clear
+            let fallbackOverlayColor = tintColor ?? .clear
             let fallbackBackground: AnyView = {
                 if #available(iOS 15.0, watchOS 10.0, *) {
                     return AnyView(shape.fill(.ultraThinMaterial))
@@ -96,7 +96,7 @@ struct ConditionalGlassEffect: ViewModifier {
 }
 
 extension View {
-    func conditionalGlassEffect(clear: Bool = false, rectangle: Bool = false, useColor: Bool = false) -> some View {
+    func conditionalGlassEffect(clear: Bool = false, rectangle: Bool = false, useColor: Double? = nil) -> some View {
         modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, useColor: useColor))
     }
 }

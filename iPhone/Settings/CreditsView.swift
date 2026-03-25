@@ -178,7 +178,7 @@ struct CreditsView: View {
                 .font(.headline)
                 .foregroundColor(settings.accentColor.color)
                 .padding(18)
-                .conditionalGlassEffect(useColor: true)
+                .conditionalGlassEffect(useColor: 0.25)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }

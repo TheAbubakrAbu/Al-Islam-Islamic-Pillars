@@ -105,6 +105,7 @@ struct SurahSectionHeader: View {
     @EnvironmentObject var quranPlayer: QuranPlayer
     
     var surah: Surah
+    var compact: Bool = false
     
     var body: some View {
         HStack {
@@ -116,9 +117,9 @@ struct SurahSectionHeader: View {
                 #endif
             }
             .textCase(.uppercase)
-            .font(.subheadline)
+            .font(compact ? .caption.weight(.semibold) : .subheadline)
             .lineLimit(1)
-            .minimumScaleFactor(0.25)
+            .minimumScaleFactor(compact ? 0.6 : 0.25)
             
             Spacer()
             
@@ -158,7 +159,7 @@ struct SurahSectionHeader: View {
             Image(systemName: settings.isSurahFavorite(surah: surah.id) ? "star.fill" : "star")
                 .foregroundColor(settings.accentColor.color)
                 #if !os(watchOS)
-                .font(.subheadline)
+                .font(compact ? .caption : .subheadline)
                 #else
                 .font(.title3)
                 #endif

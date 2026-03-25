@@ -197,8 +197,8 @@ struct NamesView: View {
         .searchable(text: $searchText)
         #else
         .safeAreaInset(edge: .bottom) {
-            SearchBar(searchText: $searchText.animation(.easeInOut))
-                .padding(.horizontal, 20)
+            SearchBar(text: $searchText.animation(.easeInOut))
+                .padding(.horizontal)
                 .padding(.bottom, 8)
         }
         #endif

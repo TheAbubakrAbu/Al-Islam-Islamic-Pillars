@@ -22,7 +22,7 @@ struct HijriCalendarView: View {
     }()
     
     private func updateInformation() {
-        let currentDate = Date()
+        let currentDate = settings.effectiveHijriReferenceDate()
         let components = settings.hijriCalendar.dateComponents([.year, .month], from: currentDate)
         hijriYear = components.year ?? 1445
         hijriMonth = components.month ?? 1
@@ -46,8 +46,8 @@ struct HijriCalendarView: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 14)
                 .conditionalGlassEffect()
-                .padding(.horizontal, 20)
-                .padding(.top, 6)
+                .padding(.horizontal)
+                .padding(.top, 2)
             }
         }
     }

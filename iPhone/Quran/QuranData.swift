@@ -376,7 +376,7 @@ final class QuranData: ObservableObject {
         guard pageChanged || juzChanged else { return nil }
 
         if let page = newAyah.page, let juz = newAyah.juz {
-            return "Page \(page) - Juz \(juz)"
+            return "Page \(page) • Juz \(juz)"
         }
         if let page = newAyah.page {
             return "Page \(page)"
@@ -389,7 +389,7 @@ final class QuranData: ObservableObject {
 
     private func boundaryText(for ayah: Ayah) -> String? {
         if let page = ayah.page, let juz = ayah.juz {
-            return "Page \(page) - Juz \(juz)"
+            return "Page \(page) • Juz \(juz)"
         }
         if let page = ayah.page {
             return "Page \(page)"
@@ -516,7 +516,7 @@ final class QuranData: ObservableObject {
             } else if let lastAyah = ayahsForQiraah.last {
                 if let page = lastAyah.page {
                     if let juz = lastAyah.juz {
-                        endOfSurahDividerText = "Page \(page) - Juz \(juz)"
+                        endOfSurahDividerText = "Page \(page) • Juz \(juz)"
                     } else {
                         endOfSurahDividerText = "Page \(page)"
                     }

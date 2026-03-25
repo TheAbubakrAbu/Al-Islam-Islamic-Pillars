@@ -1,83 +1,91 @@
 import SwiftUI
 
-struct SearchBar: View {
-    @Binding var searchText: String
+struct GlassSearchBar: View {
+    @Binding var text: String
 
     var onSearchButtonClicked: (() -> Void)?
     var onFocusChanged: ((Bool) -> Void)?
 
-    @Environment(\.layoutDirection) private var layoutDirection
-    @FocusState private var isFocused: Bool
-
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-
-            TextField("Search", text: $searchText.animation(.easeInOut))
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-                .focused($isFocused)
-                .onSubmit {
-                    onSearchButtonClicked?()
-                    isFocused = false
-                    dismissKeyboard()
-                }
-
-            if isFocused || !searchText.isEmpty {
-                HStack(spacing: 4) {
-                    if !searchText.isEmpty {
-                        Button {
-                            withAnimation(.easeInOut) {
-                                searchText = ""
-                            }
-                            isFocused = false
-                            dismissKeyboard()
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 20, height: 20)
-                                .padding(.horizontal, 8)
-                        }
-                        .contentShape(Rectangle())
-                        .buttonStyle(.plain)
-                    }
-
-                    if isFocused {
-                        Button {
-                            isFocused = false
-                            dismissKeyboard()
-                        } label: {
-                            Image(systemName: "keyboard.chevron.compact.down")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 20, height: 20)
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 8)
-                        }
-                        .contentShape(Rectangle())
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.trailing, 2)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        SearchBar(
+            text: $text,
+            onSearchButtonClicked: onSearchButtonClicked,
+            onFocusChanged: onFocusChanged
+        )
         .conditionalGlassEffect()
-        .onChange(of: isFocused) { focused in
-            onFocusChanged?(focused)
+    }
+}
+
+struct SearchBar: UIViewRepresentable {
+    @Binding var text: String
+    
+    var onSearchButtonClicked: (() -> Void)?
+    var onFocusChanged: ((Bool) -> Void)?
+
+    class Coordinator: NSObject, UISearchBarDelegate {
+        @Binding var text: String
+        var onSearchButtonClicked: (() -> Void)?
+        var onFocusChanged: ((Bool) -> Void)?
+
+        init(text: Binding<String>) {
+            _text = text
+        }
+
+        func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+            text = searchText
+        }
+
+        func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+            searchBar.showsCancelButton = true
+            onFocusChanged?(true)
+        }
+
+        func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+            searchBar.showsCancelButton = false
+            onFocusChanged?(false)
+        }
+
+        func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+            searchBar.showsCancelButton = false
+            searchBar.text = ""
+            searchBar.resignFirstResponder()
+
+            text = ""
+            onFocusChanged?(false)
+        }
+
+        func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+            searchBar.resignFirstResponder()
+            onSearchButtonClicked?()
+            onFocusChanged?(false)
+            DispatchQueue.main.async {
+                self.text = searchBar.text ?? ""
+            }
         }
     }
 
-    private func dismissKeyboard() {
-        #if !os(watchOS)
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        #endif
+    func makeCoordinator() -> SearchBar.Coordinator {
+        return Coordinator(text: $text)
+    }
+
+    func makeUIView(context: UIViewRepresentableContext<SearchBar>) -> UISearchBar {
+        let searchBar = UISearchBar(frame: .zero)
+        searchBar.delegate = context.coordinator
+        searchBar.placeholder = "Search"
+        searchBar.autocorrectionType = .no
+        
+        searchBar.backgroundImage = UIImage()
+        
+        return searchBar
+    }
+
+    func updateUIView(_ uiView: UISearchBar, context: UIViewRepresentableContext<SearchBar>) {
+        uiView.text = text
+        context.coordinator.onSearchButtonClicked = onSearchButtonClicked
+        context.coordinator.onFocusChanged = onFocusChanged
     }
 }
 
 #Preview {
-    SearchBar(searchText: .constant(""))
+    SearchBar(text: .constant(""))
 }

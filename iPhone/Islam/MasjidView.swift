@@ -46,6 +46,33 @@ struct MasjidLocatorView: View {
         let systemImage: String
     }
 
+    private struct AnimatedMarkerBubble: View {
+        let tint: Color
+        let systemImage: String
+
+        @State private var isVisible = false
+
+        var body: some View {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(9)
+                .background(Circle().fill(tint))
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.9), lineWidth: 2)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+                .scaleEffect(isVisible ? 1 : 0.72)
+                .opacity(isVisible ? 1 : 0)
+                .onAppear {
+                    withAnimation(.spring(response: 0.24, dampingFraction: 0.82)) {
+                        isVisible = true
+                    }
+                }
+        }
+    }
+
     private var markers: [MarkerItem] {
         var items: [MarkerItem] = []
 
@@ -96,7 +123,7 @@ struct MasjidLocatorView: View {
         .overlay(alignment: .top) {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 8) {
-                    SearchBar(searchText: $searchText.animation(.easeInOut))
+                    SearchBar(text: $searchText.animation(.easeInOut))
 
                     if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
                         HStack {
@@ -165,7 +192,7 @@ struct MasjidLocatorView: View {
                     .font(.headline)
                     .foregroundColor(.primary)
                     .padding(18)
-                    .conditionalGlassEffect()
+                    .conditionalGlassEffect(useColor: 0.25)
                     .padding(.horizontal, 20)
                 }
             }
@@ -188,16 +215,7 @@ struct MasjidLocatorView: View {
     }
 
     private func markerBubble(for item: MarkerItem) -> some View {
-        Image(systemName: item.systemImage)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(9)
-            .background(Circle().fill(item.tint))
-            .overlay(
-                Circle()
-                    .stroke(Color.white.opacity(0.9), lineWidth: 2)
-            )
-            .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+        AnimatedMarkerBubble(tint: item.tint, systemImage: item.systemImage)
     }
 
     private var resultsPanel: some View {
@@ -261,16 +279,25 @@ struct MasjidLocatorView: View {
                             }
                             .padding()
                             .contextMenu {
-                                Button("Copy Name") {
+                                Button {
+                                    settings.hapticFeedback()
                                     UIPasteboard.general.string = item.name ?? "Masjid"
+                                } label: {
+                                    Label("Copy Name", systemImage: "doc.on.doc")
                                 }
 
-                                Button("Copy Address") {
+                                Button {
+                                    settings.hapticFeedback()
                                     UIPasteboard.general.string = formattedAddress(for: item)
+                                } label: {
+                                    Label("Copy Address", systemImage: "doc.on.doc")
                                 }
 
-                                Button("Copy Full Address") {
+                                Button {
+                                    settings.hapticFeedback()
                                     UIPasteboard.general.string = fullAddress(for: item)
+                                } label: {
+                                    Label("Copy Full Address", systemImage: "doc.on.doc")
                                 }
                             }
                         }

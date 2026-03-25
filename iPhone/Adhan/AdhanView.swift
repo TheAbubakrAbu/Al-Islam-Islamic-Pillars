@@ -45,175 +45,23 @@ struct AdhanView: View {
     }
 
     var body: some View {
-        NavigationView {
-            List {
-                Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
-                    if let hijriDate = settings.hijriDate {
-                        #if !os(watchOS)
-                        NavigationLink(destination: HijriCalendarView()) {
-                            HStack {
-                                Text(hijriDate.english)
-                                    .multilineTextAlignment(.center)
-                                
-                                Spacer()
-                                
-                                Text(hijriDate.arabic)
-                            }
-                            .font(.footnote)
-                            .foregroundColor(settings.accentColor.color)
-                            .contextMenu {
-                                Button(action: {
-                                    settings.hapticFeedback()
-                                    
-                                    UIPasteboard.general.string = hijriDate.english
-                                }) {
-                                    Text("Copy English Date")
-                                    Image(systemName: "doc.on.doc")
-                                }
-                                
-                                Button(action: {
-                                    settings.hapticFeedback()
-                                    
-                                    UIPasteboard.general.string = hijriDate.arabic
-                                }) {
-                                    Text("Copy Arabic Date")
-                                    Image(systemName: "doc.on.doc")
-                                }
-                            }
-                        }
-                        #else
-                        HStack {
-                            Spacer()
-                            
-                            Text(hijriDate.english)
-                                .multilineTextAlignment(.center)
-                            
-                            Spacer()
-                        }
-                        .font(.footnote)
-                        .foregroundColor(settings.accentColor.color)
-                        #endif
-                    }
-                    
-                    VStack {
-                        HStack {
-                            #if !os(watchOS)
-                            if let currentLoc = settings.currentLocation {
-                                let currentCity = currentLoc.city
-                                Image(systemName: "location.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor.color)
-                                    .padding(.trailing, 8)
-
-                                Text(currentCity)
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                                    .contextMenu {
-                                        Button(action: {
-                                            settings.hapticFeedback()
-                                            
-                                            UIPasteboard.general.string = currentCity
-                                        }) {
-                                            Text("Copy City Name")
-                                            Image(systemName: "doc.on.doc")
-                                        }
-                                    }
-                            } else {
-                                Image(systemName: "location.slash")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor.color)
-                                    .padding(.trailing, 8)
-
-                                Text("No location")
-                                    .font(.subheadline)
-                                    .lineLimit(nil)
-                            }
-                            #else
-                            Group {
-                                if settings.prayers != nil, let currentLoc = settings.currentLocation {
-                                    Text(currentLoc.city)
-                                } else {
-                                    Text("No location")
-                                }
-                            }
-                            .font(.subheadline)
-                            .lineLimit(2)
-                            #endif
-
-                            Spacer()
-
-                            QiblaView(size: showBigQibla ? 100 : 50)
-                                .padding(.horizontal)
-                        }
-                        .foregroundColor(.primary)
-                        .font(.subheadline)
-                        .contentShape(Rectangle())
-
-                        #if os(watchOS)
-                        Text("Compass may not be accurate on Apple Watch")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        #endif
-                    }
-                    .animation(.easeInOut, value: showBigQibla)
-                    #if !os(watchOS)
-                    .onTapGesture {
-                        withAnimation {
-                            settings.hapticFeedback()
-                            showBigQibla.toggle()
-                        }
-                    }
-                    #endif
+        Group {
+            #if os(iOS)
+            if #available(iOS 16.0, *) {
+                NavigationStack {
+                    adhanContent
                 }
-                
-                #if !os(watchOS)
-                if settings.prayers != nil && settings.currentLocation != nil {
-                    PrayerCountdown()
-                    PrayerList()
-                }
-                #else
-                if settings.prayers != nil {
-                    PrayerCountdown()
-                    PrayerList()
-                }
-                #endif
-            }
-            .refreshable {
-                prayerTimeRefresh(force: true)
-            }
-            .onAppear {
-                prayerTimeRefresh(force: false)
-            }
-            .onChange(of: scenePhase) { newScenePhase in
-                if newScenePhase == .active {
-                    prayerTimeRefresh(force: false)
-                }
-            }
-            .navigationTitle("Al-Adhan")
-            #if !os(watchOS)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        settings.hapticFeedback()
-                        
-                        showingSettingsSheet = true
-                    } label: {
-                        Image(systemName: "gear")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingSettingsSheet) {
+            } else {
                 NavigationView {
-                    SettingsAdhanView(showNotifications: true)
+                    adhanContent
                 }
+                .navigationViewStyle(.stack)
+            }
+            #else
+            NavigationView {
+                adhanContent
             }
             #endif
-            .applyConditionalListStyle(defaultView: settings.defaultView)
         }
         .confirmationDialog("", isPresented: Binding(
             get: { showAlert != nil },
@@ -292,7 +140,177 @@ struct AdhanView: View {
                 EmptyView()
             }
         }
-        .navigationViewStyle(.stack)
+    }
+
+    private var adhanContent: some View {
+        List {
+            Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
+                if let hijriDate = settings.hijriDate {
+                    #if !os(watchOS)
+                    NavigationLink(destination: HijriCalendarView()) {
+                        HStack {
+                            Text(hijriDate.english)
+                                .multilineTextAlignment(.center)
+                            
+                            Spacer()
+                            
+                            Text(hijriDate.arabic)
+                        }
+                        .font(.footnote)
+                        .foregroundColor(settings.accentColor.color)
+                        .contextMenu {
+                            Button(action: {
+                                settings.hapticFeedback()
+                                
+                                UIPasteboard.general.string = hijriDate.english
+                            }) {
+                                Text("Copy English Date")
+                                Image(systemName: "doc.on.doc")
+                            }
+                            
+                            Button(action: {
+                                settings.hapticFeedback()
+                                
+                                UIPasteboard.general.string = hijriDate.arabic
+                            }) {
+                                Text("Copy Arabic Date")
+                                Image(systemName: "doc.on.doc")
+                            }
+                        }
+                    }
+                    #else
+                    HStack {
+                        Spacer()
+                        
+                        Text(hijriDate.english)
+                            .multilineTextAlignment(.center)
+                        
+                        Spacer()
+                    }
+                    .font(.footnote)
+                    .foregroundColor(settings.accentColor.color)
+                    #endif
+                }
+                
+                VStack {
+                    HStack {
+                        #if !os(watchOS)
+                        if let currentLoc = settings.currentLocation {
+                            let currentCity = currentLoc.city
+                            Image(systemName: "location.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 18, height: 18)
+                                .foregroundColor(settings.accentColor.color)
+                                .padding(.trailing, 8)
+
+                            Text(currentCity)
+                                .font(.subheadline)
+                                .lineLimit(nil)
+                                .contextMenu {
+                                    Button(action: {
+                                        settings.hapticFeedback()
+                                        
+                                        UIPasteboard.general.string = currentCity
+                                    }) {
+                                        Text("Copy City Name")
+                                        Image(systemName: "doc.on.doc")
+                                    }
+                                }
+                        } else {
+                            Image(systemName: "location.slash")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 18, height: 18)
+                                .foregroundColor(settings.accentColor.color)
+                                .padding(.trailing, 8)
+
+                            Text("No location")
+                                .font(.subheadline)
+                                .lineLimit(nil)
+                        }
+                        #else
+                        Group {
+                            if settings.prayers != nil, let currentLoc = settings.currentLocation {
+                                Text(currentLoc.city)
+                            } else {
+                                Text("No location")
+                            }
+                        }
+                        .font(.subheadline)
+                        .lineLimit(2)
+                        #endif
+
+                        Spacer()
+
+                        QiblaView(size: showBigQibla ? 100 : 50)
+                            .padding(.horizontal)
+                    }
+                    .foregroundColor(.primary)
+                    .font(.subheadline)
+                    .contentShape(Rectangle())
+
+                    #if os(watchOS)
+                    Text("Compass may not be accurate on Apple Watch")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    #endif
+                }
+                .animation(.easeInOut, value: showBigQibla)
+                #if !os(watchOS)
+                .onTapGesture {
+                    withAnimation {
+                        settings.hapticFeedback()
+                        showBigQibla.toggle()
+                    }
+                }
+                #endif
+            }
+            
+            #if !os(watchOS)
+            if settings.prayers != nil && settings.currentLocation != nil {
+                PrayerCountdown()
+                PrayerList()
+            }
+            #else
+            if settings.prayers != nil {
+                PrayerCountdown()
+                PrayerList()
+            }
+            #endif
+        }
+        .refreshable {
+            prayerTimeRefresh(force: true)
+        }
+        .onAppear {
+            prayerTimeRefresh(force: false)
+        }
+        .onChange(of: scenePhase) { newScenePhase in
+            if newScenePhase == .active {
+                prayerTimeRefresh(force: false)
+            }
+        }
+        .navigationTitle("Al-Adhan")
+        #if !os(watchOS)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    settings.hapticFeedback()
+                    
+                    showingSettingsSheet = true
+                } label: {
+                    Image(systemName: "gear")
+                }
+            }
+        }
+        .sheet(isPresented: $showingSettingsSheet) {
+            NavigationView {
+                SettingsAdhanView(showNotifications: true)
+            }
+        }
+        #endif
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
