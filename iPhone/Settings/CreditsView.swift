@@ -164,7 +164,7 @@ struct CreditsView: View {
             .accentColor(settings.accentColor.color)
             .tint(settings.accentColor.color)
             .navigationTitle("Credits")
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .safeAreaInset(edge: .bottom) {
                 Button {
                     settings.hapticFeedback()
                     presentationMode.wrappedValue.dismiss()
@@ -177,9 +177,9 @@ struct CreditsView: View {
                 }
                 .font(.headline)
                 .foregroundColor(settings.accentColor.color)
-                .padding(18)
+                .padding()
                 .conditionalGlassEffect(useColor: 0.25)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.bottom, 8)
             }
         }

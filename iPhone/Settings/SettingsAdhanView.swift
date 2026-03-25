@@ -274,6 +274,17 @@ struct PrayerOffsetsView: View {
         .tint(settings.accentColor.color)
         .foregroundColor(settings.accentColor.color)
     }
+
+    private func travelOffsetCaption(for prayerName: String) -> String? {
+        switch prayerName {
+        case "Dhuhr":
+            return "Also affects the combined traveling Dhuhr/Asr prayer."
+        case "Maghrib":
+            return "Also affects the combined traveling Maghrib/Isha prayer."
+        default:
+            return nil
+        }
+    }
     
     var body: some View {
         Section(header: Text("HIJRI DATE")) {
@@ -792,6 +803,17 @@ struct NotificationSettingsSection: View {
     @Binding var preNotificationTime: Int
     @Binding var isNotificationOn: Bool
 
+    private var travelNotificationCaption: String? {
+        switch prayerName {
+        case "Dhuhr":
+            return "Also affects the combined traveling Dhuhr/Asr prayer."
+        case "Maghrib":
+            return "Also affects the combined traveling Maghrib/Isha prayer."
+        default:
+            return nil
+        }
+    }
+
     var body: some View {
         Section(header: Text(prayerName.uppercased())) {
             Toggle("Notification", isOn: $isNotificationOn.animation(.easeInOut))
@@ -806,6 +828,13 @@ struct NotificationSettingsSection: View {
                         .font(.subheadline)
                         .foregroundColor(settings.accentColor.color)
                 }
+            }
+
+            if let travelNotificationCaption {
+                Text(travelNotificationCaption)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
             }
         }
     }

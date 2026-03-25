@@ -50,7 +50,6 @@ struct NowPlayingView: View {
             .padding(.horizontal, 8)
             .transition(.opacity)
             .conditionalGlassEffect(rectangle: quranPlayer.isPlayingCustomRange)
-            .padding(.horizontal, 8)
         )
         #else
         return AnyView(

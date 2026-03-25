@@ -19,7 +19,7 @@ struct PrayersEntryView: View {
     }
     
     var circular: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             if let nextPrayer = entry.nextPrayer {
                 Image(systemName: nextPrayer.image)
                     .foregroundColor(accent(for: nextPrayer))

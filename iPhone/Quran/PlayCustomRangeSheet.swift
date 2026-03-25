@@ -211,7 +211,7 @@ struct PlayCustomRangeSheet: View {
                     .foregroundColor(settings.accentColor.color)
                 }
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .safeAreaInset(edge: .bottom) {
                 playButtonBar
             }
         }
@@ -321,6 +321,7 @@ struct PlayCustomRangeSheet: View {
                 .disabled(value.wrappedValue <= 1)
 
                 Spacer()
+                
                 TextField("", text: text)
                     .font(.title2.monospacedDigit().weight(.semibold))
                     .foregroundColor(.primary)
@@ -555,7 +556,7 @@ struct PlayCustomRangeSheet: View {
     }
 
     private var playButtonBar: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             Button {
                 settings.hapticFeedback()
                 commitBothAyahFields()
@@ -576,7 +577,7 @@ struct PlayCustomRangeSheet: View {
             }
             .buttonStyle(.plain)
             .disabled(!canPlay)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .background(Color(UIColor.systemGroupedBackground))
         }

@@ -81,7 +81,7 @@ struct Prayers2EntryView: View {
                             entry.prayers.count / 2
                         )))))
                     
-                    VStack(spacing: 4) {
+                    VStack(spacing: 6) {
                         ForEach(first3Prayers) { prayer in
                             HStack {
                                 Image(systemName: prayer.image)
@@ -112,7 +112,7 @@ struct Prayers2EntryView: View {
                             entry.prayers.count / 2
                         )))))
                     
-                    VStack(spacing: 4) {
+                    VStack(spacing: 6) {
                         ForEach(last3Prayers) { prayer in
                             HStack {
                                 Image(systemName: prayer.image)

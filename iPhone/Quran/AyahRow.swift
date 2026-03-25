@@ -108,7 +108,7 @@ struct AyahRow: View {
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 2) {
+                HStack(spacing: -2) {
                     Text("\(surah.id):\(ayah.id)")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
@@ -134,9 +134,10 @@ struct AyahRow: View {
                     #else
                     if isBookmarked {
                         Image(systemName: "bookmark.fill")
-                            .frame(width: 32, height: 32)
+                            .font(.title3)
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
+                            .frame(width: 32, height: 32)
                     }
 
                     if settings.isHafsDisplay {
@@ -144,9 +145,10 @@ struct AyahRow: View {
                             playbackMenuBlock()
                         } label: {
                             Image(systemName: "play.circle")
-                                .frame(width: 32, height: 32)
+                                .font(.title3)
                                 .foregroundColor(settings.accentColor.color)
                                 .conditionalGlassEffect()
+                                .frame(width: 32, height: 32)
                         }
                     }
                     
@@ -154,9 +156,10 @@ struct AyahRow: View {
                         menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: false)
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                            .frame(width: 32, height: 32)
+                            .font(.title3)
                             .foregroundColor(settings.accentColor.color)
                             .conditionalGlassEffect()
+                            .frame(width: 32, height: 32)
                     }
                     .sheet(isPresented: $showingAyahSheet) {
                         ShareAyahSheet(

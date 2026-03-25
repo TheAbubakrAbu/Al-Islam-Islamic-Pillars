@@ -1,88 +1,110 @@
 import SwiftUI
 
 struct GlassSearchBar: View {
-    @Binding var text: String
+    @Binding var searchText: String
 
     var onSearchButtonClicked: (() -> Void)?
     var onFocusChanged: ((Bool) -> Void)?
 
+    @FocusState private var isFocused: Bool
+
+    init(
+        searchText: Binding<String>,
+        onSearchButtonClicked: (() -> Void)? = nil,
+        onFocusChanged: ((Bool) -> Void)? = nil
+    ) {
+        self._searchText = searchText
+        self.onSearchButtonClicked = onSearchButtonClicked
+        self.onFocusChanged = onFocusChanged
+    }
+
+    init(
+        text: Binding<String>,
+        onSearchButtonClicked: (() -> Void)? = nil,
+        onFocusChanged: ((Bool) -> Void)? = nil
+    ) {
+        self._searchText = text
+        self.onSearchButtonClicked = onSearchButtonClicked
+        self.onFocusChanged = onFocusChanged
+    }
+
     var body: some View {
-        SearchBar(
-            text: $text,
-            onSearchButtonClicked: onSearchButtonClicked,
-            onFocusChanged: onFocusChanged
-        )
-        .conditionalGlassEffect()
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.primary)
+
+            TextField("Search", text: $searchText.animation(.easeInOut))
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .focused($isFocused)
+                .onSubmit {
+                    onSearchButtonClicked?()
+                    isFocused = false
+                }
+
+            if !searchText.isEmpty {
+                Button {
+                    withAnimation {
+                        searchText = ""
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .clipShape(Rectangle())
+            }            
+        }
+        .padding()
+        .conditionalGlassEffect(clear: false)
+        .onChange(of: isFocused) { focused in
+            onFocusChanged?(focused)
+        }
     }
 }
 
-struct SearchBar: UIViewRepresentable {
+struct SearchBar: View {
     @Binding var text: String
-    
+
     var onSearchButtonClicked: (() -> Void)?
     var onFocusChanged: ((Bool) -> Void)?
 
-    class Coordinator: NSObject, UISearchBarDelegate {
-        @Binding var text: String
-        var onSearchButtonClicked: (() -> Void)?
-        var onFocusChanged: ((Bool) -> Void)?
+    @FocusState private var isFocused: Bool
 
-        init(text: Binding<String>) {
-            _text = text
-        }
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.primary)
 
-        func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-            text = searchText
-        }
+            TextField("Search", text: $text.animation(.easeInOut))
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .focused($isFocused)
+                .onSubmit {
+                    onSearchButtonClicked?()
+                    isFocused = false
+                }
 
-        func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
-            searchBar.showsCancelButton = true
-            onFocusChanged?(true)
-        }
-
-        func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
-            searchBar.showsCancelButton = false
-            onFocusChanged?(false)
-        }
-
-        func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-            searchBar.showsCancelButton = false
-            searchBar.text = ""
-            searchBar.resignFirstResponder()
-
-            text = ""
-            onFocusChanged?(false)
-        }
-
-        func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-            searchBar.resignFirstResponder()
-            onSearchButtonClicked?()
-            onFocusChanged?(false)
-            DispatchQueue.main.async {
-                self.text = searchBar.text ?? ""
+            if !text.isEmpty {
+                Button {
+                    withAnimation {
+                        text = ""
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .clipShape(Rectangle())
             }
         }
-    }
-
-    func makeCoordinator() -> SearchBar.Coordinator {
-        return Coordinator(text: $text)
-    }
-
-    func makeUIView(context: UIViewRepresentableContext<SearchBar>) -> UISearchBar {
-        let searchBar = UISearchBar(frame: .zero)
-        searchBar.delegate = context.coordinator
-        searchBar.placeholder = "Search"
-        searchBar.autocorrectionType = .no
-        
-        searchBar.backgroundImage = UIImage()
-        
-        return searchBar
-    }
-
-    func updateUIView(_ uiView: UISearchBar, context: UIViewRepresentableContext<SearchBar>) {
-        uiView.text = text
-        context.coordinator.onSearchButtonClicked = onSearchButtonClicked
-        context.coordinator.onFocusChanged = onFocusChanged
+        .padding()
+        .conditionalGlassEffect(clear: false)
+        .onChange(of: isFocused) { focused in
+            onFocusChanged?(focused)
+        }
     }
 }
 

@@ -395,13 +395,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("offsetIsha") var offsetIsha: Int = 0 {
         didSet { self.fetchPrayerTimes(force: true) }
     }
-    
-    @AppStorage("offsetDhurhAsr") var offsetDhurhAsr: Int = 0 {
-        didSet { self.fetchPrayerTimes(force: true) }
-    }
-    @AppStorage("offsetMaghribIsha") var offsetMaghribIsha: Int = 0 {
-        didSet { self.fetchPrayerTimes(force: true) }
-    }
 
     @AppStorage("beginnerMode") var beginnerMode: Bool = false
     

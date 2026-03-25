@@ -123,7 +123,7 @@ struct MasjidLocatorView: View {
         .overlay(alignment: .top) {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 8) {
-                    SearchBar(text: $searchText.animation(.easeInOut))
+                    GlassSearchBar(text: $searchText.animation(.easeInOut))
 
                     if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
                         HStack {
@@ -150,7 +150,7 @@ struct MasjidLocatorView: View {
             .padding(.horizontal)
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 HStack(spacing: 10) {
                     Button {
                         settings.hapticFeedback()
@@ -161,7 +161,7 @@ struct MasjidLocatorView: View {
                     }
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
-                    .padding(18)
+                    .padding()
                     .conditionalGlassEffect()
 
                     Button {
@@ -174,10 +174,9 @@ struct MasjidLocatorView: View {
                     }
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
-                    .padding(18)
+                    .padding()
                     .conditionalGlassEffect()
                 }
-                .padding(.horizontal, 20)
 
                 if let selectedItem {
                     Button {
@@ -191,13 +190,13 @@ struct MasjidLocatorView: View {
                     }
                     .font(.headline)
                     .foregroundColor(.primary)
-                    .padding(18)
+                    .padding()
                     .conditionalGlassEffect(useColor: 0.25)
-                    .padding(.horizontal, 20)
                 }
             }
             .lineLimit(1)
             .minimumScaleFactor(0.5)
+            .padding(.horizontal, 24)
             .padding(.bottom, 26)
         }
         .navigationTitle("Masjid Locator")

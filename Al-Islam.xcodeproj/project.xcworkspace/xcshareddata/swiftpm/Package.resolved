@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SearchBar",
+        "repositoryURL": "https://github.com/SzpakKamil/SearchBar.git",
+        "state": {
+          "branch": null,
+          "revision": "b0cd8e34096b08251e30eb1c6f66874fef85c47d",
+          "version": "2.1.7"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

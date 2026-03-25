@@ -633,9 +633,9 @@ struct AyahsView: View {
             #if !os(watchOS)
             .overlay(alignment: .top) {
                 VStack(spacing: 6) {
-                    SurahSectionHeader(surah: surah, compact: true)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                    SurahSectionHeader(surah: surah)
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
                         .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                         .conditionalGlassEffect()
 
@@ -643,6 +643,7 @@ struct AyahsView: View {
                         if let floatingDividerModel {
                             boundaryDivider(model: floatingDividerModel, isOverlay: true)
                                 .id(boundaryDividerID(floatingDividerModel))
+                                .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                                 .conditionalGlassEffect()
@@ -651,17 +652,17 @@ struct AyahsView: View {
                     }
                     .animation(.easeInOut(duration: 0.18), value: floatingDividerAnimationKey)
                 }
-                .padding(.top, 2)
+                .padding(.top, 6)
                 .padding(.horizontal, settings.defaultView ? 20 : 16)
                 .background(Color.clear)
                 .opacity(showFloatingHeader ? 1 : 0)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 30)
                 .zIndex(1)
                 .offset(y: showFloatingHeader ? 0 : -80)
                 .opacity(showFloatingHeader ? 1 : 0)
             }
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 4) {
+                VStack(spacing: 8) {
                     if settings.qiraatComparisonMode {
                         HStack {
                             Spacer()
@@ -676,7 +677,7 @@ struct AyahsView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                                 .conditionalGlassEffect(useColor: 0.25)
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
                         }
                     }
                 
@@ -707,17 +708,24 @@ struct AyahsView: View {
                                 }
                         }
                         
-                        HStack(spacing: 0) {
-                            SearchBar(text: $searchText.animation(.easeInOut))
+                        HStack {
+                            GlassSearchBar(text: $searchText.animation(.easeInOut))
                             
                             playButton(proxy: proxy)
-                                .frame(width: 22, height: 22)
-                                .padding(12)
+                                .frame(width: 25, height: 25)
+                                .padding()
                                 .conditionalGlassEffect()
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.trailing, 8)
+                    .contentShape(Rectangle())
+                    .background(
+                        Rectangle()
+                            .fill(Color.clear)
+                            .padding(.bottom, -20)
+                            .contentShape(Rectangle())
+                            .onTapGesture { }
+                    )
+                    .padding(.horizontal, 24)
                     .padding(.bottom, 8)
                     .animation(.easeInOut, value: quranPlayer.isPlaying)
                 }

@@ -38,7 +38,7 @@ struct SimpleEntryView: View {
                         
                         Spacer()
                         
-                        VStack {
+                        VStack(alignment: .leading) {
                             Image(systemName: currentPrayer.image)
                                 .font(.title2)
                             

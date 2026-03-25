@@ -862,7 +862,7 @@ struct QuranView: View {
             searchHelpOverlay
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 4) {
+            VStack(spacing: 8) {
                 if isQuranSearchFocused && !settings.quranSearchHistory.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -905,7 +905,6 @@ struct QuranView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 8)
                 }
                 
                 if quranPlayer.isPlaying || quranPlayer.isPaused {
@@ -918,10 +917,9 @@ struct QuranView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .conditionalGlassEffect()
-                .padding(.horizontal, 8)
                 
-                HStack(spacing: 0) {
-                    SearchBar(
+                HStack {
+                    GlassSearchBar(
                         text: $searchText.animation(.easeInOut),
                         onSearchButtonClicked: {
                             persistQuranSearchHistoryIfNeeded(searchText)
@@ -953,6 +951,7 @@ struct QuranView: View {
                                     Image(systemName: "xmark.circle.fill")
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
+                                        .frame(width: 25, height: 25)
                                         .foregroundColor(settings.accentColor.color)
                                         .transition(.opacity)
                                 }
@@ -1004,18 +1003,25 @@ struct QuranView: View {
                                 Image(systemName: "play.fill")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
+                                    .frame(width: 25, height: 25)
                                     .foregroundColor(settings.accentColor.color)
                                     .transition(.opacity)
                             }
                         }
                     }
-                    .frame(width: 22, height: 22)
-                    .padding(12)
+                    .padding()
                     .conditionalGlassEffect()
-                    .padding(.trailing, 8)
                 }
             }
-            .padding(.horizontal)
+            .contentShape(Rectangle())
+            .background(
+                Rectangle()
+                    .fill(Color.clear)
+                    .padding(.bottom, -20)
+                    .contentShape(Rectangle())
+                    .onTapGesture { }
+            )
+            .padding(.horizontal, 24)
             .padding(.bottom, 8)
             .animation(.easeInOut, value: quranPlayer.isPlaying)
         }

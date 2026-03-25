@@ -514,25 +514,20 @@ extension Settings {
         let rawPrayers = _computeRawPrayers(for: date)
         guard !rawPrayers.isEmpty else { return nil }
         
-        // Filter based on mode: return full list if fullPrayers requested OR not in traveling mode
-        // Otherwise return condensed traveling mode list
         if fullPrayers || !travelingMode {
-            return rawPrayers  // Full list: Fajr, Sunrise, Dhuhr/Jumuah, Asr, Maghrib, Isha
-        } else {
-            // Traveling mode condensed: Fajr, Sunrise, Dhuhr/Asr combo, Maghrib/Isha combo
-            guard rawPrayers.count >= 4 else { return rawPrayers }
-            return [rawPrayers[0], rawPrayers[1], rawPrayers[2], rawPrayers[rawPrayers.count - 1]]
+            return rawPrayers
         }
+        
+        return _filterTravelingMode(rawPrayers)
     }    
+
     /// Optimized getter that computes both normal and full prayer lists in a single calculation pass
     func getPrayerTimesNormalAndFull(for date: Date) -> (normal: [Prayer], full: [Prayer])? {
         let rawPrayers = _computeRawPrayers(for: date)
         guard !rawPrayers.isEmpty else { return nil }
         
         let fullList = rawPrayers
-        let normalList: [Prayer] = travelingMode && rawPrayers.count >= 4 
-            ? [rawPrayers[0], rawPrayers[1], rawPrayers[2], rawPrayers[rawPrayers.count - 1]]
-            : rawPrayers
+        let normalList = travelingMode ? _filterTravelingMode(rawPrayers) : rawPrayers
         
         return (normal: normalList, full: fullList)
     }    
@@ -672,8 +667,12 @@ extension Settings {
     
     /// Efficiently filters raw prayers to traveling mode format (condensed list)
     private func _filterTravelingMode(_ rawPrayers: [Prayer]) -> [Prayer] {
-        guard rawPrayers.count >= 4 else { return rawPrayers }
-        return [rawPrayers[0], rawPrayers[1], rawPrayers[2], rawPrayers[rawPrayers.count - 1]]
+        guard rawPrayers.count >= 6 else { return rawPrayers }
+
+        let combinedDhuhrAsr = prayer(from: "Dhuhr/Asr", time: rawPrayers[2].time)
+        let combinedMaghribIsha = prayer(from: "Maghrib/Isha", time: rawPrayers[4].time)
+
+        return [rawPrayers[0], rawPrayers[1], combinedDhuhrAsr, combinedMaghribIsha]
     }
     
     func updateCurrentAndNextPrayer() {

@@ -269,7 +269,7 @@ struct LaunchScreen: View {
                     contentBlur = 8
                 }
                 
-                try? await Task.sleep(nanoseconds: 205_000_000)
+                try? await Task.sleep(nanoseconds: 200_000_000)
 
                 withAnimation {
                     triggerHapticFeedback(.soft)

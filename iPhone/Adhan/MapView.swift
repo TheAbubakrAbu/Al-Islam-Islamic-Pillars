@@ -150,7 +150,7 @@ struct MapView: View {
             .overlay(alignment: .top) {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 8) {
-                        SearchBar(text: $searchText.animation(.easeInOut))
+                        GlassSearchBar(text: $searchText.animation(.easeInOut))
 
                         if !searchText.isEmpty {
                             HStack {
@@ -171,7 +171,7 @@ struct MapView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 if !choosingPrayerTimes, let home = settings.homeLocation {
-                    VStack(alignment: .center, spacing: 6) {
+                    VStack(spacing: 8) {
                         HStack {
                             VStack(alignment: .leading, spacing: 8) {
                                 Label("Home: \(home.city)", systemImage: "house.fill")
@@ -205,7 +205,7 @@ struct MapView: View {
                         useCurrentButton
                     }
                     .padding(.bottom, 26)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                 }
             }
             .navigationTitle("Select Location")

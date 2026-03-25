@@ -37,16 +37,15 @@ struct HijriCalendarView: View {
                         .foregroundColor(settings.accentColor.color)
                         .font(.headline)
                         .multilineTextAlignment(.center)
-
+                    
                     Text(hijriDate.arabic)
                         .foregroundColor(settings.accentColor.color)
                         .font(.subheadline)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 14)
+                .padding()
                 .conditionalGlassEffect()
-                .padding(.horizontal)
+                .padding(.horizontal, 22)
                 .padding(.top, 2)
             }
         }
