@@ -448,6 +448,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 
     @AppStorage("showArabicText") var showArabicText: Bool = true
+    @AppStorage("showTajweedColors") var showTajweedColors: Bool = false
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
     @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
     @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10

@@ -86,12 +86,25 @@ struct SettingsQuranView: View {
                     .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
 
                 VStack(alignment: .leading, spacing: 8) {
+                    Toggle("Show Tajweed Colors", isOn: $settings.showTajweedColors.animation(.easeInOut))
+                        .font(.subheadline)
+                        .disabled(!settings.showArabicText)
+
+                    Text(settings.isHafsDisplay
+                         ? "Available for Hafs an Asim. Tajweed colors automatically fall back to plain Arabic when clean text or beginner spacing is enabled."
+                         : "Tajweed colors are currently available only for Hafs an Asim.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
                     Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
                         .font(.subheadline)
 
                     if settings.showPageJuzDividers {
                         Toggle("Show Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
-                            .font(.caption)
+                            .font(.subheadline)
                     }
                 }
                 

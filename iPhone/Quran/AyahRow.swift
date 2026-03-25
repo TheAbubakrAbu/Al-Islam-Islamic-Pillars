@@ -79,6 +79,26 @@ struct AyahRow: View {
         let baseText = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: comparisonQiraahOverride)
         return spacedArabic(baseText)
     }
+
+    private var shouldShowTajweedColors: Bool {
+        let usingHafs: Bool = if let override = comparisonQiraahOverride {
+            override.isEmpty || override == "Hafs"
+        } else {
+            settings.isHafsDisplay
+        }
+
+        return settings.showTajweedColors
+            && settings.showArabicText
+            && usingHafs
+            && !settings.cleanArabicText
+            && !(settings.beginnerMode || ayahBeginnerMode)
+    }
+
+    private func arabicTajweedText() -> AttributedString? {
+        guard shouldShowTajweedColors else { return nil }
+        let text = ayah.displayArabicText(surahId: surah.id, clean: false, qiraahOverride: comparisonQiraahOverride)
+        return TajweedStore.shared.attributedText(surah: surah.id, ayah: ayah.id, text: text)
+    }
     
     var body: some View {
         let isBookmarked = isBookmarkedHere
@@ -315,6 +335,7 @@ struct AyahRow: View {
                     font: .custom(settings.fontArabic, size: settings.fontArabicSize),
                     accent: settings.accentColor.color,
                     fg: .primary,
+                    preStyledSource: arabicTajweedText(),
                     beginnerMode: (settings.beginnerMode || ayahBeginnerMode),
                     trailingSuffix: " \(ayah.idArabic)",
                     trailingSuffixFont: .custom("KFGQPCQUMBULUthmanicScript-Regu", size: settings.fontArabicSize),

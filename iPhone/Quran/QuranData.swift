@@ -183,6 +183,154 @@ struct Ayah: Codable, Identifiable {
     }
 }
 
+struct TajweedRange: Codable, Hashable {
+    let rule: String
+    let start: Int
+    let end: Int
+}
+
+struct TajweedAyahEntry: Codable, Hashable {
+    let surah: Int
+    let ayah: Int
+    let annotations: [TajweedRange]
+}
+
+final class TajweedStore {
+    static let shared = TajweedStore()
+
+    private static let implicitBismillahScalarCount = 39
+    private static let resourceName = "TajweedRules"
+
+    private var ayahLookup: [Int: [Int: [TajweedRange]]] = [:]
+    private var attributedCache: [Int: [Int: AttributedString]] = [:]
+
+    private init() {
+        load()
+    }
+
+    func attributedText(surah: Int, ayah: Int, text: String) -> AttributedString? {
+        if let cached = attributedCache[surah]?[ayah] {
+            return cached
+        }
+
+        guard let annotations = ayahLookup[surah]?[ayah] else { return nil }
+
+        let normalized = normalizedAnnotations(
+            annotations,
+            surah: surah,
+            ayah: ayah,
+            textLength: text.unicodeScalars.count
+        )
+        guard !normalized.isEmpty else { return nil }
+
+        var attributed = AttributedString(text)
+        attributed.foregroundColor = .primary
+
+        for annotation in normalized {
+            guard let range = attributedRange(
+                in: attributed,
+                source: text,
+                start: annotation.start,
+                end: annotation.end
+            ) else { continue }
+            attributed[range].foregroundColor = color(for: annotation.rule)
+        }
+
+        var cacheForSurah = attributedCache[surah] ?? [:]
+        cacheForSurah[ayah] = attributed
+        attributedCache[surah] = cacheForSurah
+
+        return attributed
+    }
+
+    private func load() {
+        guard let url = Bundle.main.url(forResource: Self.resourceName, withExtension: "json", subdirectory: "JSONs")
+                ?? Bundle.main.url(forResource: Self.resourceName, withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode([TajweedAyahEntry].self, from: data) else {
+            return
+        }
+
+        var lookup: [Int: [Int: [TajweedRange]]] = [:]
+        lookup.reserveCapacity(114)
+
+        for entry in decoded {
+            var ayahsForSurah = lookup[entry.surah] ?? [:]
+            ayahsForSurah[entry.ayah] = entry.annotations
+            lookup[entry.surah] = ayahsForSurah
+        }
+
+        ayahLookup = lookup
+    }
+
+    private func normalizedAnnotations(
+        _ annotations: [TajweedRange],
+        surah: Int,
+        ayah: Int,
+        textLength: Int
+    ) -> [TajweedRange] {
+        let direct = annotations.filter { isValid($0, textLength: textLength) }
+        if direct.count == annotations.count {
+            return direct
+        }
+
+        guard ayah == 1, surah != 1, surah != 9 else {
+            return direct
+        }
+
+        let shifted = annotations.compactMap { annotation -> TajweedRange? in
+            let shiftedAnnotation = TajweedRange(
+                rule: annotation.rule,
+                start: annotation.start - Self.implicitBismillahScalarCount,
+                end: annotation.end - Self.implicitBismillahScalarCount
+            )
+            return isValid(shiftedAnnotation, textLength: textLength) ? shiftedAnnotation : nil
+        }
+
+        return shifted.isEmpty ? direct : shifted
+    }
+
+    private func isValid(_ annotation: TajweedRange, textLength: Int) -> Bool {
+        annotation.start >= 0 && annotation.end > annotation.start && annotation.end <= textLength
+    }
+
+    private func attributedRange(
+        in attributed: AttributedString,
+        source: String,
+        start: Int,
+        end: Int
+    ) -> Range<AttributedString.Index>? {
+        guard let stringStart = stringIndex(in: source, scalarOffset: start),
+              let stringEnd = stringIndex(in: source, scalarOffset: end),
+              let attributedStart = AttributedString.Index(stringStart, within: attributed),
+              let attributedEnd = AttributedString.Index(stringEnd, within: attributed) else {
+            return nil
+        }
+
+        return attributedStart..<attributedEnd
+    }
+
+    private func stringIndex(in text: String, scalarOffset: Int) -> String.Index? {
+        let scalars = text.unicodeScalars
+        guard scalarOffset >= 0 && scalarOffset <= scalars.count else { return nil }
+        let scalarIndex = scalars.index(scalars.startIndex, offsetBy: scalarOffset)
+        return String.Index(scalarIndex, within: text)
+    }
+
+    private func color(for rule: String) -> Color {
+        if rule.hasPrefix("madd") { return .red }
+        if rule == "ghunnah" { return .green }
+        if rule.hasPrefix("idghaam") { return .blue }
+        if rule.hasPrefix("ikhfa") { return .orange }
+        if rule == "iqlab" { return .indigo }
+        if rule == "qalqalah" { return .purple }
+        if rule == "hamzat_wasl" { return .pink }
+        if rule == "lam_shamsiyyah" { return .teal }
+        if rule == "silent" { return .secondary }
+        return .primary
+    }
+}
+
 final class QuranData: ObservableObject {
     static let shared: QuranData = {
         let q = QuranData()

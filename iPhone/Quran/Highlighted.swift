@@ -8,13 +8,18 @@ struct HighlightedSnippet: View {
     let font: Font
     let accent: Color
     let fg: Color
+    var preStyledSource: AttributedString? = nil
     var beginnerMode: Bool = false
     var trailingSuffix: String = ""
     var trailingSuffixFont: Font? = nil
     var trailingSuffixColor: Color? = nil
 
     var body: some View {
-        let result = highlight(source: source, term: spacedQueryIfNeeded)
+        let result = highlight(
+            source: source,
+            baseAttributed: baseAttributedText(),
+            term: spacedQueryIfNeeded
+        )
         let combined = Text(result) + Text(trailingSuffix)
             .font(trailingSuffixFont ?? font)
             .foregroundColor(trailingSuffixColor ?? fg)
@@ -35,9 +40,18 @@ struct HighlightedSnippet: View {
             .removingArabicDiacriticsAndSigns
     }
 
-    private func highlight(source: String, term: String) -> AttributedString {
+    private func baseAttributedText() -> AttributedString {
+        if let preStyledSource {
+            return preStyledSource
+        }
+
         var attributed = AttributedString(source)
         attributed.foregroundColor = fg
+        return attributed
+    }
+
+    private func highlight(source: String, baseAttributed: AttributedString, term: String) -> AttributedString {
+        var attributed = baseAttributed
 
         let normalizedSource = normalizeForSearch(source, trimWhitespace: false)
         let normalizedTerm   = normalizeForSearch(term,   trimWhitespace: true)
