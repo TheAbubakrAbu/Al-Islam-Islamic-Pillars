@@ -9,6 +9,7 @@ struct AyahRow: View {
     
     #if !os(watchOS)
     @State private var showingAyahSheet = false
+    @State private var showTafsirSheet = false
     
     @State private var showingNoteSheet = false
     @State private var draftNote: String = ""
@@ -133,7 +134,7 @@ struct AyahRow: View {
                         .font(.caption.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
                         .padding(4)
-                        .frame(width: 54, height: 25)
+                        .frame(width: 60, height: 28)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .conditionalGlassEffect(useColor: 0.1)
@@ -155,10 +156,12 @@ struct AyahRow: View {
                     #else
                     if isBookmarked {
                         Image(systemName: "bookmark.fill")
-                            .font(.title2)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 25, height: 25)
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
-                            .frame(width: 22, height: 22)
+                            .frame(width: 28, height: 28)
                     }
 
                     if settings.isHafsDisplay {
@@ -166,10 +169,12 @@ struct AyahRow: View {
                             playbackMenuBlock()
                         } label: {
                             Image(systemName: "play.circle")
-                                .font(.title2)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 25, height: 25)
                                 .foregroundColor(settings.accentColor.color)
                                 .conditionalGlassEffect()
-                                .frame(width: 25, height: 25)
+                                .frame(width: 28, height: 28)
                         }
                     }
                     
@@ -177,16 +182,35 @@ struct AyahRow: View {
                         menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: false)
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                            .font(.title2)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 25, height: 25)
                             .foregroundColor(settings.accentColor.color)
                             .conditionalGlassEffect()
-                            .frame(width: 25, height: 25)
+                            .frame(width: 28, height: 28)
                     }
                     .sheet(isPresented: $showingAyahSheet) {
                         ShareAyahSheet(
                             surahNumber: surah.id,
                             ayahNumber: ayah.id
                         )
+                    }
+                    .sheet(isPresented: $showTafsirSheet) {
+                        if #available(iOS 16.0, *) {
+                            AyahTafsirSheet(
+                                surahName: surah.nameTransliteration,
+                                surahNumber: surah.id,
+                                ayahNumber: ayah.id
+                            )
+                            .presentationDetents([.medium, .large])
+                            .presentationDragIndicator(.visible)
+                        } else {
+                            AyahTafsirSheet(
+                                surahName: surah.nameTransliteration,
+                                surahNumber: surah.id,
+                                ayahNumber: ayah.id
+                            )
+                        }
                     }
                     .sheet(isPresented: $showingNoteSheet) {
                         NoteEditorSheet(
@@ -519,6 +543,13 @@ struct AyahRow: View {
     @ViewBuilder
     private func menuBlock(isBookmarked: Bool, includePlaybackOptions: Bool) -> some View {
         #if !os(watchOS)
+        let canShowTafsir: Bool = {
+            if let override = comparisonQiraahOverride {
+                return override.isEmpty || override == "Hafs"
+            }
+            return settings.isHafsDisplay
+        }()
+
         VStack(alignment: .leading) {
             if settings.showArabicText && !settings.beginnerMode {
                 Button {
@@ -561,6 +592,15 @@ struct AyahRow: View {
                     removeNote()
                 } label: {
                     Label("Remove Note", systemImage: "trash")
+                }
+            }
+
+            if canShowTafsir {
+                Button {
+                    settings.hapticFeedback()
+                    showTafsirSheet = true
+                } label: {
+                    Label("See Tafsir", systemImage: "text.book.closed")
                 }
             }
             

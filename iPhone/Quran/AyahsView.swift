@@ -21,6 +21,8 @@ struct AyahsView: View {
     @State private var showFloatingHeader = false
     @State private var showAlert = false
     @State private var showCustomRangeSheet = false
+    @State private var showSurahPickerSheet = false
+    @State private var selectedSurahNavigation: Int? = nil
     let surah: Surah
     var ayah: Int? = nil
 
@@ -737,14 +739,32 @@ struct AyahsView: View {
         .onChange(of: scenePhase) { _ in saveLastRead() }
         #if !os(watchOS)
         .navigationTitle(surah.nameEnglish)
-        /*.toolbarTitleMenu {
-            
-        }*/
-        .navigationBarItems(trailing: navBarTitle)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                surahTitlePickerButton
+            }
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                navBarTitle
+            }
+        }
         .onAppear {
             quranPlayer.recordReadingHistory(surahNumber: surah.id, surahName: surah.nameTransliteration, ayahNumber: ayah ?? 1)
         }
         .sheet(isPresented: $showingSettingsSheet) { settingsSheet }
+        .sheet(isPresented: $showSurahPickerSheet) {
+            SurahPickerSheet(currentSurahID: surah.id) { selectedSurah in
+                settings.hapticFeedback()
+                showSurahPickerSheet = false
+
+                guard selectedSurah.id != surah.id else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    selectedSurahNavigation = selectedSurah.id
+                }
+            }
+            .environmentObject(settings)
+            .environmentObject(quranData)
+        }
         #if !os(watchOS)
         .sheet(isPresented: $showCustomRangeSheet) {
             PlayCustomRangeSheet(
@@ -772,6 +792,22 @@ struct AyahsView: View {
         } message: {
             Text(quranPlayer.playbackAlertMessage)
         }
+        .background(
+            NavigationLink(
+                destination: selectedSurahNavigationDestination,
+                isActive: Binding(
+                    get: { selectedSurahNavigation != nil },
+                    set: { isActive in
+                        if !isActive {
+                            selectedSurahNavigation = nil
+                        }
+                    }
+                )
+            ) {
+                EmptyView()
+            }
+            .hidden()
+        )
         #else
         .navigationTitle("\(surah.id) - \(surah.nameTransliteration)")
         #endif
@@ -810,6 +846,13 @@ struct AyahsView: View {
                 }
                 
                 Menu {
+                    Button {
+                        settings.hapticFeedback()
+                        playRandomReciterForCurrentSurah()
+                    } label: {
+                        Label("Play Random Reciter", systemImage: "person.wave.2")
+                    }
+
                     Button {
                         settings.hapticFeedback()
                         showCustomRangeSheet = true
@@ -880,6 +923,15 @@ struct AyahsView: View {
             }
         }
     }
+
+    private func playRandomReciterForCurrentSurah() {
+        guard let randomReciter = reciters.randomElement() else { return }
+        settings.reciter = randomReciter.name
+        quranPlayer.playSurah(
+            surahNumber: surah.id,
+            surahName: surah.nameTransliteration
+        )
+    }
     
     @ViewBuilder
     private func playIcon() -> some View {
@@ -900,6 +952,19 @@ struct AyahsView: View {
         }
     }
     
+    private var surahTitlePickerButton: some View {
+        Button {
+            settings.hapticFeedback()
+            showSurahPickerSheet = true
+        } label: {
+            Text(surah.nameEnglish)
+                .font(.headline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .foregroundColor(.primary)
+        }
+    }
+
     private var navBarTitle: some View {
         Button {
             settings.hapticFeedback()
@@ -913,6 +978,16 @@ struct AyahsView: View {
             .foregroundColor(settings.accentColor.color)
             .padding(.vertical, 4)
             .padding(.horizontal, 6)
+        }
+    }
+
+    @ViewBuilder
+    private var selectedSurahNavigationDestination: some View {
+        if let targetID = selectedSurahNavigation,
+           let targetSurah = quranData.surah(targetID) {
+            AyahsView(surah: targetSurah)
+        } else {
+            EmptyView()
         }
     }
     
@@ -960,6 +1035,71 @@ struct RotatingGearView: View {
             }
     }
 }
+
+#if !os(watchOS)
+private struct SurahPickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var settings: Settings
+    @EnvironmentObject private var quranData: QuranData
+
+    @State private var searchText = ""
+
+    let currentSurahID: Int
+    let onSelect: (Surah) -> Void
+
+    private var filteredSurahs: [Surah] {
+        let query = normalized(searchText)
+        guard !query.isEmpty else { return quranData.quran }
+
+        return quranData.quran.filter { surah in
+            let tokens = [
+                "\(surah.id)",
+                normalized(surah.nameEnglish),
+                normalized(surah.nameTransliteration),
+                normalized(surah.nameArabic)
+            ]
+            return tokens.contains { $0.contains(query) }
+        }
+    }
+
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(filteredSurahs, id: \.id) { surah in
+                    Button {
+                        onSelect(surah)
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 12) {
+                            SurahRow(surah: surah)
+
+                            if surah.id == currentSurahID {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(settings.accentColor.color)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .searchable(text: $searchText, prompt: "Search surah")
+            .navigationTitle("All Surahs")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func normalized(_ text: String) -> String {
+        settings.cleanSearch(text, whitespace: true)
+    }
+}
+#endif
 
 // MARK: - Arabic Text Riwayah picker (single source of qiraat options)
 struct ArabicTextRiwayahPicker: View {

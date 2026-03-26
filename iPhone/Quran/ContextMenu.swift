@@ -70,6 +70,373 @@ struct SurahContextMenu: View {
     }
 }
 
+#if !os(watchOS)
+private enum TafsirAuthor: String, CaseIterable, Identifiable {
+    case ibnKathir = "Ibn Kathir"
+    case maarifUlQuran = "Maarif Ul Quran"
+    case tazkirulQuran = "Tazkirul Quran"
+
+    var id: String { rawValue }
+
+    var shortTitle: String {
+        switch self {
+        case .ibnKathir:
+            return "Ibn Kathir"
+        case .maarifUlQuran:
+            return "Maarif"
+        case .tazkirulQuran:
+            return "Tazkirul"
+        }
+    }
+
+    func matches(_ author: String) -> Bool {
+        normalized(author) == normalized(rawValue)
+    }
+
+    private func normalized(_ text: String) -> String {
+        text
+            .lowercased()
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: " ", with: "")
+    }
+}
+
+private struct AyahTafsirResponse: Decodable {
+    let surahName: String
+    let surahNo: Int
+    let ayahNo: Int
+    let tafsirs: [AyahTafsirEntry]
+}
+
+private struct AyahTafsirEntry: Decodable, Identifiable {
+    let author: String
+    let groupVerse: String?
+    let content: String
+
+    var id: String { author }
+}
+
+@MainActor
+private final class AyahTafsirViewModel: ObservableObject {
+    @Published private(set) var tafsirs: [AyahTafsirEntry] = []
+    @Published private(set) var isLoading = false
+    @Published var errorMessage: String?
+
+    private var loadedKey: String?
+
+    func load(surah: Int, ayah: Int) async {
+        let key = "\(surah)-\(ayah)"
+        if loadedKey == key, !tafsirs.isEmpty { return }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let endpoint = "https://quranapi.pages.dev/api/tafsir/\(surah)_\(ayah).json"
+            guard let url = URL(string: endpoint) else {
+                throw URLError(.badURL)
+            }
+
+            let (data, response) = try await URLSession.shared.data(from: url)
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                throw URLError(.badServerResponse)
+            }
+
+            let decoded = try JSONDecoder().decode(AyahTafsirResponse.self, from: data)
+            tafsirs = decoded.tafsirs
+            loadedKey = key
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        isLoading = false
+    }
+}
+
+struct AyahTafsirSheet: View {
+    let surahName: String
+    let surahNumber: Int
+    let ayahNumber: Int
+
+    @StateObject private var viewModel = AyahTafsirViewModel()
+    @State private var selectedAuthor: TafsirAuthor = .ibnKathir
+    @State private var revealContent = false
+
+    private var selectedTafsir: AyahTafsirEntry? {
+        viewModel.tafsirs.first { selectedAuthor.matches($0.author) }
+            ?? viewModel.tafsirs.first
+    }
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if viewModel.isLoading && viewModel.tafsirs.isEmpty {
+                    tafsirLoadingView
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            noticeCard
+
+                            Picker("Tafsir", selection: $selectedAuthor.animation(.easeInOut)) {
+                                ForEach(TafsirAuthor.allCases) { author in
+                                    Text(author.shortTitle).tag(author)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .animation(.easeInOut, value: selectedAuthor)
+
+                            if let tafsir = selectedTafsir {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text(tafsir.author)
+                                        .font(.headline)
+
+                                    if let groupVerse = tafsir.groupVerse,
+                                       !groupVerse.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        Text(groupVerse)
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    tafsirContentView(for: tafsir.content)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .id(selectedAuthor.rawValue)
+                                .opacity(revealContent ? 1 : 0)
+                                .offset(y: revealContent ? 0 : 8)
+                                .animation(.easeInOut(duration: 0.25), value: revealContent)
+                                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                            } else if let errorMessage = viewModel.errorMessage {
+                                tafsirPlaceholder(
+                                    title: "Couldn't Load Tafsir",
+                                    systemImage: "wifi.exclamationmark",
+                                    message: errorMessage
+                                )
+                            } else {
+                                tafsirPlaceholder(
+                                    title: "No Tafsir Found",
+                                    systemImage: "text.book.closed",
+                                    message: "No tafsir was returned for this ayah."
+                                )
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .navigationTitle("\(surahName) \(surahNumber):\(ayahNumber)")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .task(id: "\(surahNumber)-\(ayahNumber)") {
+            await viewModel.load(surah: surahNumber, ayah: ayahNumber)
+        }
+        .onChange(of: selectedAuthor) { _ in
+            withAnimation(.easeInOut(duration: 0.18)) {
+                revealContent = false
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    revealContent = true
+                }
+            }
+        }
+        .onChange(of: viewModel.isLoading) { loading in
+            if !loading {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    revealContent = true
+                }
+            }
+        }
+        .modifier(TafsirSheetPresentationModifier())
+    }
+
+    private var noticeCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Loaded from the internet", systemImage: "icloud.and.arrow.down")
+                .font(.subheadline.weight(.semibold))
+
+            Text("Tafsir is fetched online for this ayah only. The app loads all 3 available tafsirs together, then you can switch between them with the picker. Full tafsir downloads are not available.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.secondary.opacity(0.1))
+        )
+    }
+
+    @ViewBuilder
+    private func tafsirContentView(for content: String) -> some View {
+        TafsirMarkdownView(markdown: content)
+    }
+
+    private var tafsirLoadingView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                noticeCard
+
+                ProgressView("Loading tafsir...")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 4)
+
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.secondary.opacity(0.18))
+                    .frame(height: 32)
+                    .overlay {
+                        HStack(spacing: 8) {
+                            Capsule().fill(Color.secondary.opacity(0.18))
+                            Capsule().fill(Color.secondary.opacity(0.12))
+                            Capsule().fill(Color.secondary.opacity(0.1))
+                        }
+                        .padding(4)
+                    }
+
+                ForEach(0..<4, id: \.self) { index in
+                    VStack(alignment: .leading, spacing: 10) {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.secondary.opacity(0.16))
+                            .frame(width: index == 0 ? 180 : 240, height: index == 0 ? 24 : 16)
+
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.secondary.opacity(0.12))
+                            .frame(height: 16)
+
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.secondary.opacity(0.12))
+                            .frame(height: 16)
+
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.secondary.opacity(0.09))
+                            .frame(width: index.isMultiple(of: 2) ? 260 : 220, height: 16)
+                    }
+                    .redacted(reason: .placeholder)
+                }
+            }
+            .padding()
+        }
+    }
+
+    private func tafsirPlaceholder(title: String, systemImage: String, message: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundStyle(.secondary)
+
+            Text(title)
+                .font(.headline)
+
+            Text(message)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    }
+}
+
+private struct TafsirMarkdownView: View {
+    let markdown: String
+
+    private var blocks: [TafsirMarkdownBlock] {
+        normalizedMarkdown
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .map(TafsirMarkdownBlock.init(raw:))
+    }
+
+    private var normalizedMarkdown: String {
+        markdown
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(
+                of: #"(?m)^\\-\s+"#,
+                with: "- ",
+                options: .regularExpression
+            )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                switch block.kind {
+                case .heading:
+                    Text(block.displayText)
+                        .font(.title3.bold())
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                case .body:
+                    if let attributed = block.attributedText {
+                        Text(attributed)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                            .lineSpacing(5)
+                    } else {
+                        Text(block.displayText)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                            .lineSpacing(5)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct TafsirMarkdownBlock {
+    enum Kind {
+        case heading
+        case body
+    }
+
+    let kind: Kind
+    let rawText: String
+
+    init(raw: String) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmed.hasPrefix("## ") {
+            kind = .heading
+            rawText = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if trimmed.hasPrefix("# ") {
+            kind = .heading
+            rawText = String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            kind = .body
+            rawText = trimmed
+        }
+    }
+
+    var displayText: String {
+        rawText.replacingOccurrences(of: #"\\-"#, with: "-", options: .regularExpression)
+    }
+
+    var attributedText: AttributedString? {
+        guard kind == .body else { return nil }
+        return try? AttributedString(markdown: displayText)
+    }
+}
+
+private struct TafsirSheetPresentationModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        } else {
+            content
+        }
+    }
+}
+#endif
+
 struct AyahContextMenuModifier: ViewModifier {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
@@ -92,6 +459,7 @@ struct AyahContextMenuModifier: ViewModifier {
     @State private var draftNote: String = ""
     @State private var showRespectAlert = false
     @State private var showCustomRangeSheet = false
+    @State private var showTafsirSheet = false
 
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
@@ -203,6 +571,15 @@ struct AyahContextMenuModifier: ViewModifier {
                         Label("Remove Note", systemImage: "trash")
                     }
                 }
+
+                if settings.isHafsDisplay {
+                    Button {
+                        settings.hapticFeedback()
+                        showTafsirSheet = true
+                    } label: {
+                        Label("See Tafsir", systemImage: "text.book.closed")
+                    }
+                }
                 
                 if settings.isHafsDisplay {
                     Menu {
@@ -264,6 +641,25 @@ struct AyahContextMenuModifier: ViewModifier {
                     surahNumber: surah,
                     ayahNumber: ayah
                 )
+            }
+            .sheet(isPresented: $showTafsirSheet) {
+                if let surahObj = surahObj {
+                    if #available(iOS 16.0, *) {
+                        AyahTafsirSheet(
+                            surahName: surahObj.nameTransliteration,
+                            surahNumber: surahObj.id,
+                            ayahNumber: ayah
+                        )
+                        .presentationDetents([.medium, .large])
+                        .presentationDragIndicator(.visible)
+                    } else {
+                        AyahTafsirSheet(
+                            surahName: surahObj.nameTransliteration,
+                            surahNumber: surahObj.id,
+                            ayahNumber: ayah
+                        )
+                    }
+                }
             }
             .sheet(isPresented: $showCustomRangeSheet) {
                 if let surahObj = surahObj {

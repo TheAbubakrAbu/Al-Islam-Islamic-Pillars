@@ -701,12 +701,16 @@ final class QuranData: ObservableObject {
                 }
             }
             let endDividerStyle = boundaryStyle(pageChanged: endBoundaryPageChanged, juzChanged: endBoundaryJuzChanged)
+            let endOfSurahDividerStyle: BoundaryDividerStyle = {
+                if surah.id == 114 { return .allGreen }
+                return endDividerStyle
+            }()
 
             result[surah.id] = SurahBoundaryModel(
                 startDivider: startDividerText.map { dividerModel(from: $0, style: startDividerStyle) },
                 startDividerHighlighted: startDividerHighlighted,
                 dividerBeforeAyah: dividerBeforeAyah,
-                endOfSurahDivider: endOfSurahDividerText.map { dividerModel(from: $0, style: endDividerStyle) },
+                endOfSurahDivider: endOfSurahDividerText.map { dividerModel(from: $0, style: endOfSurahDividerStyle) },
                 endDivider: endDividerText.map { dividerModel(from: $0, style: endDividerStyle) },
                 endDividerHighlighted: endDividerHighlighted
             )

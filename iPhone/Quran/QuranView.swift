@@ -901,7 +901,6 @@ struct QuranView: View {
                                     Capsule(style: .continuous)
                                         .stroke(settings.accentColor.color.opacity(0.25), lineWidth: 1)
                                 )
-                                .conditionalGlassEffect()
                             }
                         }
                     }
