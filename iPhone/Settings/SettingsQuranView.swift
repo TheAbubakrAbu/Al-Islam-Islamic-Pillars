@@ -98,7 +98,7 @@ struct SettingsQuranView: View {
                         .padding(.vertical, 2)
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 20) {
                     Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
                         .font(.subheadline)
 

@@ -128,12 +128,12 @@ struct AyahRow: View {
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: -2) {
+                HStack(spacing: 4) {
                     Text("\(surah.id):\(ayah.id)")
-                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .font(.caption.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
-                        .padding(6)
-                        .frame(width: 54, height: 32)
+                        .padding(4)
+                        .frame(width: 54, height: 25)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .conditionalGlassEffect(useColor: 0.1)
@@ -148,16 +148,17 @@ struct AyahRow: View {
                     
                     #if os(watchOS)
                     Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .font(.title2)
                         .foregroundColor(settings.accentColor.color)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 22, height: 22)
                         
                     #else
                     if isBookmarked {
                         Image(systemName: "bookmark.fill")
-                            .font(.title3)
+                            .font(.title2)
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
-                            .frame(width: 32, height: 32)
+                            .frame(width: 22, height: 22)
                     }
 
                     if settings.isHafsDisplay {
@@ -165,10 +166,10 @@ struct AyahRow: View {
                             playbackMenuBlock()
                         } label: {
                             Image(systemName: "play.circle")
-                                .font(.title3)
+                                .font(.title2)
                                 .foregroundColor(settings.accentColor.color)
                                 .conditionalGlassEffect()
-                                .frame(width: 32, height: 32)
+                                .frame(width: 25, height: 25)
                         }
                     }
                     
@@ -176,10 +177,10 @@ struct AyahRow: View {
                         menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: false)
                     } label: {
                         Image(systemName: "ellipsis.circle")
-                            .font(.title3)
+                            .font(.title2)
                             .foregroundColor(settings.accentColor.color)
                             .conditionalGlassEffect()
-                            .frame(width: 32, height: 32)
+                            .frame(width: 25, height: 25)
                     }
                     .sheet(isPresented: $showingAyahSheet) {
                         ShareAyahSheet(

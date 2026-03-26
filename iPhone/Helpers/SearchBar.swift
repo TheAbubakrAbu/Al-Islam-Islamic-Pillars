@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct GlassSearchBar: View {
     @Binding var searchText: String
@@ -54,13 +57,47 @@ struct GlassSearchBar: View {
                 }
                 .buttonStyle(.plain)
                 .clipShape(Rectangle())
-            }            
+            }
+
+            if isFocused {
+                keyboardDismissButton
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
         .padding()
         .conditionalGlassEffect(clear: false)
         .onChange(of: isFocused) { focused in
             onFocusChanged?(focused)
         }
+    }
+
+    private var keyboardDismissButton: some View {
+        Button {
+            dismissKeyboard()
+        } label: {
+            Image(systemName: "keyboard.chevron.compact.down")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.tint)
+                .frame(width: 30, height: 30)
+                .background(
+                    Circle()
+                        .fill(.tint.opacity(0.14))
+                )
+                .overlay(
+                    Circle()
+                        .stroke(.tint.opacity(0.28), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .clipShape(Rectangle())
+    }
+
+    private func dismissKeyboard() {
+        #if os(iOS)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
+        isFocused = false
+        onFocusChanged?(false)
     }
 }
 
@@ -99,12 +136,37 @@ struct SearchBar: View {
                 .buttonStyle(.plain)
                 .clipShape(Rectangle())
             }
+
+            if isFocused {
+                keyboardDismissButton
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
         .padding()
         .conditionalGlassEffect(clear: false)
         .onChange(of: isFocused) { focused in
             onFocusChanged?(focused)
         }
+    }
+
+    private var keyboardDismissButton: some View {
+        Button {
+            dismissKeyboard()
+        } label: {
+            Image(systemName: "keyboard.chevron.compact.down")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .clipShape(Rectangle())
+    }
+
+    private func dismissKeyboard() {
+        #if os(iOS)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
+        isFocused = false
+        onFocusChanged?(false)
     }
 }
 

@@ -723,7 +723,7 @@ struct AyahsView: View {
                             .fill(Color.white.opacity(0.00001))
                             .padding([.horizontal, .bottom], -30)
                             .contentShape(Rectangle())
-                            .onTapGesture { }
+                            .disabled(true)
                     )
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)

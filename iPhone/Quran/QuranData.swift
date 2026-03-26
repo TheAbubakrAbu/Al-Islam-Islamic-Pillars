@@ -1,4 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 struct Surah: Codable, Identifiable {
     let id: Int
@@ -223,24 +228,33 @@ final class TajweedStore {
         )
         guard !normalized.isEmpty else { return nil }
 
-        var attributed = AttributedString(text)
-        attributed.foregroundColor = .primary
+        let attributed = NSMutableAttributedString(string: text)
+        attributed.addAttribute(
+            .foregroundColor,
+            value: platformColor(for: .primary),
+            range: NSRange(location: 0, length: attributed.length)
+        )
 
         for annotation in normalized {
-            guard let range = attributedRange(
-                in: attributed,
+            guard let range = nsRange(
                 source: text,
                 start: annotation.start,
                 end: annotation.end
             ) else { continue }
-            attributed[range].foregroundColor = color(for: annotation.rule)
+            attributed.addAttribute(
+                .foregroundColor,
+                value: platformColor(for: color(for: annotation.rule)),
+                range: range
+            )
         }
 
+        let bridged = AttributedString(attributed)
+
         var cacheForSurah = attributedCache[surah] ?? [:]
-        cacheForSurah[ayah] = attributed
+        cacheForSurah[ayah] = bridged
         attributedCache[surah] = cacheForSurah
 
-        return attributed
+        return bridged
     }
 
     private func load() {
@@ -294,27 +308,41 @@ final class TajweedStore {
         annotation.start >= 0 && annotation.end > annotation.start && annotation.end <= textLength
     }
 
-    private func attributedRange(
-        in attributed: AttributedString,
+    private func nsRange(
         source: String,
         start: Int,
         end: Int
-    ) -> Range<AttributedString.Index>? {
-        guard let stringStart = stringIndex(in: source, scalarOffset: start),
-              let stringEnd = stringIndex(in: source, scalarOffset: end),
-              let attributedStart = AttributedString.Index(stringStart, within: attributed),
-              let attributedEnd = AttributedString.Index(stringEnd, within: attributed) else {
+    ) -> NSRange? {
+        guard let utf16Range = utf16Range(in: source, start: start, end: end) else {
             return nil
         }
 
-        return attributedStart..<attributedEnd
+        return NSRange(location: utf16Range.lowerBound, length: utf16Range.upperBound - utf16Range.lowerBound)
     }
 
-    private func stringIndex(in text: String, scalarOffset: Int) -> String.Index? {
-        let scalars = text.unicodeScalars
-        guard scalarOffset >= 0 && scalarOffset <= scalars.count else { return nil }
-        let scalarIndex = scalars.index(scalars.startIndex, offsetBy: scalarOffset)
-        return String.Index(scalarIndex, within: text)
+    private func utf16Range(
+        in text: String,
+        start: Int,
+        end: Int
+    ) -> Range<Int>? {
+        guard start >= 0, end > start else { return nil }
+
+        let scalars = Array(text.unicodeScalars)
+        guard end <= scalars.count else { return nil }
+
+        let prefixUTF16 = scalars[..<start].reduce(0) { $0 + $1.utf16.count }
+        let targetUTF16 = scalars[start..<end].reduce(0) { $0 + $1.utf16.count }
+        return prefixUTF16..<(prefixUTF16 + targetUTF16)
+    }
+
+    private func platformColor(for color: Color) -> AnyObject {
+        #if canImport(UIKit)
+        return UIColor(color)
+        #elseif canImport(AppKit)
+        return NSColor(color)
+        #else
+        return color as AnyObject
+        #endif
     }
 
     private func color(for rule: String) -> Color {
@@ -325,7 +353,7 @@ final class TajweedStore {
         if rule == "iqlab" { return .indigo }
         if rule == "qalqalah" { return .purple }
         if rule == "hamzat_wasl" { return .pink }
-        if rule == "lam_shamsiyyah" { return .teal }
+        if rule == "lam_shamsiyyah" { return .gray }
         if rule == "silent" { return .secondary }
         return .primary
     }

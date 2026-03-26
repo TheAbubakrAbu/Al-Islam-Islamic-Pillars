@@ -933,6 +933,7 @@ struct QuranView: View {
                             }
                         }
                     )
+                    .frame(height: 25)
                     
                     VStack {
                         if quranPlayer.isLoading || quranPlayer.isPlaying || quranPlayer.isPaused {
@@ -1013,13 +1014,11 @@ struct QuranView: View {
                     .conditionalGlassEffect()
                 }
             }
-            .contentShape(Rectangle())
             .background(
                 Rectangle()
                     .fill(Color.white.opacity(0.00001))
                     .padding([.horizontal, .bottom], -30)
-                    .contentShape(Rectangle())
-                    .onTapGesture { }
+                    .allowsHitTesting(false)
             )
             .padding(.horizontal, 24)
             .padding(.bottom, 8)

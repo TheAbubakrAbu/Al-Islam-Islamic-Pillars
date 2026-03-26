@@ -37,7 +37,6 @@
 		720CCE322E3944F9002DD82E /* QuranData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE042E394375002DD82E /* QuranData.swift */; };
 		720DEC5B2D244EEF006EA342 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720DEC5A2D244EEF006EA342 /* CreditsView.swift */; };
 		72109F312A65D77400BD373E /* Complication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72109F302A65D77400BD373E /* Complication.swift */; };
-		722BBD362F0992D4004F3659 /* AdhanSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722BBD352F0992D4004F3659 /* AdhanSheet.swift */; };
 		723873442F37342E00D3A8CD /* PlayCustomRangeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 723873432F37342E00D3A8CD /* PlayCustomRangeSheet.swift */; };
 		723873662F374BDB00D3A8CD /* QiraahShubah.json in Resources */ = {isa = PBXBuildFile; fileRef = 723873602F374BDB00D3A8CD /* QiraahShubah.json */; };
 		7238736D2F374BDB00D3A8CD /* QiraahShubah.json in Resources */ = {isa = PBXBuildFile; fileRef = 723873602F374BDB00D3A8CD /* QiraahShubah.json */; };
@@ -252,7 +251,6 @@
 		720CCE222E39439E002DD82E /* Globals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Globals.swift; sourceTree = "<group>"; };
 		720DEC5A2D244EEF006EA342 /* CreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
 		72109F302A65D77400BD373E /* Complication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Complication.swift; sourceTree = "<group>"; };
-		722BBD352F0992D4004F3659 /* AdhanSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanSheet.swift; sourceTree = "<group>"; };
 		7230F8962D41CA7C0017DAE3 /* Entitlements-Main.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Entitlements-Main.entitlements"; sourceTree = "<group>"; };
 		723873432F37342E00D3A8CD /* PlayCustomRangeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayCustomRangeSheet.swift; sourceTree = "<group>"; };
 		723873602F374BDB00D3A8CD /* QiraahShubah.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = QiraahShubah.json; sourceTree = "<group>"; };
@@ -446,7 +444,6 @@
 				7260F9332A8715D600E8FF87 /* Al-IslamApp.swift */,
 				72CCAE9F2D42DF5700871A6A /* AppDelegate.swift */,
 				72F7DB712F03FEE50037B059 /* AppReview.swift */,
-				722BBD352F0992D4004F3659 /* AdhanSheet.swift */,
 				7260F9342A8715D600E8FF87 /* LaunchScreen.swift */,
 				72CCAEA32D42DF5700871A6A /* Helpers */,
 				7260F9192A8715D600E8FF87 /* Adhan */,
@@ -835,7 +832,6 @@
 				7260F93F2A8715D600E8FF87 /* AdhanView.swift in Sources */,
 				72CCAEA92D42DF9D00871A6A /* MapView.swift in Sources */,
 				72F7DB6D2F030A630037B059 /* AdhanStructs.swift in Sources */,
-				722BBD362F0992D4004F3659 /* AdhanSheet.swift in Sources */,
 				723873442F37342E00D3A8CD /* PlayCustomRangeSheet.swift in Sources */,
 				7260F9542A8715D600E8FF87 /* LaunchScreen.swift in Sources */,
 				7260F93C2A8715D600E8FF87 /* SettingsView.swift in Sources */,
