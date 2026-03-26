@@ -238,6 +238,7 @@ final class TajweedStore {
         for annotation in normalized {
             guard let range = nsRange(
                 source: text,
+                rule: annotation.rule,
                 start: annotation.start,
                 end: annotation.end
             ) else { continue }
@@ -310,14 +311,43 @@ final class TajweedStore {
 
     private func nsRange(
         source: String,
+        rule: String,
         start: Int,
         end: Int
     ) -> NSRange? {
+        if rule == "lam_shamsiyyah" {
+            return characterClusterRange(in: source, scalarIndex: start)
+        }
+
         guard let utf16Range = utf16Range(in: source, start: start, end: end) else {
             return nil
         }
 
         return NSRange(location: utf16Range.lowerBound, length: utf16Range.upperBound - utf16Range.lowerBound)
+    }
+
+    private func characterClusterRange(
+        in text: String,
+        scalarIndex: Int
+    ) -> NSRange? {
+        guard scalarIndex >= 0 else { return nil }
+
+        var currentScalarOffset = 0
+        var currentUTF16Offset = 0
+        for character in text {
+            let scalarCount = character.unicodeScalars.count
+            let utf16Count = String(character).utf16.count
+            let nextScalarOffset = currentScalarOffset + scalarCount
+
+            if scalarIndex >= currentScalarOffset && scalarIndex < nextScalarOffset {
+                return NSRange(location: currentUTF16Offset, length: utf16Count)
+            }
+
+            currentScalarOffset = nextScalarOffset
+            currentUTF16Offset += utf16Count
+        }
+
+        return nil
     }
 
     private func utf16Range(

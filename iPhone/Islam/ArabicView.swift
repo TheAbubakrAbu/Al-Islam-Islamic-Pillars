@@ -213,8 +213,8 @@ struct ArabicView: View {
                 .pickerStyle(.segmented)
                 .conditionalGlassEffect()
 
-                HStack {
-                    GlassSearchBar(text: $searchText.animation(.easeInOut))
+                HStack(spacing: 0) {
+                    SearchBar(text: $searchText.animation(.easeInOut))
 
                     Menu {
                         Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {
@@ -229,19 +229,12 @@ struct ArabicView: View {
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
                     }
-                    .frame(width: 25, height: 25)
+                    .frame(width: 30, height: 30)
                     .padding()
                     .conditionalGlassEffect()
                 }
+                .padding([.leading, .top], -8)
             }
-            .contentShape(Rectangle())
-            .background(
-                Rectangle()
-                    .fill(Color.white.opacity(0.00001))
-                    .padding([.horizontal, .bottom], -30)
-                    .contentShape(Rectangle())
-                    .disabled(true)
-            )
             .padding(.horizontal, 24)
             .padding(.bottom, 8)
         }

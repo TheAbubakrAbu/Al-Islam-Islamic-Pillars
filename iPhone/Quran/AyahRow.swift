@@ -131,9 +131,9 @@ struct AyahRow: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 4) {
                     Text("\(surah.id):\(ayah.id)")
-                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
-                        .padding(4)
+                        .padding(5)
                         .frame(width: 60, height: 28)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
@@ -149,19 +149,19 @@ struct AyahRow: View {
                     
                     #if os(watchOS)
                     Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                        .font(.title2)
-                        .foregroundColor(settings.accentColor.color)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
                         .frame(width: 22, height: 22)
+                        .foregroundColor(settings.accentColor.color)
                         
                     #else
                     if isBookmarked {
                         Image(systemName: "bookmark.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 25, height: 25)
+                            .frame(width: 22, height: 22)
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
-                            .frame(width: 28, height: 28)
                     }
 
                     if settings.isHafsDisplay {

@@ -159,8 +159,20 @@ struct AyahTafsirSheet: View {
     let ayahNumber: Int
 
     @StateObject private var viewModel = AyahTafsirViewModel()
-    @State private var selectedAuthor: TafsirAuthor = .ibnKathir
+    @AppStorage("quran.selected_tafsir_author") private var selectedAuthorRawValue = TafsirAuthor.ibnKathir.rawValue
     @State private var revealContent = false
+
+    private var selectedAuthor: TafsirAuthor {
+        get { TafsirAuthor(rawValue: selectedAuthorRawValue) ?? .ibnKathir }
+        nonmutating set { selectedAuthorRawValue = newValue.rawValue }
+    }
+
+    private var selectedAuthorBinding: Binding<TafsirAuthor> {
+        Binding(
+            get: { selectedAuthor },
+            set: { selectedAuthor = $0 }
+        )
+    }
 
     private var selectedTafsir: AyahTafsirEntry? {
         viewModel.tafsirs.first { selectedAuthor.matches($0.author) }
@@ -178,7 +190,7 @@ struct AyahTafsirSheet: View {
                         VStack(alignment: .leading, spacing: 16) {
                             noticeCard
 
-                            Picker("Tafsir", selection: $selectedAuthor.animation(.easeInOut)) {
+                            Picker("Tafsir", selection: selectedAuthorBinding.animation(.easeInOut)) {
                                 ForEach(TafsirAuthor.allCases) { author in
                                     Text(author.shortTitle).tag(author)
                                 }

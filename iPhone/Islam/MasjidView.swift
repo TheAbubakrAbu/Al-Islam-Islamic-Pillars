@@ -123,7 +123,7 @@ struct MasjidLocatorView: View {
         .overlay(alignment: .top) {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 8) {
-                    GlassSearchBar(text: $searchText.animation(.easeInOut))
+                    SearchBar(text: $searchText.animation(.easeInOut))
 
                     if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
                         HStack {

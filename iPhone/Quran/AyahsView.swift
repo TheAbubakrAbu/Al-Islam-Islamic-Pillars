@@ -665,22 +665,19 @@ struct AyahsView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 8) {
-                    if settings.qiraatComparisonMode {
-                        HStack {
+                    if settings.qiraatComparisonMode || settings.showTajweedColors {
+                        HStack(alignment: .bottom, spacing: 8) {
+                            if settings.showTajweedColors {
+                                TajweedLegendMenu()
+                            }
+
                             Spacer()
                             
-                            ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
-                                .font(.caption)
-                                .foregroundColor(settings.accentColor.color)
-                                .tint(settings.accentColor.color)
-                                .accentColor(settings.accentColor.color)
-                                .padding(4)
-                                .background(Color.clear.background(.ultraThinMaterial))
-                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                                .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                                .conditionalGlassEffect(useColor: 0.25)
-                                .padding(.horizontal, 24)
+                            if settings.qiraatComparisonMode {
+                                ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
+                            }
                         }
+                        .padding(.horizontal, 24)
                     }
                 
                     VStack(spacing: 6) {
@@ -710,23 +707,16 @@ struct AyahsView: View {
                                 }
                         }
                         
-                        HStack {
-                            GlassSearchBar(text: $searchText.animation(.easeInOut))
+                        HStack(spacing: 0) {
+                            SearchBar(text: $searchText.animation(.easeInOut))
                             
                             playButton(proxy: proxy)
-                                .frame(width: 25, height: 25)
+                                .frame(width: 30, height: 30)
                                 .padding()
                                 .conditionalGlassEffect()
                         }
+                        .padding([.leading, .top], -8)
                     }
-                    .contentShape(Rectangle())
-                    .background(
-                        Rectangle()
-                            .fill(Color.white.opacity(0.00001))
-                            .padding([.horizontal, .bottom], -30)
-                            .contentShape(Rectangle())
-                            .disabled(true)
-                    )
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
                     .animation(.easeInOut, value: quranPlayer.isPlaying)
@@ -740,9 +730,9 @@ struct AyahsView: View {
         #if !os(watchOS)
         .navigationTitle(surah.nameEnglish)
         .toolbar {
-            ToolbarItem(placement: .principal) {
+            /*ToolbarItem(placement: .principal) {
                 surahTitlePickerButton
-            }
+            }*/
 
             ToolbarItem(placement: .navigationBarTrailing) {
                 navBarTitle
@@ -960,8 +950,10 @@ struct AyahsView: View {
             Text(surah.nameEnglish)
                 .font(.headline)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .minimumScaleFactor(0.5)
                 .foregroundColor(.primary)
+                .padding(6)
+                .conditionalGlassEffect()
         }
     }
 
@@ -976,8 +968,7 @@ struct AyahsView: View {
             }
             .font(.footnote)
             .foregroundColor(settings.accentColor.color)
-            .padding(.vertical, 4)
-            .padding(.horizontal, 6)
+            .padding(6)
         }
     }
 
@@ -1101,9 +1092,10 @@ private struct SurahPickerSheet: View {
 }
 #endif
 
-// MARK: - Arabic Text Riwayah picker (single source of qiraat options)
 struct ArabicTextRiwayahPicker: View {
+    @EnvironmentObject private var settings: Settings
     @Binding var selection: String
+    var useSimpleIOSPicker: Bool = false
 
     private static let options: [(label: String, tag: String)] = [
         ("Hafs an Asim (default)", ""),
@@ -1119,14 +1111,107 @@ struct ArabicTextRiwayahPicker: View {
         ("As-Susi an Abi Amr", "As-Susi an Abi Amr")
     ]
 
+    private var currentLabel: String {
+        Self.options.first(where: { $0.tag == selection })?.label ?? "Arabic Riwayah"
+    }
+
     var body: some View {
+        #if os(watchOS)
         Picker("Arabic Riwayah", selection: $selection) {
             ForEach(Self.options, id: \.tag) { option in
                 Text(option.label).tag(option.tag)
             }
         }
+        #else
+        if useSimpleIOSPicker {
+            Picker("Arabic Riwayah", selection: $selection) {
+                ForEach(Self.options, id: \.tag) { option in
+                    Text(option.label).tag(option.tag)
+                }
+            }
+        } else {
+            Menu {
+                ForEach(Self.options, id: \.tag) { option in
+                    Button {
+                        selection = option.tag
+                    } label: {
+                        if option.tag == selection {
+                            Label(option.label, systemImage: "checkmark")
+                        } else {
+                            Text(option.label)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(currentLabel)
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+                        .lineLimit(1)
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(settings.accentColor.color.opacity(0.9))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                .conditionalGlassEffect(useColor: 0.25)
+            }
+        }
+        #endif
     }
 }
+
+#if !os(watchOS)
+private struct TajweedLegendMenu: View {
+    @EnvironmentObject private var settings: Settings
+
+    private let items: [(label: String, color: Color)] = [
+        ("Madd", .red),
+        ("Ghunnah", .green),
+        ("Idghaam", .blue),
+        ("Ikhfa", .orange),
+        ("Iqlab", .indigo),
+        ("Qalqalah", .purple),
+        ("Hamzat Wasl", .pink),
+        ("Lam Shamsiyyah", .gray),
+        ("Silent", .secondary)
+    ]
+
+    var body: some View {
+        Menu {
+            ForEach(items, id: \.label) { item in
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(item.color)
+                        .frame(width: 5, height: 5)
+
+                    Text(item.label)
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    ForEach(items.prefix(5), id: \.label) { item in
+                        Circle()
+                            .fill(item.color)
+                            .frame(width: 5, height: 5)
+                    }
+                }
+
+                Text("Legend")
+                    .font(.caption)
+                    .foregroundColor(settings.accentColor.color)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+            .conditionalGlassEffect(useColor: 0.25)
+        }
+    }
+}
+#endif
 
 #Preview {
     QuranView()

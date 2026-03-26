@@ -136,11 +136,12 @@ struct SettingsQuranView: View {
                     #endif
                     .disabled(!settings.showArabicText)
                     
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 16) {
                         Stepper(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1) {
                             Text("Arabic Font Size: \(Int(settings.fontArabicSize))")
                                 .font(.subheadline)
                         }
+                        
                         Slider(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1)
                     }
                     
@@ -175,7 +176,7 @@ struct SettingsQuranView: View {
                         .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishSaheeh)
                     
                     if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
                                 Text("English Font Size: \(Int(settings.englishFontSize))")
                                     .font(.subheadline)
@@ -223,7 +224,10 @@ struct SettingsQuranView: View {
                 header: Text("RIWAYAH / QIRAAH"),
                 footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")
             ) {
-                ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
+                ArabicTextRiwayahPicker(
+                    selection: $settings.displayQiraah.animation(.easeInOut),
+                    useSimpleIOSPicker: true
+                )
                     .font(.subheadline)
                 
                 Text("""
