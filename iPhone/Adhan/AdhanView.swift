@@ -1,15 +1,23 @@
 import SwiftUI
+import CoreLocation
 
 struct AdhanView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var namesData: NamesViewModel
+    @Environment(\.dismiss) private var dismiss
     
     @Environment(\.scenePhase) private var scenePhase
     
     @State private var showingSettingsSheet = false
     @State private var showBigQibla = false
+    let presentedAsSheet: Bool
     
     @State private var showAlert: AlertType?
+
+    init(presentedAsSheet: Bool = false) {
+        self.presentedAsSheet = presentedAsSheet
+    }
+
     enum AlertType: Identifiable {
         case travelTurnOnAutomatic, travelTurnOffAutomatic, calculationAutomaticChanged, locationAlert, notificationAlert
 
@@ -44,6 +52,105 @@ struct AdhanView: View {
         }
     }
 
+    private var distanceFromHomeText: String? {
+        guard
+            let current = settings.currentLocation,
+            let home = settings.homeLocation,
+            current.latitude != 1000,
+            current.longitude != 1000
+        else { return nil }
+
+        let here = CLLocation(latitude: current.latitude, longitude: current.longitude)
+        let there = CLLocation(latitude: home.latitude, longitude: home.longitude)
+        let meters = here.distance(from: there)
+        let miles = meters / 1609.34
+        let kilometers = meters / 1000
+
+        if miles >= 10 {
+            return String(format: "%.0f mi (%.0f km)", miles, kilometers)
+        } else {
+            return String(format: "%.1f mi (%.1f km)", miles, kilometers)
+        }
+    }
+
+    private var currentLocationSummary: String {
+        if let current = settings.currentLocation {
+            return current.city
+        }
+        return "Unavailable"
+    }
+
+    private var prayerCalculationSummary: String {
+        settings.hanafiMadhab ? "\(settings.prayerCalculation)\nHanafi Asr" : settings.prayerCalculation
+    }
+
+    private var summaryItems: [(title: String, value: String)] {
+        var items: [(String, String)] = [
+            ("Current Location", currentLocationSummary),
+            ("Prayer Calculation", prayerCalculationSummary)
+        ]
+
+        if let home = settings.homeLocation {
+            items.append(("Home Location", home.city))
+            items.append(("Travel Distance", distanceFromHomeText ?? "Unavailable"))
+        }
+
+        return items
+    }
+
+    private let summaryGridColumns = [
+        GridItem(.flexible(), spacing: 10, alignment: .top),
+        GridItem(.flexible(), spacing: 10, alignment: .top)
+    ]
+
+    @ViewBuilder
+    private func summaryTile(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text(value)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+                .multilineTextAlignment(.leading)
+        }
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .conditionalGlassEffect(rectangle: true, useColor: 0.15)
+    }
+
+    private var locationCalculationCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: summaryGridColumns, alignment: .leading, spacing: 10) {
+                ForEach(Array(summaryItems.enumerated()), id: \.offset) { _, item in
+                    summaryTile(title: item.title, value: item.value)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var dialogTitle: String {
+        switch showAlert {
+        case .travelTurnOnAutomatic:
+            return "Traveling Mode Detected"
+        case .travelTurnOffAutomatic:
+            return "Traveling Mode Updated"
+        case .calculationAutomaticChanged:
+            return "Calculation Method Changed"
+        case .locationAlert:
+            return "Location Access Needed"
+        case .notificationAlert:
+            return "Notifications Off"
+        case .none:
+            return ""
+        }
+    }
+
     var body: some View {
         Group {
             #if os(iOS)
@@ -63,7 +170,7 @@ struct AdhanView: View {
             }
             #endif
         }
-        .confirmationDialog("", isPresented: Binding(
+        .confirmationDialog(dialogTitle, isPresented: Binding(
             get: { showAlert != nil },
             set: { if !$0 { showAlert = nil } }
         ), titleVisibility: .visible) {
@@ -279,6 +386,10 @@ struct AdhanView: View {
                 PrayerList()
             }
             #endif
+
+            Section(header: Text("LOCATION AND CALCULATION")) {
+                locationCalculationCard
+            }
         }
         .refreshable {
             prayerTimeRefresh(force: true)
@@ -294,6 +405,14 @@ struct AdhanView: View {
         .navigationTitle("Al-Adhan")
         #if !os(watchOS)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if presentedAsSheet {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     settings.hapticFeedback()
@@ -306,7 +425,7 @@ struct AdhanView: View {
         }
         .sheet(isPresented: $showingSettingsSheet) {
             NavigationView {
-                SettingsAdhanView(showNotifications: true)
+                SettingsAdhanView(showNotifications: true, presentedAsSheet: true)
             }
         }
         #endif
@@ -315,6 +434,7 @@ struct AdhanView: View {
 }
 
 #Preview {
-    AdhanView()
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        AdhanView()
+    }
 }

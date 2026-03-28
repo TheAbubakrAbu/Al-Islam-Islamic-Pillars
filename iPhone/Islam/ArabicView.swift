@@ -229,7 +229,7 @@ struct ArabicView: View {
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
                     }
-                    .frame(width: 30, height: 30)
+                    .frame(width: 26, height: 26)
                     .padding()
                     .conditionalGlassEffect()
                 }
@@ -237,6 +237,7 @@ struct ArabicView: View {
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 8)
+            .background(Color.white.opacity(0.00001))
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
@@ -798,6 +799,7 @@ struct StopInfoRow: View {
 }
 
 #Preview {
-    ArabicView()
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        ArabicView()
+    }
 }

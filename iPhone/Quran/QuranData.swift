@@ -200,25 +200,135 @@ struct TajweedAyahEntry: Codable, Hashable {
     let annotations: [TajweedRange]
 }
 
+enum TajweedLegendCategory: String, CaseIterable, Identifiable {
+    case tafkhim
+    case qalqalah
+    case ikhfaGhunnah
+    case idghaamSilent
+    case madd246
+    case madd2
+    case madd6
+    case madd45
+
+    var id: String { rawValue }
+
+    var englishTitle: String {
+        switch self {
+        case .tafkhim: return "Tafkhim"
+        case .qalqalah: return "Qalqalah"
+        case .ikhfaGhunnah: return "Ikhfa / Ghunnah"
+        case .idghaamSilent: return "Idghaam / Silent"
+        case .madd246: return "Madd 2, 4, or 6"
+        case .madd2: return "Madd 2"
+        case .madd6: return "Madd 6"
+        case .madd45: return "Madd 4 or 5"
+        }
+    }
+
+    var arabicTitle: String {
+        switch self {
+        case .tafkhim: return "تفخيم"
+        case .qalqalah: return "قلقلة"
+        case .ikhfaGhunnah: return "إخفاء / الغنة"
+        case .idghaamSilent: return "إدغام / ما لا يُلفظ"
+        case .madd246: return "مد ٢ أو ٤ أو ٦ جوازًا"
+        case .madd2: return "مد حركتان"
+        case .madd6: return "مد ٦ حركات لزوماً"
+        case .madd45: return "مد واجب ٤ أو ٥ حركات"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .tafkhim: return Color(red: 0.0, green: 0.45, blue: 0.55)
+        case .qalqalah: return Color(red: 0.0, green: 0.75, blue: 0.75)
+        case .ikhfaGhunnah: return Color(red: 0.0, green: 0.65, blue: 0.30)
+        case .idghaamSilent: return .gray
+        case .madd246: return Color(red: 0.85, green: 0.50, blue: 0.0)
+        case .madd2: return Color(red: 0.95, green: 0.75, blue: 0.2)
+        case .madd6: return Color(red: 0.85, green: 0.0, blue: 0.45)
+        case .madd45: return Color(red: 0.70, green: 0.0, blue: 0.60)
+        }
+    }
+
+    var shortDescription: String {
+        switch self {
+        case .tafkhim: return "Heavy pronunciation."
+        case .qalqalah: return "A bouncing echo sound."
+        case .ikhfaGhunnah: return "Hidden or nasalized sound."
+        case .idghaamSilent: return "Merged or not pronounced."
+        case .madd246: return "Permissible madd length."
+        case .madd2: return "Natural madd."
+        case .madd6: return "Obligatory six counts."
+        case .madd45: return "Obligatory connected madd."
+        }
+    }
+
+    var longDescription: String {
+        switch self {
+        case .tafkhim:
+            return "Tafkhim marks heavy pronunciation. This includes the permanently heavy letters, and also special heavy cases like heavy raa and the heavy laam in the Name of Allah in the right contexts."
+        case .qalqalah:
+            return "Qalqalah gives a slight echo or bounce to the letters of qalqalah when they are in sukoon, especially at a stop."
+        case .ikhfaGhunnah:
+            return "This color groups ikhfa, ghunnah, and similar nasalized recitation cases. It helps show where a softened hidden sound or clear nasal holding is needed."
+        case .idghaamSilent:
+            return "This color groups idghaam, letters that are not pronounced, and similar merged or dropped-reading cases."
+        case .madd246:
+            return "This marks permissible madd cases, such as places where the elongation may be read with multiple accepted lengths."
+        case .madd2:
+            return "This marks natural madd, where the sound is lengthened for two counts."
+        case .madd6:
+            return "This marks obligatory madd that is read with six counts."
+        case .madd45:
+            return "This marks madd wajib, such as madd muttasil, where the elongation is read with four or five counts."
+        }
+    }
+}
+
 final class TajweedStore {
     static let shared = TajweedStore()
 
     private static let implicitBismillahScalarCount = 39
     private static let resourceName = "TajweedRules"
+    private static let heavyBaseLetters: Set<Character> = ["خ", "ص", "ض", "ط", "ظ", "غ", "ق"]
+    private static let qalqalahLetters: Set<Character> = ["ق", "ط", "ب", "ج", "د"]
+    private static let maddBaseLetters: Set<Character> = ["ا", "و", "ي", "ى", "آ"]
+    private static let alifFollowerLetters: Set<Character> = ["ا", "ى"]
+    private static let fatha = UnicodeScalar(0x064E)!
+    private static let damma = UnicodeScalar(0x064F)!
+    private static let fathatayn = UnicodeScalar(0x064B)!
+    private static let dammatayn = UnicodeScalar(0x064C)!
+    private static let kasra = UnicodeScalar(0x0650)!
+    private static let kasratayn = UnicodeScalar(0x064D)!
+    private static let sukoon = UnicodeScalar(0x0652)!
+    private static let sukoonUthmani = UnicodeScalar(0x06E1)!
+    private static let maddahAbove = UnicodeScalar(0x0653)!
+    private static let daggerAlif = UnicodeScalar(0x0670)!
+    private static let smallWaw = UnicodeScalar(0x06E5)!
+    private static let smallYeh = UnicodeScalar(0x06E6)!
 
     private var ayahLookup: [Int: [Int: [TajweedRange]]] = [:]
     private var attributedCache: [Int: [Int: AttributedString]] = [:]
+    private var lastVisibilitySignature = ""
+    private let settings = Settings.shared
 
     private init() {
         load()
     }
 
     func attributedText(surah: Int, ayah: Int, text: String) -> AttributedString? {
+        let visibilitySignature = tajweedVisibilitySignature()
+        if visibilitySignature != lastVisibilitySignature {
+            attributedCache.removeAll()
+            lastVisibilitySignature = visibilitySignature
+        }
+
         if let cached = attributedCache[surah]?[ayah] {
             return cached
         }
 
-        guard let annotations = ayahLookup[surah]?[ayah] else { return nil }
+        let annotations = ayahLookup[surah]?[ayah] ?? []
 
         let normalized = normalizedAnnotations(
             annotations,
@@ -226,7 +336,6 @@ final class TajweedStore {
             ayah: ayah,
             textLength: text.unicodeScalars.count
         )
-        guard !normalized.isEmpty else { return nil }
 
         let attributed = NSMutableAttributedString(string: text)
         attributed.addAttribute(
@@ -236,6 +345,9 @@ final class TajweedStore {
         )
 
         for annotation in normalized {
+            guard let category = category(for: annotation.rule), settings.isTajweedCategoryVisible(category) else {
+                continue
+            }
             guard let range = nsRange(
                 source: text,
                 rule: annotation.rule,
@@ -244,9 +356,15 @@ final class TajweedStore {
             ) else { continue }
             attributed.addAttribute(
                 .foregroundColor,
-                value: platformColor(for: color(for: annotation.rule)),
+                value: platformColor(for: category.color),
                 range: range
             )
+        }
+
+        let hasHeavyStyling = settings.isTajweedCategoryVisible(.tafkhim) && applyHeavyLetterColoring(to: attributed, source: text)
+
+        if normalized.isEmpty && !hasHeavyStyling {
+            return nil
         }
 
         let bridged = AttributedString(attributed)
@@ -316,53 +434,302 @@ final class TajweedStore {
         end: Int
     ) -> NSRange? {
         if rule == "lam_shamsiyyah" {
-            return characterClusterRange(in: source, scalarIndex: start)
+            return singleScalarNSRange(in: source, startScalar: start, endScalar: end, preferredScalar: "ل")
+        }
+        if rule == "qalqalah" {
+            return singleClusterNSRange(
+                in: source,
+                startScalar: start,
+                endScalar: end,
+                preferredBases: Self.qalqalahLetters,
+                includePreviousPreferredBaseForCombiningCluster: true
+            )
+        }
+        if isMaddRule(rule) {
+            return maddNSRange(in: source, startScalar: start, endScalar: end)
         }
 
-        guard let utf16Range = utf16Range(in: source, start: start, end: end) else {
+        guard let clusterRange = characterClusterUTF16Range(
+            in: source,
+            startScalar: start,
+            endScalar: end,
+            extendForwardClusters: 0
+        ) else {
             return nil
         }
 
-        return NSRange(location: utf16Range.lowerBound, length: utf16Range.upperBound - utf16Range.lowerBound)
+        return NSRange(location: clusterRange.lowerBound, length: clusterRange.upperBound - clusterRange.lowerBound)
     }
 
-    private func characterClusterRange(
+    private func singleScalarNSRange(
         in text: String,
-        scalarIndex: Int
+        startScalar: Int,
+        endScalar: Int,
+        preferredScalar: Character? = nil
     ) -> NSRange? {
-        guard scalarIndex >= 0 else { return nil }
+        guard startScalar >= 0, endScalar > startScalar else { return nil }
 
-        var currentScalarOffset = 0
-        var currentUTF16Offset = 0
-        for character in text {
-            let scalarCount = character.unicodeScalars.count
-            let utf16Count = String(character).utf16.count
-            let nextScalarOffset = currentScalarOffset + scalarCount
+        var scalarOffset = 0
+        var utf16Offset = 0
+        var fallbackRange: NSRange?
 
-            if scalarIndex >= currentScalarOffset && scalarIndex < nextScalarOffset {
-                return NSRange(location: currentUTF16Offset, length: utf16Count)
+        for scalar in text.unicodeScalars {
+            let length = String(scalar).utf16.count
+            defer {
+                scalarOffset += 1
+                utf16Offset += length
             }
 
-            currentScalarOffset = nextScalarOffset
-            currentUTF16Offset += utf16Count
+            guard scalarOffset >= startScalar, scalarOffset < endScalar else { continue }
+
+            let range = NSRange(location: utf16Offset, length: length)
+            if fallbackRange == nil {
+                fallbackRange = range
+            }
+
+            if preferredScalar == nil || Character(scalar) == preferredScalar {
+                return range
+            }
+        }
+
+        return fallbackRange
+    }
+
+    private func singleClusterNSRange(
+        in text: String,
+        startScalar: Int,
+        endScalar: Int,
+        preferredBases: Set<Character>,
+        includePreviousPreferredBaseForCombiningCluster: Bool = false
+    ) -> NSRange? {
+        guard startScalar >= 0, endScalar > startScalar else { return nil }
+
+        let targetScalars = startScalar..<endScalar
+        let characters = Array(text)
+        var currentScalarOffset = 0
+        var currentUTF16Offset = 0
+
+        for (index, character) in characters.enumerated() {
+            let clusterText = String(character)
+            let scalarCount = character.unicodeScalars.count
+            let utf16Count = clusterText.utf16.count
+            let scalarRange = currentScalarOffset..<(currentScalarOffset + scalarCount)
+            let utf16Range = NSRange(location: currentUTF16Offset, length: utf16Count)
+
+            defer {
+                currentScalarOffset += scalarCount
+                currentUTF16Offset += utf16Count
+            }
+
+            guard scalarRange.overlaps(targetScalars) else { continue }
+
+            if let base = clusterText.first, preferredBases.contains(base) {
+                return utf16Range
+            }
+
+            if includePreviousPreferredBaseForCombiningCluster,
+               isCombiningOnlyCluster(character),
+               index > 0 {
+                if let previousRange = previousPreferredClusterRange(
+                    in: characters,
+                    before: index,
+                    preferredBases: preferredBases
+                ) {
+                    return NSRange(
+                        location: previousRange.location,
+                        length: (utf16Range.location + utf16Range.length) - previousRange.location
+                    )
+                }
+            }
         }
 
         return nil
     }
 
-    private func utf16Range(
+    private func isMaddRule(_ rule: String) -> Bool {
+        rule == "madd_2"
+        || rule == "madd_246"
+        || rule == "madd_6"
+        || rule == "madd_muttasil"
+        || rule == "madd_munfasil"
+    }
+
+    private func maddNSRange(in text: String, startScalar: Int, endScalar: Int) -> NSRange? {
+        guard startScalar >= 0, endScalar > startScalar else { return nil }
+
+        let targetScalars = startScalar..<endScalar
+        let characters = Array(text)
+        var currentScalarOffset = 0
+        var currentUTF16Offset = 0
+
+        for (index, character) in characters.enumerated() {
+            let clusterText = String(character)
+            let scalarCount = character.unicodeScalars.count
+            let utf16Count = clusterText.utf16.count
+            let scalarRange = currentScalarOffset..<(currentScalarOffset + scalarCount)
+            let utf16Range = NSRange(location: currentUTF16Offset, length: utf16Count)
+
+            defer {
+                currentScalarOffset += scalarCount
+                currentUTF16Offset += utf16Count
+            }
+
+            guard scalarRange.overlaps(targetScalars) else { continue }
+
+            if let tinyRange = selectedScalarsRange(
+                in: clusterText,
+                globalUTF16Offset: currentUTF16Offset,
+                matching: { scalar in
+                    scalar == Self.daggerAlif
+                    || scalar == Self.smallWaw
+                    || scalar == Self.smallYeh
+                    || scalar == Self.maddahAbove
+                },
+                requiring: { scalars in
+                    scalars.contains(Self.daggerAlif)
+                    || scalars.contains(Self.smallWaw)
+                    || scalars.contains(Self.smallYeh)
+                }
+            ) {
+                return tinyRange
+            }
+
+            if let base = clusterText.first, Self.maddBaseLetters.contains(base) {
+                return utf16Range
+            }
+
+            if clusterText.unicodeScalars.contains(Self.maddahAbove) {
+                return utf16Range
+            }
+
+            if isCombiningOnlyCluster(character), index > 0 {
+                if let previousRange = previousPreferredClusterRange(
+                    in: characters,
+                    before: index,
+                    preferredBases: Self.maddBaseLetters
+                ) {
+                    return NSRange(
+                        location: previousRange.location,
+                        length: (utf16Range.location + utf16Range.length) - previousRange.location
+                    )
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private func previousPreferredClusterRange(
+        in characters: [Character],
+        before index: Int,
+        preferredBases: Set<Character>
+    ) -> NSRange? {
+        guard index > 0 else { return nil }
+
+        var utf16Offset = 0
+        var ranges: [NSRange] = []
+        ranges.reserveCapacity(characters.count)
+
+        for character in characters {
+            let length = String(character).utf16.count
+            ranges.append(NSRange(location: utf16Offset, length: length))
+            utf16Offset += length
+        }
+
+        var candidateIndex = index - 1
+        while candidateIndex >= 0 {
+            let text = String(characters[candidateIndex])
+            if isCombiningOnlyCluster(characters[candidateIndex]) {
+                candidateIndex -= 1
+                continue
+            }
+            if let base = text.first, preferredBases.contains(base) {
+                return ranges[candidateIndex]
+            }
+            break
+        }
+
+        return nil
+    }
+
+    private func selectedScalarsRange(
+        in clusterText: String,
+        globalUTF16Offset: Int,
+        matching: (UnicodeScalar) -> Bool,
+        requiring requirement: ([UnicodeScalar]) -> Bool
+    ) -> NSRange? {
+        let scalars = Array(clusterText.unicodeScalars)
+        guard requirement(scalars) else { return nil }
+
+        var localUTF16Offset = 0
+        var start: Int?
+        var end: Int?
+
+        for scalar in scalars {
+            let length = String(scalar).utf16.count
+            defer { localUTF16Offset += length }
+
+            guard matching(scalar) else { continue }
+            if start == nil {
+                start = globalUTF16Offset + localUTF16Offset
+            }
+            end = globalUTF16Offset + localUTF16Offset + length
+        }
+
+        guard let start, let end, end > start else { return nil }
+        return NSRange(location: start, length: end - start)
+    }
+
+    private func isCombiningOnlyCluster(_ character: Character) -> Bool {
+        let scalars = Array(String(character).unicodeScalars)
+        guard !scalars.isEmpty else { return false }
+        return scalars.allSatisfy { $0.properties.generalCategory == .nonspacingMark || $0.properties.generalCategory == .spacingMark }
+    }
+
+    private func characterClusterUTF16Range(
         in text: String,
-        start: Int,
-        end: Int
+        startScalar: Int,
+        endScalar: Int,
+        extendForwardClusters: Int = 0
     ) -> Range<Int>? {
-        guard start >= 0, end > start else { return nil }
+        guard startScalar >= 0, endScalar > startScalar else { return nil }
 
-        let scalars = Array(text.unicodeScalars)
-        guard end <= scalars.count else { return nil }
+        struct ClusterSlice {
+            let scalarRange: Range<Int>
+            let utf16Range: Range<Int>
+        }
 
-        let prefixUTF16 = scalars[..<start].reduce(0) { $0 + $1.utf16.count }
-        let targetUTF16 = scalars[start..<end].reduce(0) { $0 + $1.utf16.count }
-        return prefixUTF16..<(prefixUTF16 + targetUTF16)
+        var clusters: [ClusterSlice] = []
+        clusters.reserveCapacity(text.count)
+
+        var currentScalarOffset = 0
+        var currentUTF16Offset = 0
+
+        for character in text {
+            let scalarCount = character.unicodeScalars.count
+            let utf16Count = String(character).utf16.count
+            let scalarRange = currentScalarOffset..<(currentScalarOffset + scalarCount)
+            let utf16Range = currentUTF16Offset..<(currentUTF16Offset + utf16Count)
+
+            clusters.append(ClusterSlice(scalarRange: scalarRange, utf16Range: utf16Range))
+
+            currentScalarOffset += scalarCount
+            currentUTF16Offset += utf16Count
+        }
+
+        guard endScalar <= currentScalarOffset else { return nil }
+
+        let targetScalars = startScalar..<endScalar
+        guard let firstIndex = clusters.firstIndex(where: { $0.scalarRange.overlaps(targetScalars) }) else {
+            return nil
+        }
+
+        guard let lastMatchedIndex = clusters.lastIndex(where: { $0.scalarRange.overlaps(targetScalars) }) else {
+            return nil
+        }
+
+        let lastIndex = min(lastMatchedIndex + extendForwardClusters, clusters.count - 1)
+        return clusters[firstIndex].utf16Range.lowerBound..<clusters[lastIndex].utf16Range.upperBound
     }
 
     private func platformColor(for color: Color) -> AnyObject {
@@ -375,17 +742,195 @@ final class TajweedStore {
         #endif
     }
 
-    private func color(for rule: String) -> Color {
-        if rule.hasPrefix("madd") { return .red }
-        if rule == "ghunnah" { return .green }
-        if rule.hasPrefix("idghaam") { return .blue }
-        if rule.hasPrefix("ikhfa") { return .orange }
-        if rule == "iqlab" { return .indigo }
-        if rule == "qalqalah" { return .purple }
-        if rule == "hamzat_wasl" { return .pink }
-        if rule == "lam_shamsiyyah" { return .gray }
-        if rule == "silent" { return .secondary }
-        return .primary
+    private struct CharacterClusterInfo {
+        let text: String
+        let utf16Range: Range<Int>
+
+        var base: Character? {
+            text.first
+        }
+
+        func contains(_ scalar: UnicodeScalar) -> Bool {
+            text.unicodeScalars.contains(scalar)
+        }
+    }
+
+    private func characterClusters(in text: String) -> [CharacterClusterInfo] {
+        var clusters: [CharacterClusterInfo] = []
+        clusters.reserveCapacity(text.count)
+
+        var currentUTF16Offset = 0
+        for character in text {
+            let clusterText = String(character)
+            let utf16Count = clusterText.utf16.count
+            let utf16Range = currentUTF16Offset..<(currentUTF16Offset + utf16Count)
+            clusters.append(CharacterClusterInfo(text: clusterText, utf16Range: utf16Range))
+            currentUTF16Offset += utf16Count
+        }
+
+        return clusters
+    }
+
+    private func tajweedVisibilitySignature() -> String {
+        TajweedLegendCategory.allCases
+            .map { settings.isTajweedCategoryVisible($0) ? "1" : "0" }
+            .joined(separator: "")
+    }
+
+    private func applyHeavyLetterColoring(to attributed: NSMutableAttributedString, source text: String) -> Bool {
+        let clusters = characterClusters(in: text)
+        var applied = false
+
+        for index in clusters.indices where shouldUseHeavyColor(clusters: clusters, index: index) {
+            let range = NSRange(
+                location: clusters[index].utf16Range.lowerBound,
+                length: clusters[index].utf16Range.upperBound - clusters[index].utf16Range.lowerBound
+            )
+            attributed.addAttribute(
+                .foregroundColor,
+                value: platformColor(for: TajweedLegendCategory.tafkhim.color),
+                range: range
+            )
+            applied = true
+        }
+
+        return applied
+    }
+
+    private func shouldUseHeavyColor(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard let base = clusters[index].base else { return false }
+
+        if Self.heavyBaseLetters.contains(base) {
+            return true
+        }
+
+        if base == "ر" {
+            return isHeavyRaa(clusters: clusters, index: index)
+        }
+
+        if base == "ل" {
+            return isHeavyAllahLam(clusters: clusters, index: index)
+        }
+
+        if Self.alifFollowerLetters.contains(base), index > 0 {
+            return isHeavyCarrier(clusters: clusters, index: index - 1)
+        }
+
+        return false
+    }
+
+    private func isHeavyCarrier(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard let base = clusters[index].base else { return false }
+        if Self.heavyBaseLetters.contains(base) {
+            return true
+        }
+        if base == "ر" {
+            return isHeavyRaa(clusters: clusters, index: index)
+        }
+        if base == "ل" {
+            return isHeavyAllahLam(clusters: clusters, index: index)
+        }
+        return false
+    }
+
+    private func previousCluster(in clusters: [CharacterClusterInfo], before index: Int) -> CharacterClusterInfo? {
+        guard index > 0 else { return nil }
+        return clusters[index - 1]
+    }
+
+    private func hasHeavyOpenVowel(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.fatha) ||
+        cluster.contains(Self.damma) ||
+        cluster.contains(Self.fathatayn) ||
+        cluster.contains(Self.dammatayn)
+    }
+
+    private func hasKasraFamily(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.kasra) ||
+        cluster.contains(Self.kasratayn)
+    }
+
+    private func hasSukoon(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.sukoon) || cluster.contains(Self.sukoonUthmani)
+    }
+
+    private func hasDaggerAlif(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.daggerAlif)
+    }
+
+    private func isHeavyRaa(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        let current = clusters[index]
+
+        if hasKasraFamily(current) {
+            return false
+        }
+
+        if hasHeavyOpenVowel(current) {
+            return true
+        }
+
+        guard hasSukoon(current), let prev = previousCluster(in: clusters, before: index) else {
+            return false
+        }
+
+        if hasHeavyOpenVowel(prev) || hasDaggerAlif(prev) {
+            return true
+        }
+
+        if let prevBase = prev.base, Self.alifFollowerLetters.contains(prevBase), index >= 2 {
+            let beforePrev = clusters[index - 2]
+            if hasHeavyOpenVowel(beforePrev) || hasDaggerAlif(beforePrev) {
+                return true
+            }
+        }
+
+        if prev.base == "و", hasSukoon(prev), index >= 2 {
+            let beforePrev = clusters[index - 2]
+            if beforePrev.contains(Self.damma) || beforePrev.contains(Self.dammatayn) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private func isHeavyAllahLam(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters[index].base == "ل" else { return false }
+
+        let isFirstLamInAllah =
+            index >= 1 &&
+            clusters[index - 1].base == "ا" &&
+            index + 2 < clusters.count &&
+            clusters[index + 1].base == "ل" &&
+            clusters[index + 2].base == "ه"
+
+        let isSecondLamInAllah =
+            index >= 2 &&
+            clusters[index - 2].base == "ا" &&
+            clusters[index - 1].base == "ل" &&
+            index + 1 < clusters.count &&
+            clusters[index + 1].base == "ه"
+
+        guard isFirstLamInAllah || isSecondLamInAllah else { return false }
+
+        let wordStartIndex = isFirstLamInAllah ? index - 1 : index - 2
+        guard wordStartIndex > 0 else { return false }
+
+        let prev = clusters[wordStartIndex - 1]
+        return hasHeavyOpenVowel(prev)
+    }
+
+    private func category(for rule: String) -> TajweedLegendCategory? {
+        if rule == "madd_2" { return .madd2 }
+        if rule == "madd_6" { return .madd6 }
+        if rule == "madd_muttasil" { return .madd45 }
+        if rule == "madd_246" || rule == "madd_munfasil" { return .madd246 }
+        if rule == "ghunnah" || rule == "iqlab" || rule.hasPrefix("ikhfa") { return .ikhfaGhunnah }
+        if rule.hasPrefix("idghaam") || rule == "lam_shamsiyyah" || rule == "silent" {
+            return .idghaamSilent
+        }
+        if rule == "qalqalah" { return .qalqalah }
+        return nil
     }
 }
 
@@ -410,6 +955,10 @@ final class QuranData: ObservableObject {
     private var surahBoundaryModels = [Int: SurahBoundaryModel]()
 
     private var loadTask: Task<Void, Never>?
+    private static var isRunningInPreview: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+            || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1"
+    }
 
     private init() {}
 
@@ -464,7 +1013,10 @@ final class QuranData: ObservableObject {
 
     private func load() async {
         guard let url = Bundle.main.url(forResource: "Quran", withExtension: "json") else {
-            fatalError("Quran.json missing")
+            let message = "Quran.json missing"
+            logger.error("\(message)")
+            if Self.isRunningInPreview { return }
+            fatalError(message)
         }
 
         do {
@@ -543,7 +1095,10 @@ final class QuranData: ObservableObject {
                 self.cachedBoundaryQiraah = displayQiraah ?? ""
             }
         } catch {
-            fatalError("Failed to load Quran: \(error)")
+            let message = "Failed to load Quran: \(error.localizedDescription)"
+            logger.error("\(message)")
+            if Self.isRunningInPreview { return }
+            fatalError(message)
         }
     }
 

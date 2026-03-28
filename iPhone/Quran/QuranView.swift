@@ -4,6 +4,7 @@ struct QuranView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var quranPlayer: QuranPlayer
+    @Environment(\.dismiss) private var dismiss
     
     @State private var searchText = ""
     @State private var isQuranSearchFocused = false
@@ -19,12 +20,17 @@ struct QuranView: View {
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
     private let hitPageSize = 5
+    let presentedAsSheet: Bool
         
     private static let arFormatter: NumberFormatter = {
         let f = NumberFormatter()
         f.locale = Locale(identifier: "ar")
         return f
     }()
+
+    init(presentedAsSheet: Bool = false) {
+        self.presentedAsSheet = presentedAsSheet
+    }
     
     func arabicToEnglishNumber(_ arabicNumber: String) -> Int? {
         QuranView.arFormatter.number(from: arabicNumber)?.intValue
@@ -231,6 +237,16 @@ struct QuranView: View {
         .padding(.top, 8)
     }
 
+    private var loadingFallbackView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Loading Quran...")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     var body: some View {
         Group {
             #if os(iOS)
@@ -244,7 +260,7 @@ struct QuranView: View {
                                     if let s = quranData.quran.first(where: { $0.id == surahID }) {
                                         AyahsView(surah: s, ayah: ayah)
                                     } else {
-                                        AyahsView(surah: quranData.quran[0])
+                                        loadingFallbackView
                                     }
                             }
                         }
@@ -715,6 +731,7 @@ struct QuranView: View {
                             searchText: $searchText,
                             scrollToSurahID: $scrollToSurahID
                         )
+                        .animation(.easeInOut, value: searchText)
                     }
                     
                     ForEach(verseHits) { hit in
@@ -739,6 +756,7 @@ struct QuranView: View {
                             }
                         }
                     }
+                    .animation(.easeInOut, value: searchText)
 
                     if canShowNext {
                         #if !os(watchOS)
@@ -844,6 +862,14 @@ struct QuranView: View {
         .navigationTitle("Al-Quran")
         #if !os(watchOS)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if presentedAsSheet {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     settings.hapticFeedback()
@@ -852,7 +878,7 @@ struct QuranView: View {
             }
         }
         .sheet(isPresented: $showingSettingsSheet) {
-            NavigationView { SettingsQuranView(showEdits: false) }
+            NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
         }
         .onDisappear {
             searchHistorySaveTask?.cancel()
@@ -1000,7 +1026,7 @@ struct QuranView: View {
                             }
                         }
                     }
-                    .frame(width: 30, height: 30)
+                    .frame(width: 26, height: 26)
                     .padding()
                     .conditionalGlassEffect()
                 }
@@ -1008,6 +1034,7 @@ struct QuranView: View {
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 8)
+            .background(Color.white.opacity(0.00001))
             .animation(.easeInOut, value: quranPlayer.isPlaying)
         }
         #endif
@@ -1027,7 +1054,7 @@ struct QuranView: View {
         } else if let firstFav = settings.favoriteSurahs.sorted().first, let surah = quranData.quran.first(where: { $0.id == firstFav }) {
             AyahsView(surah: surah)
         } else {
-            AyahsView(surah: quranData.quran[0])
+            loadingFallbackView
         }
     }
 
@@ -1055,8 +1082,7 @@ private extension View {
 }
 
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        QuranView()
+    }
 }

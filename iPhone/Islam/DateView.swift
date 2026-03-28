@@ -87,3 +87,9 @@ struct DateView: View {
         }
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer {
+        DateView()
+    }
+}

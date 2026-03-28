@@ -1,8 +1,12 @@
 import SwiftUI
 import UserNotifications
+#if !os(watchOS)
+import AVFoundation
+#endif
 
 struct SettingsAdhanView: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.dismiss) private var dismiss
     
     @State private var showingMap = false
     
@@ -20,6 +24,25 @@ struct SettingsAdhanView: View {
     }
     
     @State var showNotifications: Bool
+    private let presentedAsSheet: Bool
+
+    init(showNotifications: Bool, presentedAsSheet: Bool = false) {
+        self._showNotifications = State(initialValue: showNotifications)
+        self.presentedAsSheet = presentedAsSheet
+    }
+
+    private var dialogTitle: String {
+        switch showAlert {
+        case .travelTurnOnAutomatic:
+            return "Traveling Mode Detected"
+        case .travelTurnOffAutomatic:
+            return "Traveling Mode Updated"
+        case .calculationAutomaticChanged:
+            return "Calculation Method Changed"
+        case .none:
+            return ""
+        }
+    }
     
     var body: some View {
         List {
@@ -135,6 +158,17 @@ struct SettingsAdhanView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Adhan Settings")
+        #if !os(watchOS)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if presentedAsSheet {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        #endif
         .onChange(of: settings.homeLocation) { _ in
             settings.fetchPrayerTimes() {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -182,7 +216,7 @@ struct SettingsAdhanView: View {
                 }
             }
         }
-        .confirmationDialog("", isPresented: Binding(
+        .confirmationDialog(dialogTitle, isPresented: Binding(
             get: { showAlert != nil },
             set: { if !$0 { showAlert = nil } }
         ), titleVisibility: .visible) {
@@ -329,6 +363,9 @@ struct NotificationView: View {
     @State private var showAlert: Bool = false
     @State private var notifSettings: UNNotificationSettings?
     @State private var requestAccessAlertMessage: String?
+    #if !os(watchOS)
+    @State private var previewPlayer: AVAudioPlayer?
+    #endif
     
     var body: some View {
         List {
@@ -336,12 +373,35 @@ struct NotificationView: View {
             Section {
                 permissionCard
             }
-            #endif
             
             Section(header: Text("HIJRI CALENDAR")) {
                 Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
                     .font(.subheadline)
             }
+
+            Section(header: Text("ADHAN SOUND")) {
+                Picker("Adhan Sound", selection: $settings.adhanNotificationSound.animation(.easeInOut)) {
+                    Text("Default").tag("default")
+                    Text("Egyptian Adhan").tag("egypt-30")
+                }
+
+                if settings.adhanNotificationSound != "default" {
+                    Button {
+                        settings.hapticFeedback()
+                        playAdhanPreview()
+                    } label: {
+                        Label("Preview Sound", systemImage: "play.circle.fill")
+                            .font(.subheadline)
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Text("Used only for the actual prayer-time notification. Prenotifications and nagging reminders still use the default sound.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            #endif
             
             Section(header: Text("PRAYER REMINDERS")) {
                 NavigationLink(destination: MoreNotificationView()) {
@@ -351,9 +411,12 @@ struct NotificationView: View {
             }
         }
         .task { await refresh() }
-        .onAppear { requestAuthorizationAndFetchPrayerTimes() }
+        .onAppear {
+            normalizeAdhanSoundSelection()
+            requestAuthorizationAndFetchPrayerTimes()
+        }
         .onChange(of: scenePhase) { _ in requestAuthorizationAndFetchPrayerTimes() }
-        .confirmationDialog("", isPresented: $showAlert, titleVisibility: .visible) {
+        .confirmationDialog("Notifications Off", isPresented: $showAlert, titleVisibility: .visible) {
             Button("Open Settings") { openSystemSettings() }
             Button("Ignore", role: .cancel) { }
         } message: {
@@ -550,6 +613,41 @@ struct NotificationView: View {
             requestAccessAlertMessage = "Unable to change notification settings."
         }
     }
+
+    private func normalizeAdhanSoundSelection() {
+        if settings.adhanNotificationSound == "egypt" {
+            settings.adhanNotificationSound = "egypt-30"
+        }
+    }
+
+    #if !os(watchOS)
+    private func playAdhanPreview() {
+        previewPlayer?.stop()
+
+        let filename: String?
+        switch settings.adhanNotificationSound {
+        case "egypt-30":
+            filename = Bundle.main.path(forResource: "egypt-30", ofType: "caf")
+        default:
+            filename = nil
+        }
+
+        guard let filename else { return }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.duckOthers])
+            try session.setActive(true)
+
+            let player = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: filename))
+            player.prepareToPlay()
+            player.play()
+            previewPlayer = player
+        } catch {
+            logger.error("Adhan preview playback failed: \(error.localizedDescription)")
+        }
+    }
+    #endif
 }
 
 struct MoreNotificationView: View {
@@ -778,7 +876,7 @@ struct MoreNotificationView: View {
         .onDisappear {
             settings.fetchPrayerTimes(notification: true)
         }
-        .confirmationDialog("", isPresented: $showAlert, titleVisibility: .visible) {
+        .confirmationDialog("Notifications Off", isPresented: $showAlert, titleVisibility: .visible) {
             Button("Open Settings") {
                 #if !os(watchOS)
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -841,6 +939,7 @@ struct NotificationSettingsSection: View {
 }
 
 #Preview {
-    SettingsAdhanView(showNotifications: true)
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: true) {
+        SettingsAdhanView(showNotifications: true)
+    }
 }

@@ -114,3 +114,9 @@ struct AdhkarView: View {
         .navigationTitle("Common Adhkar")
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer {
+        AdhkarView()
+    }
+}

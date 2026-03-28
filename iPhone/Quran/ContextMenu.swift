@@ -1061,11 +1061,28 @@ private struct HideEditorScrollBackground: ViewModifier {
         }
     }
 }
-#endif
+
+private struct SurahContextMenuPreviewContent: View {
+    @State private var searchText = ""
+    @State private var scrollToSurahID = 0
+
+    var body: some View {
+        Menu("Open Surah Actions") {
+            SurahContextMenu(
+                surahID: AlIslamPreviewData.surah.id,
+                surahName: AlIslamPreviewData.surah.nameTransliteration,
+                favoriteSurahs: [],
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+        }
+        .padding()
+    }
+}
 
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        SurahContextMenuPreviewContent()
+    }
 }
+#endif

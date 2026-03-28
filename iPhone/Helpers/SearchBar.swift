@@ -1,56 +1,28 @@
 import SwiftUI
-#if os(iOS)
-import UIKit
-#endif
 
 struct SearchBar: UIViewRepresentable {
-    @Binding var searchText: String
-
-    var placeholder: String = "Search"
+    @Binding var text: String
+    
     var onSearchButtonClicked: (() -> Void)?
     var onFocusChanged: ((Bool) -> Void)?
 
-    init(
-        searchText: Binding<String>,
-        placeholder: String = "Search",
-        onSearchButtonClicked: (() -> Void)? = nil,
-        onFocusChanged: ((Bool) -> Void)? = nil
-    ) {
-        self._searchText = searchText
-        self.placeholder = placeholder
-        self.onSearchButtonClicked = onSearchButtonClicked
-        self.onFocusChanged = onFocusChanged
-    }
-
-    init(
-        text: Binding<String>,
-        placeholder: String = "Search",
-        onSearchButtonClicked: (() -> Void)? = nil,
-        onFocusChanged: ((Bool) -> Void)? = nil
-    ) {
-        self._searchText = text
-        self.placeholder = placeholder
-        self.onSearchButtonClicked = onSearchButtonClicked
-        self.onFocusChanged = onFocusChanged
-    }
-
     class Coordinator: NSObject, UISearchBarDelegate {
-        @Binding var searchText: String
+        @Binding var text: String
         var onSearchButtonClicked: (() -> Void)?
         var onFocusChanged: ((Bool) -> Void)?
 
         init(
-            searchText: Binding<String>,
-            onSearchButtonClicked: (() -> Void)? = nil,
-            onFocusChanged: ((Bool) -> Void)? = nil
+            text: Binding<String>,
+            onSearchButtonClicked: (() -> Void)?,
+            onFocusChanged: ((Bool) -> Void)?
         ) {
-            self._searchText = searchText
+            _text = text
             self.onSearchButtonClicked = onSearchButtonClicked
             self.onFocusChanged = onFocusChanged
         }
 
         func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-            self.searchText = searchText
+            text = searchText
         }
 
         func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
@@ -68,21 +40,31 @@ struct SearchBar: UIViewRepresentable {
             searchBar.text = ""
             searchBar.resignFirstResponder()
 
-            searchText = ""
+            text = ""
             onFocusChanged?(false)
         }
 
         func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
             searchBar.resignFirstResponder()
-            searchText = searchBar.text ?? ""
+            text = searchBar.text ?? ""
             onSearchButtonClicked?()
-            onFocusChanged?(false)
+        }
+
+        @objc func clearSearchText(_ sender: UIButton) {
+            guard let textField = sender.superview?.superview as? UITextField ?? sender.superview as? UITextField else {
+                text = ""
+                return
+            }
+
+            textField.text = ""
+            text = ""
+            textField.sendActions(for: .editingChanged)
         }
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
-            searchText: $searchText,
+            text: $text,
             onSearchButtonClicked: onSearchButtonClicked,
             onFocusChanged: onFocusChanged
         )
@@ -91,7 +73,7 @@ struct SearchBar: UIViewRepresentable {
     func makeUIView(context: Context) -> UISearchBar {
         let searchBar = UISearchBar(frame: .zero)
         searchBar.delegate = context.coordinator
-        searchBar.placeholder = placeholder
+        searchBar.placeholder = "Search"
         searchBar.autocorrectionType = .no
         searchBar.autocapitalizationType = .none
         searchBar.returnKeyType = .search
@@ -101,8 +83,10 @@ struct SearchBar: UIViewRepresentable {
         textField.backgroundColor = .clear
         textField.layer.cornerRadius = 12
         textField.layer.masksToBounds = true
-        textField.font = .systemFont(ofSize: 17)
-        textField.clearButtonMode = .whileEditing
+        textField.font = .systemFont(ofSize: 16)
+        textField.clearButtonMode = .never
+        textField.rightView = makeClearButtonContainer(for: context.coordinator)
+        textField.rightViewMode = .never
 
         let heightConstraint = textField.heightAnchor.constraint(equalToConstant: 44)
         heightConstraint.priority = .required
@@ -111,16 +95,34 @@ struct SearchBar: UIViewRepresentable {
         return searchBar
     }
 
+    private func makeClearButtonContainer(for coordinator: Coordinator) -> UIView {
+        let leadingInset: CGFloat = 4
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: 24 + leadingInset, height: 20))
+
+        let button = UIButton(type: .system)
+        button.frame = CGRect(x: leadingInset, y: 0, width: 20, height: 20)
+        button.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+        button.tintColor = .secondaryLabel
+        button.addTarget(coordinator, action: #selector(Coordinator.clearSearchText(_:)), for: .touchUpInside)
+
+        container.addSubview(button)
+        return container
+    }
+
     func updateUIView(_ uiView: UISearchBar, context: Context) {
-        if uiView.text != searchText {
-            uiView.text = searchText
+        if uiView.text != text {
+            uiView.text = text
         }
 
-        uiView.placeholder = placeholder
+        uiView.searchTextField.rightViewMode = text.isEmpty ? .never : .always
 
         context.coordinator.onSearchButtonClicked = onSearchButtonClicked
         context.coordinator.onFocusChanged = onFocusChanged
     }
+}
+
+#Preview {
+    SearchBar(text: .constant(""))
 }
 
 struct GlassSearchBar: View {
@@ -219,8 +221,4 @@ struct GlassSearchBar: View {
         isFocused = false
         onFocusChanged?(false)
     }
-}
-
-#Preview {
-    SearchBar(text: .constant(""))
 }

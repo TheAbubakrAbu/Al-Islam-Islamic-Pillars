@@ -124,6 +124,7 @@ struct MasjidLocatorView: View {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 8) {
                     SearchBar(text: $searchText.animation(.easeInOut))
+                        .padding(-8)
 
                     if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
                         HStack {
@@ -141,6 +142,7 @@ struct MasjidLocatorView: View {
                     }
                 }
                 .padding(8)
+                .padding(.bottom, -8)
 
                 if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
                     resultsPanel
@@ -475,6 +477,7 @@ struct MasjidLocatorView: View {
 }
 
 #Preview {
-    MasjidLocatorView()
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        MasjidLocatorView()
+    }
 }

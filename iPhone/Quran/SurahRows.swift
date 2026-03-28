@@ -97,6 +97,38 @@ struct SurahAyahRow: View {
         if settings.showEnglishSaheeh || settings.showEnglishMustafa { lines += 1 }
         return max(lines, 1)
     }
+
+    private func arabicDisplayText() -> String {
+        let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
+        return settings.beginnerMode ? text.map { "\($0) " }.joined() : text
+    }
+
+    private var shouldShowTajweedColors: Bool {
+        settings.showTajweedColors
+            && settings.showArabicText
+            && settings.isHafsDisplay
+            && !settings.cleanArabicText
+            && !settings.beginnerMode
+    }
+
+    private func arabicTajweedText() -> AttributedString? {
+        guard shouldShowTajweedColors else { return nil }
+        let text = ayah.displayArabicText(surahId: surah.id, clean: false)
+        return TajweedStore.shared.attributedText(surah: surah.id, ayah: ayah.id, text: text)
+    }
+
+    private var tajweedAnimationKey: String {
+        let categorySignature = TajweedLegendCategory.allCases
+            .map { settings.isTajweedCategoryVisible($0) ? "1" : "0" }
+            .joined()
+        return [
+            settings.showTajweedColors ? "1" : "0",
+            settings.cleanArabicText ? "1" : "0",
+            settings.beginnerMode ? "1" : "0",
+            settings.displayQiraah,
+            categorySignature
+        ].joined(separator: "|")
+    }
     
     var body: some View {
         HStack {
@@ -127,10 +159,16 @@ struct SurahAyahRow: View {
             } else {
                 VStack {
                     if settings.showArabicText {
-                        let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
-
-                        Text(settings.beginnerMode ? text.map { "\($0) " }.joined() : text)
-                            .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
+                        HighlightedSnippet(
+                            source: arabicDisplayText(),
+                            term: "",
+                            font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1),
+                            accent: settings.accentColor.color,
+                            fg: .primary,
+                            preStyledSource: arabicTajweedText(),
+                            beginnerMode: settings.beginnerMode
+                        )
+                            .animation(.easeInOut, value: tajweedAnimationKey)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                     
@@ -549,6 +587,33 @@ struct AyahSearchRow: View, Equatable {
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
     }
+
+    private var shouldShowTajweedColors: Bool {
+        settings.showTajweedColors
+            && settings.showArabicText
+            && settings.isHafsDisplay
+            && !settings.cleanArabicText
+            && !settings.beginnerMode
+    }
+
+    private func arabicTajweedText() -> AttributedString? {
+        guard shouldShowTajweedColors else { return nil }
+        return TajweedStore.shared.attributedText(surah: surah, ayah: ayah, text: arabic)
+    }
+
+    private var tajweedAnimationKey: String {
+        let categorySignature = TajweedLegendCategory.allCases
+            .map { settings.isTajweedCategoryVisible($0) ? "1" : "0" }
+            .joined()
+        return [
+            settings.showTajweedColors ? "1" : "0",
+            settings.cleanArabicText ? "1" : "0",
+            settings.beginnerMode ? "1" : "0",
+            settings.displayQiraah,
+            categorySignature,
+            query
+        ].joined(separator: "|")
+    }
     
     var body: some View {
         let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
@@ -618,8 +683,11 @@ struct AyahSearchRow: View, Equatable {
                     term: query,
                     font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                     accent: settings.accentColor.color,
-                    fg: .primary
+                    fg: .primary,
+                    preStyledSource: arabicTajweedText(),
+                    beginnerMode: settings.beginnerMode
                 )
+                .animation(.easeInOut, value: tajweedAnimationKey)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
             }
@@ -687,9 +755,19 @@ struct AyahSearchRow: View, Equatable {
     }
 }
 
+private struct SurahRowsPreviewContent: View {
+    var body: some View {
+        List {
+            SurahAyahRow(
+                surah: AlIslamPreviewData.surah,
+                ayah: AlIslamPreviewData.ayah
+            )
+        }
+    }
+}
+
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        SurahRowsPreviewContent()
+    }
 }

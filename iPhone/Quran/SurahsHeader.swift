@@ -249,8 +249,9 @@ struct HeaderRow: View {
 }
 
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        List {
+            SurahSectionHeader(surah: AlIslamPreviewData.surah)
+        }
+    }
 }

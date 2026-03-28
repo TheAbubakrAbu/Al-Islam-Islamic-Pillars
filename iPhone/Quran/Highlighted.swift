@@ -90,3 +90,16 @@ struct HighlightedSnippet: View {
         return attributed
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        HighlightedSnippet(
+            source: "Bismillahir Rahmanir Raheem",
+            term: "rah",
+            font: .body,
+            accent: .green,
+            fg: .primary
+        )
+        .padding()
+    }
+}

@@ -101,6 +101,22 @@ struct MapView: View {
         }
     }
 
+    private func locationInfoRow(_ title: String, value: String, systemImage: String, accent: Bool = false) -> some View {
+        Label {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(title)
+                    .fontWeight(.semibold)
+                Text(value)
+                    .lineLimit(1)
+            }
+        } icon: {
+            Image(systemName: systemImage)
+                .frame(width: 18)
+        }
+        .font(.headline)
+        .foregroundColor(accent ? settings.accentColor.color : .primary)
+    }
+
     private var markers: [MarkerItem] {
         var items: [MarkerItem] = []
 
@@ -151,6 +167,7 @@ struct MapView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 8) {
                         SearchBar(text: $searchText.animation(.easeInOut))
+                            .padding(-8)
 
                         if !searchText.isEmpty {
                             HStack {
@@ -160,6 +177,7 @@ struct MapView: View {
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(settings.accentColor.color)
                             .padding(.horizontal, 6)
+                            .padding(.bottom, -8)
                         }
                     }
                     .padding(8)
@@ -174,19 +192,14 @@ struct MapView: View {
                     VStack(spacing: 8) {
                         HStack {
                             VStack(alignment: .leading, spacing: 8) {
-                                Label("Home: \(home.city)", systemImage: "house.fill")
-                                    .font(.headline)
-                                    .foregroundColor(settings.accentColor.color)
+                                locationInfoRow("Home", value: home.city, systemImage: "house.fill", accent: true)
                                 
                                 if let current = settings.currentLocation {
-                                    Label("Current: \(current.city)", systemImage: "location.fill")
-                                        .font(.headline)
-                                        .foregroundColor(settings.accentColor.color)
+                                    locationInfoRow("Current", value: current.city, systemImage: "location.fill", accent: true)
                                     
                                     if let distance = distanceString {
-                                        Label(distance, systemImage: "arrow.right.arrow.left")
+                                        locationInfoRow("Distance", value: distance, systemImage: "arrow.right.arrow.left")
                                             .font(.subheadline)
-                                            .foregroundColor(.primary)
                                     }
                                 }
                                 
@@ -423,6 +436,7 @@ struct MapView: View {
 }
 
 #Preview {
-    MapView(choosingPrayerTimes: false)
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        MapView(choosingPrayerTimes: false)
+    }
 }

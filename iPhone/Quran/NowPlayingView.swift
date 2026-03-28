@@ -334,8 +334,7 @@ struct NowPlayingView: View {
 }
 
 #Preview {
-    NowPlayingView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        NowPlayingView()
+    }
 }

@@ -7,6 +7,7 @@ let logger = Logger(subsystem: "com.Quran.Elmallah.Islamic-Pillars", category: "
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
+    static let randomReciterName = "Random Reciter"
     private let appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
     
     static let encoder: JSONEncoder = {
@@ -51,7 +52,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         Self.locationManager.delegate = self
         requestLocationAuthorization()
         
-        if self.reciter.starts(with: "ar") {
+        if self.reciter == Self.randomReciterName {
+            // Keep the saved random-reciter preference as-is.
+        } else if self.reciter.starts(with: "ar") {
             if let match = reciters.first(where: { $0.ayahIdentifier == self.reciter }) {
                 self.reciter = match.name
             } else {
@@ -317,6 +320,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("naggingStartOffset") var naggingStartOffset: Int = 30 {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
+    @AppStorage("adhanNotificationSound") var adhanNotificationSound: String = "egypt-30" {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
     
     @AppStorage("preNotificationFajr") var preNotificationFajr: Int = 0 {
         didSet { self.fetchPrayerTimes(notification: true) }
@@ -449,6 +455,14 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     @AppStorage("showArabicText") var showArabicText: Bool = true
     @AppStorage("showTajweedColors") var showTajweedColors: Bool = false
+    @AppStorage("showTajweedTafkhim") var showTajweedTafkhim: Bool = true
+    @AppStorage("showTajweedQalqalah") var showTajweedQalqalah: Bool = true
+    @AppStorage("showTajweedIkhfaGhunnah") var showTajweedIkhfaGhunnah: Bool = true
+    @AppStorage("showTajweedIdghaamSilent") var showTajweedIdghaamSilent: Bool = true
+    @AppStorage("showTajweedMadd246") var showTajweedMadd246: Bool = true
+    @AppStorage("showTajweedMadd2") var showTajweedMadd2: Bool = true
+    @AppStorage("showTajweedMadd6") var showTajweedMadd6: Bool = true
+    @AppStorage("showTajweedMadd45") var showTajweedMadd45: Bool = true
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
     @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
     @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10
@@ -472,6 +486,32 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+
+    func isTajweedCategoryVisible(_ category: TajweedLegendCategory) -> Bool {
+        switch category {
+        case .tafkhim: return showTajweedTafkhim
+        case .qalqalah: return showTajweedQalqalah
+        case .ikhfaGhunnah: return showTajweedIkhfaGhunnah
+        case .idghaamSilent: return showTajweedIdghaamSilent
+        case .madd246: return showTajweedMadd246
+        case .madd2: return showTajweedMadd2
+        case .madd6: return showTajweedMadd6
+        case .madd45: return showTajweedMadd45
+        }
+    }
+
+    func setTajweedCategory(_ category: TajweedLegendCategory, visible: Bool) {
+        switch category {
+        case .tafkhim: showTajweedTafkhim = visible
+        case .qalqalah: showTajweedQalqalah = visible
+        case .ikhfaGhunnah: showTajweedIkhfaGhunnah = visible
+        case .idghaamSilent: showTajweedIdghaamSilent = visible
+        case .madd246: showTajweedMadd246 = visible
+        case .madd2: showTajweedMadd2 = visible
+        case .madd6: showTajweedMadd6 = visible
+        case .madd45: showTajweedMadd45 = visible
+        }
+    }
 
     func toggleLetterFavorite(letterData: LetterData) {
         withAnimation {

@@ -922,6 +922,31 @@ extension Settings {
         }
     }
 
+    private func prayerNotificationSound(minutesBefore: Int?) -> UNNotificationSound {
+        guard minutesBefore == nil else { return .default }
+
+        #if os(watchOS)
+        return .default
+        #else
+        let bundle = Bundle.main
+        switch adhanNotificationSound {
+        case "default":
+            return .default
+        case "egypt-30":
+            if bundle.path(forResource: "egypt-30", ofType: "caf") != nil {
+                return UNNotificationSound(named: UNNotificationSoundName("egypt-30.caf"))
+            }
+        default:
+            break
+        }
+
+        if bundle.path(forResource: "egypt-30", ofType: "caf") != nil {
+            return UNNotificationSound(named: UNNotificationSoundName("egypt-30.caf"))
+        }
+        return .default
+        #endif
+    }
+
     func scheduleNotification(for prayer: Prayer, preNotificationTime minutes: Int?, city: String, using center: UNUserNotificationCenter = .current()) {
         let triggerTime: Date = {
             if let m = minutes, m != 0 {
@@ -935,7 +960,7 @@ extension Settings {
         let content = UNMutableNotificationContent()
         content.title = "Al-Islam"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
-        content.sound = .default
+        content.sound = prayerNotificationSound(minutesBefore: minutes)
 
         let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)

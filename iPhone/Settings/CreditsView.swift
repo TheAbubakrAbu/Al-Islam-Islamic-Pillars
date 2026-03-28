@@ -238,3 +238,9 @@ struct AppLinkRow: View {
         }
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        CreditsView()
+    }
+}

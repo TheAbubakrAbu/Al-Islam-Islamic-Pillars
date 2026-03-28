@@ -336,6 +336,10 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
 }
 
 #Preview {
-    AdhanView()
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        List {
+            QiblaView(size: 160)
+                .padding()
+        }
+    }
 }

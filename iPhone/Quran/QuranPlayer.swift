@@ -341,11 +341,20 @@ final class QuranPlayer: ObservableObject {
     
     private var repeatCount: Int = 1
     private var repeatRemaining: Int = 1
+    private var playbackReciter: Reciter?
 
     private func repeatSuffix(total: Int, remaining: Int) -> String {
         guard total > 1 else { return "" }
         let index = max(1, total - remaining + 1)
         return " (x\(index)/\(total))"
+    }
+
+    private func resolvedSelectedReciter() -> Reciter? {
+        if settings.reciter == Settings.randomReciterName {
+            return reciters.randomElement()
+        }
+
+        return reciters.first(where: { $0.name == settings.reciter })
     }
 
     func playSurah(
@@ -374,13 +383,14 @@ final class QuranPlayer: ObservableObject {
         continueRecitationFromAyah = false
         backButtonClickCount = 0
 
-        guard let reciterPref = reciters.first(where: { $0.name == settings.reciter }) else {
+        guard let reciterPref = resolvedSelectedReciter() else {
             presentPlaybackFailure("The selected reciter could not be found. Please choose another reciter in settings.")
             return
         }
         let reciter: Reciter = (certainReciter && settings.lastListenedSurah?.reciter != nil)
             ? settings.lastListenedSurah!.reciter
             : reciterPref
+        playbackReciter = reciter
 
         let remoteURLString = "\(reciter.surahLink)\(String(format: "%03d", surahNumber)).mp3"
         guard let remoteURL = URL(string: remoteURLString) else {
@@ -550,10 +560,11 @@ final class QuranPlayer: ObservableObject {
             presentPlaybackFailure("This ayah is outside the valid range for the selected surah.")
             return
         }
-        guard reciters.first(where: { $0.name == settings.reciter }) != nil else {
+        guard let resolvedReciter = resolvedSelectedReciter() else {
             presentPlaybackFailure("The selected reciter could not be found. Please choose another reciter in settings.")
             return
         }
+        playbackReciter = resolvedReciter
 
         self.ayahRepeatCount      = max(1, repeatCount)
         self.ayahRepeatRemaining  = self.ayahRepeatCount
@@ -599,10 +610,11 @@ final class QuranPlayer: ObservableObject {
             presentPlaybackFailure("The range start cannot be after the range end.")
             return
         }
-        guard let reciter = reciters.first(where: { $0.name == settings.reciter }) else {
+        guard let reciter = resolvedSelectedReciter() else {
             presentPlaybackFailure("The selected reciter could not be found. Please choose another reciter in settings.")
             return
         }
+        playbackReciter = reciter
 
         let perAyah = max(1, repeatPerAyah)
         let section = max(1, repeatSection)
@@ -749,7 +761,13 @@ final class QuranPlayer: ObservableObject {
 
     private func customRangeTitle(ayahNum: Int, isBismillah: Bool, repeatWithinAyah: Int) -> String {
         let base = "\(customRangeSurahName) \(customRangeSurahNumber):\(ayahNum)"
-        return base
+
+        guard customRangeRepeatPerAyah > 1 else {
+            return base
+        }
+
+        let remaining = max(1, customRangeRepeatPerAyah - repeatWithinAyah + 1)
+        return base + repeatSuffix(total: customRangeRepeatPerAyah, remaining: remaining)
     }
 
     private func startAyahPlayback(
@@ -763,7 +781,7 @@ final class QuranPlayer: ObservableObject {
         guard
             let surah  = quranData.quran.first(where: { $0.id == surahNumber }),
             (1...surah.numberOfAyahs).contains(ayahNumber),
-            let reciter = reciters.first(where: { $0.name == settings.reciter })
+            let reciter = playbackReciter ?? resolvedSelectedReciter()
         else {
             presentPlaybackFailure("Could not prepare this ayah for playback. Please verify surah, ayah, and reciter settings.")
             return
@@ -914,7 +932,7 @@ final class QuranPlayer: ObservableObject {
                 if a < sur.numberOfAyahs {
                     withAnimation {
                         self.currentAyahNumber = a + 1
-                        if let recNow = reciters.first(where: { $0.name == self.settings.reciter }) {
+                        if let recNow = self.playbackReciter ?? self.resolvedSelectedReciter() {
                             self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(self.currentAyahNumber!)"
                             self.nowPlayingReciter = recNow.ayahIdentifier.contains("minshawi") && !recNow.name.contains("Minshawi")
                                 ? "Muhammad Al-Minshawi (Murattal)" : recNow.name
@@ -928,7 +946,7 @@ final class QuranPlayer: ObservableObject {
 
                 if self.continueRecitationFromAyah,
                    qPlayer.items().count < 2,
-                   let rec = reciters.first(where: { $0.name == self.settings.reciter }) {
+                   let rec = self.playbackReciter ?? self.resolvedSelectedReciter() {
 
                     let nextAyah = self.currentAyahNumber! + 1
                     if nextAyah <= sur.numberOfAyahs,
@@ -1265,7 +1283,7 @@ final class QuranPlayer: ObservableObject {
         return 0
         #else
         guard
-            let rec = reciters.first(where: { $0.name == settings.reciter }),
+            let rec = playbackReciter ?? resolvedSelectedReciter(),
             let url = URL(string: "\(rec.surahLink)\(String(format: "%03d", surahNumber)).mp3")
         else { return 0 }
 

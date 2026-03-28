@@ -209,6 +209,12 @@ struct NamesView: View {
     }
 }
 
+#Preview {
+    AlIslamPreviewContainer {
+        NamesView()
+    }
+}
+
 private struct NameRow: View {
     @EnvironmentObject var settings: Settings
     let name: NameOfAllah

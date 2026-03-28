@@ -846,8 +846,7 @@ struct ActivityView: UIViewControllerRepresentable {
 extension Color { var uiColor: UIColor { UIColor(self) } }
 
 #Preview {
-    ShareAyahSheet(surahNumber: 2, ayahNumber: 5)
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        ShareAyahSheet(surahNumber: 2, ayahNumber: 5)
+    }
 }

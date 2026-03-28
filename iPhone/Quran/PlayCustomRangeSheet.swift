@@ -585,8 +585,13 @@ struct PlayCustomRangeSheet: View {
 }
 
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        PlayCustomRangeSheet(
+            surah: AlIslamPreviewData.surah,
+            initialStartAyah: 1,
+            initialEndAyah: min(5, AlIslamPreviewData.surah.numberOfAyahs(for: AlIslamPreviewData.settings.displayQiraahForArabic)),
+            onPlay: { _, _, _, _ in },
+            onCancel: {}
+        )
+    }
 }

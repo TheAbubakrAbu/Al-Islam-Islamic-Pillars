@@ -320,6 +320,7 @@ struct LaunchScreen: View {
 }
 
 #Preview {
-    LaunchScreen(isLaunching: .constant(true))
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        LaunchScreen(isLaunching: .constant(true))
+    }
 }

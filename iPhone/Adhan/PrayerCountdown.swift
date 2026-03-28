@@ -66,9 +66,12 @@ struct PrayerCountdown: View {
                             CurrentPrayerCell(prayer: current)
                             
                             Divider().background(settings.accentColor.color)
+                                .padding(.bottom, 15)
+                                .padding(.top, 6)
                             
                             UpcomingPrayerCell(prayer: next)
                         }
+                        .padding(.bottom, -8)
 
                         if settings.showPrayerInfo {
                             VStack {
@@ -85,8 +88,8 @@ struct PrayerCountdown: View {
                         
                         ProgressView(value: progress)
                             .tint(settings.accentColor.color)
-                            //.scaleEffect(x: 1, y: 2, anchor: .center)
                             .conditionalGlassEffect()
+                            .padding(.vertical, 2)
                         
                         HStack {
                             Text("Time Left: \(next.time, style: .timer)")
@@ -144,7 +147,10 @@ private struct CurrentPrayerCell: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             title
+            
+            #if !os(watchOS)
             subtitle
+            #endif
             
             Text("Started at \(prayer.time, style: .time)")
                 .font(.headline)
@@ -162,10 +168,8 @@ private struct CurrentPrayerCell: View {
                 .font(.subheadline)
                 #endif
             
-            #if !os(watchOS)
             Text(prayer.nameTransliteration)
                 .font(.title)
-            #endif
         }
         .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
     }
@@ -303,6 +307,9 @@ private struct PrayerSunnahInfoView: View {
 }
 
 #Preview {
-    AdhanView()
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        List {
+            PrayerCountdown()
+        }
+    }
 }

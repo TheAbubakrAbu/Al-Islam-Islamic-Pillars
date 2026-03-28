@@ -152,6 +152,12 @@
 		72E832C72F6F58FD0013428B /* ArabicLetters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E832C52F6F58FD0013428B /* ArabicLetters.swift */; };
 		72E832C82F6F58FD0013428B /* ArabicLetters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E832C52F6F58FD0013428B /* ArabicLetters.swift */; };
 		72E832C92F6F58FD0013428B /* ArabicLetters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E832C52F6F58FD0013428B /* ArabicLetters.swift */; };
+		72EF01C32F775A5600B273F7 /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72EF01C22F775A5600B273F7 /* PreviewSupport.swift */; };
+		72EF01C42F775A5600B273F7 /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72EF01C22F775A5600B273F7 /* PreviewSupport.swift */; };
+		72EF01C82F775DA000B273F7 /* egypt-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C72F775DA000B273F7 /* egypt-30.caf */; };
+		72EF01C92F775DA000B273F7 /* egypt.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C62F775DA000B273F7 /* egypt.caf */; };
+		72EF01CA2F775DA000B273F7 /* egypt-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C72F775DA000B273F7 /* egypt-30.caf */; };
+		72EF01CB2F775DA000B273F7 /* egypt.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C62F775DA000B273F7 /* egypt.caf */; };
 		72F7DB682F030A2D0037B059 /* QuranStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F7DB672F030A2D0037B059 /* QuranStructs.swift */; };
 		72F7DB692F030A2D0037B059 /* QuranStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F7DB672F030A2D0037B059 /* QuranStructs.swift */; };
 		72F7DB6A2F030A2D0037B059 /* QuranStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F7DB672F030A2D0037B059 /* QuranStructs.swift */; };
@@ -320,6 +326,9 @@
 		72E832A52F6F52BA0013428B /* WallpaperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperView.swift; sourceTree = "<group>"; };
 		72E832C02F6F53760013428B /* ArabicView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicView.swift; sourceTree = "<group>"; };
 		72E832C52F6F58FD0013428B /* ArabicLetters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicLetters.swift; sourceTree = "<group>"; };
+		72EF01C22F775A5600B273F7 /* PreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSupport.swift; sourceTree = "<group>"; };
+		72EF01C62F775DA000B273F7 /* egypt.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = egypt.caf; sourceTree = "<group>"; };
+		72EF01C72F775DA000B273F7 /* egypt-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "egypt-30.caf"; sourceTree = "<group>"; };
 		72F7DB672F030A2D0037B059 /* QuranStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranStructs.swift; sourceTree = "<group>"; };
 		72F7DB6C2F030A630037B059 /* AdhanStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanStructs.swift; sourceTree = "<group>"; };
 		72F7DB712F03FEE50037B059 /* AppReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReview.swift; sourceTree = "<group>"; };
@@ -387,6 +396,7 @@
 				72616D812D52F7BD00A66C86 /* Info-Widget.plist */,
 				72F7DB742F0431740037B059 /* Assets.xcassets */,
 				725D4C6A2E29584B00817FFB /* Logo.jpg */,
+				72EF01C52F775D9200B273F7 /* Adhan Sounds */,
 				7260F9382A8715D600E8FF87 /* Fonts */,
 				7260F9222A8715D600E8FF87 /* JSONs */,
 				7230F8932D41CA060017DAE3 /* Packages */,
@@ -572,9 +582,19 @@
 				72CCAEA02D42DF5700871A6A /* DismissKeyboard.swift */,
 				72CCAEA12D42DF5700871A6A /* ConditionalStyle.swift */,
 				72CCAEA22D42DF5700871A6A /* SearchBar.swift */,
+				72EF01C22F775A5600B273F7 /* PreviewSupport.swift */,
 				72E13AEF2E90DC8D000933B0 /* GlassEffect.swift */,
 			);
 			path = Helpers;
+			sourceTree = "<group>";
+		};
+		72EF01C52F775D9200B273F7 /* Adhan Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				72EF01C62F775DA000B273F7 /* egypt.caf */,
+				72EF01C72F775DA000B273F7 /* egypt-30.caf */,
+			);
+			path = "Adhan Sounds";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -741,6 +761,8 @@
 				723873992F397BF300D3A8CD /* Uthmani.ttf in Resources */,
 				723B9E0B2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
 				7274865F2F3D8219001240F8 /* QiraahQaloon.json in Resources */,
+				72EF01CA2F775DA000B273F7 /* egypt-30.caf in Resources */,
+				72EF01CB2F775DA000B273F7 /* egypt.caf in Resources */,
 				720BF0892F6A937600E3F263 /* Quran.json in Resources */,
 				72F7DB752F0431740037B059 /* Assets.xcassets in Resources */,
 				725EA9DD2F73D1730053E75E /* TajweedRules.json in Resources */,
@@ -761,6 +783,8 @@
 				7238739A2F397BF300D3A8CD /* Uthmani.ttf in Resources */,
 				723873662F374BDB00D3A8CD /* QiraahShubah.json in Resources */,
 				7274865E2F3D8219001240F8 /* QiraahQaloon.json in Resources */,
+				72EF01C82F775DA000B273F7 /* egypt-30.caf in Resources */,
+				72EF01C92F775DA000B273F7 /* egypt.caf in Resources */,
 				720BF0882F6A937600E3F263 /* Quran.json in Resources */,
 				723B9E0C2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
 				725EA9DE2F73D1730053E75E /* TajweedRules.json in Resources */,
@@ -843,6 +867,7 @@
 				72CCAEA72D42DF5700871A6A /* SearchBar.swift in Sources */,
 				72E832A62F6F52BA0013428B /* AdhkarView.swift in Sources */,
 				72E832A82F6F52BA0013428B /* DateView.swift in Sources */,
+				72EF01C42F775A5600B273F7 /* PreviewSupport.swift in Sources */,
 				72E832A92F6F52BA0013428B /* MasjidView.swift in Sources */,
 				72E832AA2F6F52BA0013428B /* WallpaperView.swift in Sources */,
 				72E832AC2F6F52BA0013428B /* TajweedView.swift in Sources */,
@@ -898,6 +923,7 @@
 				72AC94182E3F4DA900F7B2DF /* NowPlayingView.swift in Sources */,
 				72F7DB6E2F030A630037B059 /* AdhanStructs.swift in Sources */,
 				72574CC92E49EE7F00BFF138 /* AppIntents.swift in Sources */,
+				72EF01C32F775A5600B273F7 /* PreviewSupport.swift in Sources */,
 				7260F9602A87163A00E8FF87 /* AdhanView.swift in Sources */,
 				72E832C12F6F53760013428B /* ArabicView.swift in Sources */,
 				720CCE182E394375002DD82E /* QuranView.swift in Sources */,

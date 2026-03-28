@@ -64,3 +64,9 @@ private struct WallpaperCell: View {
         }
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer {
+        WallpaperView()
+    }
+}

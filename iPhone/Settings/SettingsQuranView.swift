@@ -3,11 +3,14 @@ import SwiftUI
 struct SettingsQuranView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
+    @Environment(\.dismiss) private var dismiss
     
     @State private var showEdits: Bool
+    private let presentedAsSheet: Bool
 
-    init(showEdits: Bool = false) {
+    init(showEdits: Bool = false, presentedAsSheet: Bool = false) {
         _showEdits = State(initialValue: showEdits)
+        self.presentedAsSheet = presentedAsSheet
     }
 
     private var includeEnglish: Binding<Bool> {
@@ -51,7 +54,7 @@ struct SettingsQuranView: View {
     var body: some View {
         List {
             Section(header: Text("RECITATION")) {
-                VStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 10) {
                     NavigationLink(destination: ReciterListView().environmentObject(settings)) {
                         Label("Choose Reciter", systemImage: "headphones")
                     }
@@ -64,7 +67,7 @@ struct SettingsQuranView: View {
                     }
                 }
                 .accentColor(settings.accentColor.color)
-                
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Picker("After Surah Recitation Ends", selection: $settings.reciteType.animation(.easeInOut)) {
                     Text("Go to Next").tag("Continue to Next")
@@ -80,6 +83,47 @@ struct SettingsQuranView: View {
                 #endif
             }
 
+            Section(header: Text("DISPLAY")) {
+                VStack(alignment: .leading, spacing: 20) {
+                    Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
+                        .font(.subheadline)
+
+                    if settings.showPageJuzDividers {
+                        Toggle("Show Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
+                            .font(.subheadline)
+                    }
+                }
+
+                Toggle("Use System Font Size", isOn: Binding(
+                    get: {
+                        let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                        var usesSystemSizes = true
+
+                        if settings.showArabicText {
+                            usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
+                        }
+
+                        if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
+                            usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
+                        }
+                        return usesSystemSizes
+                    },
+                    set: { newValue in
+                        let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                        withAnimation {
+                            if newValue {
+                                settings.fontArabicSize = systemBodySize + 10
+                                settings.englishFontSize = systemBodySize
+                            } else {
+                                settings.fontArabicSize = systemBodySize + 11
+                                settings.englishFontSize = systemBodySize + 1
+                            }
+                        }
+                    }
+                ))
+                .font(.subheadline)
+            }
+
             Section(header: Text("ARABIC TEXT")) {
                 Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
                     .font(.subheadline)
@@ -90,22 +134,19 @@ struct SettingsQuranView: View {
                         .font(.subheadline)
                         .disabled(!settings.showArabicText)
 
+                    NavigationLink(destination: TajweedLegendSettingsView()) {
+                        Text("Customize Tajweed Legend")
+                            .font(.subheadline)
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                    .disabled(!settings.showTajweedColors)
+
                     Text(settings.isHafsDisplay
-                         ? "Available for Hafs an Asim. Tajweed colors automatically fall back to plain Arabic when clean text or beginner spacing is enabled."
+                         ? "Available for Hafs an Asim. Tajweed colors automatically fall back to plain Arabic when clean text or beginner spacing is enabled. Tajweed coloring is currently in beta and may not always be fully accurate."
                          : "Tajweed colors are currently available only for Hafs an Asim.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
-                }
-
-                VStack(alignment: .leading, spacing: 20) {
-                    Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
-                        .font(.subheadline)
-
-                    if settings.showPageJuzDividers {
-                        Toggle("Show Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
-                            .font(.subheadline)
-                    }
                 }
                 
                 if settings.showArabicText {
@@ -185,34 +226,6 @@ struct SettingsQuranView: View {
                         }
                     }
                     
-                    Toggle("Use System Font Size", isOn: Binding(
-                        get: {
-                            let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-                            var usesSystemSizes = true
-                            
-                            if settings.showArabicText {
-                                usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
-                            }
-                            
-                            if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                                usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
-                            }
-                            return usesSystemSizes
-                        },
-                        set: { newValue in
-                            let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-                            withAnimation {
-                                if newValue {
-                                    settings.fontArabicSize = systemBodySize + 10
-                                    settings.englishFontSize = systemBodySize
-                                } else {
-                                    settings.fontArabicSize = systemBodySize + 11
-                                    settings.englishFontSize = systemBodySize + 1
-                                }
-                            }
-                        }
-                    ))
-                    .font(.subheadline)
                 } else {
                     Toggle("Include English", isOn: includeEnglish.animation(.easeInOut))
                         .font(.subheadline)
@@ -292,6 +305,54 @@ struct SettingsQuranView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Quran Settings")
+        #if !os(watchOS)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if presentedAsSheet {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        #endif
+    }
+}
+
+struct TajweedLegendSettingsView: View {
+    @EnvironmentObject private var settings: Settings
+
+    var body: some View {
+        List {
+            Section(header: Text("TAJWEED LEGEND")) {
+                ForEach(TajweedLegendCategory.allCases) { item in
+                    Toggle(isOn: Binding(
+                        get: { settings.isTajweedCategoryVisible(item) },
+                        set: { settings.setTajweedCategory(item, visible: $0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(item.color)
+                                    .frame(width: 10, height: 10)
+
+                                Text(item.englishTitle)
+                                    .font(.subheadline.weight(.semibold))
+                                    .lineLimit(1)
+                            }
+
+                            Text(item.arabicTitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .tint(item.color)
+                }
+            }
+        }
+        .applyConditionalListStyle(defaultView: true)
+        .navigationTitle("Tajweed Legend")
     }
 }
 
@@ -305,8 +366,6 @@ struct ReciterListView: View {
     #endif
 
     private static let defaultReciter = "Muhammad Al-Minshawi (Murattal)"
-    private let featuredMinshawiIDs = Set(recitersMinshawi.map(\.id))
-
     var body: some View {
         ScrollViewReader { proxy in
             List {
@@ -328,11 +387,7 @@ struct ReciterListView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    let downloadedCount = Set(
-                        reciters
-                            .filter { downloadManager.stateSnapshot(for: $0).completedSurahs > 0 }
-                            .map(\.id)
-                    ).count
+                    let downloadedCount = uniqueDownloadedReciterCount
                     Text("Downloaded reciters: \(downloadedCount)")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -354,6 +409,18 @@ struct ReciterListView: View {
                     }
                 }
                 #endif
+                
+                #if os(watchOS)
+                Section {
+                    randomReciterButton
+                }
+                #else
+                if !showDownloadedOnly {
+                    Section {
+                        randomReciterButton
+                    }
+                }
+                #endif
 
                 if !filteredReciters(recitersMinshawi).isEmpty {
                     Section(header: Text("MUHAMMAD SIDDIQ AL-MINSHAWI")) {
@@ -361,21 +428,21 @@ struct ReciterListView: View {
                     }
                 }
                 
-                if !filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: true).isEmpty {
+                if !filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
                     Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
-                        reciterButtons(filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: true))
+                        reciterButtons(filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
                     }
                 }
 
-                if !filteredReciters(recitersMuallim, excludingFeaturedMinshawi: true).isEmpty {
+                if !filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
                     Section(header: Text("TEACHING (MUʿALLIM)")) {
-                        reciterButtons(filteredReciters(recitersMuallim, excludingFeaturedMinshawi: true))
+                        reciterButtons(filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
                     }
                 }
 
-                if !filteredReciters(recitersMurattal, excludingFeaturedMinshawi: true).isEmpty {
+                if !filteredReciters(recitersMurattal, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
                     Section(header: Text("NORMAL (MURATTAL)")) {
-                        reciterButtons(filteredReciters(recitersMurattal, excludingFeaturedMinshawi: true))
+                        reciterButtons(filteredReciters(recitersMurattal, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
                     }
                 }
                 
@@ -447,6 +514,7 @@ struct ReciterListView: View {
                 }
                 #endif
 
+                #if os(watchOS)
                 if settings.showOtherQiraatReciters {
                     if !filteredReciters(recitersKhalaf).isEmpty {
                         Section(header: Text("KHALAF AN HAMZAH")) {
@@ -500,11 +568,68 @@ struct ReciterListView: View {
                         }
                     }
                 }
+                #else
+                if !showDownloadedOnly {
+                    if settings.showOtherQiraatReciters {
+                        if !filteredReciters(recitersKhalaf).isEmpty {
+                            Section(header: Text("KHALAF AN HAMZAH")) {
+                                reciterButtons(filteredReciters(recitersKhalaf), qiraah: true)
+                            }
+                        }
+
+                        if !filteredReciters(recitersWarsh).isEmpty {
+                            Section(header: Text("WARSH AN NAFI")) {
+                                reciterButtons(filteredReciters(recitersWarsh), qiraah: true)
+                            }
+                        }
+
+                        if !filteredReciters(recitersQaloon).isEmpty {
+                            Section(header: Text("QALOON AN NAFI")) {
+                                reciterButtons(filteredReciters(recitersQaloon), qiraah: true)
+                            }
+                        }
+
+                        if !filteredReciters(recitersBuzzi).isEmpty {
+                            Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
+                                reciterButtons(filteredReciters(recitersBuzzi), qiraah: true)
+                            }
+                        }
+
+                        if !filteredReciters(recitersQunbul).isEmpty {
+                            Section(header: Text("QUNBUL AN IBN KATHIR")) {
+                                reciterButtons(filteredReciters(recitersQunbul), qiraah: true)
+                            }
+                        }
+
+                        if !filteredReciters(recitersDuri).isEmpty {
+                            Section(header: Text("AD-DURI AN ABI AMR")) {
+                                reciterButtons(filteredReciters(recitersDuri), qiraah: true)
+                            }
+                        }
+                    } else {
+                        Section {
+                            Button {
+                                settings.hapticFeedback()
+                                withAnimation(.easeInOut) {
+                                    settings.showOtherQiraatReciters = true
+                                }
+                            } label: {
+                                HStack {
+                                    Text("Show Other Qiraat Reciters")
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                }
+                                .foregroundColor(settings.accentColor.color)
+                            }
+                        }
+                    }
+                }
+                #endif
             }
             .navigationTitle("Select Reciter")
             .applyConditionalListStyle(defaultView: true)
             .onAppear {
-                if settings.reciter.isEmpty || reciters.first(where: { $0.name == settings.reciter }) == nil {
+                if settings.reciter.isEmpty || (settings.reciter != Settings.randomReciterName && reciters.first(where: { $0.name == settings.reciter }) == nil) {
                     withAnimation {
                         settings.reciter = Self.defaultReciter
                     }
@@ -530,7 +655,7 @@ struct ReciterListView: View {
 
     private func filteredReciters(_ list: [Reciter], excludingFeaturedMinshawi: Bool = false) -> [Reciter] {
         let baseList = excludingFeaturedMinshawi
-            ? list.filter { !featuredMinshawiIDs.contains($0.id) }
+            ? list.filter { !recitersMinshawi.contains($0) }
             : list
 
         #if os(watchOS)
@@ -541,11 +666,56 @@ struct ReciterListView: View {
         #endif
     }
 
+    #if !os(watchOS)
+    private var uniqueDownloadedReciterCount: Int {
+        var seen = Set<String>()
+        return reciters.reduce(into: 0) { count, reciter in
+            guard downloadManager.stateSnapshot(for: reciter).completedSurahs > 0 else { return }
+            guard seen.insert(reciter.id).inserted else { return }
+            count += 1
+        }
+    }
+
+    private var shouldHideDuplicateMinshawiEntries: Bool {
+        showDownloadedOnly
+    }
+    #else
+    private var shouldHideDuplicateMinshawiEntries: Bool {
+        false
+    }
+    #endif
+
     @ViewBuilder
     private func reciterButtons(_ list: [Reciter], qiraah: Bool = false) -> some View {
         ForEach(list) { reciter in
             reciterRow(reciter, qiraah: qiraah)
         }
+    }
+
+    private var randomReciterButton: some View {
+        Button {
+            settings.hapticFeedback()
+            withAnimation {
+                settings.reciter = Settings.randomReciterName
+            }
+            #if os(watchOS)
+            presentationMode.wrappedValue.dismiss()
+            #endif
+        } label: {
+            HStack {
+                Label(Settings.randomReciterName, systemImage: "shuffle")
+                    .foregroundColor(settings.reciter == Settings.randomReciterName ? settings.accentColor.color : .primary)
+
+                Spacer()
+
+                Image(systemName: "checkmark")
+                    .foregroundColor(settings.accentColor.color)
+                    .opacity(settings.reciter == Settings.randomReciterName ? 1 : 0)
+            }
+            .font(.subheadline)
+            .padding(.vertical, 4)
+        }
+        .id(Settings.randomReciterName)
     }
 
     @ViewBuilder
@@ -795,7 +965,7 @@ struct FavoritesView: View {
 #endif
 
 #Preview {
-    SettingsQuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        SettingsQuranView()
+    }
 }

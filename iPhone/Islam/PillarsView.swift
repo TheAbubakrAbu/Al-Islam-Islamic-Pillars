@@ -3527,3 +3527,9 @@ struct MadhabView: View {
         .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer {
+        PillarsView()
+    }
+}

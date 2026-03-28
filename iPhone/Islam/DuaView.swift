@@ -61,3 +61,9 @@ struct DuaView: View {
         .navigationTitle("Common Duas")
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer {
+        DuaView()
+    }
+}

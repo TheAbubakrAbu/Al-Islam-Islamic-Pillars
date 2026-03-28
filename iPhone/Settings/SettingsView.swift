@@ -326,3 +326,9 @@ struct VersionNumber: View {
         .foregroundColor(.primary)
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        SettingsView()
+    }
+}

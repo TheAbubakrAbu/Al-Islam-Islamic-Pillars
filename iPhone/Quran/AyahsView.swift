@@ -668,10 +668,12 @@ struct AyahsView: View {
                     if settings.qiraatComparisonMode || settings.showTajweedColors {
                         HStack(alignment: .bottom, spacing: 8) {
                             if settings.showTajweedColors {
-                                TajweedLegendMenu()
+                                TajweedLegendMenu(expandsToFillRow: !settings.qiraatComparisonMode)
                             }
 
-                            Spacer()
+                            if settings.qiraatComparisonMode {
+                                Spacer()
+                            }
                             
                             if settings.qiraatComparisonMode {
                                 ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
@@ -711,7 +713,7 @@ struct AyahsView: View {
                             SearchBar(text: $searchText.animation(.easeInOut))
                             
                             playButton(proxy: proxy)
-                                .frame(width: 30, height: 30)
+                                .frame(width: 26, height: 26)
                                 .padding()
                                 .conditionalGlassEffect()
                         }
@@ -719,6 +721,7 @@ struct AyahsView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
+                    .background(Color.white.opacity(0.00001))
                     .animation(.easeInOut, value: quranPlayer.isPlaying)
                 }
             }
@@ -838,13 +841,6 @@ struct AyahsView: View {
                 Menu {
                     Button {
                         settings.hapticFeedback()
-                        playRandomReciterForCurrentSurah()
-                    } label: {
-                        Label("Play Random Reciter", systemImage: "person.wave.2")
-                    }
-
-                    Button {
-                        settings.hapticFeedback()
                         showCustomRangeSheet = true
                     } label: {
                         Label("Play Custom Range", systemImage: "slider.horizontal.3")
@@ -873,6 +869,13 @@ struct AyahsView: View {
                         }
                     } label: {
                         Label("Play Random Ayah", systemImage: "shuffle")
+                    }
+                    
+                    Button {
+                        settings.hapticFeedback()
+                        playRandomReciterForCurrentSurah()
+                    } label: {
+                        Label("Play Random Reciter", systemImage: "person.wave.2")
                     }
                     
                     Menu {
@@ -983,7 +986,7 @@ struct AyahsView: View {
     }
     
     private var settingsSheet: some View {
-        NavigationView { SettingsQuranView(showEdits: false) }
+        NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
     }
     #endif
     
@@ -1131,15 +1134,18 @@ struct ArabicTextRiwayahPicker: View {
             }
         } else {
             Menu {
-                ForEach(Self.options, id: \.tag) { option in
+                ForEach(Array(Self.options.reversed()), id: \.tag) { option in
                     Button {
                         selection = option.tag
                     } label: {
-                        if option.tag == selection {
-                            Label(option.label, systemImage: "checkmark")
-                        } else {
+                        HStack {
+                            if option.tag == selection {
+                                Image(systemName: "checkmark")
+                            }
+                            
                             Text(option.label)
                         }
+                        .font(.caption)
                     }
                 }
             } label: {
@@ -1156,7 +1162,7 @@ struct ArabicTextRiwayahPicker: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-                .conditionalGlassEffect(useColor: 0.25)
+                .conditionalGlassEffect()
             }
         }
         #endif
@@ -1166,36 +1172,27 @@ struct ArabicTextRiwayahPicker: View {
 #if !os(watchOS)
 private struct TajweedLegendMenu: View {
     @EnvironmentObject private var settings: Settings
+    @State private var showingSheet = false
+    var expandsToFillRow: Bool = false
 
-    private let items: [(label: String, color: Color)] = [
-        ("Madd", .red),
-        ("Ghunnah", .green),
-        ("Idghaam", .blue),
-        ("Ikhfa", .orange),
-        ("Iqlab", .indigo),
-        ("Qalqalah", .purple),
-        ("Hamzat Wasl", .pink),
-        ("Lam Shamsiyyah", .gray),
-        ("Silent", .secondary)
-    ]
+    private let items = TajweedLegendCategory.allCases
+
+    private var quickLegendColumns: [GridItem] {
+        [
+            GridItem(.flexible(), spacing: 10, alignment: .top),
+            GridItem(.flexible(), spacing: 10, alignment: .top)
+        ]
+    }
 
     var body: some View {
-        Menu {
-            ForEach(items, id: \.label) { item in
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(item.color)
-                        .frame(width: 5, height: 5)
-
-                    Text(item.label)
-                }
-            }
+        Button {
+            showingSheet = true
         } label: {
             HStack(spacing: 8) {
                 HStack(spacing: 4) {
-                    ForEach(items.prefix(5), id: \.label) { item in
+                    ForEach([Color.red, Color.orange, Color.yellow, Color.green, Color.blue], id: \.self) { item in
                         Circle()
-                            .fill(item.color)
+                            .fill(item)
                             .frame(width: 5, height: 5)
                     }
                 }
@@ -1204,18 +1201,206 @@ private struct TajweedLegendMenu: View {
                     .font(.caption)
                     .foregroundColor(settings.accentColor.color)
             }
+            .frame(maxWidth: expandsToFillRow ? .infinity : nil, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
+            .contentShape(Rectangle())
             .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
-            .conditionalGlassEffect(useColor: 0.25)
+            .conditionalGlassEffect()
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingSheet) {
+            if #available(iOS 16.0, *) {
+                legendSheetContent
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            } else {
+                legendSheetContent
+            }
+        }
+    }
+
+    private var legendSheetContent: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Tajweed Legend")
+                            .font(.title3.weight(.semibold))
+
+                        Text("Use the colors as a quick guide, then read the longer notes below for what each rule is doing in recitation.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Quick Guide")
+                            .font(.headline)
+
+                        LazyVGrid(columns: quickLegendColumns, alignment: .leading, spacing: 10) {
+                            ForEach(items) { item in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(alignment: .center, spacing: 8) {
+                                        Circle()
+                                            .fill(item.color)
+                                            .frame(width: 11, height: 11)
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(item.englishTitle)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(.primary)
+                                                .lineLimit(1)
+
+                                            Text(item.arabicTitle)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .lineLimit(1)
+                                        }
+                                    }
+
+                                    if #available(iOS 16.0, *) {
+                                        Text(item.shortDescription)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2, reservesSpace: true)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    } else {
+                                        Text(item.shortDescription)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+
+                                    HStack {
+                                        Spacer()
+
+                                        Button {
+                                            settings.hapticFeedback()
+                                            withAnimation(.easeInOut(duration: 0.18)) {
+                                                settings.setTajweedCategory(item, visible: !settings.isTajweedCategoryVisible(item))
+                                            }
+                                        } label: {
+                                            Image(systemName: settings.isTajweedCategoryVisible(item) ? "eye.fill" : "eye.slash.fill")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(settings.isTajweedCategoryVisible(item) ? item.color : .secondary)
+                                                .frame(width: 22, height: 22)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .animation(.easeInOut(duration: 0.18), value: settings.isTajweedCategoryVisible(item))
+                                .opacity(settings.isTajweedCategoryVisible(item) ? 1 : 0.45)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color.primary.opacity(0.05))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(item.color.opacity(0.35), lineWidth: 1)
+                                )
+                            }
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("More Detail")
+                            .font(.headline)
+
+                        ForEach(items) { item in
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(spacing: 10) {
+                                    Circle()
+                                        .fill(item.color)
+                                        .frame(width: 12, height: 12)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.englishTitle)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(1)
+
+                                        Text(item.arabicTitle)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+
+                                    Spacer(minLength: 6)
+
+                                    Button(settings.isTajweedCategoryVisible(item) ? "Hide" : "Show") {
+                                        settings.hapticFeedback()
+                                        
+                                        withAnimation {
+                                            settings.setTajweedCategory(item, visible: !settings.isTajweedCategoryVisible(item))
+                                        }
+                                    }
+                                    .font(.caption.weight(.semibold))
+                                }
+
+                                Text(item.longDescription)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .opacity(settings.isTajweedCategoryVisible(item) ? 1 : 0.45)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(Color.primary.opacity(0.04))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                            )
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Tip")
+                            .font(.headline)
+
+                        Text("These colors help you notice recitation patterns quickly, but listening to a qualified reciter is still the best way to hear how each rule should sound.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(settings.accentColor.color.opacity(0.08))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(settings.accentColor.color.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 28)
+            }
+            .background(Color(.systemBackground))
+            .navigationTitle("Legend")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        showingSheet = false
+                    }
+                }
+            }
         }
     }
 }
+
 #endif
 
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer {
+        AyahsView(surah: AlIslamPreviewData.surah)
+    }
 }

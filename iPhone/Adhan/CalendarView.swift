@@ -152,6 +152,7 @@ struct HijriCalendarView: View {
 }
 
 #Preview {
-    HijriCalendarView()
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        HijriCalendarView()
+    }
 }

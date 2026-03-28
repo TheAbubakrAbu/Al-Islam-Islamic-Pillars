@@ -100,6 +100,20 @@ struct AyahRow: View {
         let text = ayah.displayArabicText(surahId: surah.id, clean: false, qiraahOverride: comparisonQiraahOverride)
         return TajweedStore.shared.attributedText(surah: surah.id, ayah: ayah.id, text: text)
     }
+
+    private var tajweedAnimationKey: String {
+        let categorySignature = TajweedLegendCategory.allCases
+            .map { settings.isTajweedCategoryVisible($0) ? "1" : "0" }
+            .joined()
+        let qiraahKey = comparisonQiraahOverride ?? settings.displayQiraah
+        return [
+            settings.showTajweedColors ? "1" : "0",
+            settings.cleanArabicText ? "1" : "0",
+            (settings.beginnerMode || ayahBeginnerMode) ? "1" : "0",
+            qiraahKey,
+            categorySignature
+        ].joined(separator: "|")
+    }
     
     var body: some View {
         let isBookmarked = isBookmarkedHere
@@ -120,7 +134,7 @@ struct AyahRow: View {
                     .fill(
                         currentAyah == ayah.id
                         ? settings.accentColor.color.opacity(settings.defaultView ? 0.15 : 0.25)
-                        : .white.opacity(0.0001)
+                        : .white.opacity(0.00001)
                     )
                     .padding(.horizontal, -12)
                     #if !os(watchOS)
@@ -366,6 +380,7 @@ struct AyahRow: View {
                     trailingSuffixFont: .custom("KFGQPCQUMBULUthmanicScript-Regu", size: settings.fontArabicSize),
                     trailingSuffixColor: settings.accentColor.color
                 )
+                .animation(.easeInOut, value: tajweedAnimationKey)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .lineLimit(nil)
@@ -633,9 +648,24 @@ struct AyahRow: View {
     }
 }
 
+private struct AyahRowPreviewContent: View {
+    @State private var scrollDown: Int? = nil
+    @State private var searchText = ""
+
+    var body: some View {
+        List {
+            AyahRow(
+                surah: AlIslamPreviewData.surah,
+                ayah: AlIslamPreviewData.ayah,
+                scrollDown: $scrollDown,
+                searchText: $searchText
+            )
+        }
+    }
+}
+
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        AyahRowPreviewContent()
+    }
 }

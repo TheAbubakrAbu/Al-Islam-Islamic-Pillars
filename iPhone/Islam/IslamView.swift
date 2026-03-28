@@ -272,8 +272,7 @@ private struct Card: View {
 }
 
 #Preview {
-    IslamView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        IslamView()
+    }
 }

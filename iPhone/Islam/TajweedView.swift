@@ -1914,3 +1914,9 @@ private struct TajweedTopicPlaceholderView: View {
             .navigationTitle(title)
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer {
+        TajweedFoundationsView()
+    }
+}

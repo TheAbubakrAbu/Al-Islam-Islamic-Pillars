@@ -24,57 +24,65 @@ struct TasbihView: View {
         List {
             Section(header: Text("GLORIFICATIONS OF ALLAH ﷻ‎")) {
                 ForEach(tasbihData.indices, id: \.self) { index in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.0001))
-                            #if !os(watchOS)
-                            .padding(.horizontal, -12)
-                            .padding(.vertical, -11)
-                            #else
-                            .padding(-7)
-                            #endif
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            selectedDhikrIndex = index
+                        }
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 24)
+                                .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
+                                #if !os(watchOS)
+                                .padding(.horizontal, -12)
+                                .padding(.vertical, -11)
+                                #else
+                                .padding(-7)
+                                #endif
 
-                        TasbihRow(tasbih: tasbihData[index], counter: binding(for: index))
+                            TasbihRow(tasbih: tasbihData[index], counter: binding(for: index))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     #if os(watchOS)
                     .padding(.vertical, 12)
                     #endif
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            self.selectedDhikrIndex = index
-                        }
-                    }
                 }
             }
 
             let selectedDhikr = tasbihData[selectedDhikrIndex]
             let counterBinding = binding(for: selectedDhikrIndex)
 
-            Section {
-                ZStack {
-                    ProgressCircleView(progress: counterBinding.wrappedValue)
-                        .scaledToFit()
-                        .frame(maxWidth: 185, maxHeight: 185)
-
-                    VStack(alignment: .center, spacing: 5) {
-                        Text(selectedDhikr.arabic)
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(settings.accentColor.color)
-
-                        Text(selectedDhikr.english)
-                            .font(.subheadline)
-
-                        CounterView(counter: counterBinding)
+            Group {
+                Section {
+                    Button {
+                        settings.hapticFeedback()
+                        counters[selectedDhikrIndex, default: 0] += 1
+                    } label: {
+                        ZStack {
+                            ProgressCircleView(progress: counterBinding.wrappedValue)
+                                .scaledToFit()
+                                .frame(maxWidth: 185, maxHeight: 185)
+                            
+                            VStack(alignment: .center, spacing: 5) {
+                                Text(selectedDhikr.arabic)
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(settings.accentColor.color)
+                                
+                                Text(selectedDhikr.english)
+                                    .font(.subheadline)
+                                
+                                CounterView(counter: counterBinding)
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
+                        .contentShape(Rectangle())
                     }
-                }
-                .padding()
-                .cornerRadius(24)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    counters[selectedDhikrIndex, default: 0] += 1
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -156,34 +164,48 @@ struct TasbihRow: View {
 
             VStack {
                 HStack {
-                    Image(systemName: "minus.circle")
-                        .foregroundColor(counter == 0 ? .secondary : settings.accentColor.color)
-                        .onTapGesture {
-                            settings.hapticFeedback()
+                    Button {
+                        settings.hapticFeedback()
 
-                            if counter > 0 {
-                                counter -= 1
-                            }
+                        if counter > 0 {
+                            counter -= 1
                         }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .foregroundColor(counter == 0 ? .secondary : settings.accentColor.color)
+                            .padding(6)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
 
                     Text("\(counter)")
 
-                    Image(systemName: "plus.circle")
-                        .foregroundColor(settings.accentColor.color)
-                        .onTapGesture {
-                            settings.hapticFeedback()
-                            counter += 1
-                        }
+                    Button {
+                        settings.hapticFeedback()
+                        counter += 1
+                    } label: {
+                        Image(systemName: "plus.circle")
+                            .foregroundColor(settings.accentColor.color)
+                            .padding(6)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
 
-                Text("Reset")
-                    .font(.subheadline)
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        counter = 0
-                    }
+                Button {
+                    settings.hapticFeedback()
+                    counter = 0
+                } label: {
+                    Text("Reset")
+                        .font(.subheadline)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
+        .contentShape(Rectangle())
         #if !os(watchOS)
         .contextMenu {
             Button(action: {
@@ -208,5 +230,11 @@ struct TasbihRow: View {
             }
         }
         #endif
+    }
+}
+
+#Preview {
+    AlIslamPreviewContainer {
+        TasbihView()
     }
 }

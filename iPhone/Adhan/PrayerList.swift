@@ -449,6 +449,8 @@ struct PrayerList: View {
                                     fullPrayers.toggle()
                                 }
                             }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
                             .conditionalGlassEffect()
                         
                         #if os(watchOS)
@@ -476,6 +478,8 @@ struct PrayerList: View {
                                     selectedDate = Date()
                                 }
                             }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
                             .conditionalGlassEffect()
                     }
                 }
@@ -499,6 +503,9 @@ struct PrayerList: View {
 }
 
 #Preview {
-    AdhanView()
-        .environmentObject(Settings.shared)
+    AlIslamPreviewContainer {
+        List {
+            PrayerList()
+        }
+    }
 }
