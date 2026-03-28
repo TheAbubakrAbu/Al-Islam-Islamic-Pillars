@@ -93,113 +93,9 @@ struct ArabicView: View {
 
     var body: some View {
         List {
-            if searchText.isEmpty, !settings.favoriteLetters.isEmpty {
-                Section("FAVORITE LETTERS") {
-                    ForEach(settings.favoriteLetters.sorted(), id: \.id) {
-                        ArabicLetterRow(letterData: $0)
-                    }
-                }
-            }
-
-            if searchText.isEmpty {
-                if filterMode == .normal {
-                    Section("STANDARD ARABIC LETTERS") {
-                        ForEach(standardArabicLetters, id: \.letter) {
-                            ArabicLetterRow(letterData: $0)
-                        }
-                    }
-                } else if filterMode == .similarity {
-                    ForEach(similarityGroups.indices, id: \.self) { idx in
-                        let group = similarityGroups[idx]
-                        let header = idx == 0 ? "VOWEL LETTERS" : group.joined(separator: " AND")
-                        Section(header) {
-                            ForEach(group, id: \.self) { ch in
-                                letterData(for: ch).map(ArabicLetterRow.init)
-                            }
-                        }
-                    }
-                } else if filterMode == .heavyLight {
-                    Section("HEAVY LETTERS") {
-                        ForEach(standardArabicLetters.filter { $0.weight == .heavy }, id: \.letter) {
-                            ArabicLetterRow(letterData: $0)
-                        }
-                    }
-
-                    Section("LIGHT LETTERS") {
-                        ForEach((standardArabicLetters + otherArabicLetters).filter {
-                            $0.weight == .light
-                                || $0.transliteration == "taa marbuuTa"
-                                || $0.transliteration.lowercased().contains("hamza")
-                        }, id: \.id) {
-                            ArabicLetterRow(letterData: $0)
-                        }
-                    }
-
-                    Section("CONDITIONAL") {
-                        ForEach(standardArabicLetters.filter { $0.weight == .conditional }, id: \.letter) {
-                            ArabicLetterRow(letterData: $0)
-                        }
-                    }
-
-                    Section("FOLLOWS PREVIOUS") {
-                        ForEach(standardArabicLetters.filter { $0.weight == .followsPrevious }, id: \.letter) {
-                            ArabicLetterRow(letterData: $0)
-                        }
-                    }
-                } else {
-                    Section("STANDARD ARABIC LETTERS") {
-                        ForEach(standardArabicLetters, id: \.letter) {
-                            ArabicLetterRow(letterData: $0)
-                        }
-                    }
-                }
-
-                Section("SPECIAL ARABIC LETTERS") {
-                    ForEach(otherArabicLetters, id: \.letter) {
-                        ArabicLetterRow(letterData: $0)
-                    }
-                }
-
-                Section("ARABIC NUMBERS") {
-                    ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
-                }
-
-                tajweedSection
-
-                Section("NON-ARABIC LETTERS") {
-                    ForEach(nonArabicArabicScriptLetters, id: \.letter) {
-                        ArabicLetterRow(letterData: $0)
-                    }
-                }
-            } else {
-                Section {
-                    ForEach(filteredStandardForMode) {
-                        ArabicLetterRow(letterData: $0)
-                    }
-
-                    ForEach(filteredOther) {
-                        ArabicLetterRow(letterData: $0)
-                    }
-                } header: {
-                    HStack {
-                        Text("ARABIC SEARCH RESULTS")
-
-                        Spacer()
-
-                        Text("\(filteredStandardForMode.count + filteredOther.count)")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(settings.accentColor.color)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            #if !os(watchOS)
-                            .background(.ultraThinMaterial)
-                            #endif
-                            .clipShape(Capsule())
-                            .conditionalGlassEffect()
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
+            favoriteLettersSection
+            mainLetterSections
+            searchResultsSection
         }
         #if os(watchOS)
         .searchable(text: $searchText)
@@ -243,6 +139,125 @@ struct ArabicView: View {
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .dismissKeyboardOnScroll()
         .navigationTitle("Arabic Alphabet")
+    }
+
+    @ViewBuilder
+    private var favoriteLettersSection: some View {
+        if searchText.isEmpty, !settings.favoriteLetters.isEmpty {
+            Section("FAVORITE LETTERS") {
+                ForEach(settings.favoriteLetters.sorted(), id: \.id) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var mainLetterSections: some View {
+        if searchText.isEmpty {
+            standardLetterSections
+
+            Section("SPECIAL ARABIC LETTERS") {
+                ForEach(otherArabicLetters, id: \.letter) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+
+            Section("ARABIC NUMBERS") {
+                ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
+            }
+
+            tajweedSection
+
+            Section("NON-ARABIC LETTERS") {
+                ForEach(nonArabicArabicScriptLetters, id: \.letter) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var standardLetterSections: some View {
+        switch filterMode {
+        case .normal:
+            Section("STANDARD ARABIC LETTERS") {
+                ForEach(standardArabicLetters, id: \.letter) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+        case .similarity:
+            ForEach(similarityGroups.indices, id: \.self) { idx in
+                let group = similarityGroups[idx]
+                let header = idx == 0 ? "VOWEL LETTERS" : group.joined(separator: " AND")
+                Section(header) {
+                    ForEach(group, id: \.self) { ch in
+                        letterData(for: ch).map(ArabicLetterRow.init)
+                    }
+                }
+            }
+        case .heavyLight:
+            Section("HEAVY LETTERS") {
+                ForEach(standardArabicLetters.filter { $0.weight == .heavy }, id: \.letter) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+
+            Section("LIGHT LETTERS") {
+                ForEach((standardArabicLetters + otherArabicLetters).filter {
+                    $0.weight == .light
+                        || $0.transliteration == "taa marbuuTa"
+                        || $0.transliteration.lowercased().contains("hamza")
+                }, id: \.id) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+
+            Section("CONDITIONAL") {
+                ForEach(standardArabicLetters.filter { $0.weight == .conditional }, id: \.letter) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+
+            Section("FOLLOWS PREVIOUS") {
+                ForEach(standardArabicLetters.filter { $0.weight == .followsPrevious }, id: \.letter) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var searchResultsSection: some View {
+        if !searchText.isEmpty {
+            Section {
+                ForEach(filteredStandardForMode) {
+                    ArabicLetterRow(letterData: $0)
+                }
+
+                ForEach(filteredOther) {
+                    ArabicLetterRow(letterData: $0)
+                }
+            } header: {
+                HStack {
+                    Text("ARABIC SEARCH RESULTS")
+
+                    Spacer()
+
+                    Text("\(filteredStandardForMode.count + filteredOther.count)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(settings.accentColor.color)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        #if !os(watchOS)
+                        .background(.ultraThinMaterial)
+                        #endif
+                        .clipShape(Capsule())
+                        .conditionalGlassEffect()
+                }
+                .padding(.vertical, 4)
+            }
+        }
     }
 
     private func letterData(for glyph: String) -> LetterData? {

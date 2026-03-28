@@ -2,12 +2,58 @@ import SwiftUI
 
 struct SearchBar: UIViewRepresentable {
     @Binding var text: String
-    
+
     var onSearchButtonClicked: (() -> Void)?
     var onFocusChanged: ((Bool) -> Void)?
 
-    class Coordinator: NSObject, UISearchBarDelegate {
+    func makeCoordinator() -> Coordinator {
+        Coordinator(
+            text: $text,
+            onSearchButtonClicked: onSearchButtonClicked,
+            onFocusChanged: onFocusChanged
+        )
+    }
+
+    func makeUIView(context: Context) -> UISearchBar {
+        let searchBar = UISearchBar(frame: .zero)
+        searchBar.delegate = context.coordinator
+        searchBar.placeholder = "Search"
+        searchBar.autocorrectionType = .no
+        searchBar.autocapitalizationType = .none
+        searchBar.returnKeyType = .search
+        searchBar.searchBarStyle = .minimal
+
+        configure(searchTextField: searchBar.searchTextField, coordinator: context.coordinator)
+        return searchBar
+    }
+
+    func updateUIView(_ uiView: UISearchBar, context: Context) {
+        if uiView.text != text {
+            uiView.text = text
+        }
+
+        uiView.searchTextField.rightViewMode = text.isEmpty ? .never : .always
+        context.coordinator.onSearchButtonClicked = onSearchButtonClicked
+        context.coordinator.onFocusChanged = onFocusChanged
+    }
+
+    private func configure(searchTextField: UITextField, coordinator: Coordinator) {
+        searchTextField.backgroundColor = .clear
+        searchTextField.layer.cornerRadius = 12
+        searchTextField.layer.masksToBounds = true
+        searchTextField.font = .systemFont(ofSize: 16)
+        searchTextField.clearButtonMode = .never
+        searchTextField.rightView = ClearButtonContainer.make(for: coordinator)
+        searchTextField.rightViewMode = .never
+
+        let heightConstraint = searchTextField.heightAnchor.constraint(equalToConstant: 44)
+        heightConstraint.priority = .required
+        heightConstraint.isActive = true
+    }
+
+    final class Coordinator: NSObject, UISearchBarDelegate {
         @Binding var text: String
+
         var onSearchButtonClicked: (() -> Void)?
         var onFocusChanged: ((Bool) -> Void)?
 
@@ -51,7 +97,7 @@ struct SearchBar: UIViewRepresentable {
         }
 
         @objc func clearSearchText(_ sender: UIButton) {
-            guard let textField = sender.superview?.superview as? UITextField ?? sender.superview as? UITextField else {
+            guard let textField = resolvedTextField(from: sender) else {
                 text = ""
                 return
             }
@@ -60,42 +106,15 @@ struct SearchBar: UIViewRepresentable {
             text = ""
             textField.sendActions(for: .editingChanged)
         }
+
+        private func resolvedTextField(from sender: UIButton) -> UITextField? {
+            sender.superview?.superview as? UITextField ?? sender.superview as? UITextField
+        }
     }
+}
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(
-            text: $text,
-            onSearchButtonClicked: onSearchButtonClicked,
-            onFocusChanged: onFocusChanged
-        )
-    }
-
-    func makeUIView(context: Context) -> UISearchBar {
-        let searchBar = UISearchBar(frame: .zero)
-        searchBar.delegate = context.coordinator
-        searchBar.placeholder = "Search"
-        searchBar.autocorrectionType = .no
-        searchBar.autocapitalizationType = .none
-        searchBar.returnKeyType = .search
-        searchBar.searchBarStyle = .minimal
-
-        let textField = searchBar.searchTextField
-        textField.backgroundColor = .clear
-        textField.layer.cornerRadius = 12
-        textField.layer.masksToBounds = true
-        textField.font = .systemFont(ofSize: 16)
-        textField.clearButtonMode = .never
-        textField.rightView = makeClearButtonContainer(for: context.coordinator)
-        textField.rightViewMode = .never
-
-        let heightConstraint = textField.heightAnchor.constraint(equalToConstant: 44)
-        heightConstraint.priority = .required
-        heightConstraint.isActive = true
-
-        return searchBar
-    }
-
-    private func makeClearButtonContainer(for coordinator: Coordinator) -> UIView {
+private enum ClearButtonContainer {
+    static func make(for coordinator: SearchBar.Coordinator) -> UIView {
         let leadingInset: CGFloat = 4
         let container = UIView(frame: CGRect(x: 0, y: 0, width: 24 + leadingInset, height: 20))
 
@@ -103,21 +122,10 @@ struct SearchBar: UIViewRepresentable {
         button.frame = CGRect(x: leadingInset, y: 0, width: 20, height: 20)
         button.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
         button.tintColor = .secondaryLabel
-        button.addTarget(coordinator, action: #selector(Coordinator.clearSearchText(_:)), for: .touchUpInside)
+        button.addTarget(coordinator, action: #selector(SearchBar.Coordinator.clearSearchText(_:)), for: .touchUpInside)
 
         container.addSubview(button)
         return container
-    }
-
-    func updateUIView(_ uiView: UISearchBar, context: Context) {
-        if uiView.text != text {
-            uiView.text = text
-        }
-
-        uiView.searchTextField.rightViewMode = text.isEmpty ? .never : .always
-
-        context.coordinator.onSearchButtonClicked = onSearchButtonClicked
-        context.coordinator.onFocusChanged = onFocusChanged
     }
 }
 
@@ -138,7 +146,7 @@ struct GlassSearchBar: View {
         onSearchButtonClicked: (() -> Void)? = nil,
         onFocusChanged: ((Bool) -> Void)? = nil
     ) {
-        self._searchText = searchText
+        _searchText = searchText
         self.onSearchButtonClicked = onSearchButtonClicked
         self.onFocusChanged = onFocusChanged
     }
@@ -148,7 +156,7 @@ struct GlassSearchBar: View {
         onSearchButtonClicked: (() -> Void)? = nil,
         onFocusChanged: ((Bool) -> Void)? = nil
     ) {
-        self._searchText = text
+        _searchText = text
         self.onSearchButtonClicked = onSearchButtonClicked
         self.onFocusChanged = onFocusChanged
     }
@@ -158,27 +166,10 @@ struct GlassSearchBar: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.primary)
 
-            TextField("Search", text: $searchText.animation(.easeInOut))
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-                .focused($isFocused)
-                .onSubmit {
-                    onSearchButtonClicked?()
-                    isFocused = false
-                }
+            searchField
 
             if !searchText.isEmpty {
-                Button {
-                    withAnimation {
-                        searchText = ""
-                    }
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .clipShape(Rectangle())
+                clearButton
             }
 
             if isFocused {
@@ -191,6 +182,31 @@ struct GlassSearchBar: View {
         .onChange(of: isFocused) { focused in
             onFocusChanged?(focused)
         }
+    }
+
+    private var searchField: some View {
+        TextField("Search", text: $searchText.animation(.easeInOut))
+            .autocorrectionDisabled()
+            .submitLabel(.search)
+            .focused($isFocused)
+            .onSubmit {
+                onSearchButtonClicked?()
+                isFocused = false
+            }
+    }
+
+    private var clearButton: some View {
+        Button {
+            withAnimation {
+                searchText = ""
+            }
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .clipShape(Rectangle())
     }
 
     private var keyboardDismissButton: some View {

@@ -2,11 +2,55 @@ import AppIntents
 
 @available(iOS 16.0, watchOS 9.0, *)
 enum PrayerKind: String, AppEnum, CaseIterable {
-    case fajr = "Fajr", sunrise = "Sunrise", dhuhr = "Dhuhr", asr = "Asr", maghrib = "Maghrib", isha = "Isha"
+    case fajr = "Fajr"
+    case sunrise = "Sunrise"
+    case dhuhr = "Dhuhr"
+    case asr = "Asr"
+    case maghrib = "Maghrib"
+    case isha = "Isha"
+
     static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Prayer")
+
     static var caseDisplayRepresentations: [PrayerKind: DisplayRepresentation] = [
-        .fajr: "Fajr", .sunrise: "Sunrise", .dhuhr: "Dhuhr", .asr: "Asr", .maghrib: "Maghrib", .isha: "Isha"
+        .fajr: "Fajr",
+        .sunrise: "Sunrise",
+        .dhuhr: "Dhuhr",
+        .asr: "Asr",
+        .maghrib: "Maghrib",
+        .isha: "Isha"
     ]
+
+    var searchKeys: [String] {
+        switch self {
+        case .fajr:
+            return ["Fajr", "Fajer", "Dawn"]
+        case .sunrise:
+            return ["Shurooq", "Sunrise"]
+        case .dhuhr:
+            return ["Dhuhr", "Thuhr", "Dhuhur", "Thuhur", "Jumuah", "Noon"]
+        case .asr:
+            return ["Asr", "Aser", "Afternoon"]
+        case .maghrib:
+            return ["Maghrib", "Magrib", "Maghreb", "Magreb", "Sunset"]
+        case .isha:
+            return ["Isha", "Ishaa", "Esha", "Eshaa", "Night"]
+        }
+    }
+}
+
+@available(iOS 16.0, watchOS 9.0, *)
+private extension Settings {
+    func todayFullPrayerList() -> [Prayer]? {
+        getPrayerTimes(for: Date(), fullPrayers: true)
+    }
+
+    func spokenPrayerName(for prayer: Prayer) -> String {
+        prayer.nameTransliteration == "Jumuah" ? "Jumuah (Dhuhr)" : prayer.nameTransliteration
+    }
+
+    func prayerTimeMessage(prefix: String, prayer: Prayer) -> String {
+        "\(prefix): \(spokenPrayerName(for: prayer)) at \(formatDate(prayer.time))."
+    }
 }
 
 @available(iOS 16.0, watchOS 9.0, *)
@@ -20,30 +64,24 @@ struct WhenIsPrayerIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        guard let list = Settings.shared.getPrayerTimes(for: Date(), fullPrayers: true), !list.isEmpty else {
-            let msg = "Prayer times aren’t available yet. Open Al-Islam to refresh."
-            return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+        let settings = Settings.shared
+
+        guard let prayers = settings.todayFullPrayerList(), !prayers.isEmpty else {
+            let message = "Prayer times aren’t available yet. Open Al-Islam to refresh."
+            return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        let keys: [String]
-        switch prayer {
-        case .fajr:    keys = ["Fajr", "Fajer", "Dawn"]
-        case .sunrise: keys = ["Shurooq", "Sunrise"]
-        case .dhuhr:   keys = ["Dhuhr", "Thuhr", "Dhuhur", "Thuhur", "Jumuah", "Noon"]
-        case .asr:     keys = ["Asr", "Aser", "Afternoon"]
-        case .maghrib: keys = ["Maghrib", "Magrib", "Maghreb", "Magreb", "Sunset"]
-        case .isha:    keys = ["Isha", "Ishaa", "Esha", "Eshaa", "Night"]
+        if let prayer = prayers.first(where: matchesRequestedPrayer) {
+            let message = "\(settings.spokenPrayerName(for: prayer)) is at \(settings.formatDate(prayer.time))."
+            return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        if let p = list.first(where: { keys.contains($0.nameTransliteration) || keys.contains($0.nameEnglish) }) {
-            let time = Settings.shared.formatDate(p.time)
-            let name = (p.nameTransliteration == "Jumuah") ? "Jumuah (Dhuhr)" : p.nameTransliteration
-            let msg = "\(name) is at \(time)."
-            return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
-        }
+        let message = "Couldn’t find today’s time for \(prayer.rawValue)."
+        return .result(value: message, dialog: IntentDialog(stringLiteral: message))
+    }
 
-        let msg = "Couldn’t find today’s time for \(prayer.rawValue)."
-        return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+    private func matchesRequestedPrayer(_ prayerTime: Prayer) -> Bool {
+        prayer.searchKeys.contains(prayerTime.nameTransliteration) || prayer.searchKeys.contains(prayerTime.nameEnglish)
     }
 }
 
@@ -55,24 +93,22 @@ struct CurrentPrayerIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        Settings.shared.fetchPrayerTimes()
+        let settings = Settings.shared
+        settings.fetchPrayerTimes()
 
-        if let cur = Settings.shared.currentPrayer {
-            let msg = "Current prayer: \(cur.nameTransliteration) (\(Settings.shared.formatDate(cur.time)))."
-            return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+        if let currentPrayer = settings.currentPrayer {
+            let message = "Current prayer: \(settings.spokenPrayerName(for: currentPrayer)) (\(settings.formatDate(currentPrayer.time)))."
+            return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        if let list = Settings.shared.getPrayerTimes(for: Date(), fullPrayers: true) {
-            let now = Date()
-            if let idx = list.lastIndex(where: { $0.time <= now }) {
-                let p = list[idx]
-                let msg = "Current prayer: \(p.nameTransliteration) at \(Settings.shared.formatDate(p.time))."
-                return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
-            }
+        if let prayers = settings.todayFullPrayerList(),
+           let prayer = prayers.last(where: { $0.time <= Date() }) {
+            let message = settings.prayerTimeMessage(prefix: "Current prayer", prayer: prayer)
+            return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        let msg = "No current prayer determined yet. Open Al-Islam to refresh prayer times."
-        return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+        let message = "No current prayer determined yet. Open Al-Islam to refresh prayer times."
+        return .result(value: message, dialog: IntentDialog(stringLiteral: message))
     }
 }
 
@@ -84,20 +120,21 @@ struct NextPrayerIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        Settings.shared.fetchPrayerTimes()
-        if let next = Settings.shared.nextPrayer {
-            let msg = "Next prayer: \(next.nameTransliteration) at \(Settings.shared.formatDate(next.time))."
-            return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+        let settings = Settings.shared
+        settings.fetchPrayerTimes()
+
+        if let nextPrayer = settings.nextPrayer {
+            let message = settings.prayerTimeMessage(prefix: "Next prayer", prayer: nextPrayer)
+            return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        if let list = Settings.shared.getPrayerTimes(for: Date(), fullPrayers: true) {
-            if let p = list.first(where: { $0.time > Date() }) {
-                let msg = "Next prayer: \(p.nameTransliteration) at \(Settings.shared.formatDate(p.time))."
-                return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
-            }
+        if let prayers = settings.todayFullPrayerList(),
+           let prayer = prayers.first(where: { $0.time > Date() }) {
+            let message = settings.prayerTimeMessage(prefix: "Next prayer", prayer: prayer)
+            return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        let msg = "No upcoming prayer found. Open Al-Islam to refresh prayer times."
-        return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+        let message = "No upcoming prayer found. Open Al-Islam to refresh prayer times."
+        return .result(value: message, dialog: IntentDialog(stringLiteral: message))
     }
 }

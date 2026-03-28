@@ -114,105 +114,132 @@ struct MasjidLocatorView: View {
     }
 
     var body: some View {
+        mapContent
+            .edgesIgnoringSafeArea(.all)
+            .overlay(alignment: .top) {
+                searchOverlay
+            }
+            .safeAreaInset(edge: .bottom) {
+                actionInset
+            }
+            .navigationTitle("Masjid Locator")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                configureInitialRegion()
+                scheduleSearch(for: "", force: true)
+            }
+            .onChange(of: searchText) { newValue in
+                scheduleSearch(for: newValue, force: false)
+            }
+            .preferredColorScheme(scheme)
+            .accentColor(settings.accentColor.color)
+            .tint(settings.accentColor.color)
+    }
+
+    private var mapContent: some View {
         Map(coordinateRegion: $region, annotationItems: markers) { item in
             MapAnnotation(coordinate: item.coordinate) {
                 markerBubble(for: item)
             }
         }
-        .edgesIgnoringSafeArea(.all)
-        .overlay(alignment: .top) {
-            VStack(alignment: .leading, spacing: 10) {
-                VStack(alignment: .leading, spacing: 8) {
-                    SearchBar(text: $searchText.animation(.easeInOut))
-                        .padding(-8)
+    }
 
-                    if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
-                        HStack {
-                            if isSearching {
-                                Text("Searching nearby masajid…")
-                            } else {
-                                Text("\(results.count) match\(results.count == 1 ? "" : "es") found")
-                            }
-
-                            Spacer()
-                        }
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(settings.accentColor.color)
-                        .padding(.horizontal, 6)
-                    }
-                }
-                .padding(8)
-                .padding(.bottom, -8)
-
-                if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty {
-                    resultsPanel
-                }
+    private var searchOverlay: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            searchPanel
+            if shouldShowResultsPanel {
+                resultsPanel
             }
-            .conditionalGlassEffect(rectangle: true)
-            .padding(.horizontal)
         }
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
+        .conditionalGlassEffect(rectangle: true)
+        .padding(.horizontal)
+    }
+
+    private var searchPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SearchBar(text: $searchText.animation(.easeInOut))
+                .padding(-8)
+
+            if shouldShowResultsPanel {
                 HStack {
-                    Button {
-                        settings.hapticFeedback()
-                        scheduleSearch(for: searchText, force: true)
-                    } label: {
-                        Label("Search This Area", systemImage: "magnifyingglass")
-                            .frame(maxWidth: .infinity)
+                    if isSearching {
+                        Text("Searching nearby masajid…")
+                    } else {
+                        Text("\(results.count) match\(results.count == 1 ? "" : "es") found")
                     }
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-                    .padding()
-                    .conditionalGlassEffect()
 
-                    Button {
-                        settings.hapticFeedback()
-                        centerOnCurrentLocation()
-                        scheduleSearch(for: searchText, force: true)
-                    } label: {
-                        Label("Near Me", systemImage: "location.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-                    .padding()
-                    .conditionalGlassEffect()
+                    Spacer()
                 }
-
-                if let selectedItem {
-                    Button {
-                        settings.hapticFeedback()
-                        selectedItem.openInMaps(launchOptions: [
-                            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
-                        ])
-                    } label: {
-                        Label("Open Directions to \(selectedItem.name ?? "Masjid")", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                    .padding()
-                    .conditionalGlassEffect(useColor: 0.25)
-                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 6)
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-            .padding(.horizontal)
-            .padding(.bottom, 26)
         }
-        .navigationTitle("Masjid Locator")
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            configureInitialRegion()
-            scheduleSearch(for: "", force: true)
+        .padding(8)
+        .padding(.bottom, -8)
+    }
+
+    private var actionInset: some View {
+        VStack(spacing: 8) {
+            actionButtonsRow
+            selectedDirectionsButton
         }
-        .onChange(of: searchText) { newValue in
-            scheduleSearch(for: newValue, force: false)
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        .padding(.horizontal)
+        .padding(.bottom, 26)
+    }
+
+    private var actionButtonsRow: some View {
+        HStack {
+            Button {
+                settings.hapticFeedback()
+                scheduleSearch(for: searchText, force: true)
+            } label: {
+                Label("Search This Area", systemImage: "magnifyingglass")
+                    .frame(maxWidth: .infinity)
+            }
+            .font(.headline)
+            .foregroundColor(settings.accentColor.color)
+            .padding()
+            .conditionalGlassEffect()
+
+            Button {
+                settings.hapticFeedback()
+                centerOnCurrentLocation()
+                scheduleSearch(for: searchText, force: true)
+            } label: {
+                Label("Near Me", systemImage: "location.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .font(.headline)
+            .foregroundColor(settings.accentColor.color)
+            .padding()
+            .conditionalGlassEffect()
         }
-        .preferredColorScheme(scheme)
-        .accentColor(settings.accentColor.color)
-        .tint(settings.accentColor.color)
+    }
+
+    @ViewBuilder
+    private var selectedDirectionsButton: some View {
+        if let selectedItem {
+            Button {
+                settings.hapticFeedback()
+                selectedItem.openInMaps(launchOptions: [
+                    MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
+                ])
+            } label: {
+                Label("Open Directions to \(selectedItem.name ?? "Masjid")", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .font(.headline)
+            .foregroundColor(.primary)
+            .padding()
+            .conditionalGlassEffect(useColor: 0.25)
+        }
+    }
+
+    private var shouldShowResultsPanel: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty
     }
 
     private func markerBubble(for item: MarkerItem) -> some View {

@@ -13,30 +13,33 @@ struct HighlightedSnippet: View {
     var trailingSuffix: String = ""
     var trailingSuffixFont: Font? = nil
     var trailingSuffixColor: Color? = nil
+    var lineLimit: Int? = nil
 
     var body: some View {
-        let result = highlight(
+        let highlightedText = highlight(
             source: source,
             baseAttributed: baseAttributedText(),
-            term: spacedQueryIfNeeded
+            term: searchTerm
         )
-        let combined = Text(result) + Text(trailingSuffix)
+
+        let suffixText = Text(trailingSuffix)
             .font(trailingSuffixFont ?? font)
             .foregroundColor(trailingSuffixColor ?? fg)
-        combined
+
+        (Text(highlightedText) + suffixText)
             .font(font)
-            .lineLimit(nil)
+            .lineLimit(lineLimit)
             #if !os(watchOS)
             .textSelection(.enabled)
             #endif
     }
 
-    private var spacedQueryIfNeeded: String {
-        beginnerMode ? term.map { String($0) }.joined(separator: " ") : term
+    private var searchTerm: String {
+        beginnerMode ? term.map(String.init).joined(separator: " ") : term
     }
 
-    private func normalizeForSearch(_ s: String, trimWhitespace: Bool) -> String {
-        settings.cleanSearch(s, whitespace: trimWhitespace)
+    private func normalizeForSearch(_ text: String, trimWhitespace: Bool) -> String {
+        settings.cleanSearch(text, whitespace: trimWhitespace)
             .removingArabicDiacriticsAndSigns
     }
 
@@ -54,40 +57,52 @@ struct HighlightedSnippet: View {
         var attributed = baseAttributed
 
         let normalizedSource = normalizeForSearch(source, trimWhitespace: false)
-        let normalizedTerm   = normalizeForSearch(term,   trimWhitespace: true)
+        let normalizedTerm = normalizeForSearch(term, trimWhitespace: true)
 
-        guard !normalizedTerm.isEmpty,
-              let matchRange = normalizedSource.range(of: normalizedTerm)
-        else { return attributed }
-
-        var originalStart: String.Index? = nil
-        var originalEnd:   String.Index? = nil
-
-        var normIndex = normalizedSource.startIndex
-        var origIndex = source.startIndex
-
-        while normIndex < matchRange.lowerBound && origIndex < source.endIndex {
-            let folded = normalizeForSearch(String(source[origIndex]), trimWhitespace: false)
-            normIndex = normalizedSource.index(normIndex, offsetBy: folded.count)
-            origIndex = source.index(after: origIndex)
-        }
-        originalStart = origIndex
-
-        var lengthLeft = normalizedTerm.count
-        while lengthLeft > 0 && origIndex < source.endIndex {
-            let folded = normalizeForSearch(String(source[origIndex]), trimWhitespace: false)
-            lengthLeft -= folded.count
-            origIndex = source.index(after: origIndex)
-        }
-        originalEnd = origIndex
-
-        if let s = originalStart, let e = originalEnd,
-           let aStart = AttributedString.Index(s, within: attributed),
-           let aEnd = AttributedString.Index(e, within: attributed) {
-            attributed[aStart..<aEnd].foregroundColor = accent
+        guard
+            !normalizedTerm.isEmpty,
+            let matchRange = normalizedSource.range(of: normalizedTerm),
+            let originalRange = originalRange(
+                in: source,
+                normalizedSource: normalizedSource,
+                normalizedTerm: normalizedTerm,
+                matchRange: matchRange
+            ),
+            let start = AttributedString.Index(originalRange.lowerBound, within: attributed),
+            let end = AttributedString.Index(originalRange.upperBound, within: attributed)
+        else {
+            return attributed
         }
 
+        attributed[start..<end].foregroundColor = accent
         return attributed
+    }
+
+    private func originalRange(
+        in source: String,
+        normalizedSource: String,
+        normalizedTerm: String,
+        matchRange: Range<String.Index>
+    ) -> Range<String.Index>? {
+        var normalizedIndex = normalizedSource.startIndex
+        var sourceIndex = source.startIndex
+
+        while normalizedIndex < matchRange.lowerBound, sourceIndex < source.endIndex {
+            let foldedCharacter = normalizeForSearch(String(source[sourceIndex]), trimWhitespace: false)
+            normalizedIndex = normalizedSource.index(normalizedIndex, offsetBy: foldedCharacter.count)
+            sourceIndex = source.index(after: sourceIndex)
+        }
+
+        let start = sourceIndex
+        var remainingLength = normalizedTerm.count
+
+        while remainingLength > 0, sourceIndex < source.endIndex {
+            let foldedCharacter = normalizeForSearch(String(source[sourceIndex]), trimWhitespace: false)
+            remainingLength -= foldedCharacter.count
+            sourceIndex = source.index(after: sourceIndex)
+        }
+
+        return start..<sourceIndex
     }
 }
 

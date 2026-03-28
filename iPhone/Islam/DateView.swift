@@ -13,7 +13,10 @@ struct DateView: View {
     }()
     private let gregorianCalendar = Calendar(identifier: .gregorian)
 
-    enum ConversionTab { case hijriToGregorian, gregorianToHijri }
+    enum ConversionTab {
+        case hijriToGregorian
+        case gregorianToHijri
+    }
 
     private static let hijriFormatterEn: DateFormatter = {
         let fmt = DateFormatter()
@@ -37,16 +40,8 @@ struct DateView: View {
         VStack {
             #if !os(watchOS)
             List {
-                Section("SELECT DATE") {
-                    datePickerSection
-                    conversionPicker
-                }
-
-                Section("CONVERTED DATE") {
-                    Text(formatted(convertedDate, using: selectedTab == .hijriToGregorian ? gregorianCalendar : hijriCalendar))
-                        .bold()
-                        .foregroundColor(settings.accentColor.color)
-                }
+                selectionSection
+                convertedDateSection
             }
             #endif
         }
@@ -54,10 +49,26 @@ struct DateView: View {
         .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 
+    private var selectionSection: some View {
+        Section("SELECT DATE") {
+            datePickerSection
+            conversionPicker
+        }
+    }
+
+    private var convertedDateSection: some View {
+        Section("CONVERTED DATE") {
+            Text(formatted(convertedDate, using: selectedTab == .hijriToGregorian ? gregorianCalendar : hijriCalendar))
+                .bold()
+                .foregroundColor(settings.accentColor.color)
+        }
+    }
+
     @ViewBuilder
     private var datePickerSection: some View {
         let calendar = selectedTab == .hijriToGregorian ? hijriCalendar : gregorianCalendar
         let title = selectedTab == .hijriToGregorian ? "Select Hijri Date" : "Select Gregorian Date"
+
         VStack(alignment: .leading) {
             #if !os(watchOS)
             DatePicker(title, selection: $sourceDate.animation(.easeInOut), displayedComponents: .date)

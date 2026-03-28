@@ -46,115 +46,10 @@ struct SettingsAdhanView: View {
     
     var body: some View {
         List {
-            #if !os(watchOS)
-            if showNotifications {
-                Section(header: Text("NOTIFICATIONS")) {
-                    NavigationLink(destination: NotificationView()) {
-                        Label("Notification Settings", systemImage: "bell.badge")
-                    }
-                }
-            }
-            #endif
-            
-            Section(header: Text("PRAYER CALCULATION")) {
-                Toggle("Automatic Prayer Calculation", isOn: $settings.calculationAutomatic.animation(.easeInOut))
-                    .font(.subheadline)
-                    .tint(settings.accentColor.color)
-
-                VStack(alignment: .leading) {
-                    Picker("Calculation", selection: Binding(
-                        get: { settings.prayerCalculation },
-                        set: { newValue in
-                            settings.calculationManuallyToggled = true
-                            if settings.calculationAutomatic {
-                                settings.calculationAutomatic = false
-                            }
-                            settings.prayerCalculation = newValue
-                        }
-                    ).animation(.easeInOut)) {
-                        ForEach(calculationOptions, id: \.self) { option in
-                            Text(option).tag(option)
-                                .font(.subheadline)
-                        }
-                    }
-                    .font(.subheadline)
-                    .disabled(settings.calculationAutomatic)
-                    
-                    Text("Fajr and Isha timings vary by calculation method. If automatic mode is on, Al-Islam picks a method based on your location (for example, North America or Turkey). If your country is not mapped, it defaults to Muslim World League.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                }
-                
-                VStack(alignment: .leading) {
-                    Toggle("Hanafi Calculation for Asr", isOn: $settings.hanafiMadhab.animation(.easeInOut))
-                        .font(.subheadline)
-                        .tint(settings.accentColor.color)
-                    
-                    Text("The Hanafi madhab sets Asr later than other schools of thought. Enable this only if you follow the Hanafi method.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                }
-            }
-            
-            Section(header: Text("TRAVELING MODE")) {
-                #if !os(watchOS)
-                Button(action: {
-                    settings.hapticFeedback()
-                    
-                    showingMap = true
-                }) {
-                    HStack {
-                        Text("Set Home City")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                        if !(settings.homeLocation?.city.isEmpty ?? true) {
-                            Spacer()
-                            Text(settings.homeLocation?.city ?? "")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .sheet(isPresented: $showingMap) {
-                    MapView(choosingPrayerTimes: false)
-                        .environmentObject(settings)
-                }
-                
-                Toggle("Automatic Traveling Mode", isOn: $settings.travelAutomatic.animation(.easeInOut))
-                    .font(.subheadline)
-                    .tint(settings.accentColor.color)
-                #endif
-                
-                VStack(alignment: .leading) {
-                    #if !os(watchOS)
-                    Toggle("Traveling Mode", isOn: Binding(
-                        get: { settings.travelingMode },
-                        set: { settings.travelingModeManuallyToggled = true; settings.travelingMode = $0 }
-                    ).animation(.easeInOut))
-                        .font(.subheadline)
-                        .tint(settings.accentColor.color)
-                        .disabled(settings.travelAutomatic)
-                    
-                    Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                    #else
-                    Toggle("Traveling Mode", isOn: Binding(
-                        get: { settings.travelingMode },
-                        set: { settings.travelingModeManuallyToggled = true; settings.travelingMode = $0 }
-                    ).animation(.easeInOut))
-                        .font(.subheadline)
-                        .tint(settings.accentColor.color)
-                    #endif
-                }
-            }
-            
-            #if !os(watchOS)
-            PrayerOffsetsView()
-            #endif
+            notificationsSection
+            prayerCalculationSection
+            travelingModeSection
+            prayerOffsetsSection
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Adhan Settings")
@@ -263,6 +158,161 @@ struct SettingsAdhanView: View {
                 EmptyView()
             }
         }
+    }
+
+    @ViewBuilder
+    private var notificationsSection: some View {
+        #if !os(watchOS)
+        if showNotifications {
+            Section(header: Text("NOTIFICATIONS")) {
+                NavigationLink(destination: NotificationView()) {
+                    Label("Notification Settings", systemImage: "bell.badge")
+                }
+            }
+        }
+        #endif
+    }
+
+    private var prayerCalculationSection: some View {
+        Section(header: Text("PRAYER CALCULATION")) {
+            automaticCalculationToggle
+            calculationPickerGroup
+            hanafiCalculationGroup
+        }
+    }
+
+    private var automaticCalculationToggle: some View {
+        Toggle("Automatic Prayer Calculation", isOn: $settings.calculationAutomatic.animation(.easeInOut))
+            .font(.subheadline)
+            .tint(settings.accentColor.color)
+    }
+
+    private var calculationPickerGroup: some View {
+        VStack(alignment: .leading) {
+            Picker("Calculation", selection: calculationSelection.animation(.easeInOut)) {
+                ForEach(calculationOptions, id: \.self) { option in
+                    Text(option).tag(option)
+                        .font(.subheadline)
+                }
+            }
+            .font(.subheadline)
+            .disabled(settings.calculationAutomatic)
+
+            Text("Fajr and Isha timings vary by calculation method. If automatic mode is on, Al-Islam picks a method based on your location (for example, North America or Turkey). If your country is not mapped, it defaults to Muslim World League.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+        }
+    }
+
+    private var calculationSelection: Binding<String> {
+        Binding(
+            get: { settings.prayerCalculation },
+            set: { newValue in
+                settings.calculationManuallyToggled = true
+                if settings.calculationAutomatic {
+                    settings.calculationAutomatic = false
+                }
+                settings.prayerCalculation = newValue
+            }
+        )
+    }
+
+    private var hanafiCalculationGroup: some View {
+        VStack(alignment: .leading) {
+            Toggle("Hanafi Calculation for Asr", isOn: $settings.hanafiMadhab.animation(.easeInOut))
+                .font(.subheadline)
+                .tint(settings.accentColor.color)
+
+            Text("The Hanafi madhab sets Asr later than other schools of thought. Enable this only if you follow the Hanafi method.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+        }
+    }
+
+    private var travelingModeSection: some View {
+        Section(header: Text("TRAVELING MODE")) {
+            homeCityButton
+            automaticTravelToggle
+            travelingModeGroup
+        }
+    }
+
+    @ViewBuilder
+    private var homeCityButton: some View {
+        #if !os(watchOS)
+        Button(action: {
+            settings.hapticFeedback()
+            showingMap = true
+        }) {
+            HStack {
+                Text("Set Home City")
+                    .font(.subheadline)
+                    .foregroundColor(settings.accentColor.color)
+                if !(settings.homeLocation?.city.isEmpty ?? true) {
+                    Spacer()
+                    Text(settings.homeLocation?.city ?? "")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .sheet(isPresented: $showingMap) {
+            MapView(choosingPrayerTimes: false)
+                .environmentObject(settings)
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private var automaticTravelToggle: some View {
+        #if !os(watchOS)
+        Toggle("Automatic Traveling Mode", isOn: $settings.travelAutomatic.animation(.easeInOut))
+            .font(.subheadline)
+            .tint(settings.accentColor.color)
+        #endif
+    }
+
+    private var travelingModeGroup: some View {
+        VStack(alignment: .leading) {
+            Toggle("Traveling Mode", isOn: travelingModeBinding.animation(.easeInOut))
+                .font(.subheadline)
+                .tint(settings.accentColor.color)
+                .disabled(settings.travelAutomatic && !isWatch)
+
+            #if !os(watchOS)
+            Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+            #endif
+        }
+    }
+
+    private var travelingModeBinding: Binding<Bool> {
+        Binding(
+            get: { settings.travelingMode },
+            set: {
+                settings.travelingModeManuallyToggled = true
+                settings.travelingMode = $0
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var prayerOffsetsSection: some View {
+        #if !os(watchOS)
+        PrayerOffsetsView()
+        #endif
+    }
+
+    private var isWatch: Bool {
+        #if os(watchOS)
+        true
+        #else
+        false
+        #endif
     }
 }
 

@@ -10,81 +10,20 @@ struct TasbihView: View {
         (arabic: "سُبحَانَ اللّٰه", english: "Subhanallah", translation: "Glory be to Allah"),
         (arabic: "الحَمدُ لِلّٰه", english: "Alhamdullilah", translation: "Praise be to Allah"),
         (arabic: "اللّٰهُ أَكبَر", english: "Allahu Akbar", translation: "Allah is the Greatest"),
-        (arabic: "أَستَغفِرُ اللّٰه", english: "Astaghfirullah", translation: "I seek Allah's forgiveness"),
+        (arabic: "أَستَغفِرُ اللّٰه", english: "Astaghfirullah", translation: "I seek Allah's forgiveness")
     ]
 
     private func binding(for index: Int) -> Binding<Int> {
-        Binding<Int>(
-            get: { self.counters[index, default: 0] },
-            set: { self.counters[index] = $0 }
+        Binding(
+            get: { counters[index, default: 0] },
+            set: { counters[index] = $0 }
         )
     }
 
     var body: some View {
         List {
-            Section(header: Text("GLORIFICATIONS OF ALLAH ﷻ‎")) {
-                ForEach(tasbihData.indices, id: \.self) { index in
-                    Button {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            selectedDhikrIndex = index
-                        }
-                    } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 24)
-                                .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
-                                #if !os(watchOS)
-                                .padding(.horizontal, -12)
-                                .padding(.vertical, -11)
-                                #else
-                                .padding(-7)
-                                #endif
-
-                            TasbihRow(tasbih: tasbihData[index], counter: binding(for: index))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    #if os(watchOS)
-                    .padding(.vertical, 12)
-                    #endif
-                }
-            }
-
-            let selectedDhikr = tasbihData[selectedDhikrIndex]
-            let counterBinding = binding(for: selectedDhikrIndex)
-
-            Group {
-                Section {
-                    Button {
-                        settings.hapticFeedback()
-                        counters[selectedDhikrIndex, default: 0] += 1
-                    } label: {
-                        ZStack {
-                            ProgressCircleView(progress: counterBinding.wrappedValue)
-                                .scaledToFit()
-                                .frame(maxWidth: 185, maxHeight: 185)
-                            
-                            VStack(alignment: .center, spacing: 5) {
-                                Text(selectedDhikr.arabic)
-                                    .font(.title3)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(settings.accentColor.color)
-                                
-                                Text(selectedDhikr.english)
-                                    .font(.subheadline)
-                                
-                                CounterView(counter: counterBinding)
-                            }
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+            dhikrSelectionSection
+            activeTasbihSection
         }
         .onAppear {
             for index in tasbihData.indices {
@@ -94,6 +33,76 @@ struct TasbihView: View {
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .compactListSectionSpacing()
         .navigationTitle("Tasbih Counter")
+    }
+
+    private var dhikrSelectionSection: some View {
+        Section(header: Text("GLORIFICATIONS OF ALLAH ﷻ‎")) {
+            ForEach(tasbihData.indices, id: \.self) { index in
+                tasbihSelectionButton(for: index)
+            }
+        }
+    }
+
+    private func tasbihSelectionButton(for index: Int) -> some View {
+        Button {
+            settings.hapticFeedback()
+            withAnimation {
+                selectedDhikrIndex = index
+            }
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
+                    #if !os(watchOS)
+                    .padding(.horizontal, -12)
+                    .padding(.vertical, -11)
+                    #else
+                    .padding(-7)
+                    #endif
+
+                TasbihRow(tasbih: tasbihData[index], counter: binding(for: index))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        #if os(watchOS)
+        .padding(.vertical, 12)
+        #endif
+    }
+
+    private var activeTasbihSection: some View {
+        let selectedDhikr = tasbihData[selectedDhikrIndex]
+        let counterBinding = binding(for: selectedDhikrIndex)
+
+        return Section {
+            Button {
+                settings.hapticFeedback()
+                counters[selectedDhikrIndex, default: 0] += 1
+            } label: {
+                ZStack {
+                    ProgressCircleView(progress: counterBinding.wrappedValue)
+                        .scaledToFit()
+                        .frame(maxWidth: 185, maxHeight: 185)
+
+                    VStack(alignment: .center, spacing: 5) {
+                        Text(selectedDhikr.arabic)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(settings.accentColor.color)
+
+                        Text(selectedDhikr.english)
+                            .font(.subheadline)
+
+                        CounterView(counter: counterBinding)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 
@@ -142,94 +151,98 @@ struct TasbihRow: View {
     @EnvironmentObject var settings: Settings
 
     let tasbih: (arabic: String, english: String, translation: String)
-
     @Binding var counter: Int
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
-                Text(tasbih.arabic)
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-
-                Text(tasbih.english)
-                    .font(.subheadline)
-
-                Text(tasbih.translation)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-
+            textColumn
             Spacer()
-
-            VStack {
-                HStack {
-                    Button {
-                        settings.hapticFeedback()
-
-                        if counter > 0 {
-                            counter -= 1
-                        }
-                    } label: {
-                        Image(systemName: "minus.circle")
-                            .foregroundColor(counter == 0 ? .secondary : settings.accentColor.color)
-                            .padding(6)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Text("\(counter)")
-
-                    Button {
-                        settings.hapticFeedback()
-                        counter += 1
-                    } label: {
-                        Image(systemName: "plus.circle")
-                            .foregroundColor(settings.accentColor.color)
-                            .padding(6)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Button {
-                    settings.hapticFeedback()
-                    counter = 0
-                } label: {
-                    Text("Reset")
-                        .font(.subheadline)
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 6)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
+            counterControls
         }
         .contentShape(Rectangle())
         #if !os(watchOS)
         .contextMenu {
-            Button(action: {
+            Button {
                 UIPasteboard.general.string = tasbih.arabic
                 settings.hapticFeedback()
-            }) {
+            } label: {
                 Label("Copy Arabic", systemImage: "doc.on.doc")
             }
 
-            Button(action: {
+            Button {
                 UIPasteboard.general.string = tasbih.english
                 settings.hapticFeedback()
-            }) {
+            } label: {
                 Label("Copy Transliteration", systemImage: "doc.on.doc")
             }
 
-            Button(action: {
+            Button {
                 UIPasteboard.general.string = tasbih.translation
                 settings.hapticFeedback()
-            }) {
+            } label: {
                 Label("Copy Translation", systemImage: "doc.on.doc")
             }
         }
         #endif
+    }
+
+    private var textColumn: some View {
+        VStack(alignment: .leading) {
+            Text(tasbih.arabic)
+                .font(.headline)
+                .foregroundColor(settings.accentColor.color)
+
+            Text(tasbih.english)
+                .font(.subheadline)
+
+            Text(tasbih.translation)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var counterControls: some View {
+        VStack {
+            HStack {
+                Button {
+                    settings.hapticFeedback()
+                    if counter > 0 {
+                        counter -= 1
+                    }
+                } label: {
+                    Image(systemName: "minus.circle")
+                        .foregroundColor(counter == 0 ? .secondary : settings.accentColor.color)
+                        .padding(6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Text("\(counter)")
+
+                Button {
+                    settings.hapticFeedback()
+                    counter += 1
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button {
+                settings.hapticFeedback()
+                counter = 0
+            } label: {
+                Text("Reset")
+                    .font(.subheadline)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 6)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 

@@ -1360,7 +1360,9 @@ final class QuranData: ObservableObject {
     }
     
     func searchVersesAll(term raw: String) -> [VerseIndexEntry] {
-        searchVerses(term: raw, limit: .max, offset: 0)
+        withAnimation {
+            searchVerses(term: raw, limit: .max, offset: 0)
+        }
     }
     
     static let juzList: [Juz] = [

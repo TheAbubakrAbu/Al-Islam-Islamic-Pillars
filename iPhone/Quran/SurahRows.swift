@@ -166,7 +166,8 @@ struct SurahAyahRow: View {
                             accent: settings.accentColor.color,
                             fg: .primary,
                             preStyledSource: arabicTajweedText(),
-                            beginnerMode: settings.beginnerMode
+                            beginnerMode: settings.beginnerMode,
+                            lineLimit: 1
                         )
                             .animation(.easeInOut, value: tajweedAnimationKey)
                             .frame(maxWidth: .infinity, alignment: .trailing)

@@ -53,255 +53,12 @@ struct SettingsQuranView: View {
     
     var body: some View {
         List {
-            Section(header: Text("RECITATION")) {
-                VStack(alignment: .leading, spacing: 10) {
-                    NavigationLink(destination: ReciterListView().environmentObject(settings)) {
-                        Label("Choose Reciter", systemImage: "headphones")
-                    }
-                    
-                    HStack {
-                        Text(settings.reciter)
-                            .foregroundColor(settings.accentColor.color)
-                        
-                        Spacer()
-                    }
-                }
-                .accentColor(settings.accentColor.color)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Picker("After Surah Recitation Ends", selection: $settings.reciteType.animation(.easeInOut)) {
-                    Text("Go to Next").tag("Continue to Next")
-                    Text("Go to Previous").tag("Continue to Previous")
-                    Text("End Recitation").tag("End Recitation")
-                }
-                .font(.subheadline)
-
-                #if !os(watchOS)
-                Text("The Quran recitations are streamed online by default. You can open Choose Reciter to download full surahs per reciter for offline playback and reduced data use.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                #endif
-            }
-
-            Section(header: Text("DISPLAY")) {
-                VStack(alignment: .leading, spacing: 20) {
-                    Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
-                        .font(.subheadline)
-
-                    if settings.showPageJuzDividers {
-                        Toggle("Show Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
-                            .font(.subheadline)
-                    }
-                }
-
-                Toggle("Use System Font Size", isOn: Binding(
-                    get: {
-                        let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-                        var usesSystemSizes = true
-
-                        if settings.showArabicText {
-                            usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
-                        }
-
-                        if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                            usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
-                        }
-                        return usesSystemSizes
-                    },
-                    set: { newValue in
-                        let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-                        withAnimation {
-                            if newValue {
-                                settings.fontArabicSize = systemBodySize + 10
-                                settings.englishFontSize = systemBodySize
-                            } else {
-                                settings.fontArabicSize = systemBodySize + 11
-                                settings.englishFontSize = systemBodySize + 1
-                            }
-                        }
-                    }
-                ))
-                .font(.subheadline)
-            }
-
-            Section(header: Text("ARABIC TEXT")) {
-                Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
-                    .font(.subheadline)
-                    .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Toggle("Show Tajweed Colors", isOn: $settings.showTajweedColors.animation(.easeInOut))
-                        .font(.subheadline)
-                        .disabled(!settings.showArabicText)
-
-                    NavigationLink(destination: TajweedLegendSettingsView()) {
-                        Text("Customize Tajweed Legend")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                    .disabled(!settings.showTajweedColors)
-
-                    Text(settings.isHafsDisplay
-                         ? "Available for Hafs an Asim. Tajweed colors automatically fall back to plain Arabic when clean text or beginner spacing is enabled. Tajweed coloring is currently in beta and may not always be fully accurate."
-                         : "Tajweed colors are currently available only for Hafs an Asim.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                }
-                
-                if settings.showArabicText {
-                    VStack(alignment: .leading) {
-                        Toggle("Remove Arabic Tashkeel (Vowel Diacritics) and Signs", isOn: $settings.cleanArabicText.animation(.easeInOut))
-                            .font(.subheadline)
-                            .disabled(!settings.showArabicText)
-                        
-                        #if !os(watchOS)
-                        Text("This option removes Tashkeel, which are vowel diacretic marks such as Fatha, Damma, Kasra, and others, while retaining essential vowels like Alif, Yaa, and Waw. It also adjusts \"Mad\" letters and the \"Hamzatul Wasl,\" and removes baby vowel letters, various textual annotations including stopping signs, chapter markers, and prayer indicators. This option is not recommended.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                        #else
-                        Text("This option removes Tashkeel (vowel diacretics).")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                        #endif
-                    }
-                    
-                    Picker("Arabic Font", selection: $settings.fontArabic.animation(.easeInOut)) {
-                        Text("Uthmani").tag("KFGQPCQUMBULUthmanicScript-Regu")
-                        Text("Indopak").tag("Al_Mushaf")
-                    }
-                    #if !os(watchOS)
-                    .pickerStyle(SegmentedPickerStyle())
-                    #endif
-                    .disabled(!settings.showArabicText)
-                    
-                    VStack(alignment: .leading, spacing: 16) {
-                        Stepper(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1) {
-                            Text("Arabic Font Size: \(Int(settings.fontArabicSize))")
-                                .font(.subheadline)
-                        }
-                        
-                        Slider(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1)
-                    }
-                    
-                    VStack(alignment: .leading) {
-                        Toggle("Enable Arabic Beginner Mode", isOn: $settings.beginnerMode.animation(.easeInOut))
-                            .font(.subheadline)
-                            .disabled(!settings.showArabicText)
-                        
-                        Text("Puts a space between each Arabic letter to make it easier for beginners to read the Quran.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 2)
-                    }
-                }
-            }
-            
-            Section(header: Text("ENGLISH TEXT"), footer: Text("Transliteration, translations, and all English text apply only to default Hafs an Asim. For other riwayat, only the Arabic text is shown.")) {
-                if settings.isHafsDisplay && includeEnglish.wrappedValue {
-                    Toggle("Include English", isOn: includeEnglish.animation(.easeInOut))
-                        .font(.subheadline)
-                    
-                    Toggle("Show Transliteration", isOn: $settings.showTransliteration.animation(.easeInOut))
-                        .font(.subheadline)
-                        .disabled(!settings.showArabicText && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
-                    
-                    Toggle("Show English Translation\nSaheeh International", isOn: $settings.showEnglishSaheeh.animation(.easeInOut))
-                        .font(.subheadline)
-                        .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishMustafa)
-                    
-                    Toggle("Show English Translation\nClear Quran (Mustafa Khattab)", isOn: $settings.showEnglishMustafa.animation(.easeInOut))
-                        .font(.subheadline)
-                        .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishSaheeh)
-                    
-                    if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
-                                Text("English Font Size: \(Int(settings.englishFontSize))")
-                                    .font(.subheadline)
-                            }
-                            Slider(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1)
-                        }
-                    }
-                    
-                } else {
-                    Toggle("Include English", isOn: includeEnglish.animation(.easeInOut))
-                        .font(.subheadline)
-                        .disabled(!settings.isHafsDisplay)
-                }
-            }
-            
-            Section(
-                header: Text("RIWAYAH / QIRAAH"),
-                footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")
-            ) {
-                ArabicTextRiwayahPicker(
-                    selection: $settings.displayQiraah.animation(.easeInOut),
-                    useSimpleIOSPicker: true
-                )
-                    .font(.subheadline)
-                
-                Text("""
-                The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
-
-                The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
-
-                To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
-                """)
-                .font(.caption)
-                .foregroundColor(.primary)
-
-                NavigationLink(destination: AhrufView()) {
-                    Text("The 7 Ahruf (Modes)")
-                }
-                .font(.caption)
-
-                NavigationLink(destination: QiraatView()) {
-                    Text("The 10 Qiraat (Recitations)")
-                }
-                .font(.caption)
-
-                Text("***Hafs An Asim* is the most common and widespread Qiraah in the world today.**")
-                    .font(.caption)
-                    .foregroundColor(.primary)
-                    .padding(.top, 4)
-
-                VStack(alignment: .leading) {
-                    Toggle("Comparison mode", isOn: $settings.qiraatComparisonMode.animation(.easeInOut))
-                        .font(.subheadline)
-                    
-                    Text("When on, the ayah view shows a riwayah picker above the search bar so you can switch and compare qiraat in that screen.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                }
-            }
-            
-            #if !os(watchOS)
-            if showEdits {
-                Section(header: Text("FAVORITES AND BOOKMARKS")) {
-                    NavigationLink(destination: FavoritesView(type: .surah).environmentObject(quranData).accentColor(settings.accentColor.color)) {
-                        Text("Edit Favorite Surahs")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                    
-                    NavigationLink(destination: FavoritesView(type: .ayah).environmentObject(quranData).accentColor(settings.accentColor.color)) {
-                        Text("Edit Bookmarked Ayahs")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                    
-                    NavigationLink(destination: FavoritesView(type: .letter).environmentObject(quranData).accentColor(settings.accentColor.color)) {
-                        Text("Edit Favorite Letters")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                }
-            }
-            #endif
+            recitationSection
+            displaySection
+            arabicTextSection
+            englishTextSection
+            qiraahSection
+            favoritesAndBookmarksSection
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Quran Settings")
@@ -317,6 +74,337 @@ struct SettingsQuranView: View {
         }
         #endif
     }
+
+    private var recitationSection: some View {
+        Section(header: Text("RECITATION")) {
+            reciterSelection
+            recitationEndingPicker
+            recitationCaption
+        }
+    }
+
+    private var reciterSelection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            NavigationLink(destination: ReciterListView().environmentObject(settings)) {
+                Label("Choose Reciter", systemImage: "headphones")
+            }
+
+            HStack {
+                Text(settings.reciter)
+                    .foregroundColor(settings.accentColor.color)
+
+                Spacer()
+            }
+        }
+        .accentColor(settings.accentColor.color)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var recitationEndingPicker: some View {
+        Picker("After Surah Recitation Ends", selection: $settings.reciteType.animation(.easeInOut)) {
+            Text("Go to Next").tag("Continue to Next")
+            Text("Go to Previous").tag("Continue to Previous")
+            Text("End Recitation").tag("End Recitation")
+        }
+        .font(.subheadline)
+    }
+
+    @ViewBuilder
+    private var recitationCaption: some View {
+        #if !os(watchOS)
+        Text("The Quran recitations are streamed online by default. You can open Choose Reciter to download full surahs per reciter for offline playback and reduced data use.")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        #endif
+    }
+
+    private var displaySection: some View {
+        Section(header: Text("DISPLAY")) {
+            pageAndJuzDividersGroup
+            systemFontSizeToggle
+        }
+    }
+
+    private var pageAndJuzDividersGroup: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
+                .font(.subheadline)
+
+            if settings.showPageJuzDividers {
+                Toggle("Show Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
+                    .font(.subheadline)
+            }
+        }
+    }
+
+    private var systemFontSizeToggle: some View {
+        Toggle("Use System Font Size", isOn: useSystemFontSizes)
+            .font(.subheadline)
+    }
+
+    private var useSystemFontSizes: Binding<Bool> {
+        Binding(
+            get: {
+                let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                var usesSystemSizes = true
+
+                if settings.showArabicText {
+                    usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
+                }
+
+                if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
+                    usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
+                }
+                return usesSystemSizes
+            },
+            set: { newValue in
+                let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                withAnimation {
+                    if newValue {
+                        settings.fontArabicSize = systemBodySize + 10
+                        settings.englishFontSize = systemBodySize
+                    } else {
+                        settings.fontArabicSize = systemBodySize + 11
+                        settings.englishFontSize = systemBodySize + 1
+                    }
+                }
+            }
+        )
+    }
+
+    private var arabicTextSection: some View {
+        Section(header: Text("ARABIC TEXT")) {
+            arabicVisibilityToggle
+            tajweedSettingsGroup
+            arabicDisplayControls
+        }
+    }
+
+    private var arabicVisibilityToggle: some View {
+        Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
+            .font(.subheadline)
+            .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
+    }
+
+    private var tajweedSettingsGroup: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle("Show Tajweed Colors", isOn: $settings.showTajweedColors.animation(.easeInOut))
+                .font(.subheadline)
+                .disabled(!settings.showArabicText)
+
+            NavigationLink(destination: TajweedLegendSettingsView()) {
+                Text("Customize Tajweed Legend")
+                    .font(.subheadline)
+                    .foregroundColor(settings.accentColor.color)
+            }
+            .disabled(!settings.showTajweedColors)
+
+            Text(settings.isHafsDisplay
+                 ? "Available for Hafs an Asim. Tajweed colors automatically fall back to plain Arabic when clean text or beginner spacing is enabled. Tajweed coloring is currently in beta and may not always be fully accurate."
+                 : "Tajweed colors are currently available only for Hafs an Asim.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+        }
+    }
+
+    @ViewBuilder
+    private var arabicDisplayControls: some View {
+        if settings.showArabicText {
+            cleanArabicTextGroup
+            arabicFontPicker
+            arabicFontSizeControls
+            beginnerModeGroup
+        }
+    }
+
+    private var cleanArabicTextGroup: some View {
+        VStack(alignment: .leading) {
+            Toggle("Remove Arabic Tashkeel (Vowel Diacritics) and Signs", isOn: $settings.cleanArabicText.animation(.easeInOut))
+                .font(.subheadline)
+                .disabled(!settings.showArabicText)
+
+            #if !os(watchOS)
+            Text("This option removes Tashkeel, which are vowel diacretic marks such as Fatha, Damma, Kasra, and others, while retaining essential vowels like Alif, Yaa, and Waw. It also adjusts \"Mad\" letters and the \"Hamzatul Wasl,\" and removes baby vowel letters, various textual annotations including stopping signs, chapter markers, and prayer indicators. This option is not recommended.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+            #else
+            Text("This option removes Tashkeel (vowel diacretics).")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+            #endif
+        }
+    }
+
+    private var arabicFontPicker: some View {
+        Picker("Arabic Font", selection: $settings.fontArabic.animation(.easeInOut)) {
+            Text("Uthmani").tag("KFGQPCQUMBULUthmanicScript-Regu")
+            Text("Indopak").tag("Al_Mushaf")
+        }
+        #if !os(watchOS)
+        .pickerStyle(SegmentedPickerStyle())
+        #endif
+        .disabled(!settings.showArabicText)
+    }
+
+    private var arabicFontSizeControls: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Stepper(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1) {
+                Text("Arabic Font Size: \(Int(settings.fontArabicSize))")
+                    .font(.subheadline)
+            }
+
+            Slider(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...50, step: 1)
+        }
+    }
+
+    private var beginnerModeGroup: some View {
+        VStack(alignment: .leading) {
+            Toggle("Enable Arabic Beginner Mode", isOn: $settings.beginnerMode.animation(.easeInOut))
+                .font(.subheadline)
+                .disabled(!settings.showArabicText)
+
+            Text("Puts a space between each Arabic letter to make it easier for beginners to read the Quran.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+        }
+    }
+
+    private var englishTextSection: some View {
+        Section(header: Text("ENGLISH TEXT"), footer: Text("Transliteration, translations, and all English text apply only to default Hafs an Asim. For other riwayat, only the Arabic text is shown.")) {
+            includeEnglishToggle
+            englishDisplayToggles
+            englishFontSizeControls
+        }
+    }
+
+    private var includeEnglishToggle: some View {
+        Toggle("Include English", isOn: includeEnglish.animation(.easeInOut))
+            .font(.subheadline)
+            .disabled(!settings.isHafsDisplay)
+    }
+
+    @ViewBuilder
+    private var englishDisplayToggles: some View {
+        if settings.isHafsDisplay && includeEnglish.wrappedValue {
+            Toggle("Show Transliteration", isOn: $settings.showTransliteration.animation(.easeInOut))
+                .font(.subheadline)
+                .disabled(!settings.showArabicText && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
+
+            Toggle("Show English Translation\nSaheeh International", isOn: $settings.showEnglishSaheeh.animation(.easeInOut))
+                .font(.subheadline)
+                .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishMustafa)
+
+            Toggle("Show English Translation\nClear Quran (Mustafa Khattab)", isOn: $settings.showEnglishMustafa.animation(.easeInOut))
+                .font(.subheadline)
+                .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishSaheeh)
+        }
+    }
+
+    @ViewBuilder
+    private var englishFontSizeControls: some View {
+        if settings.isHafsDisplay && includeEnglish.wrappedValue && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa) {
+            VStack(alignment: .leading, spacing: 16) {
+                Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
+                    Text("English Font Size: \(Int(settings.englishFontSize))")
+                        .font(.subheadline)
+                }
+                Slider(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1)
+            }
+        }
+    }
+
+    private var qiraahSection: some View {
+        Section(
+            header: Text("RIWAYAH / QIRAAH"),
+            footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")
+        ) {
+            qiraahPicker
+            qiraahExplanation
+            qiraahLinks
+            qiraahHighlight
+            comparisonModeGroup
+        }
+    }
+
+    private var qiraahPicker: some View {
+        ArabicTextRiwayahPicker(
+            selection: $settings.displayQiraah.animation(.easeInOut),
+            useSimpleIOSPicker: true
+        )
+        .font(.subheadline)
+    }
+
+    private var qiraahExplanation: some View {
+        Text("""
+        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+
+        The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+
+        To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+        """)
+            .font(.caption)
+            .foregroundColor(.primary)
+    }
+
+    private var qiraahLinks: some View {
+        Group {
+            NavigationLink(destination: AhrufView()) {
+                Text("The 7 Ahruf (Modes)")
+            }
+            .font(.caption)
+
+            NavigationLink(destination: QiraatView()) {
+                Text("The 10 Qiraat (Recitations)")
+            }
+            .font(.caption)
+        }
+    }
+
+    private var qiraahHighlight: some View {
+        Text("***Hafs An Asim* is the most common and widespread Qiraah in the world today.**")
+            .font(.caption)
+            .foregroundColor(.primary)
+            .padding(.top, 4)
+    }
+
+    private var comparisonModeGroup: some View {
+        VStack(alignment: .leading) {
+            Toggle("Comparison mode", isOn: $settings.qiraatComparisonMode.animation(.easeInOut))
+                .font(.subheadline)
+
+            Text("When on, the ayah view shows a riwayah picker above the search bar so you can switch and compare qiraat in that screen.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+        }
+    }
+
+    @ViewBuilder
+    private var favoritesAndBookmarksSection: some View {
+        #if !os(watchOS)
+        if showEdits {
+            Section(header: Text("FAVORITES AND BOOKMARKS")) {
+                favoritesLink(title: "Edit Favorite Surahs", type: .surah)
+                favoritesLink(title: "Edit Bookmarked Ayahs", type: .ayah)
+                favoritesLink(title: "Edit Favorite Letters", type: .letter)
+            }
+        }
+        #endif
+    }
+
+    #if !os(watchOS)
+    private func favoritesLink(title: String, type: FavoriteType) -> some View {
+        NavigationLink(destination: FavoritesView(type: type).environmentObject(quranData).accentColor(settings.accentColor.color)) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(settings.accentColor.color)
+        }
+    }
+    #endif
 }
 
 struct TajweedLegendSettingsView: View {

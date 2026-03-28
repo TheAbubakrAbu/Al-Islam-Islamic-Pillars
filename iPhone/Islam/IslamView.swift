@@ -4,8 +4,12 @@ struct IslamView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var namesData: NamesViewModel
-    
+
     var body: some View {
+        navigationContainer
+    }
+
+    private var navigationContainer: some View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *) {
@@ -36,58 +40,70 @@ struct IslamView: View {
 
     private var islamList: some View {
         List {
-            Section(header: Text("ISLAMIC RESOURCES")) {
-                NavigationLink(destination: ArabicView()) {
-                    toolLabel("Arabic Alphabet", systemImage: "textformat.size.ar")
-                }
-
-                NavigationLink(destination: TajweedFoundationsView()) {
-                    toolLabel("Tajweed Foundations", systemImage: "waveform")
-                }
-
-                NavigationLink(destination: AdhkarView()) {
-                    toolLabel("Common Adhkar", systemImage: "book.closed")
-                }
-
-                NavigationLink(destination: DuaView()) {
-                    toolLabel("Common Duas", systemImage: "text.book.closed")
-                }
-
-                NavigationLink(destination: TasbihView()) {
-                    toolLabel("Tasbih Counter", systemImage: "circles.hexagonpath.fill")
-                }
-
-                NavigationLink(destination: NamesView()) {
-                    toolLabel("99 Names of Allah", systemImage: "signature")
-                }
-
-                #if !os(watchOS)
-                NavigationLink(destination: DateView()) {
-                    toolLabel("Hijri Calendar Converter", systemImage: "calendar")
-                }
-
-                NavigationLink(destination: MasjidLocatorView()) {
-                    toolLabel("Masjid Locator", systemImage: "mappin.and.ellipse")
-                }
-                #endif
-
-                NavigationLink(destination: WallpaperView()) {
-                    toolLabel("Islamic Wallpapers", systemImage: "photo.on.rectangle")
-                }
-
-                NavigationLink(destination: PillarsView()) {
-                    toolLabel("Islamic Pillars and Basics", systemImage: "moon.stars")
-                }
-            }
-            
+            resourcesSection
             ProphetQuote()
-            
             AlIslamAppsSection()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Al-Islam")
     }
-    
+
+    private var resourcesSection: some View {
+        Section(header: Text("ISLAMIC RESOURCES")) {
+            resourceLink(title: "Arabic Alphabet", systemImage: "textformat.size.ar") {
+                ArabicView()
+            }
+
+            resourceLink(title: "Tajweed Foundations", systemImage: "waveform") {
+                TajweedFoundationsView()
+            }
+
+            resourceLink(title: "Common Adhkar", systemImage: "book.closed") {
+                AdhkarView()
+            }
+
+            resourceLink(title: "Common Duas", systemImage: "text.book.closed") {
+                DuaView()
+            }
+
+            resourceLink(title: "Tasbih Counter", systemImage: "circles.hexagonpath.fill") {
+                TasbihView()
+            }
+
+            resourceLink(title: "99 Names of Allah", systemImage: "signature") {
+                NamesView()
+            }
+
+            #if !os(watchOS)
+            resourceLink(title: "Hijri Calendar Converter", systemImage: "calendar") {
+                DateView()
+            }
+
+            resourceLink(title: "Masjid Locator", systemImage: "mappin.and.ellipse") {
+                MasjidLocatorView()
+            }
+            #endif
+
+            resourceLink(title: "Islamic Wallpapers", systemImage: "photo.on.rectangle") {
+                WallpaperView()
+            }
+
+            resourceLink(title: "Islamic Pillars and Basics", systemImage: "moon.stars") {
+                PillarsView()
+            }
+        }
+    }
+
+    private func resourceLink<Destination: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder destination: () -> Destination
+    ) -> some View {
+        NavigationLink(destination: destination()) {
+            toolLabel(title, systemImage: systemImage)
+        }
+    }
+
     private func toolLabel(_ title: String, systemImage: String) -> some View {
         Label(
             title: { Text(title) },
@@ -103,51 +119,63 @@ struct IslamView: View {
 
 struct ProphetQuote: View {
     @EnvironmentObject var settings: Settings
-    
+
+    private let quoteText = "“All mankind is from Adam and Eve, an Arab has no superiority over a non-Arab nor a non-Arab has any superiority over an Arab; also a white has no superiority over a black, nor a black has any superiority over a white except by piety and good action.“"
+    private let attributionText = "Farewell Sermon\nJumuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE"
+
     var body: some View {
         Section(header: Text("PROPHET MUHAMMAD ﷺ QUOTE")) {
             VStack(alignment: .center) {
-                ZStack {
-                    Circle()
-                        .strokeBorder(settings.accentColor.color, lineWidth: 1)
-                        .frame(width: 60, height: 60)
-
-                    Text("ﷺ")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(settings.accentColor.color)
-                        .padding()
-                }
-                .padding(4)
-                
-                Text("“All mankind is from Adam and Eve, an Arab has no superiority over a non-Arab nor a non-Arab has any superiority over an Arab; also a white has no superiority over a black, nor a black has any superiority over a white except by piety and good action.“")
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(settings.accentColor.color)
-                
-                Text("Farewell Sermon\nJumuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 1)
+                quoteBadge
+                quoteBody
+                attribution
             }
         }
         #if !os(watchOS)
         .contextMenu {
-            Button(action: {
+            Button {
                 UIPasteboard.general.string = "All mankind is from Adam and Eve, an Arab has no superiority over a non-Arab nor a non-Arab has any superiority over an Arab; also a white has no superiority over a black, nor a black has any superiority over a white except by piety and good action.\n\n– Farewell Sermon\nJumuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE"
-            }) {
-                Text("Copy Text")
-                Image(systemName: "doc.on.doc")
+            } label: {
+                Label("Copy Text", systemImage: "doc.on.doc")
             }
         }
         #endif
+    }
+
+    private var quoteBadge: some View {
+        ZStack {
+            Circle()
+                .strokeBorder(settings.accentColor.color, lineWidth: 1)
+                .frame(width: 60, height: 60)
+
+            Text("ﷺ")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(settings.accentColor.color)
+                .padding()
+        }
+        .padding(4)
+    }
+
+    private var quoteBody: some View {
+        Text(quoteText)
+            .font(.subheadline)
+            .multilineTextAlignment(.center)
+            .foregroundColor(settings.accentColor.color)
+    }
+
+    private var attribution: some View {
+        Text(attributionText)
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.top, 1)
     }
 }
 
 struct AlIslamAppsSection: View {
     @EnvironmentObject var settings: Settings
-    
+
     #if !os(watchOS)
     let spacing: CGFloat = 20
     #else
@@ -157,41 +185,48 @@ struct AlIslamAppsSection: View {
     var body: some View {
         Section(header: Text("AL-ISLAMIC APPS")) {
             ZStack {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [.yellow.opacity(0.25), .green.opacity(0.25)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: .primary.opacity(0.25), radius: 5, x: 0, y: 1)
-                    .padding(.horizontal, -12)
-                    #if !os(watchOS)
-                    .padding(.vertical, -11)
-                    #endif
-                
-                HStack(spacing: spacing) {
-                    if let url = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493") {
-                        Card(title: "Al-Adhan", url: url)
-                            .frame(maxWidth: .infinity)
-                    }
-                    
-                    if let url = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655") {
-                        Card(title: "Al-Islam", url: url)
-                            .frame(maxWidth: .infinity)
-                    }
-                    
-                    if let url = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373") {
-                        Card(title: "Al-Quran", url: url)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 8)
-                .padding(.horizontal)
+                cardBackground
+                appCardsRow
             }
         }
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 24)
+            .fill(
+                LinearGradient(
+                    gradient: Gradient(colors: [.yellow.opacity(0.25), .green.opacity(0.25)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .shadow(color: .primary.opacity(0.25), radius: 5, x: 0, y: 1)
+            .padding(.horizontal, -12)
+            #if !os(watchOS)
+            .padding(.vertical, -11)
+            #endif
+    }
+
+    private var appCardsRow: some View {
+        HStack(spacing: spacing) {
+            if let url = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493") {
+                Card(title: "Al-Adhan", url: url)
+                    .frame(maxWidth: .infinity)
+            }
+
+            if let url = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655") {
+                Card(title: "Al-Islam", url: url)
+                    .frame(maxWidth: .infinity)
+            }
+
+            if let url = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373") {
+                Card(title: "Al-Quran", url: url)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 8)
+        .padding(.horizontal)
     }
 }
 
@@ -199,20 +234,12 @@ private struct Card: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.openURL) private var openURL
     @State private var showActions = false
-    
+
     let title: String
     let url: URL
 
     private var iconImage: UIImage? {
         UIImage(named: title)
-    }
-
-    private func saveIconToPhotos() {
-        guard let iconImage else { return }
-
-        #if !os(watchOS)
-        UIImageWriteToSavedPhotosAlbum(iconImage, nil, nil, nil)
-        #endif
     }
 
     var body: some View {
@@ -258,21 +285,17 @@ private struct Card: View {
 
             if iconImage != nil {
                 Button {
-                    saveIconToPhotos()
-                    settings.hapticFeedback()
+                    if let iconImage {
+                        UIPasteboard.general.image = iconImage
+                        settings.hapticFeedback()
+                    }
                 } label: {
-                    Label("Download App Icon", systemImage: "square.and.arrow.down")
+                    Label("Copy Icon", systemImage: "doc.on.doc")
                 }
             }
 
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel", role: .cancel) { }
         }
         #endif
-    }
-}
-
-#Preview {
-    AlIslamPreviewContainer(embedInNavigation: false) {
-        IslamView()
     }
 }

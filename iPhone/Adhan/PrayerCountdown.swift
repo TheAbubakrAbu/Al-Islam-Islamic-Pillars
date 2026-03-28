@@ -1,157 +1,194 @@
 import SwiftUI
 
 struct PrayerCountdown: View {
-    @EnvironmentObject var settings: Settings
-    
+    @EnvironmentObject private var settings: Settings
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var progress : Double = 0
+    @State private var progress: Double = 0
     @State private var updateTimer: Timer?
-    private let timerInterval: TimeInterval = 30  // Update every 30 seconds
 
-    private var current: Prayer? { settings.currentPrayer }
-    private var next   : Prayer? { settings.nextPrayer }
-    
-    private func calcProgress() -> Double {
-        guard var start = current?.time, var end = next?.time else { return 0 }
+    private let timerInterval: TimeInterval = 30
 
-        let now = Date()
-        
-        // Adjust for day boundaries (if current prayer is after midnight compared to now)
-        if start > now { start.addTimeInterval(-86_400) }
-
-        // Ensure end is after start (can span into next day)
-        if end <= start { end.addTimeInterval(86_400) }
-
-        let total = end.timeIntervalSince(start)
-        guard total > 0 else { return 0 }  // Avoid division by zero
-        
-        let remaining = end.timeIntervalSince(now)
-        return max(0, min(1, 1 - remaining / total))
-    }
-
-    private func updateProgress() {
-        progress = calcProgress()
-    }
-    
-    private func startTimer() {
-        stopTimer()
-        updateTimer = Timer.scheduledTimer(withTimeInterval: timerInterval, repeats: true) { _ in
-            DispatchQueue.main.async {
-                // Update progress
-                updateProgress()
-                // Update current/next prayers in case they changed
-                settings.updateCurrentAndNextPrayer()
-            }
-        }
-    }
-    
-    private func stopTimer() {
-        updateTimer?.invalidate()
-        updateTimer = nil
-    }
+    private var currentPrayer: Prayer? { settings.currentPrayer }
+    private var nextPrayer: Prayer? { settings.nextPrayer }
 
     var body: some View {
-        if let current = current, let next = next {
-            Group {
-                Section(header: HStack {
-                    Text("CURRENT")
-                    
-                    Spacer()
-                    
-                    Text("UPCOMING")
-                }) {
-                    VStack {
-                        HStack(alignment: .top) {
-                            CurrentPrayerCell(prayer: current)
-                            
-                            Divider().background(settings.accentColor.color)
-                                .padding(.bottom, 15)
-                                .padding(.top, 6)
-                            
-                            UpcomingPrayerCell(prayer: next)
-                        }
-                        .padding(.bottom, -8)
+        if let currentPrayer, let nextPrayer {
+            countdownContent(current: currentPrayer, next: nextPrayer)
+        }
+    }
 
-                        if settings.showPrayerInfo {
-                            VStack {
-                                Divider()
-                                    .background(settings.accentColor.color)
-                                
-                                HStack(alignment: .top) {
-                                    CurrentPrayerInfoView(prayer: current)
-                                    
-                                    UpcomingPrayerInfoView(prayer: next)
-                                }
-                            }
-                        }
-                        
-                        ProgressView(value: progress)
-                            .tint(settings.accentColor.color)
-                            .conditionalGlassEffect()
-                            .padding(.vertical, 2)
-                        
-                        HStack {
-                            Text("Time Left: \(next.time, style: .timer)")
-                            
-                            Spacer()
-                        }
-                        .font(.headline)
-                    }
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.25)
-                }
-            }
+    private func countdownContent(current: Prayer, next: Prayer) -> some View {
+        countdownSection(current: current, next: next)
             .onAppear {
-                updateProgress()
+                refreshProgressAndPrayerState()
                 startTimer()
             }
             .onDisappear {
                 stopTimer()
             }
             .onChange(of: scenePhase) { phase in
-                if phase == .active {
-                    updateProgress()
-                    settings.updateCurrentAndNextPrayer()
-                    startTimer()
-                } else {
-                    stopTimer()
-                }
+                handleScenePhaseChange(phase)
             }
             .onChange(of: settings.prayers) { _ in
-                updateProgress()
-                settings.updateCurrentAndNextPrayer()
+                refreshProgressAndPrayerState()
             }
-            .onChange(of: current) { _ in
+            .onChange(of: currentPrayer) { _ in
                 updateProgress()
             }
-            .onChange(of: next) { _ in
+            .onChange(of: nextPrayer) { _ in
                 updateProgress()
             }
             .buttonStyle(.plain)
             .contentShape(Rectangle())
             .onTapGesture {
                 settings.hapticFeedback()
-                
                 withAnimation { settings.showPrayerInfo.toggle() }
             }
+    }
+
+    private func countdownSection(current: Prayer, next: Prayer) -> some View {
+        Section(header: sectionHeader) {
+            countdownBody(current: current, next: next)
         }
+    }
+
+    private func countdownBody(current: Prayer, next: Prayer) -> some View {
+        VStack {
+            prayerSummary(current: current, next: next)
+            countdownProgress(next: next)
+            timeLeftRow(next: next)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.25)
+    }
+
+    private var sectionHeader: some View {
+        HStack {
+            Text("CURRENT")
+            Spacer()
+            Text("UPCOMING")
+        }
+    }
+
+    @ViewBuilder
+    private func prayerSummary(current: Prayer, next: Prayer) -> some View {
+        VStack {
+            summaryRow(current: current, next: next)
+            if settings.showPrayerInfo {
+                prayerInfoRow(current: current, next: next)
+            }
+        }
+        .padding(.bottom, -2)
+    }
+
+    private func summaryRow(current: Prayer, next: Prayer) -> some View {
+        HStack(alignment: .top) {
+            CurrentPrayerCell(prayer: current)
+            summaryDivider
+            UpcomingPrayerCell(prayer: next)
+        }
+    }
+
+    private var summaryDivider: some View {
+        Divider()
+            .background(settings.accentColor.color)
+            .padding(.horizontal, 2)
+    }
+
+    private func prayerInfoRow(current: Prayer, next: Prayer) -> some View {
+        VStack {
+            Divider()
+                .background(settings.accentColor.color)
+
+            HStack(alignment: .top) {
+                CurrentPrayerInfoView(prayer: current)
+                UpcomingPrayerInfoView(prayer: next)
+            }
+        }
+    }
+
+    private func countdownProgress(next: Prayer) -> some View {
+        ProgressView(value: progress)
+            .tint(settings.accentColor.color)
+            .conditionalGlassEffect()
+            .padding(.vertical, 2)
+            #if os(watchOS)
+            .padding(.top, 4)
+            #endif
+    }
+
+    private func timeLeftRow(next: Prayer) -> some View {
+        HStack {
+            Text("Time Left: \(next.time, style: .timer)")
+            Spacer()
+        }
+        .font(.headline)
+    }
+
+    private func handleScenePhaseChange(_ phase: ScenePhase) {
+        if phase == .active {
+            refreshProgressAndPrayerState()
+            startTimer()
+        } else {
+            stopTimer()
+        }
+    }
+
+    private func refreshProgressAndPrayerState() {
+        updateProgress()
+        settings.updateCurrentAndNextPrayer()
+    }
+
+    private func updateProgress() {
+        progress = progressValue()
+    }
+
+    private func progressValue() -> Double {
+        guard var start = currentPrayer?.time, var end = nextPrayer?.time else { return 0 }
+
+        let now = Date()
+
+        // Handle the common overnight boundary where the current prayer began the previous day.
+        if start > now {
+            start.addTimeInterval(-86_400)
+        }
+
+        if end <= start {
+            end.addTimeInterval(86_400)
+        }
+
+        let total = end.timeIntervalSince(start)
+        guard total > 0 else { return 0 }
+
+        let remaining = end.timeIntervalSince(now)
+        return max(0, min(1, 1 - remaining / total))
+    }
+
+    private func startTimer() {
+        stopTimer()
+        updateTimer = Timer.scheduledTimer(withTimeInterval: timerInterval, repeats: true) { _ in
+            DispatchQueue.main.async {
+                refreshProgressAndPrayerState()
+            }
+        }
+    }
+
+    private func stopTimer() {
+        updateTimer?.invalidate()
+        updateTimer = nil
     }
 }
 
 private struct CurrentPrayerCell: View {
-    @EnvironmentObject var settings: Settings
-    
+    @EnvironmentObject private var settings: Settings
+
     let prayer: Prayer
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             title
-            
-            #if !os(watchOS)
             subtitle
-            #endif
-            
             Text("Started at \(prayer.time, style: .time)")
                 .font(.headline)
         }
@@ -162,38 +199,27 @@ private struct CurrentPrayerCell: View {
     private var title: some View {
         HStack {
             Image(systemName: prayer.image)
-                #if !os(watchOS)
-                .font(.title3)
-                #else
-                .font(.subheadline)
-                #endif
-            
             Text(prayer.nameTransliteration)
-                .font(.title)
         }
-        .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+        .modifier(PrayerTitleStyle(prayer: prayer))
     }
 
     private var subtitle: some View {
-        Text("\(prayer.nameEnglish) / \(prayer.nameArabic)")
-            .font(.title3)
-            .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
+        PrayerSubtitleView(prayer: prayer, alignment: .leading)
     }
 }
 
 private struct UpcomingPrayerCell: View {
-    @EnvironmentObject var settings: Settings
-    
+    @EnvironmentObject private var settings: Settings
+
     let prayer: Prayer
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 5) {
             title
-            
             #if !os(watchOS)
             subtitle
             #endif
-            
             Text("Starts at \(prayer.time, style: .time)")
                 .font(.headline)
         }
@@ -204,22 +230,58 @@ private struct UpcomingPrayerCell: View {
     private var title: some View {
         HStack {
             Text(prayer.nameTransliteration)
-            
             Image(systemName: prayer.image)
-                .font(.title3)
         }
-        #if !os(watchOS)
-        .font(.title)
-        #else
-        .font(.title3)
-        #endif
-        .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+        .modifier(PrayerTitleStyle(prayer: prayer))
     }
 
     private var subtitle: some View {
-        Text("\(prayer.nameEnglish) / \(prayer.nameArabic)")
+        PrayerSubtitleView(prayer: prayer, alignment: .trailing)
+    }
+}
+
+private struct PrayerTitleStyle: ViewModifier {
+    @EnvironmentObject private var settings: Settings
+
+    let prayer: Prayer
+
+    func body(content: Content) -> some View {
+        content
+            #if os(watchOS)
+            .font(.subheadline)
+            #else
             .font(.title3)
-            .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7))
+            #endif
+            .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+    }
+}
+
+private struct PrayerSubtitleView: View {
+    @EnvironmentObject private var settings: Settings
+
+    let prayer: Prayer
+    let alignment: TextAlignment
+
+    private var isCombinedTravelPrayer: Bool {
+        prayer.nameTransliteration.contains("/")
+    }
+
+    private var subtitleText: String {
+        if isCombinedTravelPrayer {
+            return prayer.nameArabic
+        }
+        return "\(prayer.nameEnglish) / \(prayer.nameArabic)"
+    }
+
+    private var subtitleColor: Color {
+        prayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.color.opacity(0.7)
+    }
+
+    var body: some View {
+        Text(subtitleText)
+            .font(.title3)
+            .foregroundColor(subtitleColor)
+            .multilineTextAlignment(alignment)
     }
 }
 
@@ -227,12 +289,7 @@ private struct CurrentPrayerInfoView: View {
     let prayer: Prayer
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            PrayerRakahInfoView(prayer: prayer, captionFont: .caption, alignment: .leading)
-            PrayerSunnahInfoView(prayer: prayer, alignment: .leading)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .multilineTextAlignment(.leading)
+        PrayerInfoColumn(prayer: prayer, alignment: .leading)
     }
 }
 
@@ -240,12 +297,43 @@ private struct UpcomingPrayerInfoView: View {
     let prayer: Prayer
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 5) {
-            PrayerRakahInfoView(prayer: prayer, captionFont: .caption, alignment: .trailing)
-            PrayerSunnahInfoView(prayer: prayer, alignment: .trailing)
+        PrayerInfoColumn(prayer: prayer, alignment: .trailing)
+    }
+}
+
+private struct PrayerInfoColumn: View {
+    let prayer: Prayer
+    let alignment: Alignment
+
+    var body: some View {
+        VStack(alignment: horizontalAlignment, spacing: 5) {
+            PrayerRakahInfoView(prayer: prayer, captionFont: .caption, alignment: alignment)
+            PrayerSunnahInfoView(prayer: prayer, alignment: alignment)
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .multilineTextAlignment(.trailing)
+        .frame(maxWidth: .infinity, alignment: alignment)
+        .multilineTextAlignment(textAlignment)
+    }
+
+    private var horizontalAlignment: HorizontalAlignment {
+        switch alignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        default:
+            return .center
+        }
+    }
+
+    private var textAlignment: TextAlignment {
+        switch alignment {
+        case .leading:
+            return .leading
+        case .trailing:
+            return .trailing
+        default:
+            return .center
+        }
     }
 }
 

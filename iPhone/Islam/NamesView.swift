@@ -133,64 +133,8 @@ struct NamesView: View {
 
         ScrollViewReader { proxy in
             List {
-                Section(header:
-                    HStack {
-                        Text("DESCRIPTION")
-
-                        Spacer()
-
-                        Text(String(filteredNames.count))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(settings.accentColor.color)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            #if !os(watchOS)
-                            .background(.ultraThinMaterial)
-                            #endif
-                            .clipShape(Capsule())
-                            .conditionalGlassEffect()
-                            .opacity(hasActiveSearch ? 1 : 0)
-                    }
-                    .padding(.vertical, 4)
-                ) {
-                    Text("Prophet Muhammad ﷺ said, “Allah has 99 names, and whoever believes in their meanings and acts accordingly, will enter Paradise” (Bukhari 6410).")
-                        .font(.body)
-
-                    Toggle("Show Description", isOn: $settings.showDescription.animation(.easeInOut))
-                        .font(.subheadline)
-                        .tint(settings.accentColor.color)
-                }
-
-                ForEach(Array(filteredNames.enumerated()), id: \.element.id) { _, name in
-                    Section {
-                        NameRow(
-                            name: name,
-                            showDescription: settings.showDescription,
-                            isExpanded: expandedNameNumbers.contains(name.number)
-                        ) {
-                            if hasActiveSearch {
-                                let targetID = "name_\(name.number)"
-                                withAnimation {
-                                    searchText = ""
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                    withAnimation {
-                                        proxy.scrollTo(targetID, anchor: .top)
-                                    }
-                                }
-                            } else {
-                                withAnimation {
-                                    if expandedNameNumbers.contains(name.number) {
-                                        expandedNameNumbers.remove(name.number)
-                                    } else {
-                                        expandedNameNumbers.insert(name.number)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .id("name_\(name.number)")
-                }
+                descriptionSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
+                namesSections(filteredNames: filteredNames, hasActiveSearch: hasActiveSearch, proxy: proxy)
             }
         }
         #if os(watchOS)
@@ -206,6 +150,76 @@ struct NamesView: View {
         .compactListSectionSpacing()
         .dismissKeyboardOnScroll()
         .navigationTitle("99 Names of Allah")
+    }
+
+    private func descriptionSection(resultCount: Int, hasActiveSearch: Bool) -> some View {
+        Section(header: descriptionHeader(resultCount: resultCount, hasActiveSearch: hasActiveSearch)) {
+            Text("Prophet Muhammad ﷺ said, “Allah has 99 names, and whoever believes in their meanings and acts accordingly, will enter Paradise” (Bukhari 6410).")
+                .font(.body)
+
+            Toggle("Show Description", isOn: $settings.showDescription.animation(.easeInOut))
+                .font(.subheadline)
+                .tint(settings.accentColor.color)
+        }
+    }
+
+    private func descriptionHeader(resultCount: Int, hasActiveSearch: Bool) -> some View {
+        HStack {
+            Text("DESCRIPTION")
+
+            Spacer()
+
+            Text(String(resultCount))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                #if !os(watchOS)
+                .background(.ultraThinMaterial)
+                #endif
+                .clipShape(Capsule())
+                .conditionalGlassEffect()
+                .opacity(hasActiveSearch ? 1 : 0)
+        }
+        .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private func namesSections(filteredNames: [NameOfAllah], hasActiveSearch: Bool, proxy: ScrollViewProxy) -> some View {
+        ForEach(Array(filteredNames.enumerated()), id: \.element.id) { _, name in
+            Section {
+                NameRow(
+                    name: name,
+                    showDescription: settings.showDescription,
+                    isExpanded: expandedNameNumbers.contains(name.number)
+                ) {
+                    handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
+                }
+            }
+            .id("name_\(name.number)")
+        }
+    }
+
+    private func handleNameTap(name: NameOfAllah, hasActiveSearch: Bool, proxy: ScrollViewProxy) {
+        if hasActiveSearch {
+            let targetID = "name_\(name.number)"
+            withAnimation {
+                searchText = ""
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation {
+                    proxy.scrollTo(targetID, anchor: .top)
+                }
+            }
+        } else {
+            withAnimation {
+                if expandedNameNumbers.contains(name.number) {
+                    expandedNameNumbers.remove(name.number)
+                } else {
+                    expandedNameNumbers.insert(name.number)
+                }
+            }
+        }
     }
 }
 
