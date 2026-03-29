@@ -46,4 +46,45 @@ extension Settings {
 
         return cleaned
     }
+
+    func isTajweedCategoryVisible(_ category: TajweedLegendCategory) -> Bool {
+        switch category {
+        case .tafkhim: return showTajweedTafkhim
+        case .qalqalah: return showTajweedQalqalah
+        case .ikhfaGhunnah: return showTajweedIkhfaGhunnah
+        case .idghaamSilent: return showTajweedIdghaamSilent
+        case .madd246: return showTajweedMadd246
+        case .madd2: return showTajweedMadd2
+        case .madd6: return showTajweedMadd6
+        case .madd45: return showTajweedMadd45
+        }
+    }
+
+    func setTajweedCategory(_ category: TajweedLegendCategory, visible: Bool) {
+        switch category {
+        case .tafkhim: showTajweedTafkhim = visible
+        case .qalqalah: showTajweedQalqalah = visible
+        case .ikhfaGhunnah: showTajweedIkhfaGhunnah = visible
+        case .idghaamSilent: showTajweedIdghaamSilent = visible
+        case .madd246: showTajweedMadd246 = visible
+        case .madd2: showTajweedMadd2 = visible
+        case .madd6: showTajweedMadd6 = visible
+        case .madd45: showTajweedMadd45 = visible
+        }
+    }
+
+    func addQuranSearchHistory(_ query: String) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        var history = quranSearchHistory.filter {
+            $0.caseInsensitiveCompare(trimmed) != .orderedSame
+        }
+        history.insert(trimmed, at: 0)
+        quranSearchHistory = Array(history.prefix(10))
+    }
+
+    func removeQuranSearchHistory(_ query: String) {
+        quranSearchHistory.removeAll { $0.caseInsensitiveCompare(query) == .orderedSame }
+    }
 }

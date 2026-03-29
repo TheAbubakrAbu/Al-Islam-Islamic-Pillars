@@ -1278,21 +1278,21 @@ final class QuranPlayer: ObservableObject {
 
     
     func getSurahDuration(surahNumber: Int) -> Double {
-        #if os(watchOS)
-        // The watch doesn't rely on this value, so just return 0
-        return 0
-        #else
+        #if os(iOS)
         guard
             let rec = playbackReciter ?? resolvedSelectedReciter(),
             let url = URL(string: "\(rec.surahLink)\(String(format: "%03d", surahNumber)).mp3")
         else { return 0 }
 
         return CMTimeGetSeconds(AVURLAsset(url: url).duration)
+        #else
+        // The watch doesn't rely on this value, so just return 0
+        return 0
         #endif
     }
     
     func idleTimerSet(_ disabled: Bool) {
-        #if !os(watchOS)
+        #if os(iOS)
         UIApplication.shared.isIdleTimerDisabled = disabled
         #endif
     }

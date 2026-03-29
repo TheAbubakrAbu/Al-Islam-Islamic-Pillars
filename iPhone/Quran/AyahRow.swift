@@ -7,7 +7,7 @@ struct AyahRow: View {
     
     @State private var ayahBeginnerMode = false
     
-    #if !os(watchOS)
+    #if os(iOS)
     @State private var showingAyahSheet = false
     @State private var showTafsirSheet = false
     
@@ -115,7 +115,7 @@ struct AyahRow: View {
         ].joined(separator: "|")
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private var ayahHighlightBackgroundVerticalPadding: CGFloat {
         if #available(iOS 26.0, *) {
             return -11
@@ -146,7 +146,7 @@ struct AyahRow: View {
                         : .white.opacity(0.00001)
                     )
                     .padding(.horizontal, -12)
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
                     #endif
             }
@@ -161,7 +161,7 @@ struct AyahRow: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .conditionalGlassEffect(useColor: 0.1)
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .onTapGesture {
                             settings.hapticFeedback()
                             showingAyahSheet = true
@@ -170,14 +170,7 @@ struct AyahRow: View {
                     
                     Spacer()
                     
-                    #if os(watchOS)
-                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 22, height: 22)
-                        .foregroundColor(settings.accentColor.color)
-                        
-                    #else
+                    #if os(iOS)
                     if isBookmarked {
                         Image(systemName: "bookmark.fill")
                             .resizable()
@@ -252,13 +245,19 @@ struct AyahRow: View {
                             onSave: { setNote(draftNote) }
                         )
                     }
+                    #else
+                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 22, height: 22)
+                        .foregroundColor(settings.accentColor.color)
                     #endif
                 }
                 .padding(.bottom, settings.showArabicText ? 8 : 2)
                 .padding(.trailing, 1)
                 
                 Group {
-                    #if !os(watchOS)
+                    #if os(iOS)
                     Button {
                         if !searchText.isEmpty {
                             settings.hapticFeedback()
@@ -289,7 +288,7 @@ struct AyahRow: View {
             }
         }
         .lineLimit(nil)
-        #if !os(watchOS)
+        #if os(iOS)
         .contextMenu {
             menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: true)
         }
@@ -308,7 +307,7 @@ struct AyahRow: View {
         } message: {
             Text("This ayah has a note. Unbookmarking will delete the note.")
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .sheet(isPresented: $showCustomRangeSheet) {
             PlayCustomRangeSheet(
                 surah: surah,
@@ -367,7 +366,7 @@ struct AyahRow: View {
                 .contentShape(Rectangle())
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, 10)
-                #if !os(watchOS)
+                #if os(iOS)
                 .onTapGesture {
                     settings.hapticFeedback()
                     draftNote = currentNote
@@ -464,7 +463,7 @@ struct AyahRow: View {
         }
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     @ViewBuilder
     private func playbackMenuBlock() -> some View {
         let repeatOptions = [2, 3, 5, 10, 15, 20]
@@ -566,7 +565,7 @@ struct AyahRow: View {
 
     @ViewBuilder
     private func menuBlock(isBookmarked: Bool, includePlaybackOptions: Bool) -> some View {
-        #if !os(watchOS)
+        #if os(iOS)
         let canShowTafsir: Bool = {
             if let override = comparisonQiraahOverride {
                 return override.isEmpty || override == "Hafs"

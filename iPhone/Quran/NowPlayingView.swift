@@ -25,7 +25,7 @@ struct NowPlayingView: View {
             return AnyView(EmptyView())
         }
 
-        #if !os(watchOS)
+        #if os(iOS)
         return AnyView(
             VStack(spacing: 8) {
                 if quranView {
@@ -167,26 +167,7 @@ struct NowPlayingView: View {
 
     @ViewBuilder
     private func playerRow(isPlaying: Bool) -> some View {
-        #if os(watchOS)
-        VStack(alignment: .center, spacing: 6) {
-            titleBlock
-
-            HStack(spacing: 12) {
-                transportButtons(isPlaying: isPlaying)
-            }
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding(.top, 2)
-        }
-        .padding(4)
-        .overlay(alignment: .bottomTrailing) {
-            stopButton
-                .padding(.vertical, 4)
-                .padding(.trailing, -2)
-        }
-        .transition(.opacity)
-        .animation(.easeInOut, value: quranPlayer.isPlaying)
-        #else
+        #if os(iOS)
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 titleBlock
@@ -213,6 +194,25 @@ struct NowPlayingView: View {
         } message: {
             Text("This ayah has a note. Unbookmarking will delete the note.")
         }
+        #else
+        VStack(alignment: .center, spacing: 6) {
+            titleBlock
+
+            HStack(spacing: 12) {
+                transportButtons(isPlaying: isPlaying)
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 2)
+        }
+        .padding(4)
+        .overlay(alignment: .bottomTrailing) {
+            stopButton
+                .padding(.vertical, 4)
+                .padding(.trailing, -2)
+        }
+        .transition(.opacity)
+        .animation(.easeInOut, value: quranPlayer.isPlaying)
         #endif
     }
 
@@ -221,13 +221,13 @@ struct NowPlayingView: View {
         if let title = quranPlayer.nowPlayingTitle {
             Text(title)
                 .foregroundColor(.primary)
-                #if os(watchOS)
-                .font(.caption)
-                .lineLimit(2)
-                #else
+                #if os(iOS)
                 .font(.headline.bold())
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
+                #else
+                .font(.caption)
+                .lineLimit(2)
                 #endif
         }
 
@@ -236,7 +236,7 @@ struct NowPlayingView: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .lineLimit(1)
-                #if !os(watchOS)
+                #if os(iOS)
                 .minimumScaleFactor(0.5)
                 #endif
         }

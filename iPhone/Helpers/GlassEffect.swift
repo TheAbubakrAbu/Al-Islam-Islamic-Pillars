@@ -6,6 +6,8 @@ struct ConditionalGlassEffect: ViewModifier {
     var clear: Bool = false
     var rectangle: Bool = false
     var useColor: Double? = nil
+    /// When set, tints glass with this color (opacity from `useColor`, default 0.35) instead of the app accent.
+    var customTint: Color? = nil
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, watchOS 26.0, *) {
@@ -67,10 +69,10 @@ struct ConditionalGlassEffect: ViewModifier {
 
     private func fallbackGlassShape<S: Shape>(content: Content, shape: S) -> some View {
         let fallbackBaseFill: Color = {
-            #if os(watchOS)
-            return Color.gray.opacity(clear ? 0.12 : 0.18)
-            #else
+            #if os(iOS)
             return Color(UIColor.secondarySystemBackground).opacity(clear ? 0.7 : 1.0)
+            #else
+            return Color.gray.opacity(clear ? 0.12 : 0.18)
             #endif
         }()
 
@@ -90,7 +92,10 @@ struct ConditionalGlassEffect: ViewModifier {
     }
 
     private var tintColor: Color? {
-        useColor.map { settings.accentColor.color.opacity($0) }
+        if let customTint {
+            return customTint.opacity(useColor ?? 0.35)
+        }
+        return useColor.map { settings.accentColor.color.opacity($0) }
     }
 }
 
@@ -98,8 +103,9 @@ extension View {
     func conditionalGlassEffect(
         clear: Bool = false,
         rectangle: Bool = false,
-        useColor: Double? = nil
+        useColor: Double? = nil,
+        customTint: Color? = nil
     ) -> some View {
-        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, useColor: useColor))
+        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, useColor: useColor, customTint: customTint))
     }
 }

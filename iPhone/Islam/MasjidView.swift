@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 import MapKit
 import CoreLocation
@@ -701,3 +702,4 @@ private func performHomeCacheRefresh(for searchRegion: MKCoordinateRegion) async
         MasjidLocatorView()
     }
 }
+#endif

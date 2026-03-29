@@ -8,7 +8,7 @@ struct SurahRow: View {
     var end: Bool?
     
     var body: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         VStack {
             HStack {
                 VStack(alignment: .leading) {
@@ -133,7 +133,7 @@ struct SurahAyahRow: View {
             }
             .lineLimit(1)
             .minimumScaleFactor(0.5)
-            #if !os(watchOS)
+            #if os(iOS)
             .frame(width: 65, alignment: .center)
             #else
             .frame(width: 40, alignment: .center)
@@ -205,7 +205,7 @@ func formatMMSS(_ seconds: Double) -> String {
     _FmtCache.mmss.string(from: seconds) ?? "00:00"
 }
 
-#if !os(watchOS)
+#if os(iOS)
 struct LastListenedSurahRow: View {
     @EnvironmentObject private var settings: Settings
     @EnvironmentObject private var quranData: QuranData
@@ -343,7 +343,7 @@ struct LastListenedSurahRow: View {
                 scrollToSurahID: $scrollToSurahID
             )
             .leftSwipeActions(surah: surah.id, favoriteSurahs: favoriteSurahs)
-            #if !os(watchOS)
+            #if os(iOS)
             .contextMenu {
                 Button(role: .destructive) {
                     settings.hapticFeedback()

@@ -96,7 +96,7 @@ extension Settings {
         case .authorizedAlways, .authorizedWhenInUse:
             showLocationAlert = false
             mgr.requestLocation()
-            #if !os(watchOS)
+            #if os(iOS)
             mgr.startMonitoringSignificantLocationChanges()
             #else
             mgr.startUpdatingLocation()
@@ -146,7 +146,7 @@ extension Settings {
         case .notDetermined:
             Self.locationManager.requestAlwaysAuthorization()
         case .authorizedAlways, .authorizedWhenInUse:
-            #if !os(watchOS)
+            #if os(iOS)
             Self.locationManager.startMonitoringSignificantLocationChanges()
             #else
             Self.locationManager.startUpdatingLocation()
@@ -344,7 +344,7 @@ extension Settings {
         calculationAutoDetectedCountryCode = countryCode
         calculationAutoChanged = true
 
-        #if !os(watchOS)
+        #if os(iOS)
         let content = UNMutableNotificationContent()
         content.title = "Al-Islam"
         content.body = "Prayer calculation switched to \(detectedMethod) for \(currentLocation.city)."
@@ -374,7 +374,7 @@ extension Settings {
                 withAnimation { travelingMode = true }
                 travelTurnOffAutomatic = false
                 travelTurnOnAutomatic  = true
-                #if !os(watchOS)
+                #if os(iOS)
                 let content = UNMutableNotificationContent()
                 content.title = "Al-Islam"
                 content.body  = "Traveling mode automatically turned on at \(currentLocation.city)"
@@ -389,7 +389,7 @@ extension Settings {
                 withAnimation { travelingMode = false }
                 travelTurnOnAutomatic  = false
                 travelTurnOffAutomatic = true
-                #if !os(watchOS)
+                #if os(iOS)
                 let content = UNMutableNotificationContent()
                 content.title = "Al-Islam"
                 content.body  = "Traveling mode automatically turned off at \(currentLocation.city)"
@@ -733,9 +733,7 @@ extension Settings {
     
     @MainActor
     func requestNotificationAuthorization() async -> Bool {
-        #if os(watchOS)
-        return true
-        #else
+        #if os(iOS)
         let center = UNUserNotificationCenter.current()
         let status = await center.notificationSettings().authorizationStatus
 
@@ -764,6 +762,8 @@ extension Settings {
         default:
             return false
         }
+        #else
+        return true
         #endif
     }
     
@@ -858,9 +858,7 @@ extension Settings {
     }
 
     func schedulePrayerTimeNotifications() {
-        #if os(watchOS)
-        return
-        #else
+        #if os(iOS)
         guard let city = currentLocation?.city, let prayerObj = prayers
         else { return }
 
@@ -913,6 +911,8 @@ extension Settings {
         scheduleRefreshNag(inDays: 3, using: center)
         
         prayers?.setNotification = true
+        #else
+        return
         #endif
     }
     
@@ -954,13 +954,13 @@ extension Settings {
         }
         guard minutesBefore == nil else { return .default }
 
-        #if os(watchOS)
-        return .default
-        #else
+        #if os(iOS)
         guard let filename = adhanSoundFilename(for: adhanNotificationSound) else {
             return .default
         }
         return UNNotificationSound(named: UNNotificationSoundName(filename))
+        #else
+        return .default
         #endif
     }
 
@@ -1121,5 +1121,52 @@ extension Settings {
 
     func shouldShowOutlinedBell(prayerTime: Prayer) -> Bool {
         notificationMode(for: prayerTime) == .atTime
+    }
+
+    // MARK: - Travel & automatic calculation (UI prompts)
+
+    func automaticTravelMessage(turnOn: Bool) -> String {
+        if turnOn {
+            return "Al-Islam has automatically detected that you are traveling, so your prayers will be shortened."
+        }
+        return "Al-Islam has automatically detected that you are no longer traveling, so your prayers will not be shortened."
+    }
+
+    var automaticCalculationMessage: String {
+        let country = calculationAutoDetectedCountryCode.isEmpty ? "unknown" : calculationAutoDetectedCountryCode
+        return "Al-Islam detected your region as \(country) and switched prayer calculation from \(calculationAutoPreviousMethod) to \(calculationAutoDetectedMethod)."
+    }
+
+    func resetTravelAutomaticFlags() {
+        travelTurnOnAutomatic = false
+        travelTurnOffAutomatic = false
+    }
+
+    func overrideTravelingMode(keepOn: Bool) {
+        travelingModeManuallyToggled = true
+        withAnimation {
+            travelingMode = keepOn
+        }
+        travelAutomatic = false
+        resetTravelAutomaticFlags()
+        fetchPrayerTimes(force: true)
+    }
+
+    func confirmTravelAutomaticChange() {
+        resetTravelAutomaticFlags()
+    }
+
+    func overrideAutomaticCalculationKeepingPrevious() {
+        calculationManuallyToggled = true
+        withAnimation {
+            prayerCalculation = calculationAutoPreviousMethod
+        }
+        calculationAutomatic = false
+        calculationAutoChanged = false
+        fetchPrayerTimes(force: true)
+    }
+
+    func confirmAutomaticCalculationChange() {
+        calculationAutoChanged = false
     }
 }

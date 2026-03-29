@@ -53,7 +53,7 @@ struct TasbihView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .padding(.horizontal, -12)
                     .padding(.vertical, tasbihSelectionBackgroundVerticalPadding)
                     #else
@@ -71,7 +71,7 @@ struct TasbihView: View {
         #endif
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private var tasbihSelectionBackgroundVerticalPadding: CGFloat {
         if #available(iOS 26.0, *) {
             return -11
@@ -169,7 +169,7 @@ struct TasbihRow: View {
             counterControls
         }
         .contentShape(Rectangle())
-        #if !os(watchOS)
+        #if os(iOS)
         .contextMenu {
             Button {
                 UIPasteboard.general.string = tasbih.arabic

@@ -9,7 +9,7 @@ struct SurahsHeader: View {
         HStack {
             Text("SURAHS")
 
-            #if !os(watchOS)
+            #if os(iOS)
             Spacer()
             randomSurahLink
             #endif
@@ -21,7 +21,7 @@ struct SurahsHeader: View {
         }
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private var randomSurahLink: some View {
         NavigationLink {
             Group {
@@ -61,7 +61,7 @@ struct JuzHeader: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
 
-            #if !os(watchOS)
+            #if os(iOS)
             Spacer()
             randomSurahLink
             #endif
@@ -81,7 +81,7 @@ struct JuzHeader: View {
         surahsInRange.randomElement()
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private var randomSurahLink: some View {
         NavigationLink {
             Group {
@@ -127,7 +127,7 @@ struct SurahSectionHeader: View {
 
     private var ayahSummary: some View {
         Group {
-            #if !os(watchOS)
+            #if os(iOS)
             Text("\(surah.numberOfAyahs(for: settings.displayQiraahForArabic)) Ayahs - \(surah.type) \(surah.type == "meccan" ? "🕋" : "🕌")")
             #else
             Text("\(surah.numberOfAyahs(for: settings.displayQiraahForArabic)) Ayahs - \(surah.type == "meccan" ? "🕋" : "🕌")")
@@ -175,7 +175,7 @@ struct SurahSectionHeader: View {
     private var favoriteToggle: some View {
         Image(systemName: settings.isSurahFavorite(surah: surah.id) ? "star.fill" : "star")
             .foregroundColor(settings.accentColor.color)
-            #if !os(watchOS)
+            #if os(iOS)
             .font(compact ? .caption : .subheadline)
             #else
             .font(.title3)
@@ -225,7 +225,7 @@ struct HeaderRow: View {
             }
         }
         .padding(.top, -4)
-        #if !os(watchOS)
+        #if os(iOS)
         .contextMenu {
             if !settings.beginnerMode {
                 Button {

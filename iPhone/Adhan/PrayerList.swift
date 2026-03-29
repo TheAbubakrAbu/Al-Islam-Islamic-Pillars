@@ -63,7 +63,7 @@ struct PrayerList: View {
         HStack {
             Text("PRAYER TIMES")
 
-            #if !os(watchOS)
+            #if os(iOS)
             Spacer()
 
             Picker("", selection: $prayerDisplayModeRawValue.animation(.easeInOut)) {
@@ -114,7 +114,7 @@ struct PrayerList: View {
                 isCurrent: isCurrent,
                 iconColor: listIconColor,
                 trailingContent: {
-                    #if !os(watchOS)
+                    #if os(iOS)
                     prayerBell(for: prayer, rowColor: bellRowColor)
                     #endif
                 }
@@ -186,7 +186,7 @@ struct PrayerList: View {
     private var travelModeFooter: some View {
         if settings.travelingMode {
             VStack {
-                #if !os(watchOS)
+                #if os(iOS)
                 travelingModeDescription
                 #endif
 
@@ -203,7 +203,7 @@ struct PrayerList: View {
 
     @ViewBuilder
     private var dateSelectionFooter: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         VStack {
             DatePicker("Showing prayers for", selection: $selectedDate.animation(.easeInOut), displayedComponents: .date)
                 .datePickerStyle(DefaultDatePickerStyle())
@@ -369,7 +369,7 @@ struct PrayerList: View {
         .padding(4)
         .conditionalGlassEffect()
         .padding(.leading, 6)
-        #if !os(watchOS)
+        #if os(iOS)
         .contextMenu {
             Button {
                 settings.hapticFeedback()
@@ -408,7 +408,7 @@ private struct PrayerListRowCard<TrailingContent: View>: View {
         ZStack {
             RoundedRectangle(cornerRadius: 20)
                 .fill(isCurrent ? settings.accentColor.color.opacity(0.25) : .white.opacity(0.00001))
-                #if !os(watchOS)
+                #if os(iOS)
                 .padding(.vertical, backgroundVerticalPadding)
                 .padding(.horizontal, -12)
                 #else
@@ -432,7 +432,7 @@ private struct PrayerListRowCard<TrailingContent: View>: View {
                     Spacer()
 
                     Text(prayer.time, style: .time)
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .font(.subheadline)
                         #else
                         .font(.caption)
@@ -449,7 +449,7 @@ private struct PrayerListRowCard<TrailingContent: View>: View {
         }
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private var backgroundVerticalPadding: CGFloat {
         if #available(iOS 26.0, *) {
             return -10

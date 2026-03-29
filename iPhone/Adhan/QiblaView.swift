@@ -153,10 +153,10 @@ struct GlassyQiblaRing: View {
 
     @ViewBuilder
     private var glassFill: some View {
-        #if os(watchOS)
-        Circle().fill(Color.white.opacity(0.18))
-        #else
+        #if os(iOS)
         Circle().fill(.ultraThinMaterial)
+        #else
+        Circle().fill(Color.white.opacity(0.18))
         #endif
     }
 

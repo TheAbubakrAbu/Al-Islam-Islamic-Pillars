@@ -38,7 +38,7 @@ struct DateView: View {
 
     var body: some View {
         VStack {
-            #if !os(watchOS)
+            #if os(iOS)
             List {
                 selectionSection
                 convertedDateSection
@@ -70,7 +70,7 @@ struct DateView: View {
         let title = selectedTab == .hijriToGregorian ? "Select Hijri Date" : "Select Gregorian Date"
 
         VStack(alignment: .leading) {
-            #if !os(watchOS)
+            #if os(iOS)
             DatePicker(title, selection: $sourceDate.animation(.easeInOut), displayedComponents: .date)
                 .environment(\.calendar, calendar)
                 .datePickerStyle(.graphical)
@@ -85,7 +85,7 @@ struct DateView: View {
             Text("Hijri to Gregorian").tag(ConversionTab.hijriToGregorian)
             Text("Gregorian to Hijri").tag(ConversionTab.gregorianToHijri)
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .pickerStyle(.segmented)
         #endif
     }

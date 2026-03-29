@@ -96,6 +96,7 @@ struct LaunchScreen: View {
         VStack {
             VStack {
                 LaunchLogoCard(
+                    title: "Al-Islam",
                     accentColor: settings.accentColor.color,
                     isDarkMode: currentColorScheme == .dark,
                     shimmerOffset: shimmerOffset
@@ -172,7 +173,7 @@ struct LaunchScreen: View {
     private func triggerHapticFeedback(_ feedbackType: HapticFeedbackType) {
         guard settings.hapticOn else { return }
 
-        #if !os(watchOS)
+        #if os(iOS)
         switch feedbackType {
         case .soft:
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
@@ -196,7 +197,7 @@ struct LaunchScreen: View {
     }
 }
 
-private struct LaunchScreenBackground: View {
+struct LaunchScreenBackground: View {
     let backgroundColor: Color
     let accentColor: Color
     let isDarkMode: Bool
@@ -264,7 +265,8 @@ private struct LaunchScreenBackground: View {
     }
 }
 
-private struct LaunchLogoCard: View {
+struct LaunchLogoCard: View {
+    let title: String
     let accentColor: Color
     let isDarkMode: Bool
     let shimmerOffset: CGFloat
@@ -272,7 +274,7 @@ private struct LaunchLogoCard: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 34, style: .continuous)
-                #if !os(watchOS)
+                #if os(iOS)
                 .fill(.ultraThinMaterial.opacity(isDarkMode ? 0.45 : 0.7))
                 #endif
                 .frame(width: 170, height: 170)
@@ -308,34 +310,16 @@ private struct LaunchLogoCard: View {
                         .padding(12)
                 }
 
-            Image("Al-Islam")
+            Image(title)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .cornerRadius(24)
                 .frame(maxWidth: 146, maxHeight: 146)
-                .overlay(alignment: .topLeading) {
-                    LinearGradient(
-                        colors: [
-                            .white.opacity(0.0),
-                            .white.opacity(0.32),
-                            .white.opacity(0.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .rotationEffect(.degrees(22))
-                    .offset(x: shimmerOffset)
-                    .blendMode(.screen)
-                    .mask(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .frame(width: 146, height: 146)
-                    )
-                }
         }
     }
 }
 
-private struct LaunchCompanionCard: View {
+struct LaunchCompanionCard: View {
     let imageName: String
     let accentColor: Color
     let isDarkMode: Bool
@@ -348,7 +332,7 @@ private struct LaunchCompanionCard: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                #if !os(watchOS)
+                #if os(iOS)
                 .fill(.ultraThinMaterial.opacity(isDarkMode ? 0.22 : 0.38))
                 #else
                 .fill(Color.white.opacity(isDarkMode ? 0.08 : 0.16))

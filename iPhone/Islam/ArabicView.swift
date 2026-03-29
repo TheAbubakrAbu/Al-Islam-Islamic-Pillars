@@ -249,7 +249,7 @@ struct ArabicView: View {
                         .foregroundStyle(settings.accentColor.color)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .background(.ultraThinMaterial)
                         #endif
                         .clipShape(Capsule())
@@ -351,7 +351,7 @@ struct ArabicLetterView: View {
                         Spacer()
                     }
                 }
-                #if !os(watchOS)
+                #if os(iOS)
                 .listRowSeparator(.hidden, edges: .bottom)
                 #endif
                 .padding(.vertical, useQuranicFontForLetter ? 0 : 2)
@@ -392,7 +392,7 @@ struct ArabicLetterView: View {
                         }
                     }
                 }
-                #if !os(watchOS)
+                #if os(iOS)
                 .listRowSeparator(.hidden, edges: .bottom)
                 #endif
                 .padding(.vertical, useQuranicFontForLetter ? 0 : 2)
@@ -428,7 +428,7 @@ struct ArabicLetterView: View {
                     let chunks = tashkeels.chunked(into: 3)
                     ForEach(chunks.indices, id: \.self) { idx in
                         VStack {
-                            #if !os(watchOS)
+                            #if os(iOS)
                             if idx > 0 {
                                 Divider().padding(.trailing, -100)
                             }
@@ -441,12 +441,12 @@ struct ArabicLetterView: View {
                             )
                             .padding(.top, 14)
                         }
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .listRowSeparator(.hidden, edges: .bottom)
                         #endif
                     }
 
-                    #if !os(watchOS)
+                    #if os(iOS)
                     Text("WITH ALIF HAMZA")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -600,7 +600,7 @@ struct TashkeelRow: View {
                         )
                         .frame(maxWidth: .infinity)
 
-                    #if !os(watchOS)
+                    #if os(iOS)
                     Text(tk.english)
                         .font(.caption2)
                         .foregroundColor(.secondary)
@@ -714,7 +714,7 @@ struct ArabicLetterRow: View {
             }
             .padding(.vertical, -2)
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .swipeActions(edge: .leading) { favButton(isFav: isFav) }
         .swipeActions(edge: .trailing) { favButton(isFav: isFav) }
         .contextMenu { contextItems(isFav: isFav) }
@@ -734,7 +734,7 @@ struct ArabicLetterRow: View {
 
     @ViewBuilder
     private func contextItems(isFav: Bool) -> some View {
-        #if !os(watchOS)
+        #if os(iOS)
         Button(role: isFav ? .destructive : nil) {
             settings.hapticFeedback()
             settings.toggleLetterFavorite(letterData: letterData)

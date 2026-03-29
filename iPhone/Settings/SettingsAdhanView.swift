@@ -1,6 +1,6 @@
 import SwiftUI
 import UserNotifications
-#if !os(watchOS)
+#if os(iOS)
 import AVFoundation
 #endif
 
@@ -53,7 +53,7 @@ struct SettingsAdhanView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Adhan Settings")
-        #if !os(watchOS)
+        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if presentedAsSheet {
@@ -162,7 +162,7 @@ struct SettingsAdhanView: View {
 
     @ViewBuilder
     private var notificationsSection: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         if showNotifications {
             Section(header: Text("NOTIFICATIONS")) {
                 NavigationLink(destination: NotificationView()) {
@@ -241,11 +241,11 @@ struct SettingsAdhanView: View {
 
     @ViewBuilder
     private var homeCityButton: some View {
-        #if !os(watchOS)
-        Button(action: {
+        #if os(iOS)
+        Button {
             settings.hapticFeedback()
             showingMap = true
-        }) {
+        } label: {
             HStack {
                 Text("Set Home City")
                     .font(.subheadline)
@@ -267,7 +267,7 @@ struct SettingsAdhanView: View {
 
     @ViewBuilder
     private var automaticTravelToggle: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         Toggle("Automatic Traveling Mode", isOn: $settings.travelAutomatic.animation(.easeInOut))
             .font(.subheadline)
             .tint(settings.accentColor.color)
@@ -281,7 +281,7 @@ struct SettingsAdhanView: View {
                 .tint(settings.accentColor.color)
                 .disabled(settings.travelAutomatic && !isWatch)
 
-            #if !os(watchOS)
+            #if os(iOS)
             Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -302,16 +302,16 @@ struct SettingsAdhanView: View {
 
     @ViewBuilder
     private var prayerOffsetsSection: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         PrayerOffsetsView()
         #endif
     }
 
     private var isWatch: Bool {
-        #if os(watchOS)
-        true
-        #else
+        #if os(iOS)
         false
+        #else
+        true
         #endif
     }
 }
@@ -413,7 +413,7 @@ struct NotificationView: View {
     @State private var showAlert: Bool = false
     @State private var notifSettings: UNNotificationSettings?
     @State private var requestAccessAlertMessage: String?
-    #if !os(watchOS)
+    #if os(iOS)
     @State private var previewPlayer: AVAudioPlayer?
     #endif
 
@@ -423,7 +423,7 @@ struct NotificationView: View {
     
     var body: some View {
         List {
-            #if !os(watchOS)
+            #if os(iOS)
             Section {
                 permissionCard
             }
@@ -501,7 +501,7 @@ struct NotificationView: View {
         .navigationTitle("Notification Settings")
     }
     
-    #if !os(watchOS)
+    #if os(iOS)
     private var permissionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -633,7 +633,7 @@ struct NotificationView: View {
     }
     
     private func openSystemSettings() {
-        #if !os(watchOS)
+        #if os(iOS)
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
@@ -683,7 +683,7 @@ struct NotificationView: View {
         }
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private func playAdhanPreview() {
         previewPlayer?.stop()
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
@@ -783,7 +783,7 @@ struct MoreNotificationView: View {
                         Text("15 mins").tag(15)
                         Text("10 mins").tag(10)
                     }
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .pickerStyle(.segmented)
                     #endif
                     
@@ -942,7 +942,7 @@ struct MoreNotificationView: View {
         }
         .confirmationDialog("Notifications Off", isPresented: $showAlert, titleVisibility: .visible) {
             Button("Open Settings") {
-                #if !os(watchOS)
+                #if os(iOS)
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
                 }

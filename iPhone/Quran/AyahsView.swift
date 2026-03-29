@@ -248,7 +248,7 @@ struct AyahsView: View {
         .padding(.horizontal, isOverlay ? 10 : 0)
         .frame(maxWidth: isOverlay ? .infinity : nil)
         
-        #if !os(watchOS)
+        #if os(iOS)
         if !searchText.isEmpty, let ayahID = nextAyahID {
             return AnyView(
                 Button { 
@@ -272,7 +272,7 @@ struct AyahsView: View {
         .environmentObject(quranPlayer)
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { _ in saveLastRead() }
-        #if !os(watchOS)
+        #if os(iOS)
         .navigationTitle(surah.nameEnglish)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -296,7 +296,7 @@ struct AyahsView: View {
             .environmentObject(settings)
             .environmentObject(quranData)
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .sheet(isPresented: $showCustomRangeSheet) {
             PlayCustomRangeSheet(
                 surah: surah,
@@ -493,7 +493,7 @@ struct AyahsView: View {
                             .padding(.vertical)
                         }
                         
-                        #if !os(watchOS)
+                        #if os(iOS)
                         if !settings.defaultView {
                             Divider()
                                 .background(settings.accentColor.color)
@@ -526,7 +526,7 @@ struct AyahsView: View {
                                 .foregroundStyle(settings.accentColor.color)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                #if !os(watchOS)
+                                #if os(iOS)
                                 .background(.ultraThinMaterial)
                                 #endif
                                 .clipShape(Capsule())
@@ -538,7 +538,7 @@ struct AyahsView: View {
                     .transition(.opacity)
                 }
 
-                #if !os(watchOS)
+                #if os(iOS)
                 .listRowSeparator(.hidden, edges: .bottom)
                 #endif
 
@@ -547,7 +547,7 @@ struct AyahsView: View {
                         Section {
                             boundaryDivider(model: dividerModel, nextAyahID: filteredAyahs.first?.id)
                         }
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .listRowSeparator(.hidden)
                         #endif
                     }
@@ -568,7 +568,7 @@ struct AyahsView: View {
                                 syncVisibleAyahAnchor()
                             }
                         }
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .listRowSeparator(.hidden)
                         #endif
                     }
@@ -588,20 +588,13 @@ struct AyahsView: View {
                                 visibleBoundaryAyahIDs.remove(ayah.id)
                                 syncVisibleAyahAnchor()
                             }
-                            #if !os(watchOS)
+                            #if os(iOS)
                             .listRowSeparator(.hidden)
                             #endif
                         }
 
                         Group {
-                            #if os(watchOS)
-                            AyahRow(
-                                surah: surah,
-                                ayah: ayah,
-                                scrollDown: $scrollDown,
-                                searchText: $searchText
-                            )
-                            #else
+                            #if os(iOS)
                             Section {
                                 AyahRow(
                                     surah: surah,
@@ -610,6 +603,13 @@ struct AyahsView: View {
                                     searchText: $searchText
                                 )
                             }
+                            #else
+                            AyahRow(
+                                surah: surah,
+                                ayah: ayah,
+                                scrollDown: $scrollDown,
+                                searchText: $searchText
+                            )
                             #endif
                         }
                         .id(ayah.id)
@@ -621,7 +621,7 @@ struct AyahsView: View {
                             visibleAyahIDs.remove(ayah.id)
                             syncVisibleAyahAnchor()
                         }
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .onChange(of: scrollDown) { value in
                             guard let target = value else { return }
                             if !searchText.isEmpty {
@@ -655,7 +655,7 @@ struct AyahsView: View {
                         Section {
                             boundaryDivider(model: endOfSurahDivider, nextAyahID: nil)
                         }
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .listRowSeparator(.hidden)
                         #endif
                     }
@@ -664,7 +664,7 @@ struct AyahsView: View {
                         Section {
                             boundaryDivider(model: trailingSearchBoundaryDivider, nextAyahID: nil)
                         }
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .listRowSeparator(.hidden)
                         #endif
                     }
@@ -701,7 +701,7 @@ struct AyahsView: View {
                 visibleAyahIDs.removeAll()
                 visibleBoundaryAyahIDs.removeAll()
             }
-            #if !os(watchOS)
+            #if os(iOS)
             .overlay(alignment: .top) {
                 floatingHeaderOverlay(
                     floatingDividerModel: floatingDividerModel,
@@ -748,7 +748,7 @@ struct AyahsView: View {
         .opacity(showFloatingHeader ? 1 : 0)
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private func bottomInsetContent(proxy: ScrollViewProxy) -> some View {
         VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             qiraatAndTajweedControls
@@ -822,7 +822,7 @@ struct AyahsView: View {
         }
     }
     
-    #if !os(watchOS)
+    #if os(iOS)
     @ViewBuilder
     private func playButton(proxy: ScrollViewProxy) -> some View {
         let playerIdle = !quranPlayer.isLoading && !quranPlayer.isPlaying && !quranPlayer.isPaused
@@ -1031,7 +1031,7 @@ struct RotatingGearView: View {
     
     var body: some View {
         Image(systemName: "gear")
-            #if !os(watchOS)
+            #if os(iOS)
             .font(.title3)
             #else
             .font(.subheadline)
@@ -1046,7 +1046,7 @@ struct RotatingGearView: View {
     }
 }
 
-#if !os(watchOS)
+#if os(iOS)
 private struct SurahPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var settings: Settings
@@ -1135,13 +1135,7 @@ struct ArabicTextRiwayahPicker: View {
     }
 
     var body: some View {
-        #if os(watchOS)
-        Picker("Arabic Riwayah", selection: $selection) {
-            ForEach(Self.options, id: \.tag) { option in
-                Text(option.label).tag(option.tag)
-            }
-        }
-        #else
+        #if os(iOS)
         if useSimpleIOSPicker {
             Picker("Arabic Riwayah", selection: $selection) {
                 ForEach(Self.options, id: \.tag) { option in
@@ -1181,11 +1175,17 @@ struct ArabicTextRiwayahPicker: View {
                 .conditionalGlassEffect()
             }
         }
+        #else
+        Picker("Arabic Riwayah", selection: $selection) {
+            ForEach(Self.options, id: \.tag) { option in
+                Text(option.label).tag(option.tag)
+            }
+        }
         #endif
     }
 }
 
-#if !os(watchOS)
+#if os(iOS)
 private struct TajweedLegendMenu: View {
     @EnvironmentObject private var settings: Settings
     @State private var showingSheet = false

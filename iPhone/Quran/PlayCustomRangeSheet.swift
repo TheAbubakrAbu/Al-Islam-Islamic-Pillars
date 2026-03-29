@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 
 struct PlayCustomRangeSheet: View {
@@ -595,3 +596,4 @@ struct PlayCustomRangeSheet: View {
         )
     }
 }
+#endif

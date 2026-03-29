@@ -29,9 +29,6 @@ struct HighlightedSnippet: View {
         (Text(highlightedText) + suffixText)
             .font(font)
             .lineLimit(lineLimit)
-            #if !os(watchOS)
-            .textSelection(.enabled)
-            #endif
     }
 
     private var searchTerm: String {

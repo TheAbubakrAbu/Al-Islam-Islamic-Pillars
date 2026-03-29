@@ -7,9 +7,8 @@ let logger = Logger(subsystem: "com.Quran.Elmallah.Islamic-Pillars", category: "
 
 final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = Settings()
-    static let randomReciterName = "Random Reciter"
     private let appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
-    
+
     static let encoder: JSONEncoder = {
         let enc = JSONEncoder()
         enc.dateEncodingStrategy = .millisecondsSince1970
@@ -21,15 +20,16 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         dec.dateDecodingStrategy = .millisecondsSince1970
         return dec
     }()
-    
+
     private override init() {
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
+        
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
         self.prayerCalculation = appGroupUserDefaults?.string(forKey: "prayerCalculation") ?? "Muslim World League"
         self.hijriOffset = appGroupUserDefaults?.integer(forKey: "hijriOffset") ?? 0
-        
+
         if let locationData = appGroupUserDefaults?.data(forKey: "currentLocation") {
             do {
                 let location = try Self.decoder.decode(Location.self, from: locationData)
@@ -38,7 +38,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 logger.debug("Failed to decode location: \(error)")
             }
         }
-        
+
         if let homeLocationData = appGroupUserDefaults?.data(forKey: "homeLocationData") {
             do {
                 let homeLocation = try Self.decoder.decode(Location.self, from: homeLocationData)
@@ -47,11 +47,11 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 logger.debug("Failed to decode home location: \(error)")
             }
         }
-        
+
         super.init()
         Self.locationManager.delegate = self
         requestLocationAuthorization()
-        
+
         if self.reciter == Self.randomReciterName {
             // Keep the saved random-reciter preference as-is.
         } else if self.reciter.starts(with: "ar") {
@@ -64,17 +64,93 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             self.reciter = "Muhammad Al-Minshawi (Murattal)"
         }
     }
-    
-    func hapticFeedback() {
-        #if os(iOS)
-        if hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-        #endif
-        
-        #if os(watchOS)
-        if hapticOn { WKInterfaceDevice.current().play(.click) }
-        #endif
+
+    // MARK: - App group — shared with widgets / extensions
+
+    @Published var accentColor: AccentColor {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(accentColor.rawValue, forKey: "accentColor")
+        }
     }
-    
+
+    @Published var prayersData: Data {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            if !prayersData.isEmpty {
+                appGroupUserDefaults?.setValue(prayersData, forKey: "prayersData")
+            }
+        }
+    }
+
+    var prayers: Prayers? {
+        get {
+            try? Self.decoder.decode(Prayers.self, from: prayersData)
+        }
+        set {
+            prayersData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
+
+    @Published var travelingMode: Bool {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingMode")
+        }
+    }
+
+    @Published var currentLocation: Location? {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            guard let location = currentLocation else { return }
+            do {
+                let locationData = try Self.encoder.encode(location)
+                appGroupUserDefaults?.setValue(locationData, forKey: "currentLocation")
+            } catch {
+                logger.debug("Failed to encode location: \(error)")
+            }
+        }
+    }
+
+    @Published var homeLocation: Location? {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            guard let homeLocation = homeLocation else {
+                appGroupUserDefaults?.removeObject(forKey: "homeLocationData")
+                return
+            }
+            do {
+                let homeLocationData = try Self.encoder.encode(homeLocation)
+                appGroupUserDefaults?.set(homeLocationData, forKey: "homeLocationData")
+            } catch {
+                logger.debug("Failed to encode home location: \(error)")
+            }
+        }
+    }
+
+    @Published var hanafiMadhab: Bool {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhab")
+        }
+    }
+
+    @Published var prayerCalculation: String {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculation")
+        }
+    }
+
+    @Published var hijriOffset: Int {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(hijriOffset, forKey: "hijriOffset")
+        }
+    }
+
+    // MARK: - Prayer — live state & hijri (app-storage persistence)
+
     @AppStorage("hijriDate") private var hijriDateData: String?
     var hijriDate: HijriDate? {
         get {
@@ -93,24 +169,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
         }
     }
-    
-    @Published var prayersData: Data {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            if !prayersData.isEmpty {
-                appGroupUserDefaults?.setValue(prayersData, forKey: "prayersData")
-            }
-        }
-    }
-    var prayers: Prayers? {
-        get {
-            return try? Self.decoder.decode(Prayers.self, from: prayersData)
-        }
-        set {
-            prayersData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
+
     @AppStorage("currentPrayerData") var currentPrayerData: Data?
     @Published var currentPrayer: Prayer? {
         didSet {
@@ -124,147 +183,29 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             nextPrayerData = try? Self.encoder.encode(nextPrayer)
         }
     }
-    
-    @Published var accentColor: AccentColor {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            appGroupUserDefaults?.setValue(accentColor.rawValue, forKey: "accentColor")
-        }
-    }
-    
-    @Published var travelingMode: Bool {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            appGroupUserDefaults?.setValue(travelingMode, forKey: "travelingMode")
-        }
-    }
-    
-    @Published var currentLocation: Location? {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            guard let location = currentLocation else { return }
-            do {
-                let locationData = try Self.encoder.encode(location)
-                appGroupUserDefaults?.setValue(locationData, forKey: "currentLocation")
-            } catch {
-                logger.debug("Failed to encode location: \(error)")
-            }
-        }
-    }
-    
-    @Published var homeLocation: Location? {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            guard let homeLocation = homeLocation else {
-                appGroupUserDefaults?.removeObject(forKey: "homeLocationData")
-                return
-            }
-            do {
-                let homeLocationData = try Self.encoder.encode(homeLocation)
-                appGroupUserDefaults?.set(homeLocationData, forKey: "homeLocationData")
-            } catch {
-                logger.debug("Failed to encode home location: \(error)")
-            }
-        }
-    }
-    
-    @Published var hanafiMadhab: Bool {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            appGroupUserDefaults?.setValue(hanafiMadhab, forKey: "hanafiMadhab")
-        }
-    }
-    
-    @Published var prayerCalculation: String {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            appGroupUserDefaults?.setValue(prayerCalculation, forKey: "prayerCalculation")
-        }
-    }
-    
-    @Published var hijriOffset: Int {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            appGroupUserDefaults?.setValue(hijriOffset, forKey: "hijriOffset")
-        }
-    }
-    
-    @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
-    
-    @AppStorage("reciteType") var reciteType: String = "Continue to Next"
-    
-    @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
-    var favoriteSurahs: [Int] {
-        get {
-            (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
-        }
-        set {
-            favoriteSurahsData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
-    @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
-    var bookmarkedAyahs: [BookmarkedAyah] {
-        get {
-            (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
-        }
-        set {
-            bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
-    var favoriteSurahSet: Set<Int> { Set(favoriteSurahs) }
-    var bookmarkedAyahSet: Set<String> { Set(bookmarkedAyahs.map(\.id)) }
-     
-    @AppStorage("showPrayerInfo") var showPrayerInfo: Bool = false
-    
-    @AppStorage("showBookmarks") var showBookmarks = true
-    @AppStorage("showFavorites") var showFavorites = true
-    @AppStorage("showDescription") var showDescription = false
-    
-    @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
-    @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
 
-    @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
-    var favoriteLetters: [LetterData] {
-        get {
-            (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
-        }
-        set {
-            favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-        
-    @AppStorage("firstLaunch") var firstLaunch = true
-    
-    @AppStorage("dateNotifications") var dateNotifications = true {
-        didSet { self.fetchPrayerTimes(notification: true) }
-    }
-    
-    @AppStorage("switchHijriDateAtMaghrib") var switchHijriDateAtMaghrib: Bool = false {
-        didSet { self.updateDates() }
-    }
-    
-    @AppStorage("lastScheduledHijriYear") private var lastScheduledHijriYear: Int = 0
-    
+    @Published var datePrayers: [Prayer]?
+    @Published var dateFullPrayers: [Prayer]?
+    @Published var changedDate = false
+
     var hijriCalendar: Calendar = {
         var calendar = Calendar(identifier: .islamicUmmAlQura)
         calendar.locale = Locale(identifier: "ar")
         return calendar
     }()
-    
+
     var specialEvents: [(String, DateComponents, String, String)] {
         let currentHijriYear = hijriCalendar.component(.year, from: effectiveHijriReferenceDate())
         return [
             ("Islamic New Year", DateComponents(year: currentHijriYear, month: 1, day: 1), "Start of Hijri year", "The first day of the Islamic calendar; no special acts of worship or celebration are prescribed."),
             ("Day Before Ashura", DateComponents(year: currentHijriYear, month: 1, day: 9), "Recommended to fast", "The Prophet ﷺ intended to fast the 9th to differ from the Jews, making it Sunnah to do so before Ashura."),
             ("Day of Ashura", DateComponents(year: currentHijriYear, month: 1, day: 10), "Recommended to fast", "Ashura marks the day Allah saved Musa (Moses) and the Israelites from Pharaoh; fasting expiates sins of the previous year."),
-            
+
             ("First Day of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 1), "Begin obligatory fast", "The month of fasting begins; all Muslims must fast from Fajr (dawn) to Maghrib (sunset)."),
             ("Last 10 Nights of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 21), "Seek Laylatul Qadr", "The most virtuous nights of the year; increase worship as these nights are beloved to Allah and contain Laylatul Qadr."),
             ("27th Night of Ramadan", DateComponents(year: currentHijriYear, month: 9, day: 27), "Likely Laylatul Qadr", "A strong possibility for Laylatul Qadr — the Night of Decree when the Qur’an was sent down — though not confirmed."),
             ("Eid Al-Fitr", DateComponents(year: currentHijriYear, month: 10, day: 1), "Celebration of ending the fast", "Celebration marking the end of Ramadan; fasting is prohibited on this day; encouraged to fast 6 days in Shawwal."),
-            
+
             ("First 10 Days of Dhul-Hijjah", DateComponents(year: currentHijriYear, month: 12, day: 1), "Most beloved days", "The best days for righteous deeds; fasting and dhikr are highly encouraged."),
             ("Beginning of Hajj", DateComponents(year: currentHijriYear, month: 12, day: 8), "Pilgrimage begins", "Pilgrims begin the rites of Hajj, heading to Mina to start the sacred journey."),
             ("Day of Arafah", DateComponents(year: currentHijriYear, month: 12, day: 9), "Recommended to fast", "Fasting for non-pilgrims expiates sins of the past and coming year."),
@@ -272,48 +213,19 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             ("End of Eid Al-Adha", DateComponents(year: currentHijriYear, month: 12, day: 13), "Hajj and Eid end", "Final day of Eid Al-Adha; pilgrims and non-pilgrims return to daily life."),
         ]
     }
-    
-    @Published var datePrayers: [Prayer]?
-    @Published var dateFullPrayers: [Prayer]?
-    @Published var changedDate = false
-    
-    @AppStorage("hapticOn") var hapticOn: Bool = true
-    
-    @AppStorage("defaultView") var defaultView: Bool = true
-    
-    @AppStorage("colorSchemeString") var colorSchemeString: String = "system"
-    var colorScheme: ColorScheme? {
-        get {
-            return colorSchemeFromString(colorSchemeString)
-        }
-        set {
-            colorSchemeString = colorSchemeToString(newValue)
-        }
-    }
-    
-    @AppStorage("travelAutomatic") var travelAutomatic: Bool = true
-    @AppStorage("travelTurnOffAutomatic") var travelTurnOffAutomatic: Bool = false
-    @AppStorage("travelTurnOnAutomatic") var travelTurnOnAutomatic: Bool = false
-    /// Set by the UI when the user toggles Traveling Mode; fetchPrayerTimes skips checkIfTraveling once so we don’t override or notify.
-    var travelingModeManuallyToggled: Bool = false
 
-    @AppStorage("calculationAutomatic") var calculationAutomatic: Bool = true
-    @AppStorage("calculationAutoChanged") var calculationAutoChanged: Bool = false
-    @AppStorage("calculationAutoPreviousMethod") var calculationAutoPreviousMethod: String = ""
-    @AppStorage("calculationAutoDetectedMethod") var calculationAutoDetectedMethod: String = ""
-    @AppStorage("calculationAutoDetectedCountryCode") var calculationAutoDetectedCountryCode: String = ""
-    @AppStorage("currentCountryCode") var currentCountryCode: String = ""
-    /// Set by the UI when the user manually picks a method while automatic mode is enabled.
-    var calculationManuallyToggled: Bool = false
+    @AppStorage("lastScheduledHijriYear") private var lastScheduledHijriYear: Int = 0
 
-    @AppStorage("showLocationAlert") var showLocationAlert: Bool = false {
-        willSet { objectWillChange.send() }
+    // MARK: - Prayer — @AppStorage (notifications, travel, calculation, alerts)
+
+    @AppStorage("dateNotifications") var dateNotifications = true {
+        didSet { self.fetchPrayerTimes(notification: true) }
     }
-    @AppStorage("showNotificationAlert") var showNotificationAlert: Bool = false
-    
-    @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
-    @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false
-    
+
+    @AppStorage("switchHijriDateAtMaghrib") var switchHijriDateAtMaghrib: Bool = false {
+        didSet { self.updateDates() }
+    }
+
     @AppStorage("naggingMode") var naggingMode: Bool = false {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
@@ -323,7 +235,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("adhanNotificationSound") var adhanNotificationSound: String = "egypt-30" {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
-    
+
     @AppStorage("preNotificationFajr") var preNotificationFajr: Int = 0 {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
@@ -402,14 +314,73 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         didSet { self.fetchPrayerTimes(force: true) }
     }
 
-    @AppStorage("beginnerMode") var beginnerMode: Bool = false
+    @AppStorage("travelAutomatic") var travelAutomatic: Bool = true
+    @AppStorage("travelTurnOffAutomatic") var travelTurnOffAutomatic: Bool = false
+    @AppStorage("travelTurnOnAutomatic") var travelTurnOnAutomatic: Bool = false
+    /// Set by the UI when the user toggles Traveling Mode; fetchPrayerTimes skips checkIfTraveling once so we don’t override or notify.
+    var travelingModeManuallyToggled: Bool = false
+
+    @AppStorage("calculationAutomatic") var calculationAutomatic: Bool = true
+    @AppStorage("calculationAutoChanged") var calculationAutoChanged: Bool = false
+    @AppStorage("calculationAutoPreviousMethod") var calculationAutoPreviousMethod: String = ""
+    @AppStorage("calculationAutoDetectedMethod") var calculationAutoDetectedMethod: String = ""
+    @AppStorage("calculationAutoDetectedCountryCode") var calculationAutoDetectedCountryCode: String = ""
+    @AppStorage("currentCountryCode") var currentCountryCode: String = ""
+    /// Set by the UI when the user manually picks a method while automatic mode is enabled.
+    var calculationManuallyToggled: Bool = false
+
+    @AppStorage("showLocationAlert") var showLocationAlert: Bool = false {
+        willSet { objectWillChange.send() }
+    }
+    @AppStorage("showNotificationAlert") var showNotificationAlert: Bool = false
+
+    @AppStorage("locationNeverAskAgain") var locationNeverAskAgain = false
+    @AppStorage("notificationNeverAskAgain") var notificationNeverAskAgain = false
+
+    @AppStorage("showPrayerInfo") var showPrayerInfo: Bool = false
+
+    // MARK: - Quran — @AppStorage
     
+    static let randomReciterName = "Random Reciter"
+    
+    @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
+
+    @AppStorage("reciteType") var reciteType: String = "Continue to Next"
+
+    @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
+    var favoriteSurahs: [Int] {
+        get {
+            (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
+        }
+        set {
+            favoriteSurahsData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
+
+    @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
+    var bookmarkedAyahs: [BookmarkedAyah] {
+        get {
+            (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
+        }
+        set {
+            bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
+
+    @AppStorage("showBookmarks") var showBookmarks = true
+    @AppStorage("showFavorites") var showFavorites = true
+
+    @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
+    @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
+
+    @AppStorage("beginnerMode") var beginnerMode: Bool = false
+
     @AppStorage("groupBySurah") var groupBySurah: Bool = true
     @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
-    
+
     @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
     @AppStorage("lastReadAyah") var lastReadAyah: Int = 0
-    
+
     @AppStorage("lastListenedSurahData") private var lastListenedSurahData: Data?
     var lastListenedSurah: LastListenedSurah? {
         get {
@@ -433,7 +404,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
         }
     }
-    
+
     /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
     @AppStorage("displayQiraah") var displayQiraah: String = ""
 
@@ -474,7 +445,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
     @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = true
-    
+
     @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()
     var quranSearchHistory: [String] {
         get {
@@ -484,64 +455,53 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             quranSearchHistoryData = (try? Self.encoder.encode(Array(newValue.prefix(10)))) ?? Data()
         }
     }
-    
+
     @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
 
-    func isTajweedCategoryVisible(_ category: TajweedLegendCategory) -> Bool {
-        switch category {
-        case .tafkhim: return showTajweedTafkhim
-        case .qalqalah: return showTajweedQalqalah
-        case .ikhfaGhunnah: return showTajweedIkhfaGhunnah
-        case .idghaamSilent: return showTajweedIdghaamSilent
-        case .madd246: return showTajweedMadd246
-        case .madd2: return showTajweedMadd2
-        case .madd6: return showTajweedMadd6
-        case .madd45: return showTajweedMadd45
+    // MARK: - Arabic letters & 99 Names
+
+    @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
+    var favoriteLetters: [LetterData] {
+        get {
+            (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
+        }
+        set {
+            favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
 
-    func setTajweedCategory(_ category: TajweedLegendCategory, visible: Bool) {
-        switch category {
-        case .tafkhim: showTajweedTafkhim = visible
-        case .qalqalah: showTajweedQalqalah = visible
-        case .ikhfaGhunnah: showTajweedIkhfaGhunnah = visible
-        case .idghaamSilent: showTajweedIdghaamSilent = visible
-        case .madd246: showTajweedMadd246 = visible
-        case .madd2: showTajweedMadd2 = visible
-        case .madd6: showTajweedMadd6 = visible
-        case .madd45: showTajweedMadd45 = visible
-        }
-    }
-
-    func toggleLetterFavorite(letterData: LetterData) {
-        withAnimation {
-            if isLetterFavorite(letterData: letterData) {
-                favoriteLetters.removeAll(where: { $0.id == letterData.id })
-            } else {
-                favoriteLetters.append(letterData)
-            }
-        }
-    }
-
-    func isLetterFavorite(letterData: LetterData) -> Bool {
-        return favoriteLetters.contains(where: {$0.id == letterData.id})
-    }
-
-    func addQuranSearchHistory(_ query: String) {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-
-        var history = quranSearchHistory.filter {
-            $0.caseInsensitiveCompare(trimmed) != .orderedSame
-        }
-        history.insert(trimmed, at: 0)
-        quranSearchHistory = Array(history.prefix(10))
-    }
-
-    func removeQuranSearchHistory(_ query: String) {
-        quranSearchHistory.removeAll { $0.caseInsensitiveCompare(query) == .orderedSame }
-    }
+    @AppStorage("showDescription") var showDescription = false
     
+    // MARK: - App-wide appearance & misc @AppStorage
+
+    @AppStorage("THEfirstLaunch") var firstLaunch = true
+
+    @AppStorage("hapticOn") var hapticOn: Bool = true
+
+    @AppStorage("defaultView") var defaultView: Bool = true
+
+    @AppStorage("colorSchemeString") var colorSchemeString: String = "system"
+    var colorScheme: ColorScheme? {
+        get {
+            colorSchemeFromString(colorSchemeString)
+        }
+        set {
+            colorSchemeString = colorSchemeToString(newValue)
+        }
+    }
+
+    // MARK: - Global helpers (not Quran- or Adhan-specific)
+
+    func hapticFeedback() {
+        #if os(iOS)
+        if hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        #endif
+
+        #if os(watchOS)
+        if hapticOn { WKInterfaceDevice.current().play(.click) }
+        #endif
+    }
+
     func colorSchemeFromString(_ colorScheme: String) -> ColorScheme? {
         switch colorScheme {
         case "light":
@@ -564,48 +524,17 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
-    func automaticTravelMessage(turnOn: Bool) -> String {
-        if turnOn {
-            return "Al-Islam has automatically detected that you are traveling, so your prayers will be shortened."
-        }
-        return "Al-Islam has automatically detected that you are no longer traveling, so your prayers will not be shortened."
-    }
-
-    var automaticCalculationMessage: String {
-        let country = calculationAutoDetectedCountryCode.isEmpty ? "unknown" : calculationAutoDetectedCountryCode
-        return "Al-Islam detected your region as \(country) and switched prayer calculation from \(calculationAutoPreviousMethod) to \(calculationAutoDetectedMethod)."
-    }
-
-    func resetTravelAutomaticFlags() {
-        travelTurnOnAutomatic = false
-        travelTurnOffAutomatic = false
-    }
-
-    func overrideTravelingMode(keepOn: Bool) {
-        travelingModeManuallyToggled = true
+    func toggleLetterFavorite(letterData: LetterData) {
         withAnimation {
-            travelingMode = keepOn
+            if isLetterFavorite(letterData: letterData) {
+                favoriteLetters.removeAll(where: { $0.id == letterData.id })
+            } else {
+                favoriteLetters.append(letterData)
+            }
         }
-        travelAutomatic = false
-        resetTravelAutomaticFlags()
-        fetchPrayerTimes(force: true)
     }
 
-    func confirmTravelAutomaticChange() {
-        resetTravelAutomaticFlags()
-    }
-
-    func overrideAutomaticCalculationKeepingPrevious() {
-        calculationManuallyToggled = true
-        withAnimation {
-            prayerCalculation = calculationAutoPreviousMethod
-        }
-        calculationAutomatic = false
-        calculationAutoChanged = false
-        fetchPrayerTimes(force: true)
-    }
-
-    func confirmAutomaticCalculationChange() {
-        calculationAutoChanged = false
+    func isLetterFavorite(letterData: LetterData) -> Bool {
+        favoriteLetters.contains { $0.id == letterData.id }
     }
 }

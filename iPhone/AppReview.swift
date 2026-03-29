@@ -1,3 +1,4 @@
+#if os(iOS)
 import StoreKit
 import SwiftUI
 
@@ -84,3 +85,4 @@ extension View {
         modifier(AppReviewPromptModifier())
     }
 }
+#endif

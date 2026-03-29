@@ -65,7 +65,7 @@ struct AdhanView: View {
             Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
                 DateAndLocationSection(showBigQibla: $showBigQibla)
                     .animation(.easeInOut, value: showBigQibla)
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .onTapGesture {
                         withAnimation {
                             settings.hapticFeedback()
@@ -93,7 +93,7 @@ struct AdhanView: View {
             }
         }
         .navigationTitle("Al-Adhan")
-        #if !os(watchOS)
+        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
@@ -115,7 +115,7 @@ struct AdhanView: View {
 
     @ViewBuilder
     private var prayersSection: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         if settings.prayers != nil && settings.currentLocation != nil {
             PrayerCountdown()
             PrayerList()
@@ -247,7 +247,7 @@ struct AdhanView: View {
     }
 
     private func openAppSettings() {
-        #if !os(watchOS)
+        #if os(iOS)
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
@@ -275,7 +275,7 @@ private struct HijriDateRow: View {
     let hijriDate: HijriDate
 
     var body: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         NavigationLink(destination: HijriCalendarView()) {
             HStack {
                 Text(hijriDate.english)
@@ -346,7 +346,7 @@ private struct CurrentLocationRow: View {
 
     @ViewBuilder
     private var locationLabel: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         if let currentLoc = settings.currentLocation {
             let currentCity = currentLoc.city
 

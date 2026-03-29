@@ -1,3 +1,4 @@
+#if os(iOS)
 import BackgroundTasks
 import UIKit
 import UserNotifications
@@ -105,3 +106,4 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
     }
 }
+#endif

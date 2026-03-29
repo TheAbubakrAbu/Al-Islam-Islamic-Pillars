@@ -27,25 +27,25 @@ struct AdhkarRow: View {
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 4)
-        #if !os(watchOS)
+#if os(iOS)
         .contextMenu {
             Button {
-                UIPasteboard.general.string = arabicText
                 settings.hapticFeedback()
+                UIPasteboard.general.string = arabicText
             } label: {
                 Label("Copy Arabic", systemImage: "doc.on.doc")
             }
 
             Button {
-                UIPasteboard.general.string = transliteration
                 settings.hapticFeedback()
+                UIPasteboard.general.string = transliteration
             } label: {
                 Label("Copy Transliteration", systemImage: "doc.on.doc")
             }
 
             Button {
-                UIPasteboard.general.string = translation
                 settings.hapticFeedback()
+                UIPasteboard.general.string = translation
             } label: {
                 Label("Copy Translation", systemImage: "doc.on.doc")
             }

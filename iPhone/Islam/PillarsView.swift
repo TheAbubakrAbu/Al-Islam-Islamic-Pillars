@@ -1759,11 +1759,12 @@ struct HaramView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .cornerRadius(24)
-                        #if !os(watchOS)
+                        #if os(iOS)
                         .contextMenu {
-                            Button(action: {
+                            Button {
+                                settings.hapticFeedback()
                                 UIPasteboard.general.image = UIImage(named: "Al Haram")
-                            }) {
+                            } label: {
                                 Text("Copy Image")
                                 Image(systemName: "photo")
                             }
@@ -1827,11 +1828,12 @@ struct NabawiView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .cornerRadius(24)
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .contextMenu {
-                        Button(action: {
+                        Button {
+                            settings.hapticFeedback()
                             UIPasteboard.general.image = UIImage(named: "An Nabawi")
-                        }) {
+                        } label: {
                             Text("Copy Image")
                             Image(systemName: "photo")
                         }
@@ -1901,11 +1903,12 @@ struct AqsaView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .cornerRadius(24)
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .contextMenu {
-                        Button(action: {
+                        Button {
+                            settings.hapticFeedback()
                             UIPasteboard.general.image = UIImage(named: "Al Aqsa")
-                        }) {
+                        } label: {
                             Text("Copy Image")
                             Image(systemName: "photo")
                         }

@@ -3,17 +3,10 @@ import SwiftUI
 /// Vertical spacing between views inside `safeAreaInset` stacks: iOS 26+ uses tighter 8pt; older systems use 16pt.
 enum SafeAreaInsetVStackSpacing {
     static var standard: CGFloat {
-        #if os(watchOS)
-        if #available(watchOS 26.0, *) {
+        if #available(iOS 26.0, watchOS 26.0, *) {
             return 8
         }
         return 12
-        #else
-        if #available(iOS 26.0, *) {
-            return 8
-        }
-        return 12
-        #endif
     }
 }
 
@@ -24,19 +17,19 @@ extension View {
 
     @ViewBuilder
     func compactListSectionSpacing() -> some View {
-        #if os(watchOS)
-        self
-        #else
+        #if os(iOS)
         if #available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *) {
             self.listSectionSpacing(.compact)
         } else {
             self
         }
+        #else
+        self
         #endif
     }
 
     func endEditing() {
-        #if !os(watchOS)
+        #if os(iOS)
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         #endif
     }
@@ -63,7 +56,7 @@ struct ConditionalListStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         Group {
-            #if !os(watchOS)
+            #if os(iOS)
             styledContent(content)
                 .navigationBarTitleDisplayMode(.inline)
             #else

@@ -1,5 +1,5 @@
 import SwiftUI
-#if !os(watchOS)
+#if os(iOS)
 import Photos
 #endif
 
@@ -49,7 +49,7 @@ private struct WallpaperCell: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .cornerRadius(24)
-            #if !os(watchOS)
+            #if os(iOS)
             .contextMenu {
                 Button {
                     if let uiImage = UIImage(named: wallpaper.imageName) {

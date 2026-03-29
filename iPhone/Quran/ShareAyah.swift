@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 
 enum ActionMode: String {
@@ -370,10 +371,10 @@ struct ShareAyahSheet: View {
     }
     
     private func actionButton(_ title: String, isAnimating: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: {
+        Button {
             settings.hapticFeedback()
             action()
-        }) {
+        } label: {
             Text(title)
                 .frame(maxWidth: .infinity)
                 .padding()
@@ -850,3 +851,4 @@ extension Color { var uiColor: UIColor { UIColor(self) } }
         ShareAyahSheet(surahNumber: 2, ayahNumber: 5)
     }
 }
+#endif

@@ -230,7 +230,7 @@ private struct UpcomingPrayerCell: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 5) {
             title
-            #if !os(watchOS)
+            #if os(iOS)
             subtitle
             #endif
             Text("Starts at \(prayer.time, style: .time)")
@@ -260,10 +260,10 @@ private struct PrayerTitleStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            #if os(watchOS)
-            .font(.subheadline)
-            #else
+            #if os(iOS)
             .font(.title3)
+            #else
+            .font(.subheadline)
             #endif
             .foregroundColor(prayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
     }
@@ -359,7 +359,7 @@ private struct PrayerRakahInfoView: View {
         Group {
             if prayer.rakah != "0" {
                 Text("Prayer Rakahs: \(prayer.rakah)")
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .font(captionFont)
                     #else
                     .font(.caption2)

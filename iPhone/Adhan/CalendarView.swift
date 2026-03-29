@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 
 struct HijriCalendarView: View {
@@ -170,3 +171,4 @@ private struct HijriEventRow: View {
         HijriCalendarView()
     }
 }
+#endif

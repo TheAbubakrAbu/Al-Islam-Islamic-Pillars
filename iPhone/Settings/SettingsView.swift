@@ -56,7 +56,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var notificationSection: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         Section(header: Text("NOTIFICATIONS")) {
             NavigationLink(destination: NotificationView()) {
                 Label("Notification Settings", systemImage: "bell.badge")
@@ -68,7 +68,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var manualOffsetsSection: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         Section(header: Text("MANUAL OFFSETS")) {
             NavigationLink(destination: manualOffsetDestination) {
                 Label("Manual Offset Settings", systemImage: "slider.horizontal.3")
@@ -149,11 +149,11 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var viewCreditsButton: some View {
-        #if !os(watchOS)
-        Button(action: {
+        #if os(iOS)
+        Button {
             settings.hapticFeedback()
             showingCredits = true
-        }) {
+        } label: {
             Label("View Credits", systemImage: "scroll.fill")
                 .font(.subheadline)
                 .foregroundColor(settings.accentColor.color)
@@ -166,17 +166,19 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var leaveReviewButton: some View {
-        #if !os(watchOS)
-        Button(action: leaveReview) {
+        #if os(iOS)
+        Button {
+            leaveReview()
+        } label: {
             Label("Leave a Review", systemImage: "star.bubble.fill")
                 .font(.subheadline)
                 .foregroundColor(settings.accentColor.color)
         }
         .contextMenu {
-            Button(action: {
+            Button {
                 settings.hapticFeedback()
                 UIPasteboard.general.string = "itms-apps://itunes.apple.com/app/id6449729655?action=write-review"
-            }) {
+            } label: {
                 HStack {
                     Image(systemName: "doc.on.doc")
                     Text("Copy Website")
@@ -188,8 +190,11 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var openAppSettingsButton: some View {
-        #if !os(watchOS)
-        Button(action: openAppSettings) {
+        #if os(iOS)
+        Button {
+            settings.hapticFeedback()
+            openAppSettings()
+        } label: {
             Label("Open App Settings", systemImage: "gearshape.fill")
                 .font(.subheadline)
                 .foregroundColor(settings.accentColor.color)
@@ -212,11 +217,12 @@ struct SettingsView: View {
                     .padding(.leading, -4)
             }
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .contextMenu {
-            Button(action: {
+            Button {
+                settings.hapticFeedback()
                 UIPasteboard.general.string = "abubakrelmallah.com"
-            }) {
+            } label: {
                 HStack {
                     Image(systemName: "doc.on.doc")
                     Text("Copy Website")
@@ -239,11 +245,12 @@ struct SettingsView: View {
                 .multilineTextAlignment(.leading)
                 .padding(.leading, -4)
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .contextMenu {
-            Button(action: {
+            Button {
+                settings.hapticFeedback()
                 UIPasteboard.general.string = "ammelmallah@icloud.com"
-            }) {
+            } label: {
                 HStack {
                     Image(systemName: "doc.on.doc")
                     Text("Copy Email")
@@ -253,7 +260,7 @@ struct SettingsView: View {
         #endif
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private func leaveReview() {
         settings.hapticFeedback()
 
@@ -297,7 +304,7 @@ struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings
     
     var body: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         Picker("Color Theme", selection: $settings.colorSchemeString.animation(.easeInOut)) {
             Text("System").tag("system")
             Text("Light").tag("light")
@@ -333,7 +340,7 @@ struct SettingsAppearanceView: View {
             }
             .padding(.vertical)
             
-            #if !os(watchOS)
+            #if os(iOS)
             Text("Anas ibn Malik (may Allah be pleased with him) said, “The most beloved of colors to the Messenger of Allah (peace be upon him) was green.”")
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -341,7 +348,7 @@ struct SettingsAppearanceView: View {
             #endif
         }
         
-        #if !os(watchOS)
+        #if os(iOS)
         VStack(alignment: .leading) {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)

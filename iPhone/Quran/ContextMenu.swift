@@ -70,7 +70,7 @@ struct SurahContextMenu: View {
     }
 }
 
-#if !os(watchOS)
+#if os(iOS)
 private enum TafsirAuthor: String, CaseIterable, Identifiable {
     case ibnKathir = "Ibn Kathir"
     case maarifUlQuran = "Maarif Ul Quran"
@@ -537,9 +537,7 @@ struct AyahContextMenuModifier: ViewModifier {
     func body(content: Content) -> some View {
         let surahObj = quranData.quran.first { $0.id == surah }
         
-        #if os(watchOS)
-        content
-        #else
+        #if os(iOS)
         content
             .contextMenu {
                 if lastRead {
@@ -727,6 +725,8 @@ struct AyahContextMenuModifier: ViewModifier {
             } message: {
                 Text("This ayah has a note. Unbookmarking will delete the note.")
             }
+        #else
+        content
         #endif
     }
 }
@@ -803,7 +803,7 @@ struct LeftSwipeActions: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            #if !os(watchOS)
+            #if os(iOS)
             .swipeActions(edge: .leading) {
                 Button {
                     settings.hapticFeedback()
@@ -867,14 +867,14 @@ struct RightSwipeActions: ViewModifier {
     @Binding var scrollToSurahID: Int
 
     private func endEditing() {
-        #if !os(watchOS)
+        #if os(iOS)
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         #endif
     }
 
     func body(content: Content) -> some View {
         content
-            #if !os(watchOS)
+            #if os(iOS)
             .swipeActions(edge: .trailing) {
                 Button {
                     settings.hapticFeedback()
@@ -933,7 +933,7 @@ public extension View {
     }
 }
 
-#if !os(watchOS)
+#if os(iOS)
 import SwiftUI
 
 struct NoteEditorSheet: View {

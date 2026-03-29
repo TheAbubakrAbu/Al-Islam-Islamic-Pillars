@@ -1,9 +1,8 @@
+#if os(iOS)
 import SwiftUI
 import MapKit
 import CoreLocation
-#if os(iOS)
 import UIKit
-#endif
 
 struct MapView: View {
     @EnvironmentObject private var settings: Settings
@@ -512,3 +511,4 @@ private struct HomeLocationSummaryCard: View {
         MapView(choosingPrayerTimes: false)
     }
 }
+#endif

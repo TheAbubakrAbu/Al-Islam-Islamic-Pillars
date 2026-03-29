@@ -52,6 +52,8 @@ struct AlIslamApp: App {
     private var rootContent: some View {
         if isLaunching {
             LaunchScreen(isLaunching: $isLaunching)
+        } else if settings.firstLaunch {
+            SplashScreen()
         } else {
             MainTabView()
         }

@@ -174,7 +174,7 @@ struct NamesView: View {
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                #if !os(watchOS)
+                #if os(iOS)
                 .background(.ultraThinMaterial)
                 #endif
                 .clipShape(Capsule())
@@ -237,7 +237,7 @@ private struct NameRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         content.contextMenu { copyMenu }
         #else
         content
@@ -287,7 +287,7 @@ private struct NameRow: View {
         }
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private var copyMenu: some View {
         Group {
             menuItem("Copy All", text: """

@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 
 struct CreditsView: View {
@@ -48,9 +49,10 @@ struct CreditsView: View {
                     .padding(.vertical, 4)
                     .padding(.bottom, 8)
                     .contextMenu {
-                        Button(action: {
+                        Button {
+                            settings.hapticFeedback()
                             UIPasteboard.general.string = "https://abubakrelmallah.com/"
-                        }) {
+                        } label: {
                             HStack {
                                 Image(systemName: "doc.on.doc")
                                 Text("Copy Website")
@@ -84,9 +86,10 @@ struct CreditsView: View {
                 .font(.body)
                 .foregroundColor(settings.accentColor.color)
                 .contextMenu {
-                    Button(action: {
+                    Button {
+                        settings.hapticFeedback()
                         UIPasteboard.general.string = "https://github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars"
-                    }) {
+                    } label: {
                         HStack {
                             Image(systemName: "doc.on.doc")
                             Text("Copy Website")
@@ -167,7 +170,6 @@ struct CreditsView: View {
                 .foregroundColor(.primary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
-                // PlainButtonStyle only hit-tests glyph bounds unless we define the shape (matches glass pill).
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -222,7 +224,7 @@ struct AppLinkRow: View {
         }
         .contextMenu {
             Button {
-                if settings.hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                settings.hapticFeedback()
                 UIPasteboard.general.string = url
             } label: {
                 Label("Copy Website", systemImage: "doc.on.doc")
@@ -236,3 +238,4 @@ struct AppLinkRow: View {
         CreditsView()
     }
 }
+#endif

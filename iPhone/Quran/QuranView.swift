@@ -311,7 +311,7 @@ struct QuranView: View {
             content
             detailFallback
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .navigationViewStyle(.columns)
         #endif
     }
@@ -366,7 +366,7 @@ struct QuranView: View {
             }
         }
         .navigationTitle("Al-Quran")
-        #if !os(watchOS)
+        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 settingsButton
@@ -400,7 +400,7 @@ struct QuranView: View {
     }
 
     private var bottomControls: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             searchHistoryChips
             nowPlayingInset
@@ -418,7 +418,7 @@ struct QuranView: View {
 
     @ViewBuilder
     private var searchHistoryChips: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         if isQuranSearchFocused && !settings.quranSearchHistory.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -464,7 +464,7 @@ struct QuranView: View {
 
     @ViewBuilder
     private var nowPlayingInset: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         if quranPlayer.isPlaying || quranPlayer.isPaused {
             NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
         }
@@ -472,7 +472,7 @@ struct QuranView: View {
     }
 
     private var sortModePicker: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         Picker("Sort Type", selection: $settings.groupBySurah.animation(.easeInOut)) {
             Text("Sort by Surah").tag(true)
             Text("Sort by Juz").tag(false)
@@ -485,7 +485,7 @@ struct QuranView: View {
     }
 
     private var searchAndPlaybackRow: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         HStack(spacing: 0) {
             quranSearchBar
 
@@ -501,7 +501,7 @@ struct QuranView: View {
     }
 
     private var quranSearchBar: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         SearchBar(
             text: $searchText.animation(.easeInOut),
             onSearchButtonClicked: {
@@ -522,7 +522,7 @@ struct QuranView: View {
     }
 
     private var playbackMenuButton: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         VStack {
             if quranPlayer.isLoading || quranPlayer.isPlaying || quranPlayer.isPaused {
                 Button {
@@ -563,7 +563,7 @@ struct QuranView: View {
 
     @ViewBuilder
     private var playbackMenuContent: some View {
-        #if !os(watchOS)
+        #if os(iOS)
         if let last = settings.lastListenedSurah,
            let surah = quranData.quran.first(where: { $0.id == last.surahNumber }) {
             Button {
@@ -609,7 +609,7 @@ struct QuranView: View {
 
     @ViewBuilder
     private func primaryHistorySections(context: SearchDisplayContext) -> some View {
-        #if !os(watchOS)
+        #if os(iOS)
         if context.isSearching == false, let surah = settings.lastListenedSurah {
             LastListenedSurahRow(
                 lastListenedSurah: surah,
@@ -679,7 +679,7 @@ struct QuranView: View {
             let noteToShow = (noteText?.isEmpty == false) ? noteText : nil
 
             Group {
-                #if !os(watchOS)
+                #if os(iOS)
                 Button {
                     push(surahID: bookmarkedAyah.surah, ayahID: bookmarkedAyah.ayah)
                 } label: {
@@ -753,7 +753,7 @@ struct QuranView: View {
     private func favoriteRow(surahID: Int, context: SearchDisplayContext) -> some View {
         if let surah = quranData.quran.first(where: { $0.id == surahID }) {
             Group {
-                #if !os(watchOS)
+                #if os(iOS)
                 Button {
                     push(surahID: surahID)
                 } label: {
@@ -774,7 +774,7 @@ struct QuranView: View {
                 scrollToSurahID: $scrollToSurahID
             )
             .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
-            #if !os(watchOS)
+            #if os(iOS)
             .contextMenu {
                 SurahContextMenu(
                     surahID: surah.id,
@@ -821,7 +821,7 @@ struct QuranView: View {
                     scrollToSurahID: $scrollToSurahID
                 )
                 .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
-                #if !os(watchOS)
+                #if os(iOS)
                 .contextMenu {
                     SurahContextMenu(
                         surahID: surah.id,
@@ -850,7 +850,7 @@ struct QuranView: View {
                     .foregroundStyle(settings.accentColor.color)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    #if !os(watchOS)
+                    #if os(iOS)
                     .background(.ultraThinMaterial)
                     #endif
                     .clipShape(Capsule())
@@ -936,7 +936,7 @@ struct QuranView: View {
             }
         }
         .id("surah_\(surah.id)")
-        #if !os(watchOS)
+        #if os(iOS)
         .rightSwipeActions(
             surahID: surah.id,
             surahName: surah.nameTransliteration,
@@ -1019,7 +1019,7 @@ struct QuranView: View {
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                #if !os(watchOS)
+                #if os(iOS)
                 .background(.ultraThinMaterial)
                 #endif
                 .clipShape(Capsule())
@@ -1060,7 +1060,7 @@ struct QuranView: View {
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                #if !os(watchOS)
+                #if os(iOS)
                 .background(.ultraThinMaterial)
                 #endif
                 .clipShape(Capsule())
@@ -1099,7 +1099,7 @@ struct QuranView: View {
     @ViewBuilder
     private func ayahLoadMoreControls(context: SearchDisplayContext) -> some View {
         if context.canShowMoreAyahHits {
-            #if !os(watchOS)
+            #if os(iOS)
             Menu("Load more ayah matches") {
                 ForEach([5, 10, 20], id: \.self) { amount in
                     Button("Load \(amount)") {

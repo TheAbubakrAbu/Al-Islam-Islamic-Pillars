@@ -74,7 +74,7 @@ struct IslamView: View {
                 NamesView()
             }
 
-            #if !os(watchOS)
+            #if os(iOS)
             resourceLink(title: "Hijri Calendar Converter", systemImage: "calendar") {
                 DateView()
             }
@@ -131,7 +131,7 @@ struct ProphetQuote: View {
                 attribution
             }
         }
-        #if !os(watchOS)
+        #if os(iOS)
         .contextMenu {
             Button {
                 UIPasteboard.general.string = "All mankind is from Adam and Eve, an Arab has no superiority over a non-Arab nor a non-Arab has any superiority over an Arab; also a white has no superiority over a black, nor a black has any superiority over a white except by piety and good action.\n\n– Farewell Sermon\nJumuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE"
@@ -176,7 +176,7 @@ struct ProphetQuote: View {
 struct AlIslamAppsSection: View {
     @EnvironmentObject var settings: Settings
 
-    #if !os(watchOS)
+    #if os(iOS)
     let spacing: CGFloat = 20
     #else
     let spacing: CGFloat = 10
@@ -202,12 +202,12 @@ struct AlIslamAppsSection: View {
             )
             .shadow(color: .primary.opacity(0.25), radius: 5, x: 0, y: 1)
             .padding(.horizontal, -12)
-            #if !os(watchOS)
+            #if os(iOS)
             .padding(.vertical, alIslamAppsCardBackgroundVerticalPadding)
             #endif
     }
 
-    #if !os(watchOS)
+    #if os(iOS)
     private var alIslamAppsCardBackgroundVerticalPadding: CGFloat {
         if #available(iOS 26.0, *) {
             return -11
@@ -263,7 +263,7 @@ private struct Card: View {
                     .cornerRadius(18)
                     .shadow(radius: 4)
 
-                #if !os(watchOS)
+                #if os(iOS)
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -283,7 +283,7 @@ private struct Card: View {
                 showActions = true
             }
         )
-        #if !os(watchOS)
+        #if os(iOS)
         .confirmationDialog(title, isPresented: $showActions, titleVisibility: .visible) {
             Button {
                 UIPasteboard.general.string = url.absoluteString
