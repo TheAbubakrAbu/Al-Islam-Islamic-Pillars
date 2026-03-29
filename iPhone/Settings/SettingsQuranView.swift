@@ -858,7 +858,7 @@ struct ReciterListView: View {
 
                     if isDownloading {
                         ProgressView(value: overallProgress)
-                            .frame(maxWidth: 120, alignment: .leading)
+                            .padding(.top, 2)
                     }
 
                     if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
@@ -875,7 +875,10 @@ struct ReciterListView: View {
                         if isDownloading {
                             Button {
                                 settings.hapticFeedback()
-                                downloadManager.cancelDownload(for: reciter)
+                                withAnimation {
+                                    downloadManager.cancelDownload(for: reciter)
+                                    downloadManager.deleteDownloads(for: reciter)
+                                }
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(.red)
@@ -884,7 +887,7 @@ struct ReciterListView: View {
                         } else if hasDownloads {
                             Button(role: .destructive) {
                                 settings.hapticFeedback()
-                                withAnimation(.easeInOut) {
+                                withAnimation {
                                     downloadManager.deleteDownloads(for: reciter)
                                 }
                             } label: {
@@ -895,7 +898,9 @@ struct ReciterListView: View {
                         } else {
                             Button {
                                 settings.hapticFeedback()
-                                downloadManager.beginDownloadAll(for: reciter)
+                                withAnimation {
+                                    downloadManager.beginDownloadAll(for: reciter)
+                                }
                             } label: {
                                 Image(systemName: "icloud.and.arrow.down")
                                     .foregroundColor(.secondary)

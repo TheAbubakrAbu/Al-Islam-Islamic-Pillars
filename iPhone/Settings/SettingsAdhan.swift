@@ -5,7 +5,32 @@ import Network
 import UserNotifications
 import WidgetKit
 
+struct AdhanSoundOption: Identifiable, Equatable {
+    let id: String
+    let title: String
+}
+
 extension Settings {
+    static let supportedAdhanSounds: [AdhanSoundOption] = [
+        .init(id: "default", title: "Default"),
+        .init(id: "egypt-30", title: "Egyptian Adhan"),
+        .init(id: "makkah-30", title: "Makkah"),
+        .init(id: "madina-30", title: "Madina"),
+        .init(id: "abdulbaset-30", title: "Abdul Baset"),
+        .init(id: "abdulghaffar-30", title: "Abdul Ghaffar"),
+        .init(id: "al-qatami-30", title: "Al-Qatami"),
+        .init(id: "alaqsa-30", title: "Al-Aqsa"),
+        .init(id: "alaqsa-2-30", title: "Al-Aqsa 2"),
+        .init(id: "zakariya-30", title: "Zakariya")
+    ]
+
+    func adhanSoundFilename(for selection: String) -> String? {
+        guard selection != "default",
+              Self.supportedAdhanSounds.contains(where: { $0.id == selection }),
+              Bundle.main.path(forResource: selection, ofType: "caf") != nil else { return nil }
+        return "\(selection).caf"
+    }
+
     static let locationManager: CLLocationManager = {
         let lm = CLLocationManager()
         lm.desiredAccuracy = kCLLocationAccuracyHundredMeters
@@ -922,28 +947,20 @@ extension Settings {
         }
     }
 
-    private func prayerNotificationSound(minutesBefore: Int?) -> UNNotificationSound {
+    private func prayerNotificationSound(for prayer: Prayer, minutesBefore: Int?) -> UNNotificationSound {
+        // Shurooq marks end of Fajr, not a salah — never use full adhan.
+        if prayer.nameTransliteration == "Shurooq" {
+            return .default
+        }
         guard minutesBefore == nil else { return .default }
 
         #if os(watchOS)
         return .default
         #else
-        let bundle = Bundle.main
-        switch adhanNotificationSound {
-        case "default":
+        guard let filename = adhanSoundFilename(for: adhanNotificationSound) else {
             return .default
-        case "egypt-30":
-            if bundle.path(forResource: "egypt-30", ofType: "caf") != nil {
-                return UNNotificationSound(named: UNNotificationSoundName("egypt-30.caf"))
-            }
-        default:
-            break
         }
-
-        if bundle.path(forResource: "egypt-30", ofType: "caf") != nil {
-            return UNNotificationSound(named: UNNotificationSoundName("egypt-30.caf"))
-        }
-        return .default
+        return UNNotificationSound(named: UNNotificationSoundName(filename))
         #endif
     }
 
@@ -960,7 +977,7 @@ extension Settings {
         let content = UNMutableNotificationContent()
         content.title = "Al-Islam"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
-        content.sound = prayerNotificationSound(minutesBefore: minutes)
+        content.sound = prayerNotificationSound(for: prayer, minutesBefore: minutes)
 
         let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)

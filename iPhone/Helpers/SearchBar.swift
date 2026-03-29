@@ -1,6 +1,48 @@
 import SwiftUI
 
-struct SearchBar: UIViewRepresentable {
+struct SearchBar: View {
+    @Binding var text: String
+
+    var onSearchButtonClicked: (() -> Void)?
+    var onFocusChanged: ((Bool) -> Void)?
+
+    init(
+        text: Binding<String>,
+        onSearchButtonClicked: (() -> Void)? = nil,
+        onFocusChanged: ((Bool) -> Void)? = nil
+    ) {
+        _text = text
+        self.onSearchButtonClicked = onSearchButtonClicked
+        self.onFocusChanged = onFocusChanged
+    }
+
+    var body: some View {
+        Group {
+            if #available(iOS 26.0, *) {
+                SearchBarUIKit(
+                    text: $text,
+                    onSearchButtonClicked: onSearchButtonClicked,
+                    onFocusChanged: onFocusChanged
+                )
+            } else {
+                SearchBarUIKit(
+                    text: $text,
+                    onSearchButtonClicked: onSearchButtonClicked,
+                    onFocusChanged: onFocusChanged
+                )
+                .background {
+                    Capsule()
+                        .fill(.ultraThinMaterial)
+                        .padding(.vertical, 5)
+                        .padding(.horizontal, 3)
+                }
+                .padding(.horizontal, 5)
+            }
+        }
+    }
+}
+
+struct SearchBarUIKit: UIViewRepresentable {
     @Binding var text: String
 
     var onSearchButtonClicked: (() -> Void)?
@@ -39,7 +81,7 @@ struct SearchBar: UIViewRepresentable {
 
     private func configure(searchTextField: UITextField, coordinator: Coordinator) {
         searchTextField.backgroundColor = .clear
-        searchTextField.layer.cornerRadius = 12
+        searchTextField.layer.cornerRadius = 24
         searchTextField.layer.masksToBounds = true
         searchTextField.font = .systemFont(ofSize: 16)
         searchTextField.clearButtonMode = .never
@@ -111,21 +153,21 @@ struct SearchBar: UIViewRepresentable {
             sender.superview?.superview as? UITextField ?? sender.superview as? UITextField
         }
     }
-}
+    
+    private enum ClearButtonContainer {
+        static func make(for coordinator: SearchBarUIKit.Coordinator) -> UIView {
+            let leadingInset: CGFloat = 4
+            let container = UIView(frame: CGRect(x: 0, y: 0, width: 24 + leadingInset, height: 20))
 
-private enum ClearButtonContainer {
-    static func make(for coordinator: SearchBar.Coordinator) -> UIView {
-        let leadingInset: CGFloat = 4
-        let container = UIView(frame: CGRect(x: 0, y: 0, width: 24 + leadingInset, height: 20))
+            let button = UIButton(type: .system)
+            button.frame = CGRect(x: leadingInset, y: 0, width: 20, height: 20)
+            button.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+            button.tintColor = .secondaryLabel
+            button.addTarget(coordinator, action: #selector(SearchBarUIKit.Coordinator.clearSearchText(_:)), for: .touchUpInside)
 
-        let button = UIButton(type: .system)
-        button.frame = CGRect(x: leadingInset, y: 0, width: 20, height: 20)
-        button.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
-        button.tintColor = .secondaryLabel
-        button.addTarget(coordinator, action: #selector(SearchBar.Coordinator.clearSearchText(_:)), for: .touchUpInside)
-
-        container.addSubview(button)
-        return container
+            container.addSubview(button)
+            return container
+        }
     }
 }
 
@@ -133,7 +175,7 @@ private enum ClearButtonContainer {
     SearchBar(text: .constant(""))
 }
 
-struct GlassSearchBar: View {
+/*struct GlassSearchBar: View {
     @Binding var searchText: String
 
     var onSearchButtonClicked: (() -> Void)?
@@ -237,4 +279,4 @@ struct GlassSearchBar: View {
         isFocused = false
         onFocusChanged?(false)
     }
-}
+}*/

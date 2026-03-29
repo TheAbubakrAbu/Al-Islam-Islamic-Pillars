@@ -101,7 +101,7 @@ struct ArabicView: View {
         .searchable(text: $searchText)
         #else
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
                 Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
                     Text("Quranic Font").tag(true)
                     Text("Basic Font").tag(false)
@@ -114,7 +114,7 @@ struct ArabicView: View {
 
                     Menu {
                         Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {
-                            ForEach(ArabicFilterMode.allCases, id: \.rawValue) { mode in
+                            ForEach(ArabicFilterMode.allCases.reversed(), id: \.rawValue) { mode in
                                 Label(mode.title, systemImage: mode.icon).tag(mode.rawValue)
                             }
                         }

@@ -107,15 +107,27 @@ struct CreditsView: View {
     private var creditsLinksSection: some View {
         Section(header: Text("CREDITS")) {
             Group {
-                creditLink("Credit for the English transliteration of the Quran data goes to Risan Bagja Pradana", url: "https://github.com/risan/quran-json")
-                creditLink("Credit for the English Saheeh International translation of the Quran data goes to Global Quran", url: "https://globalquran.com/download/data/")
-                creditLink("Credit for the Quranic Arabic text (Hafs an Asim) and all other qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc")
-                creditLink("Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc/tree/main/qumbul/font")
-                creditLink("Credit for the Indopak Quran font goes to Urdu Nigar", url: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")
                 creditLink("Credit for the Adhan calculations, which does everything offline on the device, goes to Batoul Apps", url: "https://github.com/batoulapps/adhan-swift")
-                creditLink("Credit for the 99 Names of Allah from KabDeveloper", url: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main")
-                creditLink("Credit for the Ayah Quran Recitations goes to Al Quran", url: "https://alquran.cloud/cdn")
+                
+                creditLink("Credit for the Adhan sounds goes to Omar Al-Ejel", url: "https://github.com/oalejel/Athan-Utility")
+                
+                creditLink("Credit for the English transliteration of the Quran data goes to Risan Bagja Pradana", url: "https://github.com/risan/quran-json")
+                
+                creditLink("Credit for the English Saheeh International translation of the Quran data goes to Global Quran", url: "https://globalquran.com/download/data/")
+                
+                creditLink("Credit for all the Quranic Arabic text and all qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc")
+                
+                creditLink("Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc/tree/main/qumbul/font")
+                
+                creditLink("Credit for the Indopak Quran font goes to Urdu Nigar", url: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")
+                
+                creditLink("Credit for the Tajweed rules goes to Collin Fair", url: "https://github.com/cpfair/quran-tajweed")
+                                
                 creditLink("Credit for the Surah Quran Recitations goes to MP3 Quran", url: "https://mp3quran.net/eng")
+                
+                creditLink("Credit for the Ayah Quran Recitations goes to Al Quran", url: "https://alquran.cloud/cdn")
+                
+                creditLink("Credit for the 99 Names of Allah from KabDeveloper", url: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main")
             }
             .foregroundColor(settings.accentColor.color)
             .font(.body)
@@ -151,14 +163,15 @@ struct CreditsView: View {
             presentationMode.wrappedValue.dismiss()
         } label: {
             Text("Done")
+                .font(.headline)
                 .foregroundColor(.primary)
-                .buttonStyle(.plain)
-                .clipShape(Rectangle())
                 .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+                // PlainButtonStyle only hit-tests glyph bounds unless we define the shape (matches glass pill).
+                .contentShape(Capsule())
         }
-        .font(.headline)
+        .buttonStyle(.plain)
         .foregroundColor(settings.accentColor.color)
-        .padding()
         .conditionalGlassEffect(useColor: 0.25)
         .padding(.horizontal, 24)
         .padding(.bottom, 8)

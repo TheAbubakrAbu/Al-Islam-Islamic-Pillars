@@ -556,7 +556,7 @@ struct PlayCustomRangeSheet: View {
     }
 
     private var playButtonBar: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             Button {
                 settings.hapticFeedback()
                 commitBothAyahFields()

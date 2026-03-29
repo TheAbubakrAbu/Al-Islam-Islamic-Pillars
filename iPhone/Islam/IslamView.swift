@@ -203,9 +203,18 @@ struct AlIslamAppsSection: View {
             .shadow(color: .primary.opacity(0.25), radius: 5, x: 0, y: 1)
             .padding(.horizontal, -12)
             #if !os(watchOS)
-            .padding(.vertical, -11)
+            .padding(.vertical, alIslamAppsCardBackgroundVerticalPadding)
             #endif
     }
+
+    #if !os(watchOS)
+    private var alIslamAppsCardBackgroundVerticalPadding: CGFloat {
+        if #available(iOS 26.0, *) {
+            return -11
+        }
+        return -2
+    }
+    #endif
 
     private var appCardsRow: some View {
         HStack(spacing: spacing) {

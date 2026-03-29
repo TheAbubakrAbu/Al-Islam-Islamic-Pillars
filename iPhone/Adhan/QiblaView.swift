@@ -50,11 +50,6 @@ struct QiblaView: View {
     var body: some View {
         ZStack {
             GlassyQiblaRing(size: size, tint: ringColor, alignmentScore: alignmentScore)
-
-            if layout.showsExtraDetail {
-                QiblaCenterHub(size: size, tint: ringColor, alignmentScore: alignmentScore)
-            }
-
             pointerStack
         }
         .padding(.trailing, -12)
@@ -149,7 +144,6 @@ private struct QiblaLayoutMetrics {
     var arrowWidth: CGFloat { max(10, size * 0.18) }
     var arrowHeight: CGFloat { max(30, size * 0.55) }
     var kaabaSize: CGFloat { max(20, size * 0.40) }
-    var showsExtraDetail: Bool { size > 60 }
 }
 
 struct GlassyQiblaRing: View {
@@ -167,15 +161,12 @@ struct GlassyQiblaRing: View {
     }
 
     var body: some View {
-        let showsNorthMarker = size > 60
         let ringWidth = max(1, size * 0.045)
         let glossWidth = size * 0.16
         let outerGlowWidth = size * 0.085
         let shadowRadius = max(1, size * 0.10)
         let innerLineWidth = max(1, size * 0.06)
         let innerBlur = max(0.5, size * 0.04)
-        let northMarkerWidth = max(3, size * 0.05)
-        let northMarkerHeight = max(8, size * 0.11)
 
         ZStack {
             glassFill
@@ -205,14 +196,6 @@ struct GlassyQiblaRing: View {
                 )
                 .shadow(color: .black.opacity(0.18), radius: shadowRadius, x: 0, y: max(0.5, size * 0.04))
 
-            if showsNorthMarker {
-                Capsule()
-                    .fill(tint.opacity(0.9))
-                    .frame(width: northMarkerWidth, height: northMarkerHeight)
-                    .offset(y: -(size * 0.5) + northMarkerHeight)
-                    .shadow(color: tint.opacity(0.22), radius: 3)
-            }
-
             Circle()
                 .strokeBorder(
                     AngularGradient(
@@ -230,51 +213,6 @@ struct GlassyQiblaRing: View {
         .frame(width: size, height: size)
         .clipShape(Circle())
         .compositingGroup()
-        .scaleEffect(1.0 + 0.03 * alignmentScore)
-        .animation(.spring(response: 0.38, dampingFraction: 0.78), value: alignmentScore)
-    }
-}
-
-struct QiblaCenterHub: View {
-    let size: CGFloat
-    let tint: Color
-    let alignmentScore: Double
-
-    @ViewBuilder
-    private var hubFill: some View {
-        #if os(watchOS)
-        Circle().fill(Color.white.opacity(0.12))
-        #else
-        Circle().fill(.ultraThinMaterial)
-        #endif
-    }
-
-    var body: some View {
-        let hubSize = size * 0.22
-
-        hubFill
-            .overlay(
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.25), .clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .scaleEffect(0.94)
-            )
-            .overlay(
-                Circle()
-                    .stroke(Color.white.opacity(0.22), lineWidth: max(1, size * 0.012))
-            )
-            .overlay(
-                Circle()
-                    .stroke(tint.opacity(0.12 + 0.2 * alignmentScore), lineWidth: max(1, size * 0.016))
-                    .blur(radius: max(0.5, size * 0.01))
-            )
-            .frame(width: hubSize, height: hubSize)
-            .shadow(color: .black.opacity(0.1), radius: max(1, size * 0.03), y: 1)
     }
 }
 

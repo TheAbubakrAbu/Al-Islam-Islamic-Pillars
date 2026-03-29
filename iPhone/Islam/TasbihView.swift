@@ -55,7 +55,7 @@ struct TasbihView: View {
                     .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
                     #if !os(watchOS)
                     .padding(.horizontal, -12)
-                    .padding(.vertical, -11)
+                    .padding(.vertical, tasbihSelectionBackgroundVerticalPadding)
                     #else
                     .padding(-7)
                     #endif
@@ -70,6 +70,15 @@ struct TasbihView: View {
         .padding(.vertical, 12)
         #endif
     }
+
+    #if !os(watchOS)
+    private var tasbihSelectionBackgroundVerticalPadding: CGFloat {
+        if #available(iOS 26.0, *) {
+            return -11
+        }
+        return -2
+    }
+    #endif
 
     private var activeTasbihSection: some View {
         let selectedDhikr = tasbihData[selectedDhikrIndex]

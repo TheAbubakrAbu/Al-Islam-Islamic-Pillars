@@ -44,31 +44,28 @@ struct ConditionalGlassEffect: ViewModifier {
                 }
             } else if clear {
                 if let tintColor {
-                    content.glassEffect(
-                        .clear.tint(tintColor).interactive(),
-                        in: .capsule
-                    )
+                    content.glassEffect(.clear.tint(tintColor).interactive())
                 } else {
-                    content.glassEffect(
-                        .clear.interactive(),
-                        in: .capsule
-                    )
+                    content.glassEffect(.clear.interactive())
                 }
             } else if let tintColor {
-                content.glassEffect(
-                    .regular.tint(tintColor).interactive(),
-                    in: .capsule
-                )
+                content.glassEffect(.regular.tint(tintColor).interactive())
             } else {
-                content.glassEffect(
-                    .regular.interactive(),
-                    in: .capsule
-                )
+                content.glassEffect(.regular.interactive())
             }
         }
     }
 
+    @ViewBuilder
     private func fallbackGlass(content: Content) -> some View {
+        if rectangle {
+            fallbackGlassShape(content: content, shape: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        } else {
+            fallbackGlassShape(content: content, shape: Capsule())
+        }
+    }
+
+    private func fallbackGlassShape<S: Shape>(content: Content, shape: S) -> some View {
         let fallbackBaseFill: Color = {
             #if os(watchOS)
             return Color.gray.opacity(clear ? 0.12 : 0.18)
@@ -77,21 +74,19 @@ struct ConditionalGlassEffect: ViewModifier {
             #endif
         }()
 
-        let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
         let fallbackOverlayColor = tintColor ?? .clear
 
-        let fallbackBackground: AnyView = {
-            if #available(iOS 15.0, watchOS 10.0, *) {
-                return AnyView(shape.fill(.ultraThinMaterial))
-            } else {
-                return AnyView(shape.fill(fallbackBaseFill))
-            }
-        }()
-
         return content
-            .background(fallbackBackground)
-            .overlay(shape.fill(fallbackOverlayColor))
-            .overlay(shape.stroke(Color.primary.opacity(0.12), lineWidth: 1))
+            .background {
+                if #available(iOS 15.0, watchOS 10.0, *) {
+                    shape.fill(.ultraThinMaterial)
+                } else {
+                    shape.fill(fallbackBaseFill)
+                }
+            }
+            // Overlays must not intercept taps — otherwise buttons/menus underneath never receive touches.
+            .overlay(shape.fill(fallbackOverlayColor).allowsHitTesting(false))
+            .overlay(shape.stroke(Color.primary.opacity(0.12), lineWidth: 1).allowsHitTesting(false))
     }
 
     private var tintColor: Color? {

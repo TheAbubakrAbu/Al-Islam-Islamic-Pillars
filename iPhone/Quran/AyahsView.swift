@@ -750,7 +750,7 @@ struct AyahsView: View {
 
     #if !os(watchOS)
     private func bottomInsetContent(proxy: ScrollViewProxy) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             qiraatAndTajweedControls
             playbackAndSearchControls(proxy: proxy)
         }

@@ -54,13 +54,26 @@ struct PrayerCountdown: View {
     }
 
     private func countdownBody(current: Prayer, next: Prayer) -> some View {
-        VStack {
-            prayerSummary(current: current, next: next)
-            countdownProgress(next: next)
-            timeLeftRow(next: next)
+        Group {
+            if #available(iOS 26, *) {
+                VStack {
+                    prayerSummary(current: current, next: next)
+                    countdownProgress(next: next)
+                    timeLeftRow(next: next)
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.25)
+            } else {
+                VStack {
+                    prayerSummary(current: current, next: next)
+                    countdownProgress(next: next)
+                    timeLeftRow(next: next)
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.25)
+                .padding(.vertical, 8)
+            }
         }
-        .lineLimit(1)
-        .minimumScaleFactor(0.25)
     }
 
     private var sectionHeader: some View {

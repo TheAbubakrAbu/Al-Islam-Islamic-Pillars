@@ -104,7 +104,7 @@ private struct NowPlayingInsetModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content.safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
                 if quranPlayer.isPlaying || quranPlayer.isPaused {
                     NowPlayingView()
                 }

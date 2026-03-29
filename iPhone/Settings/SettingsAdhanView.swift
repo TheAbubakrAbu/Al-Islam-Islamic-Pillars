@@ -416,6 +416,10 @@ struct NotificationView: View {
     #if !os(watchOS)
     @State private var previewPlayer: AVAudioPlayer?
     #endif
+
+    private var notificationSoundsDisabled: Bool {
+        notifSettings?.soundSetting == .disabled
+    }
     
     var body: some View {
         List {
@@ -431,8 +435,15 @@ struct NotificationView: View {
 
             Section(header: Text("ADHAN SOUND")) {
                 Picker("Adhan Sound", selection: $settings.adhanNotificationSound.animation(.easeInOut)) {
-                    Text("Default").tag("default")
-                    Text("Egyptian Adhan").tag("egypt-30")
+                    ForEach(Settings.supportedAdhanSounds) { option in
+                        Text(option.title).tag(option.id)
+                    }
+                }
+
+                if notificationSoundsDisabled {
+                    Label("Notification sounds are off in iPhone Settings, so the adhan will be silent.", systemImage: "speaker.slash.fill")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 if settings.adhanNotificationSound != "default" {
@@ -667,32 +678,35 @@ struct NotificationView: View {
     private func normalizeAdhanSoundSelection() {
         if settings.adhanNotificationSound == "egypt" {
             settings.adhanNotificationSound = "egypt-30"
+        } else if !Settings.supportedAdhanSounds.contains(where: { $0.id == settings.adhanNotificationSound }) {
+            settings.adhanNotificationSound = "default"
         }
     }
 
     #if !os(watchOS)
     private func playAdhanPreview() {
         previewPlayer?.stop()
+        try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
 
-        let filename: String?
-        switch settings.adhanNotificationSound {
-        case "egypt-30":
-            filename = Bundle.main.path(forResource: "egypt-30", ofType: "caf")
-        default:
-            filename = nil
-        }
-
-        guard let filename else { return }
+        guard let filename = settings.adhanSoundFilename(for: settings.adhanNotificationSound),
+              let path = Bundle.main.path(forResource: filename.replacingOccurrences(of: ".caf", with: ""), ofType: "caf") else { return }
 
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default, options: [.duckOthers])
             try session.setActive(true)
 
-            let player = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: filename))
+            let player = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: path))
             player.prepareToPlay()
             player.play()
             previewPlayer = player
+
+            let duration = player.duration
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.25) {
+                if previewPlayer === player {
+                    try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+                }
+            }
         } catch {
             logger.error("Adhan preview playback failed: \(error.localizedDescription)")
         }

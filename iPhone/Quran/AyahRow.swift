@@ -114,7 +114,16 @@ struct AyahRow: View {
             categorySignature
         ].joined(separator: "|")
     }
-    
+
+    #if !os(watchOS)
+    private var ayahHighlightBackgroundVerticalPadding: CGFloat {
+        if #available(iOS 26.0, *) {
+            return -11
+        }
+        return -2
+    }
+    #endif
+
     var body: some View {
         let isBookmarked = isBookmarkedHere
         let showArabic = settings.showArabicText
@@ -138,7 +147,7 @@ struct AyahRow: View {
                     )
                     .padding(.horizontal, -12)
                     #if !os(watchOS)
-                    .padding(.vertical, -11)
+                    .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
                     #endif
             }
             
@@ -566,20 +575,6 @@ struct AyahRow: View {
         }()
 
         VStack(alignment: .leading) {
-            if settings.showArabicText && !settings.beginnerMode {
-                Button {
-                    settings.hapticFeedback()
-                    withAnimation {
-                        ayahBeginnerMode.toggle()
-                    }
-                } label: {
-                    Label("Beginner Mode",
-                          systemImage: ayahBeginnerMode
-                          ? "textformat.size.larger.ar"
-                          : "textformat.size.ar")
-                }
-            }
-            
             Button(role: isBookmarked ? .destructive : nil) {
                 settings.hapticFeedback()
                 toggleBookmarkWithNoteGuard()
@@ -616,6 +611,20 @@ struct AyahRow: View {
                     showTafsirSheet = true
                 } label: {
                     Label("See Tafsir", systemImage: "text.book.closed")
+                }
+            }
+            
+            if settings.showArabicText && !settings.beginnerMode {
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        ayahBeginnerMode.toggle()
+                    }
+                } label: {
+                    Label("Beginner Mode",
+                          systemImage: ayahBeginnerMode
+                          ? "textformat.size.larger.ar"
+                          : "textformat.size.ar")
                 }
             }
             

@@ -90,14 +90,6 @@ struct SurahAyahRow: View {
     var ayah: Ayah
     var note: String? = nil
 
-    private var visibleLineCount: Int {
-        var lines = 0
-        if settings.showArabicText { lines += 1 }
-        if settings.showTransliteration { lines += 1 }
-        if settings.showEnglishSaheeh || settings.showEnglishMustafa { lines += 1 }
-        return max(lines, 1)
-    }
-
     private func arabicDisplayText() -> String {
         let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
         return settings.beginnerMode ? text.map { "\($0) " }.joined() : text
@@ -155,7 +147,7 @@ struct SurahAyahRow: View {
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .lineLimit(visibleLineCount)
+                    .lineLimit(1)
             } else {
                 VStack {
                     if settings.showArabicText {
@@ -177,20 +169,22 @@ struct SurahAyahRow: View {
                         Text(ayah.textTransliteration)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineLimit(1)
                     }
                     
                     if settings.showEnglishSaheeh, settings.isHafsDisplay {
                         Text(ayah.textEnglishSaheeh)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineLimit(1)
                     } else if settings.showEnglishMustafa, settings.isHafsDisplay {
                         Text(ayah.textEnglishMustafa)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineLimit(1)
                     }
                 }
                 .foregroundColor(.primary)
-                .lineLimit(1)
             }
         }
         .padding(.vertical, 2)

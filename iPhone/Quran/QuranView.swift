@@ -342,6 +342,11 @@ struct QuranView: View {
                 primaryHistorySections(context: context)
                 bookmarkSection(context: context)
                 favoriteSection(context: context)
+                // Explicit "page X" / "juz X" — show compact result first (not buried under 30 juz sections).
+                if context.explicitPageOrJuzMode && context.isSearching {
+                    pageSearchSection(context: context)
+                    juzSearchSection(context: context)
+                }
                 surahContentSections(context: context)
                 searchResultSections(context: context)
             }
@@ -371,8 +376,10 @@ struct QuranView: View {
             NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
         }
         .onDisappear {
-            searchHistorySaveTask?.cancel()
-            persistQuranSearchHistoryIfNeeded(searchText)
+            withAnimation {
+                searchHistorySaveTask?.cancel()
+                persistQuranSearchHistoryIfNeeded(searchText)
+            }
         }
         .overlay(alignment: .top) {
             searchHelpOverlay
@@ -394,7 +401,7 @@ struct QuranView: View {
 
     private var bottomControls: some View {
         #if !os(watchOS)
-        VStack(spacing: 8) {
+        VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             searchHistoryChips
             nowPlayingInset
             sortModePicker
@@ -480,20 +487,7 @@ struct QuranView: View {
     private var searchAndPlaybackRow: some View {
         #if !os(watchOS)
         HStack(spacing: 0) {
-            SearchBar(
-                text: $searchText.animation(.easeInOut),
-                onSearchButtonClicked: {
-                    persistQuranSearchHistoryIfNeeded(searchText)
-                },
-                onFocusChanged: { focused in
-                    withAnimation {
-                        isQuranSearchFocused = focused
-                    }
-                    if !focused {
-                        persistQuranSearchHistoryIfNeeded(searchText)
-                    }
-                }
-            )
+            quranSearchBar
 
             playbackMenuButton
                 .frame(width: 26, height: 26)
@@ -501,6 +495,27 @@ struct QuranView: View {
                 .conditionalGlassEffect()
         }
         .padding([.leading, .top], -8)
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var quranSearchBar: some View {
+        #if !os(watchOS)
+        SearchBar(
+            text: $searchText.animation(.easeInOut),
+            onSearchButtonClicked: {
+                persistQuranSearchHistoryIfNeeded(searchText)
+            },
+            onFocusChanged: { focused in
+                withAnimation {
+                    isQuranSearchFocused = focused
+                }
+                if !focused {
+                    persistQuranSearchHistoryIfNeeded(searchText)
+                }
+            }
+        )
         #else
         EmptyView()
         #endif
@@ -775,7 +790,10 @@ struct QuranView: View {
 
     @ViewBuilder
     private func surahContentSections(context: SearchDisplayContext) -> some View {
-        if context.explicitPageOrJuzMode {
+        // Full 30-juz list only when browsing (Sort by Juz, empty search). Never stack it under explicit page/juz queries.
+        if context.explicitPageOrJuzMode && context.isSearching {
+            EmptyView()
+        } else if !settings.groupBySurah && !context.isSearching {
             juzSections(context: context)
         } else if settings.groupBySurah || (context.isSearching && settings.searchForSurahs) {
             surahSearchSection(context: context)
@@ -791,7 +809,9 @@ struct QuranView: View {
                 .id("surah_\(surah.id)")
                 .onAppear {
                     if surah.id == scrollToSurahID {
-                        scrollToSurahID = -1
+                        withAnimation {
+                            scrollToSurahID = -1
+                        }
                     }
                 }
                 .rightSwipeActions(
@@ -939,8 +959,11 @@ struct QuranView: View {
     @ViewBuilder
     private func searchResultSections(context: SearchDisplayContext) -> some View {
         if context.isSearching {
-            pageSearchSection(context: context)
-            juzSearchSection(context: context)
+            // Page/juz rows for explicit queries are inserted above surahContentSections.
+            if !context.explicitPageOrJuzMode {
+                pageSearchSection(context: context)
+                juzSearchSection(context: context)
+            }
 
             if !context.explicitPageOrJuzMode {
                 ayahSearchSection(context: context)

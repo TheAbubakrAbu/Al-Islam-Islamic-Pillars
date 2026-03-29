@@ -1,5 +1,22 @@
 import SwiftUI
 
+/// Vertical spacing between views inside `safeAreaInset` stacks: iOS 26+ uses tighter 8pt; older systems use 16pt.
+enum SafeAreaInsetVStackSpacing {
+    static var standard: CGFloat {
+        #if os(watchOS)
+        if #available(watchOS 26.0, *) {
+            return 8
+        }
+        return 12
+        #else
+        if #available(iOS 26.0, *) {
+            return 8
+        }
+        return 12
+        #endif
+    }
+}
+
 extension View {
     func applyConditionalListStyle(defaultView: Bool) -> some View {
         modifier(ConditionalListStyle(defaultView: defaultView))

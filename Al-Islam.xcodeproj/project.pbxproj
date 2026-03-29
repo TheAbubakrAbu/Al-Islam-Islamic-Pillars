@@ -121,6 +121,22 @@
 		72B531A52A22DCFE007FA002 /* Al-IslamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B531A42A22DCFE007FA002 /* Al-IslamApp.swift */; };
 		72C3FE552F6A039400136976 /* NamesOfAllah.json in Resources */ = {isa = PBXBuildFile; fileRef = 72C3FE542F6A039400136976 /* NamesOfAllah.json */; };
 		72C3FE562F6A039400136976 /* NamesOfAllah.json in Resources */ = {isa = PBXBuildFile; fileRef = 72C3FE542F6A039400136976 /* NamesOfAllah.json */; };
+		72C6FDEB2F7880700035F675 /* al-qatami-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE52F7880700035F675 /* al-qatami-30.caf */; };
+		72C6FDEC2F7880700035F675 /* makkah-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE92F7880700035F675 /* makkah-30.caf */; };
+		72C6FDED2F7880700035F675 /* abdulbaset-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE32F7880700035F675 /* abdulbaset-30.caf */; };
+		72C6FDEE2F7880700035F675 /* madina-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE82F7880700035F675 /* madina-30.caf */; };
+		72C6FDEF2F7880700035F675 /* zakariya-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDEA2F7880700035F675 /* zakariya-30.caf */; };
+		72C6FDF02F7880700035F675 /* alaqsa-2-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE62F7880700035F675 /* alaqsa-2-30.caf */; };
+		72C6FDF12F7880700035F675 /* abdulghaffar-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE42F7880700035F675 /* abdulghaffar-30.caf */; };
+		72C6FDF22F7880700035F675 /* alaqsa-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE72F7880700035F675 /* alaqsa-30.caf */; };
+		72C6FDF32F7880700035F675 /* al-qatami-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE52F7880700035F675 /* al-qatami-30.caf */; };
+		72C6FDF42F7880700035F675 /* makkah-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE92F7880700035F675 /* makkah-30.caf */; };
+		72C6FDF52F7880700035F675 /* abdulbaset-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE32F7880700035F675 /* abdulbaset-30.caf */; };
+		72C6FDF62F7880700035F675 /* madina-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE82F7880700035F675 /* madina-30.caf */; };
+		72C6FDF72F7880700035F675 /* zakariya-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDEA2F7880700035F675 /* zakariya-30.caf */; };
+		72C6FDF82F7880700035F675 /* alaqsa-2-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE62F7880700035F675 /* alaqsa-2-30.caf */; };
+		72C6FDF92F7880700035F675 /* abdulghaffar-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE42F7880700035F675 /* abdulghaffar-30.caf */; };
+		72C6FDFA2F7880700035F675 /* alaqsa-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE72F7880700035F675 /* alaqsa-30.caf */; };
 		72C7DD762D79A59B00FC6058 /* SimpleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C7DD752D79A59B00FC6058 /* SimpleWidget.swift */; };
 		72CCAEA42D42DF5700871A6A /* ConditionalStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA12D42DF5700871A6A /* ConditionalStyle.swift */; };
 		72CCAEA52D42DF5700871A6A /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA02D42DF5700871A6A /* DismissKeyboard.swift */; };
@@ -155,9 +171,7 @@
 		72EF01C32F775A5600B273F7 /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72EF01C22F775A5600B273F7 /* PreviewSupport.swift */; };
 		72EF01C42F775A5600B273F7 /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72EF01C22F775A5600B273F7 /* PreviewSupport.swift */; };
 		72EF01C82F775DA000B273F7 /* egypt-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C72F775DA000B273F7 /* egypt-30.caf */; };
-		72EF01C92F775DA000B273F7 /* egypt.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C62F775DA000B273F7 /* egypt.caf */; };
 		72EF01CA2F775DA000B273F7 /* egypt-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C72F775DA000B273F7 /* egypt-30.caf */; };
-		72EF01CB2F775DA000B273F7 /* egypt.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72EF01C62F775DA000B273F7 /* egypt.caf */; };
 		72F7DB682F030A2D0037B059 /* QuranStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F7DB672F030A2D0037B059 /* QuranStructs.swift */; };
 		72F7DB692F030A2D0037B059 /* QuranStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F7DB672F030A2D0037B059 /* QuranStructs.swift */; };
 		72F7DB6A2F030A2D0037B059 /* QuranStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F7DB672F030A2D0037B059 /* QuranStructs.swift */; };
@@ -304,6 +318,14 @@
 		729115372AF817CF00A4EB2B /* IslamView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IslamView.swift; sourceTree = "<group>"; };
 		72B531A42A22DCFE007FA002 /* Al-IslamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Al-IslamApp.swift"; sourceTree = "<group>"; };
 		72C3FE542F6A039400136976 /* NamesOfAllah.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = NamesOfAllah.json; sourceTree = "<group>"; };
+		72C6FDE32F7880700035F675 /* abdulbaset-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "abdulbaset-30.caf"; sourceTree = "<group>"; };
+		72C6FDE42F7880700035F675 /* abdulghaffar-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "abdulghaffar-30.caf"; sourceTree = "<group>"; };
+		72C6FDE52F7880700035F675 /* al-qatami-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "al-qatami-30.caf"; sourceTree = "<group>"; };
+		72C6FDE62F7880700035F675 /* alaqsa-2-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "alaqsa-2-30.caf"; sourceTree = "<group>"; };
+		72C6FDE72F7880700035F675 /* alaqsa-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "alaqsa-30.caf"; sourceTree = "<group>"; };
+		72C6FDE82F7880700035F675 /* madina-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "madina-30.caf"; sourceTree = "<group>"; };
+		72C6FDE92F7880700035F675 /* makkah-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "makkah-30.caf"; sourceTree = "<group>"; };
+		72C6FDEA2F7880700035F675 /* zakariya-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "zakariya-30.caf"; sourceTree = "<group>"; };
 		72C7DD752D79A59B00FC6058 /* SimpleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleWidget.swift; sourceTree = "<group>"; };
 		72CCAE962D42DDF100871A6A /* WatchConnectivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivity.swift; sourceTree = "<group>"; };
 		72CCAE9F2D42DF5700871A6A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -327,7 +349,6 @@
 		72E832C02F6F53760013428B /* ArabicView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicView.swift; sourceTree = "<group>"; };
 		72E832C52F6F58FD0013428B /* ArabicLetters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicLetters.swift; sourceTree = "<group>"; };
 		72EF01C22F775A5600B273F7 /* PreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSupport.swift; sourceTree = "<group>"; };
-		72EF01C62F775DA000B273F7 /* egypt.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = egypt.caf; sourceTree = "<group>"; };
 		72EF01C72F775DA000B273F7 /* egypt-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "egypt-30.caf"; sourceTree = "<group>"; };
 		72F7DB672F030A2D0037B059 /* QuranStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranStructs.swift; sourceTree = "<group>"; };
 		72F7DB6C2F030A630037B059 /* AdhanStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanStructs.swift; sourceTree = "<group>"; };
@@ -591,7 +612,14 @@
 		72EF01C52F775D9200B273F7 /* Adhan Sounds */ = {
 			isa = PBXGroup;
 			children = (
-				72EF01C62F775DA000B273F7 /* egypt.caf */,
+				72C6FDE32F7880700035F675 /* abdulbaset-30.caf */,
+				72C6FDE42F7880700035F675 /* abdulghaffar-30.caf */,
+				72C6FDE52F7880700035F675 /* al-qatami-30.caf */,
+				72C6FDE62F7880700035F675 /* alaqsa-2-30.caf */,
+				72C6FDE72F7880700035F675 /* alaqsa-30.caf */,
+				72C6FDE82F7880700035F675 /* madina-30.caf */,
+				72C6FDE92F7880700035F675 /* makkah-30.caf */,
+				72C6FDEA2F7880700035F675 /* zakariya-30.caf */,
 				72EF01C72F775DA000B273F7 /* egypt-30.caf */,
 			);
 			path = "Adhan Sounds";
@@ -762,7 +790,14 @@
 				723B9E0B2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
 				7274865F2F3D8219001240F8 /* QiraahQaloon.json in Resources */,
 				72EF01CA2F775DA000B273F7 /* egypt-30.caf in Resources */,
-				72EF01CB2F775DA000B273F7 /* egypt.caf in Resources */,
+				72C6FDEB2F7880700035F675 /* al-qatami-30.caf in Resources */,
+				72C6FDEC2F7880700035F675 /* makkah-30.caf in Resources */,
+				72C6FDED2F7880700035F675 /* abdulbaset-30.caf in Resources */,
+				72C6FDEE2F7880700035F675 /* madina-30.caf in Resources */,
+				72C6FDEF2F7880700035F675 /* zakariya-30.caf in Resources */,
+				72C6FDF02F7880700035F675 /* alaqsa-2-30.caf in Resources */,
+				72C6FDF12F7880700035F675 /* abdulghaffar-30.caf in Resources */,
+				72C6FDF22F7880700035F675 /* alaqsa-30.caf in Resources */,
 				720BF0892F6A937600E3F263 /* Quran.json in Resources */,
 				72F7DB752F0431740037B059 /* Assets.xcassets in Resources */,
 				725EA9DD2F73D1730053E75E /* TajweedRules.json in Resources */,
@@ -784,7 +819,14 @@
 				723873662F374BDB00D3A8CD /* QiraahShubah.json in Resources */,
 				7274865E2F3D8219001240F8 /* QiraahQaloon.json in Resources */,
 				72EF01C82F775DA000B273F7 /* egypt-30.caf in Resources */,
-				72EF01C92F775DA000B273F7 /* egypt.caf in Resources */,
+				72C6FDF32F7880700035F675 /* al-qatami-30.caf in Resources */,
+				72C6FDF42F7880700035F675 /* makkah-30.caf in Resources */,
+				72C6FDF52F7880700035F675 /* abdulbaset-30.caf in Resources */,
+				72C6FDF62F7880700035F675 /* madina-30.caf in Resources */,
+				72C6FDF72F7880700035F675 /* zakariya-30.caf in Resources */,
+				72C6FDF82F7880700035F675 /* alaqsa-2-30.caf in Resources */,
+				72C6FDF92F7880700035F675 /* abdulghaffar-30.caf in Resources */,
+				72C6FDFA2F7880700035F675 /* alaqsa-30.caf in Resources */,
 				720BF0882F6A937600E3F263 /* Quran.json in Resources */,
 				723B9E0C2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
 				725EA9DE2F73D1730053E75E /* TajweedRules.json in Resources */,

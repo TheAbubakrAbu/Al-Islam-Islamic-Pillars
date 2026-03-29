@@ -165,7 +165,7 @@ struct MapView: View {
     @ViewBuilder
     private var bottomInsetContent: some View {
         if !choosingPrayerTimes, let home = settings.homeLocation {
-            VStack(spacing: 8) {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
                 HomeLocationSummaryCard(home: home, distanceString: distanceString)
                 useCurrentButton
             }
