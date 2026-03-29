@@ -1,4 +1,20 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
+
+/// Scales launch / splash hero UI on iPad so glows and icons fill the canvas.
+enum LaunchScreenLayout {
+    static func scale(for containerSize: CGSize) -> CGFloat {
+        let d = min(containerSize.width, containerSize.height)
+        #if os(iOS)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return max(1.38, min(d / 410, 2.45))
+        }
+        #endif
+        return 1.0
+    }
+}
 
 struct LaunchScreen: View {
     @EnvironmentObject var settings: Settings
@@ -25,20 +41,26 @@ struct LaunchScreen: View {
     @State private var contentBlur: CGFloat = 0
 
     var body: some View {
-        ZStack {
-            LaunchScreenBackground(
-                backgroundColor: backgroundColor,
-                accentColor: settings.accentColor.color,
-                isDarkMode: currentColorScheme == .dark,
-                gradientSize: gradientSize,
-                glowOpacity: glowOpacity,
-                ringScale: ringScale,
-                ringOpacity: ringOpacity
-            )
+        GeometryReader { geo in
+            let layoutScale = LaunchScreenLayout.scale(for: geo.size)
+            ZStack {
+                LaunchScreenBackground(
+                    backgroundColor: backgroundColor,
+                    accentColor: settings.accentColor.color,
+                    isDarkMode: currentColorScheme == .dark,
+                    gradientSize: gradientSize,
+                    glowOpacity: glowOpacity,
+                    ringScale: ringScale,
+                    ringOpacity: ringOpacity,
+                    layoutScale: layoutScale
+                )
 
-            companionCards
-            logoCard
+                companionCards(layoutScale: layoutScale)
+                logoCard(layoutScale: layoutScale)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
+        .ignoresSafeArea()
         .onAppear {
             Task { @MainActor in
                 await runLaunchAnimation()
@@ -62,48 +84,53 @@ struct LaunchScreen: View {
         }
     }
 
-    private var companionCards: some View {
+    private func companionCards(layoutScale: CGFloat) -> some View {
         ZStack {
+            let card: CGFloat = 120 * layoutScale
+            let cr = 32 * layoutScale
+            let inset = 10 * layoutScale
+            
             LaunchCompanionCard(
                 imageName: "Al-Adhan",
                 accentColor: settings.accentColor.color,
                 isDarkMode: currentColorScheme == .dark,
-                width: 120,
-                height: 120,
-                cornerRadius: 32,
-                imageInset: 10,
+                width: card,
+                height: card,
+                cornerRadius: cr,
+                imageInset: inset,
                 opacity: glassOpacity * 0.58
             )
             .rotationEffect(.degrees(-glassTilt * 0.8))
-            .offset(x: -74 + leftGlassOffset, y: glassFloat + 4)
+            .offset(x: (-74 + leftGlassOffset) * layoutScale, y: glassFloat + 4 * layoutScale)
 
             LaunchCompanionCard(
                 imageName: "Al-Quran",
                 accentColor: settings.accentColor.color,
                 isDarkMode: currentColorScheme == .dark,
-                width: 120,
-                height: 120,
-                cornerRadius: 32,
-                imageInset: 10,
+                width: card,
+                height: card,
+                cornerRadius: cr,
+                imageInset: inset,
                 opacity: glassOpacity
             )
             .rotationEffect(.degrees(glassTilt))
-            .offset(x: 80 + rightGlassOffset, y: glassFloat + 4)
+            .offset(x: (80 + rightGlassOffset) * layoutScale, y: glassFloat + 4 * layoutScale)
         }
     }
 
-    private var logoCard: some View {
+    private func logoCard(layoutScale: CGFloat) -> some View {
         VStack {
             VStack {
                 LaunchLogoCard(
                     title: "Al-Islam",
                     accentColor: settings.accentColor.color,
                     isDarkMode: currentColorScheme == .dark,
-                    shimmerOffset: shimmerOffset
+                    shimmerOffset: shimmerOffset,
+                    layoutScale: layoutScale
                 )
                 .rotationEffect(.degrees(logoRotation))
                 .offset(y: logoYOffset)
-                .padding()
+                .padding(16 * layoutScale)
             }
             .foregroundColor(settings.accentColor.color)
             .scaleEffect(size)
@@ -205,8 +232,17 @@ struct LaunchScreenBackground: View {
     let glowOpacity: Double
     let ringScale: CGFloat
     let ringOpacity: Double
+    var layoutScale: CGFloat = 1
 
     var body: some View {
+        let s = layoutScale
+        let radialEnd = 220 * s
+        let disk: CGFloat = 420 * s
+        let ringInner: CGFloat = 210 * s
+        let ringOuter: CGFloat = 260 * s
+        let blurMain = max(12, 10 * s)
+        let blurDisk = max(6, 5 * s)
+
         ZStack {
             backgroundColor
                 .ignoresSafeArea()
@@ -229,11 +265,11 @@ struct LaunchScreenBackground: View {
                     .clear
                 ],
                 center: .center,
-                startRadius: 20,
-                endRadius: 220
+                startRadius: 20 * s,
+                endRadius: radialEnd
             )
             .scaleEffect(gradientSize * 1.15)
-            .blur(radius: 12)
+            .blur(radius: blurMain)
             .opacity(glowOpacity)
 
             LinearGradient(
@@ -246,19 +282,19 @@ struct LaunchScreenBackground: View {
                 endPoint: .bottomTrailing
             )
             .clipShape(Circle())
-            .frame(width: 420, height: 420)
+            .frame(width: disk, height: disk)
             .scaleEffect(gradientSize)
-            .blur(radius: 6)
+            .blur(radius: blurDisk)
 
             Circle()
-                .stroke(accentColor.opacity(0.18), lineWidth: 1.5)
-                .frame(width: 210, height: 210)
+                .stroke(accentColor.opacity(0.18), lineWidth: max(1.5, 1.2 * s))
+                .frame(width: ringInner, height: ringInner)
                 .scaleEffect(ringScale)
                 .opacity(ringOpacity)
 
             Circle()
-                .stroke(Color.white.opacity(isDarkMode ? 0.12 : 0.2), lineWidth: 1)
-                .frame(width: 260, height: 260)
+                .stroke(Color.white.opacity(isDarkMode ? 0.12 : 0.2), lineWidth: max(1, 0.9 * s))
+                .frame(width: ringOuter, height: ringOuter)
                 .scaleEffect(ringScale * 0.96)
                 .opacity(ringOpacity * 0.75)
         }
@@ -270,16 +306,25 @@ struct LaunchLogoCard: View {
     let accentColor: Color
     let isDarkMode: Bool
     let shimmerOffset: CGFloat
+    var layoutScale: CGFloat = 1
+    var showShimmer: Bool = true
 
     var body: some View {
+        let s = layoutScale
+        let outer: CGFloat = 170 * s
+        let inner: CGFloat = 146 * s
+        let cr: CGFloat = 34 * s
+        let imgCr: CGFloat = 24 * s
+        let glossCr: CGFloat = 26 * s
+
         ZStack {
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
+            RoundedRectangle(cornerRadius: cr, style: .continuous)
                 #if os(iOS)
                 .fill(.ultraThinMaterial.opacity(isDarkMode ? 0.45 : 0.7))
                 #endif
-                .frame(width: 170, height: 170)
+                .frame(width: outer, height: outer)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                    RoundedRectangle(cornerRadius: cr, style: .continuous)
                         .stroke(
                             LinearGradient(
                                 colors: [
@@ -289,12 +334,12 @@ struct LaunchLogoCard: View {
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: 1.2
+                            lineWidth: max(1.2, 1 * s)
                         )
                 )
-                .shadow(color: accentColor.opacity(0.22), radius: 24, y: 10)
+                .shadow(color: accentColor.opacity(0.22), radius: 24 * s, y: 10 * s)
                 .overlay(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    RoundedRectangle(cornerRadius: glossCr, style: .continuous)
                         .fill(
                             LinearGradient(
                                 colors: [
@@ -305,16 +350,36 @@ struct LaunchLogoCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 110, height: 54)
+                        .frame(width: 110 * s, height: 54 * s)
                         .blur(radius: 0.3)
-                        .padding(12)
+                        .padding(12 * s)
                 }
 
             Image(title)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .cornerRadius(24)
-                .frame(maxWidth: 146, maxHeight: 146)
+                .cornerRadius(imgCr)
+                .frame(maxWidth: inner, maxHeight: inner)
+                .overlay(alignment: .topLeading) {
+                    if showShimmer {
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.0),
+                                .white.opacity(0.32),
+                                .white.opacity(0.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .rotationEffect(.degrees(22))
+                        .offset(x: shimmerOffset)
+                        .blendMode(.screen)
+                        .mask(
+                            RoundedRectangle(cornerRadius: imgCr, style: .continuous)
+                                .frame(width: inner, height: inner)
+                        )
+                    }
+                }
         }
     }
 }

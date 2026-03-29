@@ -317,7 +317,7 @@ private struct TajweedInMushafView: View {
 
     var body: some View {
         List {
-            Section("TAJWEED IN THE MUS HAF") {
+            Section("TAJWEED IN THE MUSHAF") {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Reading Tajweed Directly from the Mushaf")
                         .font(.headline)

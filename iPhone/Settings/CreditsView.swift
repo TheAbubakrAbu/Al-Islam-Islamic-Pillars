@@ -32,14 +32,11 @@ struct CreditsView: View {
 
     private var headerSection: some View {
         VStack(alignment: .center) {
-            HStack {
-                Spacer()
-                Text("Al-Islam was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year-old high school student when this app was published on July 26, 2023.")
-                    .font(.headline)
-                    .padding(.vertical, 4)
-                    .multilineTextAlignment(.center)
-                Spacer()
-            }
+            Text("Al-Islam was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year-old high school student when this app was published on July 26, 2023.")
+                .font(.headline)
+                .padding(.vertical, 4)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
 
             if let url = URL(string: "https://abubakrelmallah.com/") {
                 Link("abubakrelmallah.com", destination: url)
