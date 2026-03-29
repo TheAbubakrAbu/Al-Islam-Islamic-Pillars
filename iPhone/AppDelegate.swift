@@ -4,8 +4,8 @@ import UIKit
 import UserNotifications
 
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    private let taskID = "com.Quran.Elmallah.Islamic-Pillars.fetchPrayerTimes"
-    private let reciterDownloadsSessionID = "com.Quran.Elmallah.Islamic-Pillars.reciter-downloads"
+    private let taskID = AppIdentifiers.backgroundFetchPrayerTimesTaskIdentifier
+    private let reciterDownloadsSessionID = AppIdentifiers.reciterDownloadsBackgroundSessionIdentifier
 
     func application(
         _ application: UIApplication,

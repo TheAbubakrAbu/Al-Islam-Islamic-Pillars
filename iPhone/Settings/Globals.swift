@@ -1,5 +1,22 @@
 import SwiftUI
 
+// MARK: - App identifiers
+/// Central place for reverse-DNS strings and the App Group name.
+/// When you change these, update `Resources/Entitlements-Main.entitlements`,
+/// `Resources/Entitlements-Widget.entitlements`, and `Resources/Info-Main.plist` to match.
+enum AppIdentifiers {
+    /// Shared App Group for `UserDefaults` / data (matches entitlements).
+    static let appGroupSuiteName = "group.com.IslamicPillars.AppGroup"
+
+    /// Main iOS bundle ID and OSLog subsystem prefix (matches `PRODUCT_BUNDLE_IDENTIFIER` for the app target).
+    static let bundleIdentifier = "com.Quran.Elmallah.Islamic-Pillars"
+
+    static let backgroundFetchPrayerTimesTaskIdentifier = "\(bundleIdentifier).fetchPrayerTimes"
+    static let reciterDownloadsBackgroundSessionIdentifier = "\(bundleIdentifier).reciter-downloads"
+    static let networkMonitorQueueLabel = "\(bundleIdentifier).NetworkMonitor"
+    static let reciterDownloadDedupeQueueLabel = "\(bundleIdentifier).reciter-dedupe"
+}
+
 enum AccentColor: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 

@@ -1313,12 +1313,12 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
 
     @Published private(set) var statesByReciterID: [String: DownloadState] = [:]
 
-    private let sessionIdentifier = "com.Quran.Elmallah.Islamic-Pillars.reciter-downloads"
+    private let sessionIdentifier = AppIdentifiers.reciterDownloadsBackgroundSessionIdentifier
     private let fileManager = FileManager.default
     private var activeTasks: [String: URLSessionDownloadTask] = [:]
     private var taskInfoByIdentifier: [Int: (reciter: Reciter, surahNumber: Int)] = [:]
     private var backgroundCompletionHandler: (() -> Void)?
-    private let dedupeQueue = DispatchQueue(label: "com.Quran.Elmallah.Islamic-Pillars.reciter-dedupe", qos: .utility)
+    private let dedupeQueue = DispatchQueue(label: AppIdentifiers.reciterDownloadDedupeQueueLabel, qos: .utility)
 
     private lazy var session: URLSession = {
         let configuration = URLSessionConfiguration.background(withIdentifier: sessionIdentifier)

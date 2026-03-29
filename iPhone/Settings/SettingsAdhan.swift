@@ -42,7 +42,7 @@ extension Settings {
     private static var cachedPlacemark: (coord: CLLocationCoordinate2D, city: String, countryCode: String)?
     private static let geocodeActor = GeocodeActor()
     private static let networkMonitor = NWPathMonitor()
-    private static let networkMonitorQueue = DispatchQueue(label: "com.Quran.Elmallah.Islamic-Pillars.NetworkMonitor")
+    private static let networkMonitorQueue = DispatchQueue(label: AppIdentifiers.networkMonitorQueueLabel)
     private static var didStartNetworkMonitor = false
     private static var isNetworkReachable = true
     private static var pendingGeocodeCoord: CLLocationCoordinate2D?
@@ -252,20 +252,26 @@ extension Settings {
     private static let calculationNotificationId = "Al-Islam.CalculationMode"
 
     private static let countryCalculationMap: [String: String] = [
-        // North America method
+        // North America method (mainland + US territories commonly on ISNA-style defaults)
         "US": "North America",
         "CA": "North America",
         "MX": "North America",
+        "PR": "North America",
+        "VI": "North America",
+        "GU": "North America",
+        "AS": "North America",
+        "MP": "North America",
+        "UM": "North America",
 
         // United Kingdom
-        "GB": "United Kingdom",
-        "IE": "United Kingdom",
+        "GB": "Britain (Moonsighting Committee)",
+        "IE": "Britain (Moonsighting Committee)",
 
         // Saudi Arabia and nearby countries that commonly follow it
-        "SA": "Saudi Arabia",
-        "BH": "Saudi Arabia",
-        "OM": "Saudi Arabia",
-        "YE": "Saudi Arabia",
+        "SA": "Saudi Arabia (Umm Al-Qura)",
+        "BH": "Saudi Arabia (Umm Al-Qura)",
+        "OM": "Saudi Arabia (Umm Al-Qura)",
+        "YE": "Saudi Arabia (Umm Al-Qura)",
 
         // Egyptian method and nearby region defaults
         "EG": "Egypt",
@@ -321,6 +327,28 @@ extension Settings {
         Self.countryCalculationMap[countryCode] ?? "Muslim World League"
     }
 
+    /// Maps stored or auto-detected labels to a key that exists in `calcParams` (avoids repeat auto-changes / picker fights).
+    private func canonicalPrayerCalculationMethod(_ name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if Self.calcParams[trimmed] != nil { return trimmed }
+        switch trimmed {
+        case "Saudi Arabia":
+            return "Saudi Arabia (Umm Al-Qura)"
+        case "United Kingdom":
+            return "Britain (Moonsighting Committee)"
+        default:
+            return "Muslim World League"
+        }
+    }
+
+    /// Resolves the Adhan parameters for whatever string is stored (picker label, legacy name, or unknown → MWL fallback).
+    private func calculationParameters(forStoredLabel name: String) -> CalculationParameters {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let params = Self.calcParams[trimmed] { return params }
+        let canonical = canonicalPrayerCalculationMethod(trimmed)
+        return Self.calcParams[canonical] ?? Self.calcParams["Muslim World League"]!
+    }
+
     func checkAutomaticPrayerCalculation() {
         guard Bundle.main.bundleIdentifier?.contains("Widget") != true,
               calculationAutomatic,
@@ -330,9 +358,16 @@ extension Settings {
         else { return }
 
         let countryCode = currentCountryCode.uppercased()
-        let detectedMethod = automaticCalculationMethod(for: countryCode)
+        guard !countryCode.isEmpty else { return }
 
-        guard detectedMethod != prayerCalculation else { return }
+        let detectedRaw = automaticCalculationMethod(for: countryCode)
+        let detectedMethod = canonicalPrayerCalculationMethod(detectedRaw)
+        guard let detectedParams = Self.calcParams[detectedMethod] else { return }
+
+        let currentParams = calculationParameters(forStoredLabel: prayerCalculation)
+        if detectedParams == currentParams {
+            return
+        }
 
         let previousMethod = prayerCalculation
         withAnimation {
@@ -631,6 +666,11 @@ extension Settings {
             if Self.isNetworkReachable {
                 Task { @MainActor in
                     await updateCity(latitude: loc.latitude, longitude: loc.longitude)
+                    if Bundle.main.bundleIdentifier?.contains("Widget") != true,
+                       calculationAutomatic,
+                       !calculationManuallyToggled {
+                        checkAutomaticPrayerCalculation()
+                    }
                 }
             } else {
                 queueGeocodeForReconnect(coord)
@@ -648,7 +688,11 @@ extension Settings {
 
         if !isWidget, calculationAutomatic, !calculationManuallyToggled {
             calculationManuallyToggled = false
-            checkAutomaticPrayerCalculation()
+            // Coordinate placeholder city means ISO country may still be wrong or empty; geocode runs
+            // asynchronously above — we run the check again from that Task once the placemark is known.
+            if !loc.city.contains("(") {
+                checkAutomaticPrayerCalculation()
+            }
         } else if calculationManuallyToggled {
             calculationManuallyToggled = false
         }
