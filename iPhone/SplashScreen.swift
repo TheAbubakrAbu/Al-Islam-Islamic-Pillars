@@ -189,6 +189,23 @@ struct SplashScreen: View {
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
+            /*Button {
+                settings.hapticFeedback()
+                withAnimation {
+                    settings.firstLaunch = false
+                }
+                openURLIfPossible(Self.alIslamAppURL)
+            } label: {
+                Text("Download Al-Islam")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: .green)*/
+            
             Button {
                 settings.hapticFeedback()
                 withAnimation {
