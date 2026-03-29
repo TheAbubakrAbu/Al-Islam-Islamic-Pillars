@@ -6,12 +6,6 @@
 	<array>
 		<string>com.Quran.Elmallah.Islamic-Pillars.fetchPrayerTimes</string>
 	</array>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>com.Quran.Elmallah.Islamic-Pillars.playSurah</string>
-		<string>com.Quran.Elmallah.Islamic-Pillars.playLast</string>
-		<string>com.Quran.Elmallah.Islamic-Pillars.playRandom</string>
-	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Uthmani.ttf</string>
