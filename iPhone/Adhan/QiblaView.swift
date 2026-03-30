@@ -50,10 +50,11 @@ struct QiblaView: View {
     var body: some View {
         ZStack {
             GlassyQiblaRing(size: size, tint: ringColor, alignmentScore: alignmentScore)
+            
             pointerStack
+                .rotationEffect(.degrees(compass.direction))
         }
         .padding(.trailing, -12)
-        .rotationEffect(.degrees(compass.direction))
         .animation(nil, value: compass.direction)
         .onAppear {
             compass.start()

@@ -108,7 +108,7 @@ struct PrayerList: View {
         let listIconColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : settings.accentColor.color
         let bellRowColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : .primary
 
-        return VStack(alignment: .leading, spacing: 8) {
+        return Group {
             PrayerListRowCard(
                 prayer: prayer,
                 isCurrent: isCurrent,

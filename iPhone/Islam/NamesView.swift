@@ -245,30 +245,32 @@ private struct NameRow: View {
     }
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("First Found: \(name.firstFoundShort)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-
-                    Text(name.meaning).font(.subheadline)
+        Group {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("First Found: \(name.firstFoundShort)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Text(name.meaning).font(.subheadline)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(name.name.removeDiacriticsFromLastLetter()) - \(name.numberArabic)")
+                            .font(.headline)
+                            .foregroundColor(settings.accentColor.color)
+                        
+                        Text("\(name.transliteration) - \(name.number)")
+                            .font(.subheadline)
+                    }
                 }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(name.name.removeDiacriticsFromLastLetter()) - \(name.numberArabic)")
-                        .font(.headline)
-                        .foregroundColor(settings.accentColor.color)
-
-                    Text("\(name.transliteration) - \(name.number)")
-                        .font(.subheadline)
-                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-
+            
             if showDescription || isExpanded {
                 Text(name.desc)
                     .font(.footnote)
