@@ -35,8 +35,27 @@ struct HighlightedSnippet: View {
         beginnerMode ? term.map(String.init).joined(separator: " ") : term
     }
 
+    private static let englishHighlightStripSet: CharacterSet = {
+        CharacterSet.punctuationCharacters.union(.symbols)
+    }()
+
+    private func normalizeEnglishForHighlight(_ text: String, trimWhitespace: Bool) -> String {
+        var cleaned = String(text.unicodeScalars
+            .filter { !Self.englishHighlightStripSet.contains($0) }
+        ).lowercased()
+
+        if trimWhitespace {
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return cleaned
+    }
+
     private func normalizeForSearch(_ text: String, trimWhitespace: Bool) -> String {
-        settings.cleanSearch(text, whitespace: trimWhitespace)
+        if !text.containsArabicLetters {
+            return normalizeEnglishForHighlight(text, trimWhitespace: trimWhitespace)
+        }
+        return settings.cleanSearch(text, whitespace: trimWhitespace)
             .removingArabicDiacriticsAndSigns
     }
 
@@ -72,6 +91,7 @@ struct HighlightedSnippet: View {
         }
 
         attributed[start..<end].foregroundColor = accent
+
         return attributed
     }
 
@@ -81,25 +101,47 @@ struct HighlightedSnippet: View {
         normalizedTerm: String,
         matchRange: Range<String.Index>
     ) -> Range<String.Index>? {
-        var normalizedIndex = normalizedSource.startIndex
-        var sourceIndex = source.startIndex
+        let indexMap = normalizedIndexMap(in: source, normalizedSource: normalizedSource)
+        guard indexMap.count == normalizedSource.count else { return nil }
 
-        while normalizedIndex < matchRange.lowerBound, sourceIndex < source.endIndex {
-            let foldedCharacter = normalizeForSearch(String(source[sourceIndex]), trimWhitespace: false)
-            normalizedIndex = normalizedSource.index(normalizedIndex, offsetBy: foldedCharacter.count)
-            sourceIndex = source.index(after: sourceIndex)
+        let lowerOffset = normalizedSource.distance(from: normalizedSource.startIndex, to: matchRange.lowerBound)
+        let upperOffset = normalizedSource.distance(from: normalizedSource.startIndex, to: matchRange.upperBound)
+
+        guard lowerOffset >= 0,
+              upperOffset > lowerOffset,
+              lowerOffset < indexMap.count,
+              upperOffset - 1 < indexMap.count else {
+            return nil
         }
 
-        let start = sourceIndex
-        var remainingLength = normalizedTerm.count
+        let start = indexMap[lowerOffset]
+        let lastMatched = indexMap[upperOffset - 1]
+        let end = source.index(after: lastMatched)
+        return start..<end
+    }
 
-        while remainingLength > 0, sourceIndex < source.endIndex {
-            let foldedCharacter = normalizeForSearch(String(source[sourceIndex]), trimWhitespace: false)
-            remainingLength -= foldedCharacter.count
-            sourceIndex = source.index(after: sourceIndex)
+    private func normalizedIndexMap(in source: String, normalizedSource: String) -> [String.Index] {
+        var map: [String.Index] = []
+        map.reserveCapacity(normalizedSource.count)
+
+        var previousNormalizedCount = 0
+        for idx in source.indices {
+            let next = source.index(after: idx)
+            let prefix = String(source[..<next])
+            let normalizedPrefix = normalizeForSearch(prefix, trimWhitespace: false)
+            let currentCount = normalizedPrefix.count
+            let delta = currentCount - previousNormalizedCount
+
+            if delta > 0 {
+                for _ in 0..<delta {
+                    map.append(idx)
+                }
+            }
+
+            previousNormalizedCount = currentCount
         }
 
-        return start..<sourceIndex
+        return map
     }
 }
 

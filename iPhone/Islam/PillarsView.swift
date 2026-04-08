@@ -117,7 +117,7 @@ struct GodPillarView: View {
                     Text("Islam, on the other hand:")
                         .font(.body)
                     Group {
-                        Text("• Affirms absolute monotheism (tawḥīd), with no partners, no intermediaries, and no confusion.")
+                        Text("• Affirms absolute monotheism (tawhid), with no partners, no intermediaries, and no confusion.")
                         Text("• Preserves the Qur’an exactly as it was revealed—verbatim, letter for letter, sound for sound, in its original Arabic.")
                         Text("• Welcomes all of humanity, regardless of ethnicity, race, gender, or background.")
                         Text("• Is the only universal, unambiguous, monotheistic religion with an intellectually sound and preserved foundation.")
@@ -153,7 +153,7 @@ struct GodPillarView: View {
             }
 
             Section(header: Text("HUMAN INTELLIGENCE – BEYOND EVOLUTION")) {
-                Text("Human beings are orders of magnitude more intelligent than any other creature. Humans build cities, fly planes, write poetry, and explore the universe. They possess self-awareness, language, morality, free will, and the capacity for worship. If evolution alone explains the human brain, why don't other species come close? Why the quantum leap in ability? Human exceptionalism points to a Creator who endowed humanity with reason, or ʿaql—a faculty Allah (Glorified and Exalted be He) gave only to humans.")
+                Text("Human beings are orders of magnitude more intelligent than any other creature. Humans build cities, fly planes, write poetry, and explore the universe. They possess self-awareness, language, morality, free will, and the capacity for worship. If evolution alone explains the human brain, why don't other species come close? Why the quantum leap in ability? Human exceptionalism points to a Creator who endowed humanity with reason, or aql, a faculty Allah (Glorified and Exalted be He) gave only to humans.")
                     .font(.body)
                 Text("“Indeed, We have certainly created man in the best of stature” (Qur’an 95:4).")
                     .foregroundColor(settings.accentColor.color)
@@ -209,7 +209,7 @@ struct GodPillarView: View {
                         .font(.body)
                     Group {
                         Text("• The Qur’an criticizes blind following of ancestors without knowledge (Qur’an 43:23).")
-                        Text("• Instead, use the God-given faculty of reason (ʿaql) and return to the fitrah.")
+                        Text("• Instead, use the God-given faculty of reason (aql) and return to the fitrah.")
                         Text("• Islam stands as the only worldview that fully harmonizes with reason, morality, and objective reality.")
                     }
                 }
@@ -830,14 +830,12 @@ struct ShahaadahView: View {
             
             Section(header: Text("FIRST VERSION")) {
                 VStack(alignment: .leading) {
-                    HStack {
-                        Spacer()
-                        Text("أَشهَدُ أَن لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ ٱللّٰهِ")
-                            .font(.body)
-                            .foregroundColor(settings.accentColor.color)
-                            .multilineTextAlignment(.trailing)
-                            .padding(.vertical, 2)
-                    }
+                    Text("أَشهَدُ أَن لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ ٱللّٰهِ")
+                        .font(.body)
+                        .foregroundColor(settings.accentColor.color)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 2)
                     
                     Text("Ashhadu an la ilaha illa Allah, wa ashhadu anna Muhammad rasul Allah.")
                         .font(.body)
@@ -851,14 +849,12 @@ struct ShahaadahView: View {
             
             Section(header: Text("SECOND VERSION")) {
                 VStack(alignment: .leading) {
-                    HStack {
-                        Spacer()
-                        Text("أَشهَدُ أَن لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشهَدُ أَنَّ مُحَمَّدًا عَبدُهُ وَرَسُولُهُ")
-                            .font(.body)
-                            .foregroundColor(settings.accentColor.color)
-                            .multilineTextAlignment(.trailing)
-                            .padding(.vertical, 2)
-                    }
+                    Text("أَشهَدُ أَن لَا إِلٰهَ إِلَّا ٱللّٰهُ وَأَشهَدُ أَنَّ مُحَمَّدًا عَبدُهُ وَرَسُولُهُ")
+                        .font(.body)
+                        .foregroundColor(settings.accentColor.color)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 2)
                     
                     Text("Ashhadu an la ilaha illa Allah, wa ashhadu anna Muhammad abduhu wa rasuluhu.")
                         .font(.body)
@@ -2189,28 +2185,26 @@ struct AdhanOtherView: View {
             }
 
             Section(header: Text("WORDS OF THE ADHAN")) {
-                HStack {
-                    Spacer()
-                    Text("""
-                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
-                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
+                Text("""
+                اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
+                اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
 
-                    أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
-                    أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
+                أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
+                أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
 
-                    أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
-                    أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
+                أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
+                أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
 
-                    حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الصَّلَاةِ
-                    حَيَّ عَلَى الفَلَاحِ، حَيَّ عَلَى الفَلَاحِ
+                حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الصَّلَاةِ
+                حَيَّ عَلَى الفَلَاحِ، حَيَّ عَلَى الفَلَاحِ
 
-                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
-                    لَا إِلَٰهَ إِلَّا اللَّهُ
-                    """)
-                    .font(.body)
-                    .multilineTextAlignment(.trailing)
-                    .foregroundColor(settings.accentColor.color)
-                }
+                اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
+                لَا إِلَٰهَ إِلَّا اللَّهُ
+                """)
+                .font(.body)
+                .multilineTextAlignment(.trailing)
+                .foregroundColor(settings.accentColor.color)
+                .frame(maxWidth: .infinity, alignment: .trailing)
 
                 Text("""
                 Allahu Akbar, Allahu Akbar
@@ -2287,28 +2281,26 @@ struct IqamahView: View {
             }
 
             Section(header: Text("WORDS OF THE IQAMAH")) {
-                HStack {
-                    Spacer()
-                    Text("""
-                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
+                Text("""
+                اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
 
-                    أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
+                أَشهَدُ أَن لَا إِلَٰهَ إِلَّا اللَّهُ
 
-                    أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
+                أَشهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ
 
-                    حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الفَلَاحِ
+                حَيَّ عَلَى الصَّلَاةِ، حَيَّ عَلَى الفَلَاحِ
 
-                    قَد قَامَتِ الصَّلَاةُ
-                    قَد قَامَتِ الصَّلَاةُ
+                قَد قَامَتِ الصَّلَاةُ
+                قَد قَامَتِ الصَّلَاةُ
 
-                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
+                اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ
 
-                    لَا إِلَٰهَ إِلَّا اللَّهُ
-                    """)
-                    .font(.body)
-                    .multilineTextAlignment(.trailing)
-                    .foregroundColor(settings.accentColor.color)
-                }
+                لَا إِلَٰهَ إِلَّا اللَّهُ
+                """)
+                .font(.body)
+                .multilineTextAlignment(.trailing)
+                .foregroundColor(settings.accentColor.color)
+                .frame(maxWidth: .infinity, alignment: .trailing)
 
                 Text("""
                 Allahu Akbar, Allahu Akbar
@@ -2387,13 +2379,11 @@ struct TakbiratView: View {
                 Text("This is the short version of the Takbir:")
                     .font(.body)
 
-                HStack {
-                    Spacer()
-                    Text("الله أكبر الله أكبر لا إله إلا الله، والله أكبر الله أكبر ولله الحمد")
-                        .font(.body)
-                        .foregroundColor(settings.accentColor.color)
-                        .multilineTextAlignment(.trailing)
-                }
+                Text("الله أكبر الله أكبر لا إله إلا الله، والله أكبر الله أكبر ولله الحمد")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
 
                 Text("Allahu Akbar, Allahu Akbar, La Ilaha Illa Allah, Allahu Akbar, Allahu Akbar, wa lillahil hamd")
                     .font(.body)
@@ -2403,25 +2393,23 @@ struct TakbiratView: View {
             }
 
             Section(header: Text("LONGER TAKBIRAT")) {
-                HStack {
-                    Spacer()
-                    Text("""
-                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، لَا إِلَهَ إِلَّا اللَّهُ
+                Text("""
+                اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، لَا إِلَهَ إِلَّا اللَّهُ
 
-                    اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، وَلِلَّهِ الحَمدُ
+                اللَّهُ أَكبَرُ، اللَّهُ أَكبَرُ، وَلِلَّهِ الحَمدُ
 
-                    اللَّهُ أَكبَرُ كَبِيرًا، وَالحَمدُ لِلَّهِ كَثِيرًا، وَسُبحَانَ اللَّهِ بُكرَةً وَأَصِيلًا
+                اللَّهُ أَكبَرُ كَبِيرًا، وَالحَمدُ لِلَّهِ كَثِيرًا، وَسُبحَانَ اللَّهِ بُكرَةً وَأَصِيلًا
 
-                    لَا إِلَهَ إِلَّا اللَّهُ وَحدَهُ، صَدَقَ وَعدَهُ، وَنَصَرَ عَبدَهُ، وَأَعَزَّ جُندَهُ، وَهَزَمَ الأَحزَابَ وَحدَهُ
+                لَا إِلَهَ إِلَّا اللَّهُ وَحدَهُ، صَدَقَ وَعدَهُ، وَنَصَرَ عَبدَهُ، وَأَعَزَّ جُندَهُ، وَهَزَمَ الأَحزَابَ وَحدَهُ
 
-                    لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعبُدُ إِلَّا إِيَّاهُ، مُخلِصِينَ لَهُ الدِّينَ وَلَو كَرِهَ الكَافِرُونَ
+                لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعبُدُ إِلَّا إِيَّاهُ، مُخلِصِينَ لَهُ الدِّينَ وَلَو كَرِهَ الكَافِرُونَ
 
-                    اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ، وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَصحَابِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَنصَارِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَزوَاجِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى ذُرِّيَّةِ سَيِّدِنَا مُحَمَّدٍ، وَسَلِّم تَسلِيمًا كَثِيرًا
-                    """)
-                    .font(.body)
-                    .foregroundColor(settings.accentColor.color)
-                    .multilineTextAlignment(.trailing)
-                }
+                اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ، وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَصحَابِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَنصَارِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى أَزوَاجِ سَيِّدِنَا مُحَمَّدٍ، وَعَلَى ذُرِّيَّةِ سَيِّدِنَا مُحَمَّدٍ، وَسَلِّم تَسلِيمًا كَثِيرًا
+                """)
+                .font(.body)
+                .foregroundColor(settings.accentColor.color)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: .infinity, alignment: .trailing)
 
                 Text("""
                 Allahu Akbar, Allahu Akbar, Allahu Akbar, La ilaha illa Allah
@@ -2713,6 +2701,13 @@ struct TajweedView: View {
             Section(header: Text("USEFUL LINKS")) {
                 Text("Watch Learn Arabic 101: https://www.youtube.com/@Arabic101")
                     .font(.caption)
+
+                #if os(iOS)
+                NavigationLink(destination: TajweedLegendView()) {
+                    Text("Tajweed Legend")
+                        .foregroundColor(settings.accentColor.color)
+                }
+                #endif
             }
         }
         .navigationTitle("Tajweed")
@@ -2898,10 +2893,10 @@ struct QiraatView: View {
                 Text("• Riwayah: the narration/transmission of that Qiraah by a primary rawi (narrator). Each Qiraah has two principal riwayaat (plural of riwayah).")
                     .font(.body)
 
-                Text("Example: “Hafs ‘an Asim” means the riwayah (narration) of Hafs (حفص) from the Qiraah (recitation) of Asim (عاصم). “Warsh ‘an Nafi” means the riwayah of Warsh (ورش) from the Qiraah of Nafi (نافع).")
+                Text("Example: “Hafs an Asim” means the riwayah (narration) of Hafs (حفص) from the Qiraah (recitation) of Asim (عاصم). “Warsh an Nafi” means the riwayah of Warsh (ورش) from the Qiraah of Nafi (نافع).")
                     .font(.body)
 
-                Text("Hafs ‘an Asim is the most widespread globally today; that does not mean it is the only right one. All Ten Qiraat (and their Twenty Riwayaat) are valid, mutawatir, and from Prophet Muhammad (peace and blessings be upon him).")
+                Text("Hafs an Asim is the most widespread globally today; that does not mean it is the only right one. All Ten Qiraat (and their Twenty Riwayaat) are valid, mutawatir, and from Prophet Muhammad (peace and blessings be upon him).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -2910,13 +2905,13 @@ struct QiraatView: View {
                 Text("Many people hear about 7 and 10 together. Both references are used by scholars: the famous seven canonical recitations (al-Sab'ah) and the full ten canonical Qiraat (7 + 3), all preserved through reliable transmission.")
                     .font(.body)
 
-                Text("The original seven were famously codified by Imam Abu Bakr Ibn Mujahid. Their Imams are: Nafi' (Madinah), Ibn Kathir (Makkah), Abu 'Amr (Basra), Ibn 'Amir (Damascus), 'Asim (Kufa), Hamzah (Kufa), and Al-Kisa'i (Kufa).")
+                Text("The original seven were famously codified by Imam Abu Bakr Ibn Mujahid. Their Imams are: Nafi (Madinah), Ibn Kathir (Makkah), Abi Amr (Basra), Ibn Amir (Damascus), Asim (Kufa), Hamzah (Kufa), and al-Kisai (Kufa).")
                     .font(.body)
 
-                Text("Hafs is a riwayah from 'Asim, and Warsh is a riwayah from Nafi'. So when people say Hafs or Warsh, they are naming a narration path within the canonical recitation tradition.")
+                Text("Hafs is a riwayah from Asim, and Warsh is a riwayah from Nafi. So when people say Hafs or Warsh, they are naming a narration path within the canonical recitation tradition.")
                     .font(.body)
 
-                Text("Today, Hafs 'an 'Asim is the most widely recited globally (often estimated around 90%+), while other canonical recitations such as Warsh remain authentic and practiced.")
+                Text("Today, Hafs an Asim is the most widely recited globally (often estimated around 90%+), while other canonical recitations such as Warsh an Nafi remain authentic and practiced.")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -2949,13 +2944,13 @@ struct QiraatView: View {
                 Group {
                     Text("• Nafi (نَافِع)").font(.body)
                     Text("• Ibn Kathir (ابنِ كَثِير)").font(.body)
-                    Text("• Abu Amr (أَبُو عَمرٍو)").font(.body)
+                    Text("• Abi Amr (أَبُو عَمرٍو)").font(.body)
                     Text("• Ibn Amir (ابنُ عَامِر)").font(.body)
                     Text("• Asim (عَاصِم)").font(.body)
                     Text("• Hamzah (حَمزَة)").font(.body)
-                    Text("• Al-Kisai (الكِسَائِي)").font(.body)
-                    Text("• Abu Ja'far (أَبُو جَعفَر)").font(.body)
-                    Text("• Ya'qub (يَعقُوب)").font(.body)
+                    Text("• al-Kisai (الكِسَائِي)").font(.body)
+                    Text("• Abi Jafar (أَبُو جَعفَر)").font(.body)
+                    Text("• Yaqoub (يَعقُوب)").font(.body)
                     Text("• Khalaf al-Ashir (خَلَف العَاشِر)").font(.body)
                 }
             }
@@ -2968,31 +2963,31 @@ struct QiraatView: View {
                     Text("• Warsh an Nafi (وَرش عَن نَافِع)").font(.body)
                     Text("• Qalun an Nafi (قَالُون عَن نَافِع)").font(.body)
 
-                    Text("• Al-Bazzi an Ibn Kathir (البَزِّي عَن ابنِ كَثِير)").font(.body)
+                    Text("• al-Bazzi an Ibn Kathir (البَزِّي عَن ابنِ كَثِير)").font(.body)
                     Text("• Qunbul an Ibn Kathir (قُنبُل عَن ابنِ كَثِير)").font(.body)
 
-                    Text("• Ad-Duri an Abi Amr (الدُّورِي عَن أَبِي عَمرٍو)").font(.body)
-                    Text("• As-Susi an Abi Amr (السُّوسِي عَن أَبِي عَمرٍو)").font(.body)
+                    Text("• ad-Duri an Abi Amr (الدُّورِي عَن أَبِي عَمرٍو)").font(.body)
+                    Text("• as-Susi an Abi Amr (السُّوسِي عَن أَبِي عَمرٍو)").font(.body)
 
                     Text("• Hisham an Ibn Amir (هِشَام عَن ابنِ عَامِر)").font(.body)
                     Text("• Ibn Dhakwan an Ibn Amir (ابنُ ذَكوَان عَن ابنِ عَامِر)").font(.body)
 
+                    Text("• Shubah an Asim (شُعبَة عَن عَاصِم)").font(.body)
                     Text("• Hafs an Asim (حَفص عَن عَاصِم)").font(.body)
-                    Text("• Shu'bah an Asim (شُعبَة عَن عَاصِم)").font(.body)
                 }
 
                 Group {
                     Text("• Khalaf an Hamzah (خَلَف عَن حَمزَة)").font(.body)
                     Text("• Khallad an Hamzah (خَلَّاد عَن حَمزَة)").font(.body)
 
-                    Text("• Abu al-Harith an Al-Kisai (أَبُو الحَارِث عَن الكِسَائِي)").font(.body)
-                    Text("• Ad-Duri an Al-Kisai (الدُّورِي عَن الكِسَائِي)").font(.body)
+                    Text("• Abu al-Harith an al-Kisai (أَبُو الحَارِث عَن الكِسَائِي)").font(.body)
+                    Text("• ad-Duri an al-Kisai (الدُّورِي عَن الكِسَائِي)").font(.body)
 
-                    Text("• Ibn Wardān an Abu Ja'far (ابنُ وَردَان عَن أَبِي جَعفَر)").font(.body)
-                    Text("• Ibn Jammaz an Abu Ja'far (ابنُ جَمَّاز عَن أَبِي جَعفَر)").font(.body)
+                    Text("• Ibn Wardan an Abi Jafar (ابنُ وَردَان عَن أَبِي جَعفَر)").font(.body)
+                    Text("• Ibn Jammaz an Abi Jafar (ابنُ جَمَّاز عَن أَبِي جَعفَر)").font(.body)
 
-                    Text("• Ruways an Ya'qub (رُوَيس عَن يَعقُوب)").font(.body)
-                    Text("• Rawh an Ya'qub (رَوح عَن يَعقُوب)").font(.body)
+                    Text("• Ruways an Yaqoub (رُوَيس عَن يَعقُوب)").font(.body)
+                    Text("• Rawh an Yaqoub (رَوح عَن يَعقُوب)").font(.body)
 
                     Text("• Ishaq an Khalaf al-Ashir (إِسحَاق عَن خَلَف العَاشِر)").font(.body)
                     Text("• Idris an Khalaf al-Ashir (إِدرِيس عَن خَلَف العَاشِر)").font(.body)
@@ -3010,7 +3005,7 @@ struct QiraatView: View {
             Section(header: Text("PRACTICAL STUDY & ADVICE")) {
                 Text("• Learn with a qualified teacher who has ijazah (إجازة) and isnad (إسناد). Do not self-invent pronunciations or rely only on apps without verification.")
                     .font(.body)
-                Text("• Begin with one riwayah (commonly Hafs ‘an Asim), then explore others (e.g., Warsh ‘an Nafi) as you progress.")
+                Text("• Begin with one riwayah (commonly Hafs an Asim), then explore others (e.g., Warsh an Nafi) as you progress.")
                     .font(.body)
                 Text("• Remember: differences are a mercy, not a contradiction. They illuminate the Quran’s depth and precision.")
                     .font(.body)

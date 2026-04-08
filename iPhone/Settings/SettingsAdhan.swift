@@ -13,14 +13,15 @@ struct AdhanSoundOption: Identifiable, Equatable {
 extension Settings {
     static let supportedAdhanSounds: [AdhanSoundOption] = [
         .init(id: "default", title: "Default"),
-        .init(id: "egypt-30", title: "Egyptian Adhan"),
+        .init(id: "egypt-30", title: "Egypt"),
         .init(id: "makkah-30", title: "Makkah"),
         .init(id: "madina-30", title: "Madina"),
+        .init(id: "alaqsa-30", title: "Al-Aqsa"),
+        .init(id: "alaqsa-2-30", title: "Al-Aqsa 2"),
+        
         .init(id: "abdulbaset-30", title: "Abdul Baset"),
         .init(id: "abdulghaffar-30", title: "Abdul Ghaffar"),
         .init(id: "al-qatami-30", title: "Al-Qatami"),
-        .init(id: "alaqsa-30", title: "Al-Aqsa"),
-        .init(id: "alaqsa-2-30", title: "Al-Aqsa 2"),
         .init(id: "zakariya-30", title: "Zakariya")
     ]
 
@@ -891,6 +892,11 @@ extension Settings {
         content.title = "Al-Islam"
         content.body  = "Please open the app to refresh today’s prayer times and notifications."
         content.sound = .default
+        #if os(iOS)
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+        #endif
 
         // Unique per-day id so we don’t collide across days
         let id = String(format: "RefreshReminder-%04d-%02d-%02d", comps.year ?? 0, comps.month ?? 0, comps.day ?? 0)
@@ -1022,6 +1028,11 @@ extension Settings {
         content.title = "Al-Islam"
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = prayerNotificationSound(for: prayer, minutesBefore: minutes)
+        #if os(iOS)
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+        #endif
 
         let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerTime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
@@ -1054,6 +1065,11 @@ extension Settings {
             content.title = "Al-Islam"
             content.body = "\(titleText) (\(eventSubTitle))"
             content.sound = .default
+            #if os(iOS)
+            if #available(iOS 15.0, *) {
+                content.interruptionLevel = .timeSensitive
+            }
+            #endif
             
             let trigger = UNCalendarNotificationTrigger(dateMatching: gregorianComps, repeats: false)
             let request = UNNotificationRequest(

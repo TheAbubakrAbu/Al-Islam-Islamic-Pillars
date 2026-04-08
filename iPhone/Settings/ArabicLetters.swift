@@ -166,13 +166,13 @@ let numbers = [
     (number: "١", name: "وَاحِد", transliteration: "waahid", englishNumber: "1"),
     (number: "٢", name: "اِثنَين", transliteration: "ithnaan", englishNumber: "2"),
     (number: "٣", name: "ثَلاثَة", transliteration: "thalaathah", englishNumber: "3"),
-    (number: "٤", name: "أَربَعَة", transliteration: "arbaʿah", englishNumber: "4"),
+    (number: "٤", name: "أَربَعَة", transliteration: "arba'ah", englishNumber: "4"),
     (number: "٥", name: "خَمسَة", transliteration: "khamsah", englishNumber: "5"),
     (number: "٦", name: "سِتَّة", transliteration: "sittah", englishNumber: "6"),
-    (number: "٧", name: "سَبعَة", transliteration: "sabʿah", englishNumber: "7"),
+    (number: "٧", name: "سَبعَة", transliteration: "sab'ah", englishNumber: "7"),
     (number: "٨", name: "ثَمَانِيَة", transliteration: "thamaaniyah", englishNumber: "8"),
-    (number: "٩", name: "تِسعَة", transliteration: "tisʿah", englishNumber: "9"),
-    (number: "١٠", name: "عَشَرَة", transliteration: "ʿasharah", englishNumber: "10")
+    (number: "٩", name: "تِسعَة", transliteration: "tis'ah", englishNumber: "9"),
+    (number: "١٠", name: "عَشَرَة", transliteration: "'asharah", englishNumber: "10")
 ]
 
 let tashkeels: [Tashkeel] = [

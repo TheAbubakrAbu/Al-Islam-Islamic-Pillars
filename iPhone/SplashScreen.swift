@@ -110,6 +110,7 @@ struct SplashScreen: View {
                         .foregroundColor(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+                    
                     LaunchCompanionCard(
                         imageName: "Al-Adhan",
                         accentColor: settings.accentColor.color,
@@ -122,7 +123,7 @@ struct SplashScreen: View {
                     )
                 }
             }
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
             .scaleEffect(popLeft ? 1 : 0.18)
             .offset(y: popLeft ? 0 : jump)
             .opacity(popLeft ? 1 : 0.35)
@@ -151,7 +152,7 @@ struct SplashScreen: View {
                     )
                 }
             }
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
             .scaleEffect(popRight ? 1 : 0.18)
             .offset(y: popRight ? 0 : jump)
             .opacity(popRight ? 1 : 0.35)
@@ -178,7 +179,7 @@ struct SplashScreen: View {
                     )
                 }
             }
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
             .scaleEffect((popCenter ? 1 : 0.2) * 0.88)
             .offset(y: popCenter ? 0 : jump * 1.05)
             .opacity(popCenter ? 1 : 0.4)
@@ -188,7 +189,7 @@ struct SplashScreen: View {
     }
 
     private var actionButtons: some View {
-        VStack(spacing: 12) {
+        HStack {
             /*Button {
                 settings.hapticFeedback()
                 withAnimation {
@@ -201,9 +202,7 @@ struct SplashScreen: View {
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
             .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: .green)*/
             
             Button {
@@ -217,9 +216,7 @@ struct SplashScreen: View {
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
             .conditionalGlassEffect(
                 rectangle: true,
                 useColor: 0.38,
@@ -242,9 +239,9 @@ struct SplashScreen: View {
         openURL(url)
     }
 
-    private static let alAdhanAppURL = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493")
+    private static let alAdhanAppURL = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493?platform=iphone")
     private static let alIslamAppURL = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone")
-    private static let alQuranAppURL = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373")
+    private static let alQuranAppURL = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373?platform=iphone")
 }
 
 #Preview {

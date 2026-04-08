@@ -36,8 +36,18 @@ struct PrayersEntryView: View {
         dateFormatter.dateStyle = .full
         dateFormatter.locale = Locale(identifier: "en")
         
-        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: Date()) else {
-            return dateFormatter.string(from: Date())
+        var referenceDate = Date()
+        
+        // If switchHijriDateAtMaghrib is enabled, check if current time is after Maghrib
+        if entry.switchHijriDateAtMaghrib {
+            if let maghrib = entry.fullPrayers.first(where: { $0.nameTransliteration == "Maghrib" })?.time,
+               Date() >= maghrib {
+                referenceDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            }
+        }
+        
+        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: referenceDate) else {
+            return dateFormatter.string(from: referenceDate)
         }
         
         return dateFormatter.string(from: offsetDate)
@@ -153,26 +163,24 @@ struct PrayersEntryView: View {
                                 .padding(.leading, 4)
                             }
                             
-                            HStack {
-                                Spacer()
-                                VStack(alignment: .trailing) {
-                                    HStack {
-                                        Text("Starts at \(nextPrayer.time, style: .time)")
-                                            .font(.caption)
-                                        
-                                        Text(nextPrayer.nameTransliteration)
-                                            .font(.title3)
-                                            .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
-                                        
-                                        Image(systemName: nextPrayer.image)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 22, height: 22)
-                                            .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
-                                    }
-                                    .padding(.top, -8)
+                            VStack(alignment: .trailing) {
+                                HStack {
+                                    Text("Starts at \(nextPrayer.time, style: .time)")
+                                        .font(.caption)
+                                    
+                                    Text(nextPrayer.nameTransliteration)
+                                        .font(.title3)
+                                        .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                    
+                                    Image(systemName: nextPrayer.image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 22, height: 22)
+                                        .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
                                 }
+                                .padding(.top, -8)
                             }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
                     .padding(4)

@@ -142,7 +142,7 @@ struct ShareAyahSheet: View {
 
         if settings.showSurahInformation {
             if shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
-            s += "\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
+            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
         }
 
         return s
@@ -156,18 +156,18 @@ struct ShareAyahSheet: View {
 
     /// Returns (English, Arabic) display names for the given displayQiraah tag.
     private static func qiraahLabels(displayQiraah: String) -> (english: String, arabic: String) {
-        let key = displayQiraah.isEmpty ? "" : displayQiraah
+        let key = Settings.normalizeLegacyRiwayahTag(displayQiraah.isEmpty ? "" : displayQiraah)
         let map: [(tag: String, en: String, ar: String)] = [
-            ("", "Hafs an Asim (default)", "حَفص عَن عَاصِم"),
-            ("Warsh an Nafi", "Warsh an Nafi", "وَرش عَن نَافِع"),
-            ("Qaloon an Nafi", "Qaloon an Nafi", "قَالُون عَن نَافِع"),
-            ("Ad-Duri an Abi Amr", "Ad-Duri an Abi Amr", "الدُّورِي عَن أَبِي عَمرٍو"),
-            ("Al-Buzzi an Ibn Kathir", "Al-Buzzi an Ibn Kathir", "البَزِّي عَن ابنِ كَثِيرٍ"),
-            ("Qunbul an Ibn Kathir", "Qunbul an Ibn Kathir", "قُنبُل عَن ابنِ كَثِيرٍ"),
-            ("Shu'bah an Asim", "Shu'bah an Asim", "شُعبَة عَن عَاصِم"),
-            ("As-Susi an Abi Amr", "As-Susi an Abi Amr", "السُّوسِي عَن أَبِي عَمرٍو")
+            (Settings.Riwayah.hafsTag, Settings.Riwayah.hafsLabel, "حَفص عَن عَاصِم"),
+            (Settings.Riwayah.warsh, Settings.Riwayah.warsh, "وَرش عَن نَافِع"),
+            (Settings.Riwayah.qaloon, Settings.Riwayah.qaloon, "قَالُون عَن نَافِع"),
+            (Settings.Riwayah.duri, Settings.Riwayah.duri, "الدُّورِي عَن أَبِي عَمرٍو"),
+            (Settings.Riwayah.buzzi, Settings.Riwayah.buzzi, "البَزِّي عَن ابنِ كَثِيرٍ"),
+            (Settings.Riwayah.qunbul, Settings.Riwayah.qunbul, "قُنبُل عَن ابنِ كَثِيرٍ"),
+            (Settings.Riwayah.shubah, Settings.Riwayah.shubah, "شُعبَة عَن عَاصِم"),
+            (Settings.Riwayah.susi, Settings.Riwayah.susi, "السُّوسِي عَن أَبِي عَمرٍو")
         ]
-        
+
         return map.first(where: { $0.tag == key }).map { ($0.en, $0.ar) } ?? (map[0].en, map[0].ar)
     }
 
@@ -419,6 +419,8 @@ struct ShareAyahSheet: View {
 
     
     private func performCopyOrGenerate() {
+        settings.hapticFeedback()
+        
         switch actionMode {
         case .text:
             UIPasteboard.general.string = shareText
@@ -458,12 +460,14 @@ struct ShareAyahSheet: View {
         Self.shareImageQueue.async { [self] in
             let img: UIImage = autoreleasepool { self.drawImage() }
             DispatchQueue.main.async {
-                self.generatedImage = img
-                self.isGeneratingImage = false
-                if self.actionMode == .image {
-                    self.activityItems = [img]
+                withAnimation {
+                    self.generatedImage = img
+                    self.isGeneratingImage = false
+                    if self.actionMode == .image {
+                        self.activityItems = [img]
+                    }
+                    completion(img)
                 }
-                completion(img)
             }
         }
     }
@@ -582,7 +586,7 @@ struct ShareAyahSheet: View {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah { append("\n", bodyAttr) } else { sepIfNeeded() }
-            append("\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
+            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
         }
         // --- Watermark
         let wmString = "Al-Islam | Islamic Pillars"
@@ -722,7 +726,7 @@ extension ShareAyahSheet {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
-            s += "\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
+            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
         }
         return s
     }
@@ -790,7 +794,7 @@ extension ShareAyahSheet {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah { append("\n", bodyAttr) } else { sepIfNeeded() }
-            append("\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
+            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
         }
         let wmString = "Al-Islam | Islamic Pillars"
         let wmText = NSAttributedString(string: wmString, attributes: centAccent)

@@ -12,6 +12,7 @@ private struct AppReviewPromptModifier: ViewModifier {
 
     private let requiredTimeInterval: TimeInterval = 180
 
+    // Hooks the review-tracking lifecycle into the wrapped view.
     func body(content: Content) -> some View {
         content
             .onAppear {
@@ -26,6 +27,7 @@ private struct AppReviewPromptModifier: ViewModifier {
             }
     }
 
+    // Starts or stops tracking as the app moves between active/inactive/background states.
     private func handleScenePhaseChange(_ newPhase: ScenePhase) {
         switch newPhase {
         case .active:
@@ -38,11 +40,13 @@ private struct AppReviewPromptModifier: ViewModifier {
         }
     }
 
+    // Resets the active timer window and schedules the prompt once enough time is reached.
     private func startTracking() {
         startTime = Date()
         scheduleReviewPrompt()
     }
 
+    // Stops the timer and accumulates this session's foreground time.
     private func stopTracking() {
         reviewTask?.cancel()
 
@@ -51,6 +55,7 @@ private struct AppReviewPromptModifier: ViewModifier {
         self.startTime = nil
     }
 
+    // Schedules a delayed review request based on remaining required usage time.
     private func scheduleReviewPrompt() {
         let remainingTime = max(requiredTimeInterval - timeSpent, 0)
 
@@ -65,6 +70,7 @@ private struct AppReviewPromptModifier: ViewModifier {
         }
     }
 
+    // Presents Apple's in-app review sheet once and then disables future prompts.
     private func requestReview() {
         guard shouldShowRateAlert else { return }
         guard let windowScene = activeWindowScene else { return }
@@ -74,6 +80,7 @@ private struct AppReviewPromptModifier: ViewModifier {
         reviewTask?.cancel()
     }
 
+    // Returns the currently foreground-active window scene used by StoreKit.
     private var activeWindowScene: UIWindowScene? {
         UIApplication.shared.connectedScenes
             .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
@@ -81,6 +88,7 @@ private struct AppReviewPromptModifier: ViewModifier {
 }
 
 extension View {
+    // Applies the app review prompt behavior to any view.
     func appReviewPrompt() -> some View {
         modifier(AppReviewPromptModifier())
     }

@@ -48,20 +48,43 @@ struct SettingsView: View {
             quranSection
             appearanceSection
             creditsSection
+            
             AlIslamAppsSection()
         }
         .navigationTitle("Settings")
         .applyConditionalListStyle(defaultView: true)
     }
 
+    private func resourceLink<Destination: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder destination: () -> Destination
+    ) -> some View {
+        NavigationLink(destination: destination()) {
+            toolLabel(title, systemImage: systemImage)
+        }
+        .tint(settings.accentColor.color)
+    }
+
+    private func toolLabel(_ title: String, systemImage: String) -> some View {
+        Label(
+            title: { Text(title) },
+            icon: {
+                Image(systemName: systemImage)
+                    .foregroundColor(settings.accentColor.color)
+            }
+        )
+        .padding(.vertical, 4)
+        .accentColor(settings.accentColor.color)
+    }
+
     @ViewBuilder
     private var notificationSection: some View {
         #if os(iOS)
         Section(header: Text("NOTIFICATIONS")) {
-            NavigationLink(destination: NotificationView()) {
-                Label("Notification Settings", systemImage: "bell.badge")
+            resourceLink(title: "Notification Settings", systemImage: "bell.badge") {
+                NotificationView()
             }
-            .accentColor(settings.accentColor.color)
         }
         #endif
     }
@@ -70,10 +93,9 @@ struct SettingsView: View {
     private var manualOffsetsSection: some View {
         #if os(iOS)
         Section(header: Text("MANUAL OFFSETS")) {
-            NavigationLink(destination: manualOffsetDestination) {
-                Label("Manual Offset Settings", systemImage: "slider.horizontal.3")
+            resourceLink(title: "Manual Offset Settings", systemImage: "slider.horizontal.3") {
+                manualOffsetDestination
             }
-            .accentColor(settings.accentColor.color)
         }
         #endif
     }
@@ -106,19 +128,17 @@ struct SettingsView: View {
 
     private var adhanSection: some View {
         Section(header: Text("AL-ADHAN")) {
-            NavigationLink(destination: SettingsAdhanView(showNotifications: false)) {
-                Label("Prayer Settings", systemImage: "safari")
+            resourceLink(title: "Prayer Settings", systemImage: "safari") {
+                SettingsAdhanView(showNotifications: false)
             }
-            .accentColor(settings.accentColor.color)
         }
     }
 
     private var quranSection: some View {
         Section(header: Text("AL-QURAN")) {
-            NavigationLink(destination: SettingsQuranView(showEdits: true)) {
-                Label("Quran Settings", systemImage: "character.book.closed.ar")
+            resourceLink(title: "Quran Settings", systemImage: "character.book.closed.ar") {
+                SettingsQuranView(showEdits: true)
             }
-            .accentColor(settings.accentColor.color)
         }
     }
 
@@ -281,7 +301,7 @@ struct SettingsView: View {
         }
     }
     #endif
-    
+
     private func columnWidth(for textStyle: UIFont.TextStyle, extra: CGFloat = 4, sample: String? = nil, fontName: String? = nil) -> CGFloat {
         let sampleString = (sample ?? "M") as NSString
         let font: UIFont

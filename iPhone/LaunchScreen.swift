@@ -55,7 +55,10 @@ struct LaunchScreen: View {
                     layoutScale: layoutScale
                 )
 
+                #if os(iOS)
                 companionCards(layoutScale: layoutScale)
+                #endif
+                
                 logoCard(layoutScale: layoutScale)
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -282,6 +285,7 @@ struct LaunchScreenBackground: View {
                 endPoint: .bottomTrailing
             )
             .clipShape(Circle())
+            .contentShape(Circle())
             .frame(width: disk, height: disk)
             .scaleEffect(gradientSize)
             .blur(radius: blurDisk)
@@ -318,10 +322,9 @@ struct LaunchLogoCard: View {
         let glossCr: CGFloat = 26 * s
 
         ZStack {
+            #if os(iOS)
             RoundedRectangle(cornerRadius: cr, style: .continuous)
-                #if os(iOS)
                 .fill(.ultraThinMaterial.opacity(isDarkMode ? 0.45 : 0.7))
-                #endif
                 .frame(width: outer, height: outer)
                 .overlay(
                     RoundedRectangle(cornerRadius: cr, style: .continuous)
@@ -354,6 +357,7 @@ struct LaunchLogoCard: View {
                         .blur(radius: 0.3)
                         .padding(12 * s)
                 }
+            #endif
 
             Image(title)
                 .resizable()

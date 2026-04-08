@@ -18,8 +18,18 @@ struct CountdownEntryView: View {
         dateFormatter.dateStyle = .medium
         dateFormatter.locale = Locale(identifier: "en")
         
-        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: Date()) else {
-            return dateFormatter.string(from: Date())
+        var referenceDate = Date()
+        
+        // If switchHijriDateAtMaghrib is enabled, check if current time is after Maghrib
+        if entry.switchHijriDateAtMaghrib {
+            if let maghrib = entry.fullPrayers.first(where: { $0.nameTransliteration == "Maghrib" })?.time,
+               Date() >= maghrib {
+                referenceDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            }
+        }
+        
+        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: referenceDate) else {
+            return dateFormatter.string(from: referenceDate)
         }
         
         return dateFormatter.string(from: offsetDate)
@@ -31,8 +41,18 @@ struct CountdownEntryView: View {
         dateFormatter.dateStyle = .full
         dateFormatter.locale = Locale(identifier: "en")
         
-        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: Date()) else {
-            return dateFormatter.string(from: Date())
+        var referenceDate = Date()
+        
+        // If switchHijriDateAtMaghrib is enabled, check if current time is after Maghrib
+        if entry.switchHijriDateAtMaghrib {
+            if let maghrib = entry.fullPrayers.first(where: { $0.nameTransliteration == "Maghrib" })?.time,
+               Date() >= maghrib {
+                referenceDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            }
+        }
+        
+        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: referenceDate) else {
+            return dateFormatter.string(from: referenceDate)
         }
         
         return dateFormatter.string(from: offsetDate)
@@ -61,42 +81,35 @@ struct CountdownEntryView: View {
                         
                         Spacer()
                         
-                        HStack {
-                            VStack(alignment: .leading) {
-                                HStack {
-                                    Image(systemName: currentPrayer.image)
-                                        .font(.subheadline)
-                                        .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
-                                    
-                                    Text(currentPrayer.nameTransliteration)
-                                        .font(.headline)
-                                        .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
-                                    
-                                    Spacer()
-                                    
-                                    Text("Time left: \(nextPrayer.time, style: .timer)")
-                                        .font(.caption)
-                                }
-                                .padding(.leading, 6)
+                        VStack(alignment: .leading) {
+                            HStack {
+                                Image(systemName: currentPrayer.image)
+                                    .font(.subheadline)
+                                    .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                
+                                Text(currentPrayer.nameTransliteration)
+                                    .font(.headline)
+                                    .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                
+                                Spacer()
+                                
+                                Text("Time left: \(nextPrayer.time, style: .timer)")
+                                    .font(.caption)
                             }
-                            Spacer()
+                            .padding(.leading, 6)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 4)
                         
                         Spacer()
                     }
                     
                     if widgetFamily == .systemSmall {
-                        VStack(alignment: .leading, spacing: 1) {
-                            HStack {
-                                Spacer()
-                                
-                                Text(hijriDate1)
-                                    .foregroundColor(entry.accentColor.color)
-                                    .font(.caption2)
-                                
-                                Spacer()
-                            }
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(hijriDate1)
+                                .foregroundColor(entry.accentColor.color)
+                                .font(.caption2)
+                                .frame(maxWidth: .infinity, alignment: .center)
                             
                             Spacer()
                             
@@ -154,24 +167,21 @@ struct CountdownEntryView: View {
                             }
                         }
                     } else {
-                        HStack {
-                            Spacer()
-                            
-                            VStack(alignment: .trailing) {
-                                HStack {
-                                    Text("Starts at \(nextPrayer.time, style: .time)")
-                                        .font(.caption)
-                                    
-                                    Text(nextPrayer.nameTransliteration)
-                                        .font(.headline)
-                                        .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
-                                    
-                                    Image(systemName: nextPrayer.image)
-                                        .font(.subheadline)
-                                        .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
-                                }
+                        VStack(alignment: .trailing) {
+                            HStack {
+                                Text("Starts at \(nextPrayer.time, style: .time)")
+                                    .font(.caption)
+                                
+                                Text(nextPrayer.nameTransliteration)
+                                    .font(.headline)
+                                    .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
+                                
+                                Image(systemName: nextPrayer.image)
+                                    .font(.subheadline)
+                                    .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : entry.accentColor.color)
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.horizontal, 4)
                         
                         Spacer()

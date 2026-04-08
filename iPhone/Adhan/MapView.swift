@@ -193,8 +193,7 @@ struct MapView: View {
         } label: {
             Text("Automatically Use Current Location")
                 .foregroundColor(.primary)
-                .buttonStyle(.plain)
-                .clipShape(Rectangle())
+                .contentShape(Rectangle())
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .font(.headline)
@@ -367,14 +366,12 @@ private struct SearchOverlay: View {
                 .padding(-8)
 
             if !searchText.isEmpty {
-                HStack {
-                    Text("\(cityItems.count) match\(cityItems.count == 1 ? "" : "es") found")
-                    Spacer()
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(settings.accentColor.color)
-                .padding(.horizontal, 6)
-                .padding(.bottom, -8)
+                Text("\(cityItems.count) match\(cityItems.count == 1 ? "" : "es") found")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(settings.accentColor.color)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.horizontal, 6)
+                    .padding(.bottom, -8)
             }
         }
         .padding(8)
@@ -441,16 +438,15 @@ private struct SearchResultRow: View {
                 onSelect()
             }
 
-            Button {
-                settings.hapticFeedback()
-                onSelect()
-            } label: {
-                Image(systemName: "checkmark.circle")
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
+            Image(systemName: "checkmark.circle")
+                .font(.headline)
+                .foregroundColor(settings.accentColor.color)
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    onSelect()
+                }
         }
         .padding()
     }
@@ -463,35 +459,32 @@ private struct HomeLocationSummaryCard: View {
     let distanceString: String?
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
-                locationInfoRow("Home", value: home.city, systemImage: "house.fill", accent: true)
+        VStack(alignment: .leading, spacing: 8) {
+            locationInfoRow("Home", value: home.city, systemImage: "house.fill", accent: true)
 
-                if let current = settings.currentLocation {
-                    locationInfoRow("Current", value: current.city, systemImage: "location.fill", accent: true)
+            if let current = settings.currentLocation {
+                locationInfoRow("Current", value: current.city, systemImage: "location.fill", accent: true)
 
-                    if let distanceString {
-                        locationInfoRow("Distance", value: distanceString, systemImage: "arrow.right.arrow.left")
-                            .font(.subheadline)
-                    }
+                if let distanceString {
+                    locationInfoRow("Distance", value: distanceString, systemImage: "arrow.right.arrow.left")
+                        .font(.subheadline)
                 }
-
-                Text("• Must be at least 48 miles (≈ 77 km) from home to be considered traveling")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 4)
-                    .multilineTextAlignment(.leading)
             }
-            .padding()
 
-            Spacer()
+            Text("• Must be at least 48 miles (≈ 77 km) from home to be considered traveling")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .padding(.top, 4)
+                .multilineTextAlignment(.leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
         .conditionalGlassEffect(rectangle: true)
     }
 
     private func locationInfoRow(_ title: String, value: String, systemImage: String, accent: Bool = false) -> some View {
         Label {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(spacing: 4) {
                 Text(title)
                     .fontWeight(.semibold)
                 Text(value)

@@ -1,794 +1,1144 @@
 [
   {
     "name": "الرَّحمَٰن",
-    "transliteration": "Ar-Raḥmān",
+    "transliteration": "Ar-Rahman",
     "number": 1,
     "found": "(1:3) (17:110)",
-    "meaning": "The Most or Entirely Merciful",
-    "desc": "He who wills goodness and mercy for all His creatures"
+    "meaning": "The Entirely Merciful",
+    "desc": "He who wills goodness and mercy for all His creatures",
+    "otherNames": [
+      "The Most Merciful",
+      "The Most Compassionate",
+      "The Beneficent"
+    ]
   },
   {
     "name": "الرَّحِيم",
-    "transliteration": "Ar-Raḥīm",
+    "transliteration": "Ar-Raheem",
     "number": 2,
     "found": "(1:3) (2:163) (3: 31) (4:100) (5:3)",
     "meaning": "The Especially Merciful",
-    "desc": "He who acts with extreme kindness "
+    "desc": "He who acts with extreme kindness",
+    "otherNames": [
+      "The Merciful"
+    ]
   },
   {
     "name": "المَلِك",
     "transliteration": "Al-Malik",
     "number": 3,
     "found": "(20:114)(23:116)(59:23)(62:1)",
-    "meaning": "The King and Owner of Dominion",
-    "desc": "The Sovereign Lord, The One with the complete Dominion, the One Whose Dominion is clear from imperfection "
+    "meaning": "The King",
+    "desc": "The Sovereign Lord, The One with the complete Dominion, the One Whose Dominion is clear from imperfection",
+    "otherNames": [
+      "The Owner of Dominion"
+    ]
   },
   {
     "name": "القُدُّوس",
-    "transliteration": "Al-Quddūs",
+    "transliteration": "Al-Quddus",
     "number": 4,
     "found": "(59:23) (62:1)",
-    "meaning": "The Absolutely Pure and Perfect",
-    "desc": "The One who is pure from any imperfection and clear from children and adversaries"
+    "meaning": "The Most Sacred",
+    "desc": "The one who is pure, so far removed of any imperfection. He has no shortcomings, evil is not attributed to Him.",
+    "otherNames": [
+      "The Most Holy",
+      "The Perfect",
+      "The Absolutely Pure"
+    ]
   },
   {
     "name": "السَّلَام",
-    "transliteration": "As-Salām",
+    "transliteration": "As-Salam",
     "number": 5,
     "found": "(59:23)",
-    "meaning": "The Perfection and Giver of Peace",
-    "desc": "The one who provides peace, calm and serenity. By citing this name, we declare peace for ourselves and for those around us."
+    "meaning": "The Giver of Peace",
+    "desc": "The One who is free from every imperfection, granting peace and safety to His creation. It is because He is free of any defect that one who is with Him experiences tranquility.",
+    "otherNames": [
+      "The Perfection"
+    ]
   },
   {
     "name": "المُؤمِن",
-    "transliteration": "Al-Mu’min",
+    "transliteration": "Al-Mumin",
     "number": 6,
     "found": "(59:23)",
-    "meaning": "The Granter of Security and Faith",
-    "desc": "This name is mysterious even for Muslims because \"Al-Mu'min\" comes from the name \"Al-iman\" which means to believe, from where comes the name \"Al-Mu'minoune\" which means believers, it is is the name of the Quran for people who believe in 6 things: the oneness of God, the existence of angels, holy books (Torah, Gospel and Psalms (Zabor) unmodified and the Quran), the prophets, the last day (the day of judgment) and fate its evil and its good. The exact meaning of this name is very difficult to pin down in its original meaning but can be understood from a deeper and more mystical point of view."
+    "meaning": "The Infuser of Faith",
+    "desc": "The One who witnessed for Himself that no one is God but Him. And He witnessed for His believers that they are truthful in their belief that no one is God but Him",
+    "otherNames": [
+      "The Granter of Security"
+    ]
   },
   {
     "name": "المُهَيمِن",
     "transliteration": "Al-Muhaymin",
     "number": 7,
     "found": "(59:23)",
-    "meaning": "The Guardian, The Witness, The Overseer",
-    "desc": "Whoever dominates His creation and by His omnipotence in all aspects, no state or aspect in this world or the other escapes His will."
+    "meaning": "The Guardian",
+    "desc": "The One who witnesses the saying and deeds of His creatures.",
+    "otherNames": [
+      "The Witness",
+      "The Overseer"
+    ]
   },
   {
     "name": "العَزِيز",
-    "transliteration": "Al-‘Azīz",
+    "transliteration": "Al-Aziz",
     "number": 8,
     "found": "(3:6)(4:15 8)(9:40)(4 8:7)",
-    "meaning": "The Almighty, The All-Powerful, The Invincible, The Honorable",
-    "desc": "The Glorious by His supremacy and His greatness, El-Aziz means in a sense the one who is dear and precious in the eyes of His creatures. He is not the servant of any creature, and no creature dictates to him what to do."
+    "meaning": "The Mighty One",
+    "desc": "The Strong, The Defeater who is not defeated",
+    "otherNames": [
+      "The All-Powerful",
+      "The Invincible",
+      "The Honorable",
+      "The Almighty"
+    ]
   },
   {
     "name": "الجَبَّار",
-    "transliteration": "Al-Jabbār",
+    "transliteration": "Al-Jabbar",
     "number": 9,
     "found": "(59:23)",
-    "meaning": "The Compeller, The Restorer",
-    "desc": "The grandiose, the ultimate powerful by His greatness and His unlimited strength. When He destroys the oppressors (unjust and sinners) He applies His sentence with righteousness."
+    "meaning": "The All Compelling",
+    "desc": "The One that nothing happens in His Dominion except that which He willed",
+    "otherNames": [
+      "The Restorer",
+      "The Compeller"
+    ]
   },
   {
     "name": "المُتَكَبِّر",
     "transliteration": "Al-Mutakabbir",
     "number": 10,
     "found": "(59:23)",
-    "meaning": "The Supreme, The Majestic",
-    "desc": "He who is superior to His creatures, no creature has the right to claim greatness."
+    "meaning": "The Dominant One",
+    "desc": "The One who is clear from the attributes of the creatures and from resembling them.",
+    "otherNames": [
+      "The Majestic",
+      "The Supreme"
+    ]
   },
   {
     "name": "الخَٰلِق",
-    "transliteration": "Al-Khāliq",
+    "transliteration": "Al-Khaliq",
     "number": 11,
     "found": "(6:102)(13:16)(39:62)(40:62)(59:24)",
-    "meaning": "The Creator, The Maker",
-    "desc": "The Creator of all existences, living or dead, mobile or frozen."
+    "meaning": "The Creator",
+    "desc": "The One who brings everything from non-existence to existence",
+    "otherNames": [
+      "The Maker"
+    ]
   },
   {
     "name": "البَارِي",
-    "transliteration": "Al-Bāriʾ",
+    "transliteration": "Al-Bari",
     "number": 12,
     "found": "(59:24)",
-    "meaning": "The Originator, The Inventor",
-    "desc": "He who lifts His creation above all faults or imperfections."
+    "meaning": "The Evolver",
+    "desc": "The Maker, The Creator who has the Power to turn the entities.",
+    "otherNames": [
+      "The Maker",
+      "The Inventor",
+      "The Originator"
+    ]
   },
   {
     "name": "المُصَوِّر",
-    "transliteration": "Al-Muṣawwir",
+    "transliteration": "Al-Musawwir",
     "number": 13,
     "found": "(59:24)",
-    "meaning": "The Fashioner, The Shaper",
-    "desc": "The one who gives the look and the appearance to each creation from the inside as well as from the outside. In classical Arabic, literally, this word means sculptor and, in modern Arabic, literally means designer."
+    "meaning": "The Flawless Shaper",
+    "desc": "The One who forms His creatures in different pictures.",
+    "otherNames": [
+      "The Shaper",
+      "The Fashioner"
+    ]
   },
   {
     "name": "الغَفَّار",
-    "transliteration": "Al-Ghaffār",
+    "transliteration": "Al-Ghaffar",
     "number": 14,
     "found": "(20:82)(38:66)(39:5)(40:42)(71:10)",
-    "meaning": "The Constant Forgiver, The Great Forgiver",
-    "desc": "Is the One who forgives what He wants to whom He wants."
+    "meaning": "The Great Forgiver",
+    "desc": "The Forgiver, The One who forgives the sins of His slaves time and time again.",
+    "otherNames": [
+      "The Constant Forgiver"
+    ]
   },
   {
     "name": "القَهَّار",
-    "transliteration": "Al-Qahhār",
+    "transliteration": "Al-Qahhar",
     "number": 15,
     "found": "(13:16)(14:48)(38:65)(39:4)(40:16)",
-    "meaning": "The Subduer, The Ever-Dominating",
-    "desc": "Is the One who is almighty to submit all creation to His will."
+    "meaning": "The All-Prevailing One",
+    "desc": "The Dominant, The One who has the perfect Power and is not unable over anything.",
+    "otherNames": [
+      "The Ever-Dominating",
+      "The Subduer"
+    ]
   },
   {
     "name": "الوَهَّاب",
-    "transliteration": "Al-Wahhāb",
+    "transliteration": "Al-Wahhab",
     "number": 16,
     "found": "(3:8)(38:9)(38:35)",
-    "meaning": "The Giver of Gifts, The Bestower",
-    "desc": "Is the One who gives immensely without receiving anything in return"
+    "meaning": "The Supreme Bestower",
+    "desc": "The One who is Generous in giving plenty without any return. He is everything that benefits whether Halal or Haram.",
+    "otherNames": [
+      "The Bestower",
+      "The Giver of Gifts"
+    ]
   },
   {
     "name": "الرَّزَّاق",
-    "transliteration": "Ar-Razzāq",
+    "transliteration": "Ar-Razzaq",
     "number": 17,
     "found": "(51:58)",
-    "meaning": "The Ever-Providing, The Constant Provider",
-    "desc": "Is the One who makes distribute to every creature what it needs."
+    "meaning": "The Total Provider",
+    "desc": "The Sustainer, The Provider.",
+    "otherNames": [
+      "The Constant Provider",
+      "The Ever-Providing"
+    ]
   },
   {
     "name": "الفَتَّاح",
-    "transliteration": "Al-Fattāḥ",
+    "transliteration": "Al-Fattah",
     "number": 18,
     "found": "(34:26)",
-    "meaning": "The Opener, The Judge",
-    "desc": "Is He Who alone knows the keys to the future and the unknown, by His knowledge and by His wisdom. This name is often associated with the following name \"Al-‘Alīm\"."
+    "meaning": "The Opener",
+    "desc": "The Solver, The Reliever, The Judge, The One who opens for His slaves the closed worldly and religious matters.",
+    "otherNames": [
+      "The Judge"
+    ]
   },
   {
     "name": "العَلِيم",
-    "transliteration": "Al-ʿAlīm",
+    "transliteration": "Al-Alim",
     "number": 19,
     "found": "(2:158)(3:92)(4:35)(24:41)(33:40)",
-    "meaning": "The All-Knowing, The Omniscient",
-    "desc": "The one from whom nothing can hide, for He knows everything and is aware of everything."
+    "meaning": "The All-Knowing One",
+    "desc": "The Knowledgeable; The One nothing is absent from His knowledge",
+    "otherNames": [
+      "The Omniscient",
+      "The All-Knowing"
+    ]
   },
   {
     "name": "القَابِض",
-    "transliteration": "Al-Qābiḍ",
+    "transliteration": "Al-Qabid",
     "number": 20,
     "found": "(2:245)",
-    "meaning": "The Withholder, The Restrainer",
-    "desc": "Is the One who restricts His good according to wisdom."
+    "meaning": "The Restricting One",
+    "desc": "The Constrictor, The Withholder, The One who constricts the sustenance by His wisdom and expands and widens it with His Generosity and Mercy.",
+    "otherNames": [
+      "The Restrainer",
+      "The Withholder"
+    ]
   },
   {
     "name": "البَاسِط",
-    "transliteration": "Al-Bāsiṭ",
+    "transliteration": "Al-Basit",
     "number": 21,
     "found": "(2:245)",
-    "meaning": "The Extender, The Expander",
-    "desc": "Is the One who frees, increases and multiplies his good according to wisdom."
+    "meaning": "The Extender",
+    "desc": "The Englarger, The One who constricts the sustenance by His wisdom and expands and widens it with His Generosity and Mercy.",
+    "otherNames": [
+      "The Expander"
+    ]
   },
   {
     "name": "الخَافِض",
-    "transliteration": "Al-Khāfiḍ",
+    "transliteration": "Al-Khafid",
     "number": 22,
     "found": "(95:5)",
-    "meaning": "The Reducer, The Abaser",
-    "desc": "Is the One who destines the oppressors and the proud to demeanor and chastisement."
+    "meaning": "The Reducer",
+    "desc": "The Abaser, The One who lowers whoever He willed by His Destruction and raises whoever He willed by His Endowment.",
+    "otherNames": [
+      "The Abaser"
+    ]
   },
   {
     "name": "الرَّافِع",
-    "transliteration": "Ar-Rāfiʿ",
+    "transliteration": "Ar-Rafi",
     "number": 23,
     "found": "(58:11)(6:83)",
-    "meaning": "The Exalter, The Elevator",
-    "desc": "The Breeder in the sense of raising, the one who elevates the honor, the status and the prestige of a being in this lower world and in the hereafter."
+    "meaning": "The Elevating One",
+    "desc": "The Exalter, The Elevator, The One who lowers whoever He willed by His Destruction and raises whoever He willed by His Endowment.",
+    "otherNames": [
+      "The Elevator",
+      "The Exalter"
+    ]
   },
   {
     "name": "المُعِزّ",
-    "transliteration": "Al-Muʿizz",
+    "transliteration": "Al-Mu'izz",
     "number": 24,
     "found": "(3:26)",
-    "meaning": "The Honourer, The Bestower of Honor",
-    "desc": "One who offers honor and precious value."
+    "meaning": "The Honourer-Bestower",
+    "desc": "He gives esteem to whoever He willed, hence there is no one to degrade Him; And He degrades whoever He willed, hence there is no one to give Him esteem.",
+    "otherNames": [
+      "The Bestower of Honor",
+      "The Honourer"
+    ]
   },
   {
     "name": "المُذِلّ",
-    "transliteration": "Al-Mudhill",
+    "transliteration": "Al-Muzil",
     "number": 25,
     "found": "(3:26)",
-    "meaning": "The Dishonourer, The Humiliator",
-    "desc": "Is the One who can humiliate and devalue any valiant."
+    "meaning": "The Abaser",
+    "desc": "The Dishonourer, The Humiliator, He gives esteem to whoever He willed, hence there is no one to degrade Him; And He degrades whoever He willed, hence there is no one to give Him esteem.",
+    "otherNames": [
+      "The Humiliator",
+      "The Dishonourer"
+    ]
   },
   {
     "name": "السَّمِيع",
-    "transliteration": "As-Samīʿ",
+    "transliteration": "As-Sami",
     "number": 26,
     "found": "(2:127)(2:256)(8:17)(49:1)",
-    "meaning": "The All-Hearing",
-    "desc": "One who hears any noise or sound in His kingdom emanating from any creature and also One who listens to the invocations of His creatures to respond to their invocations."
+    "meaning": "The All-Hearer",
+    "desc": "The Hearer, The One who Hears all things that are heard by His Eternal Hearing without an ear, instrument or organ.",
+    "otherNames": [
+      "The All-Hearing"
+    ]
   },
   {
     "name": "البَصِير",
-    "transliteration": "Al-Baṣīr",
+    "transliteration": "Al-Baseer",
     "number": 27,
     "found": "(4:58)(17:1)(42:11)(42:27)",
     "meaning": "The All-Seeing",
-    "desc": "Is the One from whom nothing that exists or comes into existence can escape without the slightest use of an eye, instrument or organ."
+    "desc": "The All-Noticing, The One who Sees all things that are seen by His Eternal Seeing without a pupil or any other instrument.",
+    "otherNames": []
   },
   {
     "name": "الحَكَم",
-    "transliteration": "Al-Ḥakam",
+    "transliteration": "Al-Hakam",
     "number": 28,
     "found": "(22:69)",
-    "meaning": "The Judge, The Giver of Justice",
-    "desc": "He is the One who judges and decides between creatures here below and in the hereafter and He who ensures equity between the creatures and no one else will and will not be able to decide between them and judge them; and the Judgment in the hereafter will be perfectly just and appropriate."
+    "meaning": "The Impartial Judge",
+    "desc": "The Judge, He is the Ruler andThe Judge, He is the Ruler and His judgment is His Word. His judgment is His Word.",
+    "otherNames": [
+      "The Giver of Justice",
+      "The Judge"
+    ]
   },
   {
     "name": "العَدل",
-    "transliteration": "Al-‘Adl",
+    "transliteration": "Al-Adl",
     "number": 29,
     "found": "(6:115)",
-    "meaning": "The Utterly Just",
-    "desc": "Is the One who is free from all forms of injustice and / or oppression."
+    "meaning": "The Embodiment of Justice",
+    "desc": "The Just, The One who is entitled to do what He does.",
+    "otherNames": [
+      "The Utterly Just"
+    ]
   },
   {
     "name": "اللَّطِيف",
-    "transliteration": "Al-Laṭīf",
+    "transliteration": "Al-Lateef",
     "number": 30,
     "found": "(6:103)(22:63)(31:16)(33:34)",
-    "meaning": "The Most Gentle, The Subtle One",
-    "desc": "Is the One who grants his creatures His gentleness and His benevolence."
+    "meaning": "The Knower of Subtleties",
+    "desc": "The Subtle One, The Gracious, The One who is kind to His slaves and endows upon them.",
+    "otherNames": [
+      "The Subtle One",
+      "The Most Gentle"
+    ]
   },
   {
     "name": "الخَبِير",
-    "transliteration": "Al-Khabīr",
+    "transliteration": "Al-Khabir",
     "number": 31,
     "found": "(6:18)(17:30)(49:13)(59:18)",
-    "meaning": "The All-Aware, The All-Acquainted",
-    "desc": "He is the One from whom cannot be hidden the reality of everything that exists, that is to say the truth of things; no detail escapes Him, neither the thing as a whole, nor each of its parts; and to claim to be able to hide things from the One who creates everything is a delusion and a disbelief."
+    "meaning": "The All-Aware One",
+    "desc": "The One who knows the truth of things.",
+    "otherNames": [
+      "The All-Acquainted",
+      "The All-Aware"
+    ]
   },
   {
     "name": "الحَلِيم",
-    "transliteration": "Al-Ḥalīm",
+    "transliteration": "Al-Haleem",
     "number": 32,
     "found": "(2:235)(17:44)(22:59)(35:41)",
-    "meaning": "The Most Forbearing",
-    "desc": "Is the One whose patience towards the disbeliefs of sinners exceeds all imagination (it is possible that forgiveness will be granted to them)."
+    "meaning": "The Clement One",
+    "desc": "The Forebearing, The One who delays the punishment for those who deserve it and then He might forgive them.",
+    "otherNames": [
+      "The Most Forbearing"
+    ]
   },
   {
     "name": "العَظِيم",
-    "transliteration": "Al-ʿAẓīm",
+    "transliteration": "Al-Azeem",
     "number": 33,
     "found": "(2:255)(42:4)(56:96)",
-    "meaning": "The Magnificent, The Supreme",
-    "desc": "This name is difficult to translate because it includes several French words that do not share the same spiritual meaning, but it can be approached as follows: \"Al-Adhīm\" He who is Gigantic Majestic and Fantastically Grandiose far from any bodily or material imperfection"
+    "meaning": "The Magnificent One",
+    "desc": "The Great One, The Mighty, The One deserving the attributes of Exaltment, Glory, Extolement, and Purity from all imperfection.",
+    "otherNames": [
+      "The Supreme",
+      "The Magnificent"
+    ]
   },
   {
     "name": "الغَفُور",
-    "transliteration": "Al-Ghafūr",
+    "transliteration": "Al-Ghafoor",
     "number": 34,
     "found": "(2:173)(8:69)(16:110)(41:32)",
-    "meaning": "The Forgiving, The Exceedingly Forgiving",
-    "desc": "Is the One who forgives immensely over and over again."
+    "meaning": "The All-Forgiving",
+    "desc": "The All-Forgiving, The Forgiving, The One who forgives a lot.",
+    "otherNames": [
+      "The Exceedingly Forgiving",
+      "The Forgiving"
+    ]
   },
   {
     "name": "الشَّكُور",
-    "transliteration": "Ash-Shakūr",
+    "transliteration": "Ash-Shakur",
     "number": 35,
     "found": "(35:30)(35:34)(42:23)(64:17)",
-    "meaning": "The Most Appreciative",
-    "desc": "Is the One who shows His gratitude for worshipers, however incredibly easy to perform."
+    "meaning": "The Acknowledging One",
+    "desc": "The Grateful, The Appreciative, The One who gives a lot of reward for a little obedience.",
+    "otherNames": [
+      "The Most Appreciative"
+    ]
   },
   {
     "name": "العَلِيّ",
-    "transliteration": "Al-ʿAlī",
+    "transliteration": "Al-Aliyy",
     "number": 36,
     "found": "(4:34)(31:30)(42:4)(42:51)",
-    "meaning": "The Most High, The Exalted",
-    "desc": "Is the One who is above all that He created perfectly and unimaginably."
+    "meaning": "The Sublime One",
+    "desc": "The Most High, The One who is clear from the attributes of the creatures.",
+    "otherNames": [
+      "The Exalted",
+      "The Most High"
+    ]
   },
   {
     "name": "الكَبِير",
-    "transliteration": "Al-Kabīr",
+    "transliteration": "Al-Kabeer",
     "number": 37,
     "found": "(13:9)(22:62)(31:30)",
-    "meaning": "The Greatest, The Most Grand",
-    "desc": "The Great: One who is greater than His creation, a greatness that only He knows."
+    "meaning": "The Great One",
+    "desc": "The Most Great, The Great, The One who is greater than everything in status.",
+    "otherNames": [
+      "The Most Grand",
+      "The Greatest"
+    ]
   },
   {
     "name": "الحَفِيظ",
-    "transliteration": "Al-Ḥafīẓ",
+    "transliteration": "Al-Hafiz",
     "number": 38,
     "found": "(11:57)(34:21)(42:6)",
-    "meaning": "The Preserver, The All-Heedful and All-Protecting",
-    "desc": "Is the One who protects and preserves His good."
+    "meaning": "The Guarding One",
+    "desc": "The Preserver, The Protector, The One who protects whatever and whoever He willed to protect.",
+    "otherNames": [
+      "The All-Heedful",
+      "All-Protecting",
+      "The Preserver"
+    ]
   },
   {
     "name": "المُقِيت",
-    "transliteration": "Al-Muqīt",
+    "transliteration": "Al-Muqeet",
     "number": 39,
     "found": "(4:85)",
-    "meaning": "The Sustainer, The Maintainer",
-    "desc": "Is the One who leaves no detail when He judges, even the most trivial."
+    "meaning": "The Sustaining One",
+    "desc": "The Maintainer, The Guardian, The Feeder, The One who has the Power.",
+    "otherNames": [
+      "The Maintainer",
+      "The Sustainer"
+    ]
   },
   {
     "name": "الحَسِيب",
-    "transliteration": "Al-Ḥasīb",
+    "transliteration": "Al-Haseeb",
     "number": 40,
     "found": "(4:6)(4:86)(33:39)",
-    "meaning": "The Reckoner",
-    "desc": "He is the One who will count all the facts of His creatures without forgetting or error."
+    "meaning": "The Reckoning One",
+    "desc": "The Reckoner, The One who gives the satisfaction.",
+    "otherNames": [
+      "The Reckoner"
+    ]
   },
   {
     "name": "الجَلِيل",
-    "transliteration": "Al-Jalīl",
+    "transliteration": "Al-Jaleel",
     "number": 41,
     "found": "(55:27)(39:14)(7:143)",
-    "meaning": "The Majestic",
-    "desc": "Is the One who is perfectly exempt from being compared to His creatures or from being like Him."
+    "meaning": "The Majestic One",
+    "desc": "The Sublime One, The Beneficent, The One who is attributed with greatness of Power and Glory of status.",
+    "otherNames": [
+      "The Majestic"
+    ]
   },
   {
     "name": "الكَرِيم",
-    "transliteration": "Al-Karīm",
+    "transliteration": "Al-Karim",
     "number": 42,
     "found": "(27:40)(82:6)",
-    "meaning": "The Most Generous, The Most Noble",
-    "desc": "Is the One who flooded His creation with His generosity."
+    "meaning": "The Bountiful One",
+    "desc": "The Generous One, The Gracious, The One who is attributed with greatness of Power and Glory of status.",
+    "otherNames": [
+      "The Most Noble",
+      "The Most Generous"
+    ]
   },
   {
     "name": "الرَّقِيب",
-    "transliteration": "Ar-Raqīb",
+    "transliteration": "Ar-Raqib",
     "number": 43,
     "found": "(4:1)(5:117)",
-    "meaning": "The Watchful, The All-Watchful",
-    "desc": "Is the One who observes and beholds all that He has created (and the actions of creatures are also creations)."
+    "meaning": "The Watchful One",
+    "desc": "The Watcher, The One that nothing is absent from Him. Hence, it’s meaning is related to attribute of Knowledge.",
+    "otherNames": [
+      "The All-Watchful",
+      "The Watchful"
+    ]
   },
   {
     "name": "المُجِيب",
-    "transliteration": "Al-Mujīb",
+    "transliteration": "Al-Mujeeb",
     "number": 44,
     "found": "(11:61)",
-    "meaning": "The Responsive, The Answerer",
-    "desc": "Is the One who answers the invocations of His creatures if He wills and to whom He wills."
+    "meaning": "The Responding One",
+    "desc": "The Responsive, The Hearkener, The One who answers the one in need if he asks Him and rescues the yearned if he calls upon Him.",
+    "otherNames": [
+      "The Answerer",
+      "The Responsive"
+    ]
   },
   {
     "name": "الوَاسِع",
-    "transliteration": "Al-Wāsiʿ",
+    "transliteration": "Al-Wasi",
     "number": 45,
     "found": "(2:268)(3:73)(5:54)",
-    "meaning": "The All-Encompassing, the Boundless",
-    "desc": "This name in Arabic means: immensely wide, but to qualify God it is understood that He has filled every void and has contained all things in a way that only He knows."
+    "meaning": "The All-Pervading One",
+    "desc": "The Vast, The All-Embracing, The Knowledgeable.",
+    "otherNames": [
+      "the Boundless",
+      "The All-Encompassing"
+    ]
   },
   {
     "name": "الحَكِيم",
-    "transliteration": "Al-Ḥakīm",
+    "transliteration": "Al-Hakeem",
     "number": 46,
     "found": "(31:27)(46:2)(57:1)(66:2)",
-    "meaning": "The All-Wise",
-    "desc": "He whose Wisdom has dazzled, dazzled and will dazzle any conscious and intelligent mind."
+    "meaning": "The Wise One",
+    "desc": "The Wise, The Judge of Judges, The One who is correct in His doings.",
+    "otherNames": [
+      "The All-Wise"
+    ]
   },
   {
     "name": "الوَدُود",
-    "transliteration": "Al-Wadūd",
+    "transliteration": "Al-Wadud",
     "number": 47,
     "found": "(11:90)(85:14)",
-    "meaning": "The Most Loving",
-    "desc": "This word in Arabic means: The one who draws near to his beloved by mercy, pity and beneficence, but when one reads this name in the \"Quran\", one feels each time different meanings which are difficult to translate into words}. We can try to translate it: The one who draws near to His servants out of pity although they move away from Him and do not glorify Him."
+    "meaning": "The Loving One",
+    "desc": "The Most Loving, The Most Affectionate, The Beloved",
+    "otherNames": [
+      "The Most Loving"
+    ]
   },
   {
     "name": "المَجِيد",
-    "transliteration": "Al-Majīd",
+    "transliteration": "Al-Majeed",
     "number": 48,
     "found": "(11:73) ",
-    "meaning": "The Glorious, The Most Honorable",
-    "desc": "Is the One who is glorified in the infinitely past, present and eternal."
+    "meaning": "The Glorious One",
+    "desc": "The Most Glorious One, The One who is with perfect Power, High Status, Compassion, Generosity and Kindness.",
+    "otherNames": [
+      "The Most Honorable",
+      "The Glorious"
+    ]
   },
   {
     "name": "البَاعِث",
-    "transliteration": "Al-Bāʿith",
+    "transliteration": "Al-Ba'ith",
     "number": 49,
     "found": "(22:7)",
-    "meaning": "The Infuser of New Life, The Resurrector",
-    "desc": "Is the One who raises the dead and deploys life in whatever He wants, be they men, animals or simply earth."
+    "meaning": "The Infuser of New Life",
+    "desc": "The Awakener, The Resurrector, The Arouser",
+    "otherNames": [
+      "The Resurrector"
+    ]
   },
   {
     "name": "الشَّهِيد",
-    "transliteration": "As-Shahīd",
+    "transliteration": "Ash-Shaheed",
     "number": 50,
     "found": "(4:166)(22:17)(41:53)(48:28)",
-    "meaning": "The All-Witnessing",
-    "desc": "The Witness: Allah is the ultimate and perfect witness to all that has happened in His kingdom, with clear and blatant evidence, perfectly blameless."
+    "meaning": "The All Observing Witness",
+    "desc": "The Witness, The One who nothing is absent from Him.",
+    "otherNames": [
+      "The All-Witnessing"
+    ]
   },
   {
     "name": "الحَقّ",
-    "transliteration": "Al-Ḥaqq",
+    "transliteration": "Al-Haqq",
     "number": 51,
     "found": "(6:62)(22:6)(23:116)(24:25)",
-    "meaning": "The Absolute Truth",
-    "desc": "Is the One who holds the absolute Truth."
+    "meaning": "The Embodiment of Truth",
+    "desc": "The Truth, The True, The One who truly exists.",
+    "otherNames": [
+      "The Absolute Truth"
+    ]
   },
   {
     "name": "الوَكِيل",
-    "transliteration": "Al-Wakīl",
+    "transliteration": "Al-Wakeel",
     "number": 52,
     "found": "(3:173)(4:171)(28:28)(73:9)",
-    "meaning": "The Trustee, The Disposer of Affairs",
-    "desc": "Is the One who guarantees the sustenance of creatures and the One from whom nothing of their every state can be concealed"
+    "meaning": "The Universal Trustee",
+    "desc": "The Trustee, The One who gives the satisfaction and is relied upon.",
+    "otherNames": [
+      "The Disposer of Affairs",
+      "The Trustee"
+    ]
   },
   {
     "name": "القَوِيّ",
     "transliteration": "Al-Qawiyy",
     "number": 53,
     "found": "(22:40)(22:74)(42:19)(57:25)",
-    "meaning": "The All-Strong",
-    "desc": "The Mighty: Allah is the most powerful, the strongest, his strength has no limit and is not described with definitions of physical strength."
+    "meaning": "The Strong One",
+    "desc": "The Most Strong, The Strong, The One with the complete Power.",
+    "otherNames": [
+      "The All-Strong"
+    ]
   },
   {
     "name": "المَتِين",
-    "transliteration": "Al-Matīn",
+    "transliteration": "Al-Matin",
     "number": 54,
     "found": "(51:58)",
-    "meaning": "The Firm, The Steadfast",
-    "desc": "The Enduring: An endurance worthy of Him, unlimited, indefatigable, and which is not marred by any weakness, without pause, without interruption and which no factor can attenuate."
+    "meaning": "The Firm One",
+    "desc": "The One with extreme Power which is un-interrupted and He does not get tired.",
+    "otherNames": [
+      "The Steadfast",
+      "The Firm"
+    ]
   },
   {
     "name": "الوَلِيّ",
-    "transliteration": "Al-Waliyy",
+    "transliteration": "Al-Waliy",
     "number": 55,
     "found": "(4:45)(7:196)(42:28)(45:19)",
-    "meaning": "The Protector, The Guardian",
-    "desc": "Is the One who preserves the believing servants, so the prophets and those who follow them are those who are the \"preserved people\" in the sense that they have been guided to the obligatory thanks to Him who makes them exist, that is, that is to say with regard to Allah"
+    "meaning": "The Protecting Associate",
+    "desc": "The Protecting Friend, The Supporter.",
+    "otherNames": [
+      "The Guardian",
+      "The Protector"
+    ]
   },
   {
     "name": "الحَمِيد",
-    "transliteration": "Al-Ḥamīd",
+    "transliteration": "Al-Hameed",
     "number": 56,
     "found": "(14:8)(31:12)(31:26)(41:42)",
-    "meaning": "The Praiseworthy, The Most Praised",
-    "desc": "Is the One who deserves the thanksgiving, the glorification and the song of praise more than any other"
+    "meaning": "The Sole-Laudable One",
+    "desc": "The Praiseworthy, The praised One who deserves to be praised.",
+    "otherNames": [
+      "The Most Praised",
+      "The Praiseworthy"
+    ]
   },
   {
     "name": "المُحصِي",
-    "transliteration": "Al-Muḥṣī",
+    "transliteration": "Al-Muhsi",
     "number": 57,
     "found": "(72:28)(78:29)(82:10-12)",
-    "meaning": "The All-Enumerating, The Counter",
-    "desc": "Literally translated as the counter but means the One who counts every creature, every act, every speck of dust in his kingdom and of whom nothing escapes his knowledge"
+    "meaning": "The All-Enumerating One",
+    "desc": "The Counter, The Reckoner, The One who the count of things are known to him.",
+    "otherNames": [
+      "The Counter",
+      "The All-Enumerating"
+    ]
   },
   {
     "name": "المُبدِي",
-    "transliteration": "Al-Mubdiʾ",
+    "transliteration": "Al-Mubdi",
     "number": 58,
     "found": "(10:34)(27:64)(29:19)(85:13)",
-    "meaning": "The Originator, The Initiator",
-    "desc": "Is the One who gives a beginning to what does not exist without a beginning, without a model, that is to say, the One who creates creatures"
+    "meaning": "The Originator",
+    "desc": "The One who started the human being. That is, He created him.",
+    "otherNames": [
+      "The Initiator"
+    ]
   },
   {
     "name": "المُعِيد",
-    "transliteration": "Al-Muʿīd",
+    "transliteration": "Al-Muid",
     "number": 59,
     "found": "(10:34)(27:64)(29:19)(85:13)",
-    "meaning": "The Restorer, The Reinstater",
-    "desc": "Is the One who brings the living back to death after life and the One who brings the dead back to life after death"
+    "meaning": "The Restorer",
+    "desc": "The Reproducer, The One who brings back the creatures after death.",
+    "otherNames": [
+      "The Reinstater"
+    ]
   },
   {
     "name": "المُحيِي",
-    "transliteration": "Al-Muḥyī",
+    "transliteration": "Al-Muhyi",
     "number": 60,
     "found": "(7:158)(15:23)(30:50)(57:2)",
-    "meaning": "The Giver of Life",
-    "desc": "Is the One who gives life to a mixture of maniyy, that is to say of seminal liquid, devoid of soul and makes him a living being and the One who gives life to the bodies of humans, jinns and angels by reuniting them with their souls during the resurrection"
+    "meaning": "The Maintainer of life",
+    "desc": "The Restorer, The Giver of Life.",
+    "otherNames": [
+      "The Giver of Life"
+    ]
   },
   {
     "name": "المُمِيت",
-    "transliteration": "Al-Mumīt",
+    "transliteration": "Al-Mumeet",
     "number": 61,
     "found": "(3:156)(7:158)(15:23)(57:2)",
-    "meaning": "The Creator of Death",
-    "desc": "He is the One who kills living beings and the One who cancels out the power of the powerful of this world by death"
+    "meaning": "The Inflictor of Death",
+    "desc": "The Creator of Death, The Destroyer, The One who renders the living dead.",
+    "otherNames": [
+      "The Creator of Death"
+    ]
   },
   {
     "name": "الحَيّ",
-    "transliteration": "Al-Ḥayy",
+    "transliteration": "Al-Hayy",
     "number": 62,
     "found": "(2:255)(3:2)(25:58)(40:65)",
-    "meaning": "The Ever-Living",
-    "desc": "The Living One: Is the One who does not come into existence and yet exists, and the One who possesses a hayah and this attribute is not a life as is the hayah of creatures made up of a combination of soul, flesh and of blood Imam At-Tahawiyy said in his treatise on belief that \"he who attributes to Allah an attribute in a sense which is among those which can be attributed to human beings is disbeliever\""
+    "meaning": "The Eternally Living One",
+    "desc": "The Alive, The One attributed with a life that is unlike our life and is not that of a combination of soul, flesh or blood.",
+    "otherNames": [
+      "The Ever-Living"
+    ]
   },
   {
     "name": "القَيُّوم",
-    "transliteration": "Al-Qayyūm",
+    "transliteration": "Al-Qayyum",
     "number": 63,
     "found": "(2:255)(3:2)(20:111)",
-    "meaning": "The Sustainer, The Self-Subsisting",
-    "desc": "Is the One who exists, is eternal and does not change and the One who is not affected by non-existence or annihilation and is in no way affected by controlling and creating the acts of human beings"
+    "meaning": "The Self-Subsisting One",
+    "desc": "The Self-Subsisting, The Self-Existing One upon Whom all others depend",
+    "otherNames": [
+      "The Self-Subsisting",
+      "The Sustainer"
+    ]
   },
   {
     "name": "الوَاجِد",
-    "transliteration": "Al-Wājid",
+    "transliteration": "Al-Wajid",
     "number": 64,
     "found": "(38:44)",
-    "meaning": "The Finder, The Perceiver",
-    "desc": "Is the One who does not need anything and is not reached or concerned with want, lack or need"
+    "meaning": "The Pointing One",
+    "desc": "The Perceiver, The Finder, The Rich who is never poor. Al-Wajid is Richness.",
+    "otherNames": [
+      "The Perceiver",
+      "The Finder"
+    ]
   },
   {
     "name": "المَاجِد",
-    "transliteration": "Al-Mājid",
+    "transliteration": "Al-Maajid",
     "number": 65,
     "found": "(11:73)",
-    "meaning": "The Illustrious, The Magnificent",
-    "desc": "Is the One who is better than any other and the One who bestows innumerable benefits very widely and without compensation"
+    "meaning": "The All-Noble One",
+    "desc": "The Glorious, He who is Most Glorious.",
+    "otherNames": [
+      "The Magnificent",
+      "The Illustrious"
+    ]
   },
   {
     "name": "الوَاحِد",
-    "transliteration": "Al-Wāḥid",
+    "transliteration": "Al-Wahid",
     "number": 66,
     "found": "(2:163)(5:73)(9:31)(18:110)",
-    "meaning": "The One, The Indivisible",
-    "desc": "The Unique: Is the One who has no alter ego, whether in His Being, in His Act, or in His Attributes. Nothing is like him"
+    "meaning": "The Only One",
+    "desc": "The Unique, The One, The One without a partner.",
+    "otherNames": [
+      "The One",
+      "The Indivisible"
+    ]
   },
   {
     "name": "الأَحَد",
-    "transliteration": "Al-Aḥad",
+    "transliteration": "Al-Ahad",
     "number": 67,
     "found": "(112:1)",
-    "meaning": "The Unique, The Only One",
-    "desc": "The One: Is He Who has uniqueness as an attribute"
+    "meaning": "The Sole One",
+    "desc": "The One.",
+    "otherNames": [
+      "The Only One",
+      "The Unique"
+    ]
   },
   {
     "name": "الصَّمَد",
-    "transliteration": "Aṣ-Ṣamad",
+    "transliteration": "As-Samad",
     "number": 68,
     "found": "(112:2)",
-    "meaning": "The Eternal, The Absolute",
-    "desc": "Is the One to whom we can rely for any business and who can be called upon for all our needs; One who has no children or parents, neither like nor equivalent, according to Al-Hakim's explanation; The One who needs nothing and the One who everything needs, in order to exist, etc."
+    "meaning": "The Supreme Provider",
+    "desc": "The Eternal, The Independent, The Master who is relied upon in matters and reverted to in ones needs. He is the only one a person should turn to when feeling helpless.",
+    "otherNames": [
+      "The Absolute",
+      "The Eternal"
+    ]
   },
   {
     "name": "القَادِر",
-    "transliteration": "Al-Qādir",
+    "transliteration": "Al-Qadir",
     "number": 69,
     "found": "(6:65)(36:81)(46:33)(75:40)",
-    "meaning": "The Omnipotent, The All-Able",
-    "desc": "Is the One who is unaffected by weakness, the One whose power is absolute and dominates all creatures and the One whom absolutely nothing can weaken"
+    "meaning": "The All-Powerful",
+    "desc": "The Able, The Capable, The One attributed with Power.",
+    "otherNames": [
+      "The All-Able",
+      "The Omnipotent"
+    ]
   },
   {
     "name": "المُقتَدِر",
     "transliteration": "Al-Muqtadir",
     "number": 70,
     "found": "(18:45)(54:42)(54:55)",
-    "meaning": "The All-Powerful, The Dominant",
-    "desc": "Is the One who is mighty over all things and the One whose capacities are absolutely limitless"
+    "meaning": "The All Authoritative One",
+    "desc": "The Powerful, The Dominant, The One with the perfect Power that nothing is withheld from Him.",
+    "otherNames": [
+      "The Dominant",
+      "The All-Powerful"
+    ]
   },
   {
     "name": "المُقَدِّم",
     "transliteration": "Al-Muqaddim",
     "number": 71,
     "found": "(16:61)(17:34)",
-    "meaning": "The Expediter, The Promoter",
-    "desc": "Is He who is free from the characteristics of creatures and better than any creature; He who fixes the speed of events, accelerates certain things in the eyes of people according to a destiny and grants each thing a value, a rank, a time and characteristics which suit Him according to wisdom"
+    "meaning": "The Expediting One",
+    "desc": "The Expediter, The Promoter, The One who puts things in their right places.",
+    "otherNames": [
+      "The Promoter",
+      "The Expediter"
+    ]
   },
   {
     "name": "المُؤَخِّر",
-    "transliteration": "Al-Muʾakhkhir",
+    "transliteration": "Al-Muakhkhir",
     "number": 72,
     "found": "(71:4)",
-    "meaning": "The Delayer, The Postponer",
-    "desc": "Is He who is free from the characteristics of creatures and better than any creature; The one who intends the slowness of events and slows down certain things in the eyes of people according to a destiny and grants each thing a value, a rank, a time and characteristics which suit it according to a wisdom (cf no 71)"
+    "meaning": "The Delayer",
+    "desc": "The Postponer, He Who Puts Far Away. He makes ahead what He wills and delays what He wills.",
+    "otherNames": [
+      "The Postponer"
+    ]
   },
   {
     "name": "الأَوَّل",
     "transliteration": "Al-Awwal",
     "number": 73,
     "found": "(57:3)",
-    "meaning": "The First, The Foremost",
-    "desc": "The First: Is the One who exists without creatures, without beginning and without time; One who is exempt from being created, from the appearance of a new attribute and from change, One who exists without coming into existence"
+    "meaning": "The Very First",
+    "desc": "The First, The One whose Existence is without a beginning.",
+    "otherNames": [
+      "The Foremost",
+      "The First"
+    ]
   },
   {
     "name": "الآخِر",
-    "transliteration": "Al-Ākhir",
+    "transliteration": "Al-Akhir",
     "number": 74,
     "found": "(57:3)",
-    "meaning": "The Last, The Utmost",
-    "desc": "The Last: Is the One who exists without interruption while the creatures are annihilated at every moment; He who is eternal, He who annihilates and is exempt from being annihilated and the disappearance of one or more attributes; The one that exists without being concerned by the notion of end and annihilation"
+    "meaning": "The Infinite Last One",
+    "desc": "The Last, The One whose Existence is without an end.",
+    "otherNames": [
+      "The Utmost",
+      "The Last"
+    ]
   },
   {
     "name": "الظَّاهِر",
-    "transliteration": "Aẓ-Ẓāhir",
+    "transliteration": "Az-Zaahir",
     "number": 75,
     "found": "(57:3)",
-    "meaning": "The Manifest, The All-Surpassing",
-    "desc": "Is the One whose existence is manifested in everything by proofs, from the point of view of power and domination and not what would be present in any body from the point of view of place, image and how"
+    "meaning": "The Perceptible",
+    "desc": "The Manifest, The Conspicuous, The Evident",
+    "otherNames": [
+      "The All-Surpassing",
+      "The Manifest"
+    ]
   },
   {
     "name": "البَاطِن",
-    "transliteration": "Al-Bāṭin",
+    "transliteration": "Al-Baatin",
     "number": 76,
     "found": "(57:3)",
-    "meaning": "The Hidden One, Knower of the Hidden",
-    "desc": "Is the One who is preserved from the delusions of creatures attempting to attribute to the Creator human characteristics or characteristics of creatures and the One who creates the characteristics of creatures and their images"
+    "meaning": "The Imperceptible",
+    "desc": "The Hidden, The Secret One, The Inner One, The Knower of Hidden Things",
+    "otherNames": [
+      "The Hidden One",
+      "Knower of the Hidden"
+    ]
   },
   {
     "name": "الوَالِي",
-    "transliteration": "Al-Wālī",
+    "transliteration": "Al-Wali",
     "number": 77,
     "found": "(13:11)(22:7)",
-    "meaning": "The Sole Governor",
-    "desc": "Is the One who owns, manages and controls all things and the One who creates everything according to wisdom"
+    "meaning": "The Holder of Supreme Authority",
+    "desc": "The Governor, The One who owns things and manages them.",
+    "otherNames": [
+      "The Sole Governor"
+    ]
   },
   {
     "name": "المُتَعَالِي",
-    "transliteration": "Al-Mutaʿālī",
+    "transliteration": "Al-Mutaali",
     "number": 78,
     "found": "(13:9)",
-    "meaning": "The Self-Exalted",
-    "desc": "Is the One who is free from the attributes of creatures and the One whose power over creatures is boundless"
+    "meaning": "The Extremely Exalted One",
+    "desc": "The Most Exalted, The High Exalted, The One who is clear from the attributes of the creation.",
+    "otherNames": [
+      "The Self-Exalted"
+    ]
   },
   {
     "name": "البَرّ",
     "transliteration": "Al-Barr",
     "number": 79,
     "found": "(52:28)",
-    "meaning": "The Source of All Goodness",
-    "desc": "Is the One who has the ability to bestow faith and blessings on all creatures, and among them some are grateful and some are not: the former are called Muslims or believers and others are called non-Muslims or non-Muslims. -believers"
+    "meaning": "The Fountain-Head of Truth",
+    "desc": "The Source of All Goodness, The Righteous, The One who is kind to His creatures",
+    "otherNames": [
+      "The Source of All Goodness"
+    ]
   },
   {
     "name": "التَّوَاب",
-    "transliteration": "At-Tawwāb",
+    "transliteration": "At-Tawwab",
     "number": 80,
     "found": "(2:128)(4:64)(49:12)(110:3)",
-    "meaning": "The Ever-Pardoning",
-    "desc": "Is the One who grants forgiveness to those who repent every time they repent"
+    "meaning": "The Ever-Acceptor of Repentance",
+    "desc": "The Acceptor of Repentance, The Oft-Forgiving, The Acceptor of our Return",
+    "otherNames": [
+      "The Ever-Pardoning"
+    ]
   },
   {
     "name": "المُنتَقِم",
     "transliteration": "Al-Muntaqim",
     "number": 81,
     "found": "(32:22)(43:41)(44:16)",
-    "meaning": "The Avenger",
-    "desc": "Is the avenger"
+    "meaning": "The Retaliator",
+    "desc": "The Avenger, The Disapprover, The Inflictor of Retribution",
+    "otherNames": [
+      "The Avenger"
+    ]
   },
   {
     "name": "العَفُوّ",
-    "transliteration": "Al-ʿAfūw",
+    "transliteration": "Al-Afuw",
     "number": 82,
     "found": "(4:99)(4:149)(22:60) ",
-    "meaning": "The Pardoner",
-    "desc": "Is the One who sets aside and forgives sin and the One who preserves in every seemingly hopeless situation a door to honor, maintenance and blessings or to immediate repentance"
+    "meaning": "The Supreme Pardoner",
+    "desc": "The Pardoner, The Forgiver and The Eliminator of Sins.",
+    "otherNames": [
+      "The Pardoner"
+    ]
   },
   {
     "name": "الرَّءُوف",
-    "transliteration": "Ar-Raʾūf",
+    "transliteration": "Ar-Rauf",
     "number": 83,
     "found": "(3:30)(9:117)(57:9)(59:10)",
-    "meaning": "The Most Kind",
-    "desc": "Is the One who can offer an immensity of benefits without counterpart and without necessity"
+    "meaning": "The Benign One",
+    "desc": "The Most Kind, The Tenderly Merciful, The Clement and Compassionate",
+    "otherNames": [
+      "The Most Kind"
+    ]
   },
   {
     "name": "مَالِكُ المُلك",
-    "transliteration": "Mālik al-Mulk",
+    "transliteration": "Malikul-Mulk",
     "number": 84,
     "found": "(3:26)",
-    "meaning": "Master of the Dominion, Owner of the Kingdom",
-    "desc": "Is the One who creates and attributes according to a destiny all sovereignty, domination, property and all broad power which are granted to certain creatures in this lower world"
+    "meaning": "The Eternal Possessor of Sovereignty",
+    "desc": "The One who controls the Dominion and gives dominion to whoever He willed.",
+    "otherNames": [
+      "Owner of the Kingdom",
+      "Master of the Dominion"
+    ]
   },
   {
     "name": "ذُو الجَلَالِ وَالإِكرَام",
-    "transliteration": "Dhū al-Jalāli wa’l-Ikrām",
+    "transliteration": "Dhul-Jalaali-Wal-Ikram",
     "number": 85,
     "found": "(55:27)(55:78)",
-    "meaning": "Possessor of Glory and Honour",
-    "desc": "That is, Allah is the One who is better than any other in reality and all the evidence confirms this and denies the contrary so it is not valid to dispute this point, to deny it or to be hostile against this subject; is the One who fills with blessings those who will have understood this who will know the general holiness, will have success and will be well guided on the Day of Judgment"
+    "meaning": "The Possessor of Majesty and Honour",
+    "desc": "The Lord of Majesty and Bounty.",
+    "otherNames": [
+      "Honour",
+      "Possessor of Glory"
+    ]
   },
   {
     "name": "المُقسِط",
-    "transliteration": "Al-Muqsiṭ",
+    "transliteration": "Al-Muqsit",
     "number": 86,
     "found": "(7:29)(3:18)",
     "meaning": "The Just One",
-    "desc": "Is the One who judges according to the greatest justice, the One who is free from all forms of injustice and tyranny, and the One who has absolutely no accountability"
+    "desc": "The Equitable, The One who is Just in His judgment.",
+    "otherNames": []
   },
   {
     "name": "الجَامِع",
-    "transliteration": "Al-Jāmiʿ",
+    "transliteration": "Al-Jami",
     "number": 87,
     "found": "(3:9)",
-    "meaning": "The Gatherer, the Uniter",
-    "desc": "Is the One who gathers creatures together on a day of which there is no doubt, the Day of Judgment"
+    "meaning": "The Assembler of Scattered Creations",
+    "desc": "The Gatherer, The One who gathers the creatures on a day that there is no doubt about, that is the Day of Judgment.",
+    "otherNames": [
+      "the Uniter",
+      "The Gatherer"
+    ]
   },
   {
     "name": "الغَنِيّ",
-    "transliteration": "Al-Ghaniyy",
+    "transliteration": "Al-Ghaniy",
     "number": 88,
     "found": "(3:97)(39:7)(47:38)(57:24)",
-    "meaning": "The Self-Sufficient, The Wealthy",
-    "desc": "Is the One who has no need of creatures and whose creatures cannot do without al-Ghaniyy [who is the One who makes them exist and keeps them in existence and constantly changes them]"
+    "meaning": "The Self-Sufficient One",
+    "desc": "The One who does not need the creation.",
+    "otherNames": [
+      "The Wealthy",
+      "The Self-Sufficient"
+    ]
   },
   {
     "name": "المُغنِي",
-    "transliteration": "Al-Mughnī",
+    "transliteration": "Al-Mughni",
     "number": 89,
     "found": "(9:28)",
     "meaning": "The Enricher",
-    "desc": "Is the One who satisfies the needs of creatures and the One who brings them their sustenance"
+    "desc": "The Emancipator, The Fulfiller of Needs, The Bestower of Wealth.",
+    "otherNames": []
   },
   {
     "name": "المَانِع",
-    "transliteration": "Al-Māniʿ",
+    "transliteration": "Al-Mani",
     "number": 90,
     "found": "(67:21)",
-    "meaning": "The Withholder",
-    "desc": "Is the One who intends for each creature his victories, his protections and the One from whom they must always be preserved according to a destiny"
+    "meaning": "The Preventer",
+    "desc": "The Withholder.",
+    "otherNames": [
+      "The Withholder"
+    ]
   },
   {
     "name": "الضَّارّ",
-    "transliteration": "Aḍ-Ḍārr",
+    "transliteration": "Ad-Darr",
     "number": 91,
     "found": "(6:17)",
-    "meaning": "The Distresser",
-    "desc": "Is the One who is almighty to bring inevitably the nuisance which must reach a creature according to a destiny"
+    "meaning": "The Distressor",
+    "desc": "The Correcter, The Balancer, The Distresser, The Afflicter, The Punisher.",
+    "otherNames": [
+      "The Distresser"
+    ]
   },
   {
     "name": "النَّافِع",
-    "transliteration": "An-Nāfiʿ",
+    "transliteration": "An-Naafi",
     "number": 92,
     "found": "(30:37)",
-    "meaning": "The Propitious, The Benefactor",
-    "desc": "Is the One who is almighty to bring inevitably the profit that a creature must receive according to a destiny"
+    "meaning": "The Bestower of Benefits",
+    "desc": "The Creator of Good, The Benefiter, The Propitious, The Auspicious",
+    "otherNames": [
+      "The Benefactor",
+      "The Propitious"
+    ]
   },
   {
     "name": "النُّور",
-    "transliteration": "An-Nūr",
+    "transliteration": "An-Noor",
     "number": 93,
     "found": "(24:35)",
-    "meaning": "The Light",
-    "desc": "The Light: Is the One who guides to their goal those who are prey to temptation and puts them in the right direction according to a destiny; Allah is the One who guides believers to the light of faith, creates light and is not a light that is only a creature"
+    "meaning": "The Prime Light",
+    "desc": "The Light, The One who guides.",
+    "otherNames": [
+      "The Light"
+    ]
   },
   {
     "name": "الهَادِي",
-    "transliteration": "Al-Hādī",
+    "transliteration": "Al-Hadi",
     "number": 94,
     "found": "(25:31)",
-    "meaning": "The Guide",
-    "desc": "Is the One who intends for certain creatures the benefit of being well guided and of knowing righteousness"
+    "meaning": "The Provider of Guidance",
+    "desc": "The Guide, The Leader, The Guide of the Right Path",
+    "otherNames": [
+      "The Guide"
+    ]
   },
   {
     "name": "البَدِيع",
-    "transliteration": "Al-Badīʿ",
+    "transliteration": "Al-Badi",
     "number": 95,
     "found": "(2:117)(6:101)",
-    "meaning": "The Incomparable Originator",
-    "desc": "Is the One who brings creatures and this world into existence, not from pre-existing matter or in the image of an earlier model, but on the contrary without precursor, model and unprecedented"
+    "meaning": "The Unique One",
+    "desc": "The Wonderful Originator, The Unprecedented and Incomparable Inventor",
+    "otherNames": [
+      "The Incomparable Originator"
+    ]
   },
   {
     "name": "البَاقِي",
-    "transliteration": "Al-Bāqī",
+    "transliteration": "Al-Baaqi",
     "number": 96,
     "found": "(55:27)",
-    "meaning": "The Ever-Lasting",
-    "desc": "Is the One whose existence free from annihilation and change is imposed on sound reason which cannot claim the contrary"
+    "meaning": "The Ever Surviving One",
+    "desc": "The Everlasting, The Ever-Enduring, The Ever-Present",
+    "otherNames": [
+      "The Ever-Lasting"
+    ]
   },
   {
     "name": "الوَارِث",
-    "transliteration": "Al-Wāriṯ",
+    "transliteration": "Al-Warith",
     "number": 97,
     "found": "(15:23)",
-    "meaning": "The Inheritor",
-    "desc": "Is the One who exists and does not change as creatures are wiped out"
+    "meaning": "The Eternal Inheritor",
+    "desc": "The Heir, The One whose Existence remains.",
+    "otherNames": [
+      "The Inheritor"
+    ]
   },
   {
     "name": "الرَّشِيد",
-    "transliteration": "Ar-Rashīd",
+    "transliteration": "Ar-Rasheed",
     "number": 98,
     "found": "(2:256)",
-    "meaning": "The Guide to the Right Path",
-    "desc": "Is the One who guides creatures to what is in their best interests"
+    "meaning": "The Guide to Path of Rectitude",
+    "desc": "The Guide to the Right Path, The One who guides.",
+    "otherNames": [
+      "The Guide to the Right Path"
+    ]
   },
   {
     "name": "الصَّبُور",
-    "transliteration": "Aṣ-Ṣabūr",
+    "transliteration": "As-Sabur",
     "number": 99,
     "found": "(2:153)(3:200)(103:3)",
-    "meaning": "The Patient",
-    "desc": "Is the One who delays the punishment of sinners by adjusting the accounts of each until a definite day and gives them their ease and time until a time of which they all do not know the date."
+    "meaning": "The Extensively Enduring One",
+    "desc": "The Patient, The One who does not quickly punish the sinners.",
+    "otherNames": [
+      "The Patient"
+    ]
   }
 ]

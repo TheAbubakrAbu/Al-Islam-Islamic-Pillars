@@ -121,13 +121,13 @@ struct CreditsView: View {
                 
                 creditLink("Credit for the Indopak Quran font goes to Urdu Nigar", url: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")
                 
-                creditLink("Credit for the Tajweed rules goes to Collin Fair", url: "https://github.com/cpfair/quran-tajweed")
-                                
                 creditLink("Credit for the Surah Quran Recitations goes to MP3 Quran", url: "https://mp3quran.net/eng")
                 
                 creditLink("Credit for the Ayah Quran Recitations goes to Al Quran", url: "https://alquran.cloud/cdn")
+
+                creditLink("Credit for the Tafsir API goes to Kamran", url: "https://github.com/spa5k/tafsir_api")
                 
-                creditLink("Credit for the 99 Names of Allah from KabDeveloper", url: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main")
+                creditLink("Credit for the 99 Names of Allah goes to MyIslam", url: "https://myislam.org/99-names-of-allah/")
             }
             .foregroundColor(settings.accentColor.color)
             .font(.body)
@@ -154,6 +154,14 @@ struct CreditsView: View {
     private func creditLink(_ title: String, url: String) -> some View {
         if let destination = URL(string: url) {
             Link(title, destination: destination)
+                .contextMenu {
+                    Button {
+                        settings.hapticFeedback()
+                        UIPasteboard.general.string = title
+                    } label: {
+                        Label("Copy Link", systemImage: "doc.on.doc")
+                    }
+                }
         }
     }
 
@@ -167,9 +175,7 @@ struct CreditsView: View {
                 .foregroundColor(.primary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
-                .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
         .foregroundColor(settings.accentColor.color)
         .conditionalGlassEffect(useColor: 0.25)
         .padding(.horizontal, 24)

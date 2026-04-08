@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct AyahRow: View {
     @EnvironmentObject var settings: Settings
@@ -15,6 +16,9 @@ struct AyahRow: View {
     @State private var draftNote: String = ""
     @State private var showCustomRangeSheet = false
     #endif
+    #if os(watchOS)
+    @State private var showWatchPlaybackDialog = false
+    #endif
     
     let surah: Surah
     let ayah: Ayah
@@ -25,6 +29,12 @@ struct AyahRow: View {
     @Binding var searchText: String
     
     @State private var showRespectAlert = false
+
+    private static let arabicDisplayCache: NSCache<NSString, NSString> = {
+        let cache = NSCache<NSString, NSString>()
+        cache.countLimit = 5000
+        return cache
+    }()
     
     func containsProfanity(_ text: String) -> Bool {
         let t = text.folding(options: [.diacriticInsensitive, .widthInsensitive], locale: .current).lowercased()
@@ -77,8 +87,30 @@ struct AyahRow: View {
     }
 
     private func arabicDisplayText() -> String {
-        let baseText = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: comparisonQiraahOverride)
-        return spacedArabic(baseText)
+        // Tajweed needs full diacritics; when colors are on, show unclean Arabic even if "clean" is enabled elsewhere.
+        let clean = settings.cleanArabicText && !shouldShowTajweedColors
+        let qiraahKey = comparisonQiraahOverride ?? (settings.displayQiraahForArabic ?? "Hafs")
+        let key = "\(surah.id):\(ayah.id)|\(clean ? 1 : 0)|\((settings.beginnerMode || ayahBeginnerMode) ? 1 : 0)|\(qiraahKey)"
+
+        if let cached = Self.arabicDisplayCache.object(forKey: key as NSString) {
+            return cached as String
+        }
+
+        let baseText = ayah.displayArabicText(surahId: surah.id, clean: clean, qiraahOverride: comparisonQiraahOverride)
+        let spaced = spacedArabic(baseText)
+        Self.arabicDisplayCache.setObject(spaced as NSString, forKey: key as NSString)
+        return spaced
+    }
+
+    private func queryForInlineHighlight(_ query: String) -> String {
+        let stripped = query
+            .replacingOccurrences(of: "&&", with: " ")
+            .replacingOccurrences(of: "||", with: " ")
+            .replacingOccurrences(of: "&", with: " ")
+            .replacingOccurrences(of: "|", with: " ")
+            .replacingOccurrences(of: "!", with: " ")
+            .replacingOccurrences(of: "#", with: " ")
+        return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var shouldShowTajweedColors: Bool {
@@ -115,26 +147,39 @@ struct AyahRow: View {
         ].joined(separator: "|")
     }
 
-    #if os(iOS)
     private var ayahHighlightBackgroundVerticalPadding: CGFloat {
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, watchOS 26.0, *) {
             return -11
         }
         return -2
     }
-    #endif
 
     var body: some View {
         let isBookmarked = isBookmarkedHere
-        let showArabic = settings.showArabicText
         let hafsOnly: Bool = if let override = comparisonQiraahOverride {
             override.isEmpty || override == "Hafs"
         } else {
             settings.isHafsDisplay
         }
-        let showTranslit = settings.showTransliteration && hafsOnly
-        let showEnglishSaheeh = settings.showEnglishSaheeh && hafsOnly
-        let showEnglishMustafa = settings.showEnglishMustafa && hafsOnly
+        let normalizedQuery = settings.cleanSearch(searchText, whitespace: true).removingArabicDiacriticsAndSigns
+        let arabicSourceForMatch = settings.cleanSearch(
+            ayah.textArabic(for: comparisonQiraahOverride ?? settings.displayQiraahForArabic),
+            whitespace: false
+        ).removingArabicDiacriticsAndSigns
+        let translitSourceForMatch = settings.cleanSearch(ayah.textTransliteration, whitespace: false).removingArabicDiacriticsAndSigns
+        let saheehSourceForMatch = settings.cleanSearch(ayah.textEnglishSaheeh, whitespace: false).removingArabicDiacriticsAndSigns
+        let mustafaSourceForMatch = settings.cleanSearch(ayah.textEnglishMustafa, whitespace: false).removingArabicDiacriticsAndSigns
+
+        let mArabic = !normalizedQuery.isEmpty && arabicSourceForMatch.contains(normalizedQuery)
+        let mTranslit = !normalizedQuery.isEmpty && translitSourceForMatch.contains(normalizedQuery)
+        let mSaheeh = !normalizedQuery.isEmpty && saheehSourceForMatch.contains(normalizedQuery)
+        let mMustafa = !normalizedQuery.isEmpty && mustafaSourceForMatch.contains(normalizedQuery)
+
+        let showArabic = settings.showArabicText || mArabic
+        let showTranslit = hafsOnly && (settings.showTransliteration || mTranslit)
+        let showEnglishSaheeh = hafsOnly && (settings.showEnglishSaheeh || mSaheeh)
+        let showEnglishMustafa = hafsOnly && (settings.showEnglishMustafa || mMustafa)
+        let highlightQuery = queryForInlineHighlight(searchText)
         let fontSizeEN = settings.englishFontSize
         
         ZStack {
@@ -146,12 +191,10 @@ struct AyahRow: View {
                         : .white.opacity(0.00001)
                     )
                     .padding(.horizontal, -12)
-                    #if os(iOS)
                     .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
-                    #endif
             }
             
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 4) {
                     Text("\(surah.id):\(ayah.id)")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
@@ -210,6 +253,7 @@ struct AyahRow: View {
                             surahNumber: surah.id,
                             ayahNumber: ayah.id
                         )
+                        .smallMediumSheetPresentation()
                     }
                     .sheet(isPresented: $showTafsirSheet) {
                         if #available(iOS 16.0, *) {
@@ -246,11 +290,25 @@ struct AyahRow: View {
                         )
                     }
                     #else
-                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 22, height: 22)
-                        .foregroundColor(settings.accentColor.color)
+                    HStack(spacing: 8) {
+                        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 22, height: 22)
+                            .foregroundColor(settings.accentColor.color)
+
+                        if settings.isHafsDisplay {
+                            Image(systemName: "play.circle")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(settings.accentColor.color)
+                                .onTapGesture {
+                                    settings.hapticFeedback()
+                                    showWatchPlaybackDialog = true
+                                }
+                        }
+                    }
                     #endif
                 }
                 .padding(.bottom, settings.showArabicText ? 8 : 2)
@@ -269,7 +327,8 @@ struct AyahRow: View {
                             showTranslit: showTranslit,
                             showEnglishSaheeh: showEnglishSaheeh,
                             showEnglishMustafa: showEnglishMustafa,
-                            fontSizeEN: fontSizeEN
+                            fontSizeEN: fontSizeEN,
+                            highlightQuery: highlightQuery
                         )
                     }
                     .disabled(searchText.isEmpty)
@@ -279,7 +338,8 @@ struct AyahRow: View {
                         showTranslit: showTranslit,
                         showEnglishSaheeh: showEnglishSaheeh,
                         showEnglishMustafa: showEnglishMustafa,
-                        fontSizeEN: fontSizeEN
+                        fontSizeEN: fontSizeEN,
+                        highlightQuery: highlightQuery
                     )
                     #endif
                 }
@@ -307,12 +367,61 @@ struct AyahRow: View {
         } message: {
             Text("This ayah has a note. Unbookmarking will delete the note.")
         }
+        #if os(watchOS)
+        .confirmationDialog("Play Ayah", isPresented: $showWatchPlaybackDialog, titleVisibility: .visible) {
+            Button("Play Ayah") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+            }
+
+            Button("Play From Ayah") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
+            }
+
+            Button("Repeat Ayah 2×") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: 2)
+            }
+
+            Button("Repeat Ayah 3×") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: 3)
+            }
+
+            Button("Repeat Ayah 5×") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: 5)
+            }
+
+            Button("Repeat Ayah 10×") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: 10)
+            }
+
+            Button("Repeat Ayah 15×") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: 15)
+            }
+
+            Button("Repeat Ayah 20×") {
+                settings.hapticFeedback()
+                quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, repeatCount: 20)
+            }
+        } message: {
+            Text("Choose how you want to start playback for this ayah.")
+        }
+        #endif
         #if os(iOS)
         .sheet(isPresented: $showCustomRangeSheet) {
             PlayCustomRangeSheet(
                 surah: surah,
                 initialStartAyah: ayah.id,
-                initialEndAyah: surah.numberOfAyahs(for: settings.displayQiraahForArabic),
+                initialEndAyah: PlayCustomRangeSheet.defaultEndAyah(
+                    startAyah: ayah.id,
+                    surah: surah,
+                    displayQiraah: settings.displayQiraahForArabic
+                ),
                 onPlay: { start, end, repAyah, repSec in
                     quranPlayer.playCustomRange(
                         surahNumber: surah.id,
@@ -326,6 +435,7 @@ struct AyahRow: View {
                 onCancel: { showCustomRangeSheet = false }
             )
             .environmentObject(settings)
+            .fullScreenSheetPresentation()
         }
         #endif
     }
@@ -336,7 +446,8 @@ struct AyahRow: View {
         showTranslit: Bool,
         showEnglishSaheeh: Bool,
         showEnglishMustafa: Bool,
-        fontSizeEN: CGFloat
+        fontSizeEN: CGFloat,
+        highlightQuery: String
     ) -> some View {
         let groupHasEnglishOrTranslit = showTranslit || showEnglishSaheeh || showEnglishMustafa
         let prefixOnTranslit  = groupHasEnglishOrTranslit && showTranslit
@@ -355,17 +466,12 @@ struct AyahRow: View {
                         .lineLimit(3)
                 }
                 .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.secondary.opacity(0.08))
-                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(settings.accentColor.color.opacity(0.25), lineWidth: 1)
                 )
-                .contentShape(Rectangle())
+                .conditionalGlassEffect()
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 10)
                 #if os(iOS)
                 .onTapGesture {
                     settings.hapticFeedback()
@@ -378,7 +484,7 @@ struct AyahRow: View {
             if showArabic {
                 HighlightedSnippet(
                     source: arabicDisplayText(),
-                    term: searchText,
+                    term: highlightQuery,
                     font: .custom(settings.fontArabic, size: settings.fontArabicSize),
                     accent: settings.accentColor.color,
                     fg: .primary,
@@ -398,7 +504,7 @@ struct AyahRow: View {
                 let txt = prefixOnTranslit ? "\(ayah.id). \(ayah.textTransliteration)" : ayah.textTransliteration
                 HighlightedSnippet(
                     source: txt,
-                    term: searchText,
+                    term: highlightQuery,
                     font: .system(size: fontSizeEN),
                     accent: settings.accentColor.color,
                     fg: .primary
@@ -413,7 +519,7 @@ struct AyahRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HighlightedSnippet(
                         source: txt,
-                        term: searchText,
+                        term: highlightQuery,
                         font: .system(size: fontSizeEN),
                         accent: settings.accentColor.color,
                         fg: .primary
@@ -432,7 +538,7 @@ struct AyahRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HighlightedSnippet(
                         source: txt,
-                        term: searchText,
+                        term: highlightQuery,
                         font: .system(size: fontSizeEN),
                         accent: settings.accentColor.color,
                         fg: .primary

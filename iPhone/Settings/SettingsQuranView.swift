@@ -89,12 +89,9 @@ struct SettingsQuranView: View {
                 Label("Choose Reciter", systemImage: "headphones")
             }
 
-            HStack {
-                Text(settings.reciter)
-                    .foregroundColor(settings.accentColor.color)
-
-                Spacer()
-            }
+            Text(settings.resolvedSelectedReciterIgnoringRandom()?.displayNameWithEnglishQiraah ?? settings.reciter)
+                .foregroundColor(settings.accentColor.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accentColor(settings.accentColor.color)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -188,20 +185,31 @@ struct SettingsQuranView: View {
 
     private var tajweedSettingsGroup: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle("Show Tajweed Colors", isOn: $settings.showTajweedColors.animation(.easeInOut))
+            let tajweedCanRenderNow = settings.showArabicText
+                && settings.isHafsDisplay
+                && !settings.beginnerMode
+                && !settings.cleanArabicText
+            let tajweedToggleBinding = Binding<Bool>(
+                get: { settings.showTajweedColors && tajweedCanRenderNow },
+                set: { settings.showTajweedColors = $0 }
+            )
+            
+            Toggle("Show Tajweed Colors", isOn: tajweedToggleBinding.animation(.easeInOut))
                 .font(.subheadline)
-                .disabled(!settings.showArabicText)
+                .disabled(!tajweedCanRenderNow)
 
-            NavigationLink(destination: TajweedLegendSettingsView()) {
-                Text("Customize Tajweed Legend")
+            #if os(iOS)
+            NavigationLink(destination: TajweedLegendView()) {
+                Text("Open Tajweed Legend")
                     .font(.subheadline)
                     .foregroundColor(settings.accentColor.color)
             }
             .disabled(!settings.showTajweedColors)
+            #endif
 
             Text(settings.isHafsDisplay
-                 ? "Available for Hafs an Asim. Tajweed colors automatically fall back to plain Arabic when clean text or beginner spacing is enabled. Tajweed coloring is currently in beta and may not always be fully accurate."
-                 : "Tajweed colors are currently available only for Hafs an Asim.")
+                ? "Available for Hafs an Asim. If Clean Arabic or Beginner Mode is enabled, tajweed is temporarily inactive."
+                : "Tajweed colors are currently available only for Hafs an Asim.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
@@ -274,7 +282,7 @@ struct SettingsQuranView: View {
     }
 
     private var englishTextSection: some View {
-        Section(header: Text("ENGLISH TEXT"), footer: Text("Transliteration, translations, and all English text apply only to default Hafs an Asim. For other riwayat, only the Arabic text is shown.")) {
+        Section(header: Text("ENGLISH TEXT"), footer: settings.showQiraahDetails ? Text("Transliteration, translations, and all English text apply only to default Hafs an Asim. For other riwayat, only the Arabic text is shown.") : nil) {
             includeEnglishToggle
             englishDisplayToggles
             englishFontSizeControls
@@ -318,15 +326,56 @@ struct SettingsQuranView: View {
     }
 
     private var qiraahSection: some View {
-        Section(
-            header: Text("RIWAYAH / QIRAAH"),
-            footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")
-        ) {
-            qiraahPicker
-            qiraahExplanation
-            qiraahLinks
-            qiraahHighlight
-            comparisonModeGroup
+        Section {
+            if settings.showQiraahDetails {
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut) {
+                        settings.showQiraahDetails = false
+                    }
+                } label: {
+                    HStack {
+                        Text("Hide Riwayah / Qiraah")
+                        Spacer()
+                        Image(systemName: "chevron.up")
+                    }
+                    .foregroundColor(settings.accentColor.color)
+                }
+                                
+                qiraahPicker
+                qiraahExplanation
+                qiraahLinks
+                qiraahHighlight
+                comparisonModeGroup
+            } else {
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut) {
+                        settings.showQiraahDetails = true
+                    }
+                } label: {
+                    HStack {
+                        Text("Show Riwayah / Qiraah")
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                    }
+                    .foregroundColor(settings.accentColor.color)
+                }
+            }
+        } header: {
+            HStack(spacing: 6) {
+                Text("RIWAYAH / QIRAAH")
+                Text("- \(settings.displayQiraahArabicCaption)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
+                Spacer(minLength: 0)
+            }
+        } footer: {
+            if settings.showQiraahDetails {
+                Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")
+            }
         }
     }
 
@@ -340,7 +389,7 @@ struct SettingsQuranView: View {
 
     private var qiraahExplanation: some View {
         Text("""
-        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
         The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
@@ -365,7 +414,7 @@ struct SettingsQuranView: View {
     }
 
     private var qiraahHighlight: some View {
-        Text("***Hafs An Asim* is the most common and widespread Qiraah in the world today.**")
+        Text("***Hafs an Asim* is the most common and widespread Qiraah in the world today.**")
             .font(.caption)
             .foregroundColor(.primary)
             .padding(.top, 4)
@@ -407,57 +456,376 @@ struct SettingsQuranView: View {
     #endif
 }
 
-struct TajweedLegendSettingsView: View {
-    @EnvironmentObject private var settings: Settings
+/// Section header for qiraat reciter groups: title and Arabic on one row (same idea as `JuzHeader`).
+private struct QiraahReciterSectionHeader: View {
+    let title: String
+    let arabic: String
 
     var body: some View {
-        List {
-            Section(header: Text("TAJWEED LEGEND")) {
-                ForEach(TajweedLegendCategory.allCases) { item in
-                    Toggle(isOn: Binding(
-                        get: { settings.isTajweedCategoryVisible(item) },
-                        set: { settings.setTajweedCategory(item, visible: $0) }
-                    )) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(item.color)
-                                    .frame(width: 10, height: 10)
-
-                                Text(item.englishTitle)
-                                    .font(.subheadline.weight(.semibold))
-                                    .lineLimit(1)
-                            }
-
-                            Text(item.arabicTitle)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .tint(item.color)
-                }
-            }
+        HStack(spacing: 6) {
+            Text(title)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+            
+            Text("- \(arabic)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.65)
+            Spacer(minLength: 0)
         }
-        .applyConditionalListStyle(defaultView: true)
-        .navigationTitle("Tajweed Legend")
     }
 }
 
 struct ReciterListView: View {
+    /// When `true`, dismisses the sheet (or pops navigation) after the user picks a reciter or Random.
+    var dismissAfterSelectingReciter = false
+
     @EnvironmentObject var settings: Settings
     @Environment(\.presentationMode) private var presentationMode
     @State private var didAutoScrollToSelection = false
+    @State private var searchText = ""
+    @State private var pendingQiraahReciter: Reciter?
+    @State private var pendingDisplayQiraahTag: String?
     #if os(iOS)
     @StateObject private var downloadManager = ReciterDownloadManager.shared
     @State private var showDownloadedOnly = false
     #endif
 
-    private static let defaultReciter = "Muhammad Al-Minshawi (Murattal)"
+    private var qiraahChangeDialogTitle: String {
+        "Change Quran Text?"
+    }
+
+    private var qiraahChangeDialogMessage: String {
+        if pendingDisplayQiraahTag == nil {
+            return "This reciter uses Hafs an Asim (default). Would you like to switch the Quran text to match it?"
+        }
+
+        guard let pendingQiraahReciter,
+              let qiraah = pendingQiraahReciter.qiraah,
+              !qiraah.isEmpty else {
+            return "This reciter uses a different riwayah. Would you like to switch the Quran text to match it?"
+        }
+
+        return "This reciter uses \(qiraah). Would you like to switch the Quran text to match it?"
+    }
+
+    private func resolvedQiraahTag(for reciter: Reciter) -> String? {
+        if let qiraah = reciter.qiraah, !qiraah.isEmpty {
+            return qiraah
+        }
+
+        // Hafs reciters are represented by nil/empty qiraah in these primary sections.
+        return nil
+    }
+
+    private struct ReciterSectionGroup: Identifiable {
+        let id: String
+        let title: String
+        let arabic: String?
+        let reciters: [Reciter]
+        let isQiraah: Bool
+
+        func withReciters(_ reciters: [Reciter]) -> ReciterSectionGroup {
+            ReciterSectionGroup(id: id, title: title, arabic: arabic, reciters: reciters, isQiraah: isQiraah)
+        }
+    }
+
+    private enum ReciterSearchMode {
+        case reciterMatches
+        case qiraahSections
+        case hafsSections
+    }
+
+    private static let qiraahSearchKeywords = [
+        "qiraah",
+        "qiraat",
+        "riwayah",
+        "riwayaat",
+        "recitation",
+        "recitations"
+    ]
+
+    private static let hafsSearchKeywords = [
+        "hafs",
+        "asim",
+        "aasim",
+        "asim",
+        "حفص",
+        "عاصم"
+    ]
+
+    private func isSelectedReciter(_ reciter: Reciter) -> Bool {
+        guard settings.reciter != Settings.randomReciterName else { return false }
+        if !settings.reciterId.isEmpty {
+            return settings.reciterId == reciter.id
+        }
+        return false
+    }
+
+    /// Matches row `.id(...)` for `ScrollViewReader.scrollTo`.
+    private var reciterListScrollTargetID: String {
+        if settings.reciter == Settings.randomReciterName {
+            return Settings.randomReciterName
+        }
+        if !settings.reciterId.isEmpty {
+            return settings.reciterId
+        }
+        return settings.resolvedSelectedReciterIgnoringRandom()?.id ?? settings.reciter
+    }
+
+    private var normalizedSearchText: String {
+        normalized(searchText)
+    }
+
+    private var isSearchingReciters: Bool {
+        !normalizedSearchText.isEmpty
+    }
+
+    private var primaryReciterSections: [ReciterSectionGroup] {
+        [
+            ReciterSectionGroup(
+                id: "minshawi",
+                title: "MUHAMMAD SIDDIQ AL-MINSHAWI",
+                arabic: nil,
+                reciters: filteredReciters(recitersMinshawi),
+                isQiraah: false
+            ),
+            ReciterSectionGroup(
+                id: "mujawwad",
+                title: "SLOW & MELODIC (MUJAWWAD)",
+                arabic: nil,
+                reciters: filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries),
+                isQiraah: false
+            ),
+            ReciterSectionGroup(
+                id: "muallim",
+                title: "TEACHING (MUALLIM)",
+                arabic: nil,
+                reciters: filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries),
+                isQiraah: false
+            ),
+            ReciterSectionGroup(
+                id: "murattal",
+                title: "NORMAL (MURATTAL)",
+                arabic: nil,
+                reciters: filteredReciters(recitersMurattal, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries),
+                isQiraah: false
+            )
+        ]
+    }
+
+    private var qiraahReciterSections: [ReciterSectionGroup] {
+        [
+            ReciterSectionGroup(
+                id: "khalaf",
+                title: Settings.Riwayah.khalaf.uppercased(),
+                arabic: Settings.Riwayah.khalafArabic,
+                reciters: filteredReciters(recitersKhalaf),
+                isQiraah: true
+            ),
+            ReciterSectionGroup(
+                id: "warsh",
+                title: Settings.Riwayah.warsh.uppercased(),
+                arabic: Settings.Riwayah.warshArabic,
+                reciters: filteredReciters(recitersWarsh),
+                isQiraah: true
+            ),
+            ReciterSectionGroup(
+                id: "qaloon",
+                title: Settings.Riwayah.qaloon.uppercased(),
+                arabic: Settings.Riwayah.qaloonArabic,
+                reciters: filteredReciters(recitersQaloon),
+                isQiraah: true
+            ),
+            ReciterSectionGroup(
+                id: "buzzi",
+                title: Settings.Riwayah.buzzi.uppercased(),
+                arabic: Settings.Riwayah.buzziArabic,
+                reciters: filteredReciters(recitersBuzzi),
+                isQiraah: true
+            ),
+            ReciterSectionGroup(
+                id: "qunbul",
+                title: Settings.Riwayah.qunbul.uppercased(),
+                arabic: Settings.Riwayah.qunbulArabic,
+                reciters: filteredReciters(recitersQunbul),
+                isQiraah: true
+            ),
+            ReciterSectionGroup(
+                id: "duri",
+                title: Settings.Riwayah.duri.uppercased(),
+                arabic: Settings.Riwayah.duriArabic,
+                reciters: filteredReciters(recitersDuri),
+                isQiraah: true
+            )
+        ]
+    }
+
+    private var searchMode: ReciterSearchMode {
+        guard isSearchingReciters else { return .reciterMatches }
+        if isGeneralHafsSearch(normalizedSearchText) {
+            return .hafsSections
+        }
+        if isGeneralQiraahSearch(normalizedSearchText) || !matchingQiraahSections.isEmpty {
+            return .qiraahSections
+        }
+        return .reciterMatches
+    }
+
+    private var searchBannerTitle: String {
+        switch searchMode {
+        case .qiraahSections:
+            return "QIRAAH SEARCH RESULTS"
+        case .hafsSections:
+            return "HAFS AN ASIM RESULTS"
+        case .reciterMatches:
+            return "SEARCH SHOW RESULTS"
+        }
+    }
+
+    private var allReciterSections: [ReciterSectionGroup] {
+        primaryReciterSections + qiraahReciterSections
+    }
+
+    private var matchingQiraahSections: [ReciterSectionGroup] {
+        qiraahReciterSections.filter { matchesQiraahSection($0, query: normalizedSearchText) }
+    }
+
+    private var hafsSearchSections: [ReciterSectionGroup] {
+        ["murattal", "mujawwad", "muallim"].compactMap { sectionID in
+            primaryReciterSections.first(where: { $0.id == sectionID })
+        }
+        .filter { !$0.reciters.isEmpty }
+    }
+
+    private var searchResultSections: [ReciterSectionGroup] {
+        guard isSearchingReciters else { return [] }
+
+        switch searchMode {
+        case .hafsSections:
+            return hafsSearchSections
+        case .qiraahSections:
+            if isGeneralQiraahSearch(normalizedSearchText) {
+                return qiraahReciterSections
+            }
+            return matchingQiraahSections
+        case .reciterMatches:
+            return allReciterSections.compactMap { section in
+                let matches = section.reciters.filter { reciterMatchesSearch($0, query: normalizedSearchText) }
+                guard !matches.isEmpty else { return nil }
+                return section.withReciters(matches)
+            }
+        }
+    }
+
+    private var searchResultCount: Int {
+        searchResultSections.reduce(0) { $0 + $1.reciters.count }
+    }
+
+    private var searchableQiraahSections: [ReciterSectionGroup] {
+        qiraahReciterSections.filter { !$0.reciters.isEmpty }
+    }
+
+    private var searchResultsBanner: some View {
+        HStack {
+            Text(searchBannerTitle)
+
+            Spacer()
+
+            Text("\(searchResultCount)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(.secondary)
+    }
+
+    private var noSearchResultsView: some View {
+        Text("No reciters matched your search.")
+            .foregroundStyle(.secondary)
+    }
+
+    private var reciterSearchControlsInset: some View {
+        #if os(iOS)
+        SearchBar(text: $searchText.animation(.easeInOut))
+        .padding([.leading, .top], -8)
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private func normalized(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func isGeneralQiraahSearch(_ query: String) -> Bool {
+        Self.qiraahSearchKeywords.contains { query.contains($0) }
+    }
+
+    private func isGeneralHafsSearch(_ query: String) -> Bool {
+        Self.hafsSearchKeywords.contains { query.contains($0) }
+    }
+
+    private func matchesQiraahSection(_ section: ReciterSectionGroup, query: String) -> Bool {
+        guard !query.isEmpty else { return false }
+        return normalized(section.title).contains(query)
+            || normalized(section.arabic ?? "").contains(query)
+    }
+
+    private func reciterMatchesSearch(_ reciter: Reciter, query: String) -> Bool {
+        guard !query.isEmpty else { return false }
+        return normalized(reciter.name).contains(query)
+    }
+
+    @discardableResult
+    private func selectReciter(_ reciter: Reciter) -> Bool {
+        settings.setSelectedReciter(reciter)
+
+        let targetQiraahTag = resolvedQiraahTag(for: reciter)
+        if settings.displayQiraahForArabic != targetQiraahTag {
+            pendingQiraahReciter = reciter
+            pendingDisplayQiraahTag = targetQiraahTag
+            return false
+        }
+
+        pendingQiraahReciter = nil
+        pendingDisplayQiraahTag = nil
+        return true
+    }
+
+    private func confirmPendingQiraahSelection() {
+        guard let pendingQiraahReciter else { return }
+        settings.displayQiraah = pendingDisplayQiraahTag ?? Settings.Riwayah.hafsTag
+        self.pendingQiraahReciter = nil
+        self.pendingDisplayQiraahTag = nil
+
+        if dismissAfterSelectingReciter {
+            presentationMode.wrappedValue.dismiss()
+        }
+    }
+
+    private func declinePendingQiraahSelection() {
+        pendingQiraahReciter = nil
+        pendingDisplayQiraahTag = nil
+
+        if dismissAfterSelectingReciter {
+            presentationMode.wrappedValue.dismiss()
+        }
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
             List {
                 #if os(iOS)
+                if !isSearchingReciters {
                 Section(header: Text("DOWNLOADED SURAHS")) {
                     Picker("Reciter Filter", selection: $showDownloadedOnly.animation(.easeInOut)) {
                         Text("All Reciters").tag(false)
@@ -496,7 +864,20 @@ struct ReciterListView: View {
                         .font(.caption.weight(.semibold))
                     }
                 }
+                }
                 #endif
+
+                if isSearchingReciters {
+                    searchResultsBanner
+
+                    if searchResultSections.isEmpty {
+                        noSearchResultsView
+                    } else {
+                        ForEach(searchResultSections) { section in
+                            reciterSection(section)
+                        }
+                    }
+                } else {
                 
                 #if os(iOS)
                 if !showDownloadedOnly {
@@ -523,7 +904,7 @@ struct ReciterListView: View {
                 }
 
                 if !filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
-                    Section(header: Text("TEACHING (MUʿALLIM)")) {
+                    Section(header: Text("TEACHING (MUALLIM)")) {
                         reciterButtons(filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
                     }
                 }
@@ -536,9 +917,103 @@ struct ReciterListView: View {
                 
                 #if os(iOS)
                 if !showDownloadedOnly {
-                    Section(header: Text("ABOUT QIRAAT"), footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
+                    if settings.showQiraahDetails {
+                        Section {
+                            Button {
+                                settings.hapticFeedback()
+                                withAnimation(.easeInOut) {
+                                    settings.showQiraahDetails = false
+                                }
+                            } label: {
+                                HStack {
+                                    Text("Hide Other Qiraat Reciters")
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.up")
+                                }
+                                .foregroundColor(settings.accentColor.color)
+                            }
+                        }
+                        
+                        Section(header: Text("ABOUT QIRAAT"), footer: Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
+                            Text("""
+                            The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+
+                            The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+
+                            To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                            """)
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+
+                            NavigationLink(destination: AhrufView()) {
+                                Text("The 7 Ahruf (Modes)")
+                            }
+                            .font(.subheadline)
+
+                            NavigationLink(destination: QiraatView()) {
+                                Text("The 10 Qiraat (Recitations)")
+                            }
+                            .font(.subheadline)
+
+                            Text("**All recitations above are *Hafs an Asim*, the most common and widespread Qiraah in the world today.**")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                                .padding(.top, 4)
+                            
+                            Text("All reciters below are available only for full surahs. Play Ayahs is unsupported for other qiraat.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                        }
+                        
+                        ForEach(searchableQiraahSections) { section in
+                            reciterSection(section)
+                        }
+                    } else {
+                        Section {
+                            Button {
+                                settings.hapticFeedback()
+                                withAnimation(.easeInOut) {
+                                    settings.showQiraahDetails = true
+                                }
+                            } label: {
+                                HStack {
+                                    Text("Show Other Qiraat Reciters")
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.down")
+                                }
+                                .foregroundColor(settings.accentColor.color)
+                            }
+                        }
+                    }
+                }
+                #else
+                if settings.showQiraahDetails {
+                    Section {
+                        Button {
+                            settings.hapticFeedback()
+                            withAnimation(.easeInOut) {
+                                settings.showQiraahDetails = false
+                            }
+                        } label: {
+                            HStack {
+                                Text("Hide Other Qiraat Reciters")
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.up")
+                            }
+                            .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+                    
+                    Section(header: Text("ABOUT QIRAAT"), footer: Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
                         Text("""
-                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
                         The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
@@ -557,155 +1032,33 @@ struct ReciterListView: View {
                         }
                         .font(.subheadline)
 
-                        Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
+                        Text("**All recitations above are *Hafs an Asim*, the most common and widespread Qiraah in the world today.**")
                             .font(.subheadline)
                             .foregroundColor(.primary)
                             .padding(.top, 4)
-                        
-                        Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
+
+                        Text("All reciters below are available only for full surahs. Play Ayahs is unsupported for other qiraat.")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
                     }
-                }
-                #else
-                Section(header: Text("ABOUT QIRAAT"), footer: Text("There is no dedicated audio for individual ayahs in other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
-                    Text("""
-                    The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the early Muslim community. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
-
-                    The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
-
-                    To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
-                    """)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-
-                    NavigationLink(destination: AhrufView()) {
-                        Text("The 7 Ahruf (Modes)")
-                    }
-                    .font(.subheadline)
-
-                    NavigationLink(destination: QiraatView()) {
-                        Text("The 10 Qiraat (Recitations)")
-                    }
-                    .font(.subheadline)
-
-                    Text("**All recitations above are *Hafs An Asim*, the most common and widespread Qiraah in the world today.**")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .padding(.top, 4)
-
-                    Text("All reciters below are available only for full surahs. Ayah playback defaults to Minshawi (Murattal).")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-                #endif
-
-                #if os(iOS)
-                if !showDownloadedOnly {
-                    if settings.showOtherQiraatReciters {
-                        if !filteredReciters(recitersKhalaf).isEmpty {
-                            Section(header: Text("KHALAF AN HAMZAH")) {
-                                reciterButtons(filteredReciters(recitersKhalaf), qiraah: true)
-                            }
-                        }
-
-                        if !filteredReciters(recitersWarsh).isEmpty {
-                            Section(header: Text("WARSH AN NAFI")) {
-                                reciterButtons(filteredReciters(recitersWarsh), qiraah: true)
-                            }
-                        }
-
-                        if !filteredReciters(recitersQaloon).isEmpty {
-                            Section(header: Text("QALOON AN NAFI")) {
-                                reciterButtons(filteredReciters(recitersQaloon), qiraah: true)
-                            }
-                        }
-
-                        if !filteredReciters(recitersBuzzi).isEmpty {
-                            Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
-                                reciterButtons(filteredReciters(recitersBuzzi), qiraah: true)
-                            }
-                        }
-
-                        if !filteredReciters(recitersQunbul).isEmpty {
-                            Section(header: Text("QUNBUL AN IBN KATHIR")) {
-                                reciterButtons(filteredReciters(recitersQunbul), qiraah: true)
-                            }
-                        }
-
-                        if !filteredReciters(recitersDuri).isEmpty {
-                            Section(header: Text("AD-DURI AN ABI AMR")) {
-                                reciterButtons(filteredReciters(recitersDuri), qiraah: true)
-                            }
-                        }
-                    } else {
-                        Section {
-                            Button {
-                                settings.hapticFeedback()
-                                withAnimation(.easeInOut) {
-                                    settings.showOtherQiraatReciters = true
-                                }
-                            } label: {
-                                HStack {
-                                    Text("Show Other Qiraat Reciters")
-                                    Spacer()
-                                    Image(systemName: "chevron.down")
-                                }
-                                .foregroundColor(settings.accentColor.color)
-                            }
-                        }
-                    }
-                }
-                #else
-                if settings.showOtherQiraatReciters {
-                    if !filteredReciters(recitersKhalaf).isEmpty {
-                        Section(header: Text("KHALAF AN HAMZAH")) {
-                            reciterButtons(filteredReciters(recitersKhalaf), qiraah: true)
-                        }
-                    }
-
-                    if !filteredReciters(recitersWarsh).isEmpty {
-                        Section(header: Text("WARSH AN NAFI")) {
-                            reciterButtons(filteredReciters(recitersWarsh), qiraah: true)
-                        }
-                    }
-
-                    if !filteredReciters(recitersQaloon).isEmpty {
-                        Section(header: Text("QALOON AN NAFI")) {
-                            reciterButtons(filteredReciters(recitersQaloon), qiraah: true)
-                        }
-                    }
-
-                    if !filteredReciters(recitersBuzzi).isEmpty {
-                        Section(header: Text("AL-BUZZI AN IBN KATHIR")) {
-                            reciterButtons(filteredReciters(recitersBuzzi), qiraah: true)
-                        }
-                    }
-
-                    if !filteredReciters(recitersQunbul).isEmpty {
-                        Section(header: Text("QUNBUL AN IBN KATHIR")) {
-                            reciterButtons(filteredReciters(recitersQunbul), qiraah: true)
-                        }
-                    }
-
-                    if !filteredReciters(recitersDuri).isEmpty {
-                        Section(header: Text("AD-DURI AN ABI AMR")) {
-                            reciterButtons(filteredReciters(recitersDuri), qiraah: true)
-                        }
+                    
+                    ForEach(searchableQiraahSections) { section in
+                        reciterSection(section)
                     }
                 } else {
                     Section {
                         Button {
                             settings.hapticFeedback()
                             withAnimation(.easeInOut) {
-                                settings.showOtherQiraatReciters = true
+                                settings.showQiraahDetails = true
                             }
                         } label: {
                             HStack {
                                 Text("Show Other Qiraat Reciters")
+                                
                                 Spacer()
+                                
                                 Image(systemName: "chevron.down")
                             }
                             .foregroundColor(settings.accentColor.color)
@@ -713,22 +1066,58 @@ struct ReciterListView: View {
                     }
                 }
                 #endif
+                }
             }
             .navigationTitle("Select Reciter")
+            #if os(iOS)
+            .safeAreaInset(edge: .bottom) {
+                reciterSearchControlsInset
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 8)
+                    .background(Color.white.opacity(0.00001))
+            }
+            #elseif os(watchOS)
+            .searchable(text: $searchText)
+            #endif
             .applyConditionalListStyle(defaultView: true)
+            .confirmationDialog(qiraahChangeDialogTitle, isPresented: Binding(
+                get: { pendingQiraahReciter != nil },
+                set: {
+                    if !$0 {
+                        pendingQiraahReciter = nil
+                        pendingDisplayQiraahTag = nil
+                    }
+                }
+            ), titleVisibility: .visible) {
+                Button("Confirm and Change") {
+                    settings.hapticFeedback()
+                    confirmPendingQiraahSelection()
+                }
+
+                Button("No, Don't Change Qiraah") {
+                    settings.hapticFeedback()
+                    declinePendingQiraahSelection()
+                }
+            } message: {
+                Text(qiraahChangeDialogMessage)
+            }
             .onAppear {
-                if settings.reciter.isEmpty || (settings.reciter != Settings.randomReciterName && reciters.first(where: { $0.name == settings.reciter }) == nil) {
+                settings.migrateLegacyReciterIdIfNeeded()
+
+                if settings.reciter.isEmpty
+                    || (settings.reciter != Settings.randomReciterName && settings.resolvedSelectedReciterIgnoringRandom() == nil) {
                     withAnimation {
-                        settings.reciter = Self.defaultReciter
+                        settings.applyDefaultReciterSelection()
                     }
                 }
 
                 #if os(iOS)
                 reciters.forEach { downloadManager.ensureStateLoaded(for: $0) }
+                downloadManager.purgeIncompleteReciterDownloads()
                 #endif
 
                 if !didAutoScrollToSelection {
-                    let target = settings.reciter
+                    let target = reciterListScrollTargetID
                     didAutoScrollToSelection = true
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -780,14 +1169,31 @@ struct ReciterListView: View {
         }
     }
 
+    @ViewBuilder
+    private func reciterSection(_ section: ReciterSectionGroup) -> some View {
+        if section.isQiraah {
+            Section(header: QiraahReciterSectionHeader(title: section.title, arabic: section.arabic ?? "")) {
+                reciterButtons(section.reciters, qiraah: true)
+            }
+        } else {
+            Section(header: Text(section.title)) {
+                reciterButtons(section.reciters)
+            }
+        }
+    }
+
     private var randomReciterButton: some View {
         Button {
             settings.hapticFeedback()
             withAnimation {
-                settings.reciter = Settings.randomReciterName
+                settings.setRandomReciterMode()
             }
             #if os(watchOS)
             presentationMode.wrappedValue.dismiss()
+            #elseif os(iOS)
+            if dismissAfterSelectingReciter {
+                presentationMode.wrappedValue.dismiss()
+            }
             #endif
         } label: {
             HStack {
@@ -822,7 +1228,7 @@ struct ReciterListView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(reciter.name)
                         .font(.subheadline)
-                        .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
+                        .foregroundColor(isSelectedReciter(reciter) ? settings.accentColor.color : .primary)
                         .multilineTextAlignment(.leading)
 
                     if isDownloading {
@@ -831,50 +1237,50 @@ struct ReciterListView: View {
                     }
 
                     if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
-                        Text("This reciter is only available for surah recitation. Defaults to Minshawi (Murattal) for ayahs.")
+                        Text("Doesn't support ayahs, defaults to Minshawi (Murattal).")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 4)
 
                 VStack(alignment: .trailing, spacing: 10) {
                     HStack(spacing: 8) {
+                        Image(systemName: "checkmark")
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                            .opacity(isSelectedReciter(reciter) ? 1 : 0)
+
                         if isDownloading {
-                            Button {
-                                settings.hapticFeedback()
-                                withAnimation {
-                                    downloadManager.cancelDownload(for: reciter)
-                                    downloadManager.deleteDownloads(for: reciter)
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.red)
+                                .onTapGesture {
+                                    settings.hapticFeedback()
+                                    withAnimation {
+                                        downloadManager.cancelDownload(for: reciter)
+                                        downloadManager.deleteDownloads(for: reciter)
+                                    }
                                 }
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.red)
-                            }
-                            .buttonStyle(.plain)
                         } else if hasDownloads {
-                            Button(role: .destructive) {
-                                settings.hapticFeedback()
-                                withAnimation {
-                                    downloadManager.deleteDownloads(for: reciter)
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                                .onTapGesture {
+                                    settings.hapticFeedback()
+                                    withAnimation {
+                                        downloadManager.deleteDownloads(for: reciter)
+                                    }
                                 }
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundColor(.red)
-                            }
-                            .buttonStyle(.plain)
                         } else {
-                            Button {
-                                settings.hapticFeedback()
-                                withAnimation {
-                                    downloadManager.beginDownloadAll(for: reciter)
+                            Image(systemName: "icloud.and.arrow.down")
+                                .foregroundColor(.secondary)
+                                .onTapGesture {
+                                    settings.hapticFeedback()
+                                    withAnimation {
+                                        downloadManager.beginDownloadAll(for: reciter)
+                                    }
                                 }
-                            } label: {
-                                Image(systemName: "icloud.and.arrow.down")
-                                    .foregroundColor(.secondary)
-                            }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -884,7 +1290,12 @@ struct ReciterListView: View {
             .onTapGesture {
                 settings.hapticFeedback()
                 withAnimation {
-                    settings.reciter = reciter.name
+                    _ = selectReciter(reciter)
+                }
+                if dismissAfterSelectingReciter {
+                    if pendingQiraahReciter == nil {
+                        presentationMode.wrappedValue.dismiss()
+                    }
                 }
             }
 
@@ -909,38 +1320,40 @@ struct ReciterListView: View {
         .onAppear {
             downloadManager.ensureStateLoaded(for: reciter)
         }
-        .id(reciter.name)
+        .id(reciter.id)
         #else
         Button {
             settings.hapticFeedback()
             withAnimation {
-                settings.reciter = reciter.name
-                presentationMode.wrappedValue.dismiss()
+                let selectedImmediately = selectReciter(reciter)
+                if selectedImmediately {
+                    presentationMode.wrappedValue.dismiss()
+                }
             }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(reciter.name)
                         .font(.subheadline)
-                        .foregroundColor(reciter.name == settings.reciter ? settings.accentColor.color : .primary)
+                        .foregroundColor(isSelectedReciter(reciter) ? settings.accentColor.color : .primary)
                         .multilineTextAlignment(.leading)
 
                     Spacer()
 
                     Image(systemName: "checkmark")
                         .foregroundColor(settings.accentColor.color)
-                        .opacity(reciter.name == settings.reciter ? 1 : 0)
+                        .opacity(isSelectedReciter(reciter) ? 1 : 0)
                 }
 
                 if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
-                    Text("This reciter is only available for surah recitation. Defaults to Minshawi (Murattal) for ayahs.")
+                    Text("Doesn't support ayahs, defaults to Minshawi (Murattal).")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
             .padding(.vertical, 4)
         }
-        .id(reciter.name)
+        .id(reciter.id)
         #endif
     }
 }
@@ -1053,6 +1466,68 @@ struct FavoritesView: View {
         case .letter:
             return "Favorite Letters"
         }
+    }
+    
+    func resourceLink<Destination: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder destination: () -> Destination
+    ) -> some View {
+        NavigationLink(destination: destination()) {
+            toolLabel(title, systemImage: systemImage)
+        }
+        .tint(settings.accentColor.color)
+    }
+
+    func toolLabel(_ title: String, systemImage: String) -> some View {
+        Label(
+            title: { Text(title) },
+            icon: {
+                Image(systemName: systemImage)
+                    .foregroundColor(settings.accentColor.color)
+            }
+        )
+        .padding(.vertical, 4)
+        .accentColor(settings.accentColor.color)
+    }
+
+    #if os(iOS)
+    func leaveReview() {
+        settings.hapticFeedback()
+
+        withAnimation(.smooth()) {
+            if let url = URL(string: "itms-apps://itunes.apple.com/app/id6449729655?action=write-review") {
+                UIApplication.shared.open(url)
+            }
+        }
+    }
+
+    func openAppSettings() {
+        settings.hapticFeedback()
+
+        withAnimation(.smooth()) {
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+        }
+    }
+    #endif
+
+    func columnWidth(for textStyle: UIFont.TextStyle, extra: CGFloat = 4, sample: String? = nil, fontName: String? = nil) -> CGFloat {
+        let sampleString = (sample ?? "M") as NSString
+        let font: UIFont
+
+        if let fontName = fontName, let customFont = UIFont(name: fontName, size: UIFont.preferredFont(forTextStyle: textStyle).pointSize) {
+            font = customFont
+        } else {
+            font = UIFont.preferredFont(forTextStyle: textStyle)
+        }
+
+        return ceil(sampleString.size(withAttributes: [.font: font]).width) + extra
+    }
+
+    var glyphWidth: CGFloat {
+        columnWidth(for: .subheadline, extra: 0, sample: "Contact: ")
     }
 }
 #endif

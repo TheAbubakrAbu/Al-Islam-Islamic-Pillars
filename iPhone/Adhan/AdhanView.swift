@@ -64,22 +64,15 @@ struct AdhanView: View {
         List {
             Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
                 DateAndLocationSection(showBigQibla: $showBigQibla)
-                    .animation(.easeInOut, value: showBigQibla)
-                    #if os(iOS)
-                    .onTapGesture {
-                        withAnimation {
-                            settings.hapticFeedback()
-                            showBigQibla.toggle()
-                        }
-                    }
-                    #endif
             }
 
             prayersSection
 
+            #if os(iOS)
             Section(header: Text("LOCATION AND CALCULATION")) {
                 LocationCalculationCard()
             }
+            #endif
         }
         .refreshable {
             prayerTimeRefresh(force: true)
@@ -266,6 +259,15 @@ private struct DateAndLocationSection: View {
         }
 
         CurrentLocationRow(showBigQibla: showBigQibla)
+            .animation(.easeInOut, value: showBigQibla)
+            #if os(iOS)
+            .onTapGesture {
+                withAnimation {
+                    settings.hapticFeedback()
+                    showBigQibla.toggle()
+                }
+            }
+            #endif
     }
 }
 
@@ -304,14 +306,10 @@ private struct HijriDateRow: View {
             }
         }
         #else
-        HStack {
-            Spacer()
-            Text(hijriDate.english)
-                .multilineTextAlignment(.center)
-            Spacer()
-        }
-        .font(.footnote)
-        .foregroundColor(settings.accentColor.color)
+        Text(hijriDate.english)
+            .font(.footnote)
+            .foregroundColor(settings.accentColor.color)
+            .frame(maxWidth: .infinity, alignment: .center)
         #endif
     }
 }
@@ -329,12 +327,13 @@ private struct CurrentLocationRow: View {
                 Spacer()
 
                 QiblaView(size: showBigQibla ? 100 : 50)
-                    .padding(.horizontal)
+                    .padding(.leading)
+                    .padding(.trailing, 4)
             }
             .foregroundColor(.primary)
             .font(.subheadline)
             .contentShape(Rectangle())
-
+            
             #if os(watchOS)
             Text("Compass may not be accurate on Apple Watch")
                 .font(.caption2)

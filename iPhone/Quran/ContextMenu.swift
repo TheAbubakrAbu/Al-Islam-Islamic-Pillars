@@ -43,7 +43,7 @@ struct SurahContextMenu: View {
                 }
             }
         } label: {
-            Label("Play Random Ayah", systemImage: "shuffle")
+            Label("Play Random Ayah", systemImage: "shuffle.circle")
         }
         
         if lastListened == nil {
@@ -71,68 +71,186 @@ struct SurahContextMenu: View {
 }
 
 #if os(iOS)
-private enum TafsirAuthor: String, CaseIterable, Identifiable {
-    case ibnKathir = "Ibn Kathir"
-    case maarifUlQuran = "Maarif Ul Quran"
-    case tazkirulQuran = "Tazkirul Quran"
+private enum TafsirLanguage: String, CaseIterable, Identifiable {
+    case arabic
+    case english
 
     var id: String { rawValue }
 
-    var shortTitle: String {
+    var title: String {
         switch self {
-        case .ibnKathir:
-            return "Ibn Kathir"
-        case .maarifUlQuran:
-            return "Maarif"
-        case .tazkirulQuran:
-            return "Tazkirul"
+        case .arabic: return "Arabic"
+        case .english: return "English"
+        }
+    }
+}
+
+private struct TafsirEditionOption: Identifiable, Hashable {
+    let slug: String
+    let title: String
+    let shortTitle: String
+    let language: TafsirLanguage
+
+    var id: String { slug }
+}
+
+private enum TafsirCatalog {
+    static let arabic: [TafsirEditionOption] = [
+        TafsirEditionOption(
+            slug: "ar-tafsir-ibn-kathir",
+            title: "تفسير ابن كثير",
+            shortTitle: "ابن كثير",
+            language: .arabic
+        ),
+        TafsirEditionOption(
+            slug: "ar-tafsir-al-tabari",
+            title: "تفسير الطبري",
+            shortTitle: "الطبري",
+            language: .arabic
+        ),
+        TafsirEditionOption(
+            slug: "ar-tafseer-al-saddi",
+            title: "تفسير السعدي",
+            shortTitle: "السعدي",
+            language: .arabic
+        ),
+        TafsirEditionOption(
+            slug: "ar-tafsir-muyassar",
+            title: "التفسير الميسر",
+            shortTitle: "الميسر",
+            language: .arabic
+        )
+    ]
+
+    static let english: [TafsirEditionOption] = [
+        TafsirEditionOption(
+            slug: "en-tafisr-ibn-kathir",
+            title: "Tafsir Ibn Kathir",
+            shortTitle: "Ibn Kathir",
+            language: .english
+        ),
+        TafsirEditionOption(
+            slug: "en-tafsir-maarif-ul-quran",
+            title: "Maarif-ul-Quran",
+            shortTitle: "Maarif-ul-Quran",
+            language: .english
+        ),
+        TafsirEditionOption(
+            slug: "en-tazkirul-quran",
+            title: "Tazkirul Quran",
+            shortTitle: "Tazkirul Quran",
+            language: .english
+        )
+    ]
+
+    static func editions(for language: TafsirLanguage) -> [TafsirEditionOption] {
+        switch language {
+        case .arabic:
+            return arabic
+        case .english:
+            return english
         }
     }
 
-    func matches(_ author: String) -> Bool {
-        normalized(author) == normalized(rawValue)
-    }
-
-    private func normalized(_ text: String) -> String {
-        text
-            .lowercased()
-            .replacingOccurrences(of: "-", with: "")
-            .replacingOccurrences(of: " ", with: "")
+    static func edition(slug: String) -> TafsirEditionOption? {
+        (arabic + english).first(where: { $0.slug == slug })
     }
 }
 
-private struct AyahTafsirResponse: Decodable {
-    let surahName: String
-    let surahNo: Int
-    let ayahNo: Int
-    let tafsirs: [AyahTafsirEntry]
-}
+private struct TafsirEditionAyahResponse: Decodable {
+    let text: String
 
-private struct AyahTafsirEntry: Decodable, Identifiable {
-    let author: String
-    let groupVerse: String?
-    let content: String
+    enum CodingKeys: String, CodingKey {
+        case text
+        case tafsir
+    }
 
-    var id: String { author }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let text = try container.decodeIfPresent(String.self, forKey: .text), !text.isEmpty {
+            self.text = text
+            return
+        }
+        if let text = try container.decodeIfPresent(String.self, forKey: .tafsir), !text.isEmpty {
+            self.text = text
+            return
+        }
+        throw DecodingError.dataCorruptedError(forKey: .text, in: container, debugDescription: "Missing tafsir text payload")
+    }
 }
 
 @MainActor
 private final class AyahTafsirViewModel: ObservableObject {
-    @Published private(set) var tafsirs: [AyahTafsirEntry] = []
-    @Published private(set) var isLoading = false
-    @Published var errorMessage: String?
+    @Published private(set) var textByEdition: [String: String] = [:]
+    @Published private(set) var loadingEditionKeys: Set<String> = []
+    @Published private(set) var errorByEdition: [String: String] = [:]
 
-    private var loadedKey: String?
+    private var inFlightTasks: [String: Task<Void, Never>] = [:]
 
-    func load(surah: Int, ayah: Int) async {
-        let key = "\(surah)-\(ayah)"
-        if loadedKey == key, !tafsirs.isEmpty { return }
+    init(surah: Int, ayah: Int) {
+        _ = surah
+        _ = ayah
+    }
 
-        isLoading = true
-        errorMessage = nil
+    deinit {
+        inFlightTasks.values.forEach { $0.cancel() }
+    }
+
+    func text(for editionSlug: String, surah: Int, ayah: Int) -> String? {
+        textByEdition[cacheKey(surah: surah, ayah: ayah, editionSlug: editionSlug)]
+    }
+
+    func error(for editionSlug: String, surah: Int, ayah: Int) -> String? {
+        errorByEdition[cacheKey(surah: surah, ayah: ayah, editionSlug: editionSlug)]
+    }
+
+    func isLoading(editionSlug: String, surah: Int, ayah: Int) -> Bool {
+        loadingEditionKeys.contains(cacheKey(surah: surah, ayah: ayah, editionSlug: editionSlug))
+    }
+
+    func loadSelectedThenPrefetchRemaining(
+        surah: Int,
+        ayah: Int,
+        selectedEditionSlug: String,
+        language: TafsirLanguage
+    ) async {
+        await fetchEditionIfNeeded(surah: surah, ayah: ayah, editionSlug: selectedEditionSlug)
+
+        let remaining = TafsirCatalog.editions(for: language)
+            .map(\.slug)
+            .filter { $0 != selectedEditionSlug }
+
+        for slug in remaining {
+            preloadEditionIfNeeded(surah: surah, ayah: ayah, editionSlug: slug)
+        }
+    }
+
+    private func preloadEditionIfNeeded(surah: Int, ayah: Int, editionSlug: String) {
+        let key = cacheKey(surah: surah, ayah: ayah, editionSlug: editionSlug)
+        guard textByEdition[key] == nil else { return }
+        guard inFlightTasks[key] == nil else { return }
+
+        inFlightTasks[key] = Task { [weak self] in
+            await self?.fetchEditionIfNeeded(surah: surah, ayah: ayah, editionSlug: editionSlug)
+        }
+    }
+
+    func fetchEditionIfNeeded(surah: Int, ayah: Int, editionSlug: String) async {
+        let key = cacheKey(surah: surah, ayah: ayah, editionSlug: editionSlug)
+        if textByEdition[key] != nil { return }
+        if inFlightTasks[key] != nil, !loadingEditionKeys.contains(key) { return }
+        if loadingEditionKeys.contains(key) { return }
+
+        loadingEditionKeys.insert(key)
+        errorByEdition[key] = nil
+
+        defer {
+            loadingEditionKeys.remove(key)
+            inFlightTasks[key] = nil
+        }
 
         do {
-            let endpoint = "https://quranapi.pages.dev/api/tafsir/\(surah)_\(ayah).json"
+            let endpoint = "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/\(editionSlug)/\(surah)/\(ayah).json"
             guard let url = URL(string: endpoint) else {
                 throw URLError(.badURL)
             }
@@ -142,14 +260,15 @@ private final class AyahTafsirViewModel: ObservableObject {
                 throw URLError(.badServerResponse)
             }
 
-            let decoded = try JSONDecoder().decode(AyahTafsirResponse.self, from: data)
-            tafsirs = decoded.tafsirs
-            loadedKey = key
+            let decoded = try JSONDecoder().decode(TafsirEditionAyahResponse.self, from: data)
+            textByEdition[key] = decoded.text
         } catch {
-            errorMessage = error.localizedDescription
+            errorByEdition[key] = error.localizedDescription
         }
+    }
 
-        isLoading = false
+    private func cacheKey(surah: Int, ayah: Int, editionSlug: String) -> String {
+        "\(editionSlug)|\(surah)|\(ayah)"
     }
 }
 
@@ -158,31 +277,87 @@ struct AyahTafsirSheet: View {
     let surahNumber: Int
     let ayahNumber: Int
 
-    @StateObject private var viewModel = AyahTafsirViewModel()
-    @AppStorage("quran.selected_tafsir_author") private var selectedAuthorRawValue = TafsirAuthor.ibnKathir.rawValue
-    @State private var revealContent = false
+    @StateObject private var viewModel: AyahTafsirViewModel
+    @AppStorage("quran.tafsir.language") private var selectedLanguageRawValue = TafsirLanguage.arabic.rawValue
+    @AppStorage("quran.tafsir.arabic_edition") private var selectedArabicEditionSlug = "ar-tafsir-ibn-kathir"
+    @AppStorage("quran.tafsir.english_edition") private var selectedEnglishEditionSlug = "en-tafisr-ibn-kathir"
 
-    private var selectedAuthor: TafsirAuthor {
-        get { TafsirAuthor(rawValue: selectedAuthorRawValue) ?? .ibnKathir }
-        nonmutating set { selectedAuthorRawValue = newValue.rawValue }
+    init(surahName: String, surahNumber: Int, ayahNumber: Int) {
+        self.surahName = surahName
+        self.surahNumber = surahNumber
+        self.ayahNumber = ayahNumber
+        _viewModel = StateObject(wrappedValue: AyahTafsirViewModel(surah: surahNumber, ayah: ayahNumber))
     }
 
-    private var selectedAuthorBinding: Binding<TafsirAuthor> {
+    private var selectedLanguage: TafsirLanguage {
+        get { TafsirLanguage(rawValue: selectedLanguageRawValue) ?? .arabic }
+        nonmutating set { selectedLanguageRawValue = newValue.rawValue }
+    }
+
+    private var selectedLanguageBinding: Binding<TafsirLanguage> {
         Binding(
-            get: { selectedAuthor },
-            set: { selectedAuthor = $0 }
+            get: { selectedLanguage },
+            set: { selectedLanguage = $0 }
         )
     }
 
-    private var selectedTafsir: AyahTafsirEntry? {
-        viewModel.tafsirs.first { selectedAuthor.matches($0.author) }
-            ?? viewModel.tafsirs.first
+    private var availableEditions: [TafsirEditionOption] {
+        TafsirCatalog.editions(for: selectedLanguage)
+    }
+
+    private var selectedEditionSlug: String {
+        get {
+            switch selectedLanguage {
+            case .arabic:
+                return availableEditions.contains(where: { $0.slug == selectedArabicEditionSlug })
+                ? selectedArabicEditionSlug
+                : (availableEditions.first?.slug ?? "ar-tafsir-ibn-kathir")
+            case .english:
+                return availableEditions.contains(where: { $0.slug == selectedEnglishEditionSlug })
+                ? selectedEnglishEditionSlug
+                : (availableEditions.first?.slug ?? "en-tafisr-ibn-kathir")
+            }
+        }
+        nonmutating set {
+            switch selectedLanguage {
+            case .arabic:
+                selectedArabicEditionSlug = newValue
+            case .english:
+                selectedEnglishEditionSlug = newValue
+            }
+        }
+    }
+
+    private var selectedEditionBinding: Binding<String> {
+        Binding(
+            get: { selectedEditionSlug },
+            set: { selectedEditionSlug = $0 }
+        )
+    }
+
+    private var selectedEdition: TafsirEditionOption? {
+        availableEditions.first(where: { $0.slug == selectedEditionSlug }) ?? availableEditions.first
+    }
+
+    private var selectedTafsirText: String? {
+        guard let selectedEdition else { return nil }
+        return viewModel.text(for: selectedEdition.slug, surah: surahNumber, ayah: ayahNumber)
+    }
+
+    private var selectedTafsirError: String? {
+        guard let selectedEdition else { return nil }
+        return viewModel.error(for: selectedEdition.slug, surah: surahNumber, ayah: ayahNumber)
+    }
+
+    private var isLoadingSelectedTafsir: Bool {
+        guard let selectedEdition else { return false }
+        return viewModel.isLoading(editionSlug: selectedEdition.slug, surah: surahNumber, ayah: ayahNumber)
     }
 
     var body: some View {
         NavigationView {
             Group {
-                if viewModel.isLoading && viewModel.tafsirs.isEmpty {
+                if isLoadingSelectedTafsir && selectedTafsirText == nil {
                     tafsirLoadingView
                         .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 } else {
@@ -190,36 +365,34 @@ struct AyahTafsirSheet: View {
                         VStack(alignment: .leading, spacing: 16) {
                             noticeCard
 
-                            Picker("Tafsir", selection: selectedAuthorBinding.animation(.easeInOut)) {
-                                ForEach(TafsirAuthor.allCases) { author in
-                                    Text(author.shortTitle).tag(author)
+                            Picker("Language", selection: selectedLanguageBinding.animation(.easeInOut)) {
+                                ForEach(TafsirLanguage.allCases) { language in
+                                    Text(language.title).tag(language)
                                 }
                             }
                             .pickerStyle(.segmented)
-                            .animation(.easeInOut, value: selectedAuthor)
+                            .animation(.easeInOut, value: selectedLanguage)
 
-                            if let tafsir = selectedTafsir {
+                            Picker("Tafsir", selection: selectedEditionBinding.animation(.easeInOut)) {
+                                ForEach(availableEditions) { edition in
+                                    Text(edition.shortTitle).tag(edition.slug)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .animation(.easeInOut, value: selectedEditionSlug)
+
+                            if let tafsirText = selectedTafsirText {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    Text(tafsir.author)
+                                    Text(selectedEdition?.title ?? "Tafsir")
                                         .font(.headline)
 
-                                    if let groupVerse = tafsir.groupVerse,
-                                       !groupVerse.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        Text(groupVerse)
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    tafsirContentView(for: tafsir.content)
+                                    tafsirContentView(for: tafsirText)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .id(selectedAuthor.rawValue)
-                                .opacity(revealContent ? 1 : 0)
-                                .offset(y: revealContent ? 0 : 8)
-                                .animation(.easeInOut(duration: 0.25), value: revealContent)
-                                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                            } else if let errorMessage = viewModel.errorMessage {
+                                .id(selectedEditionSlug)
+                                .textSelection(.enabled)
+                            } else if let errorMessage = selectedTafsirError {
                                 tafsirPlaceholder(
                                     title: "Couldn't Load Tafsir",
                                     systemImage: "wifi.exclamationmark",
@@ -240,36 +413,23 @@ struct AyahTafsirSheet: View {
             .navigationTitle("\(surahName) \(surahNumber):\(ayahNumber)")
             .navigationBarTitleDisplayMode(.inline)
         }
-        .task(id: "\(surahNumber)-\(ayahNumber)") {
-            await viewModel.load(surah: surahNumber, ayah: ayahNumber)
-        }
-        .onChange(of: selectedAuthor) { _ in
-            withAnimation(.easeInOut(duration: 0.18)) {
-                revealContent = false
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    revealContent = true
-                }
-            }
-        }
-        .onChange(of: viewModel.isLoading) { loading in
-            if !loading {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    revealContent = true
-                }
-            }
+        .task(id: "\(surahNumber)-\(ayahNumber)-\(selectedLanguage.rawValue)-\(selectedEditionSlug)") {
+            await viewModel.loadSelectedThenPrefetchRemaining(
+                surah: surahNumber,
+                ayah: ayahNumber,
+                selectedEditionSlug: selectedEditionSlug,
+                language: selectedLanguage
+            )
         }
         .modifier(TafsirSheetPresentationModifier())
     }
 
     private var noticeCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Loaded from the internet", systemImage: "icloud.and.arrow.down")
+            Label("Tafsir API (spa5k)", systemImage: "icloud.and.arrow.down")
                 .font(.subheadline.weight(.semibold))
 
-            Text("Tafsir is fetched online for this ayah only. The app loads all 3 available tafsirs together, then you can switch between them with the picker. Full tafsir downloads are not available.")
+            Text("Free and lightning-fast tafsir access with multilingual support. No rate limits are imposed by the source API. This screen loads the currently selected tafsir first, then preloads the remaining tafsir editions for the selected language in the background.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -292,7 +452,7 @@ struct AyahTafsirSheet: View {
                 noticeCard
 
                 ProgressView("Loading tafsir...")
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 4)
 
                 RoundedRectangle(cornerRadius: 12)
@@ -399,6 +559,7 @@ private struct TafsirMarkdownView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .textSelection(.enabled)
     }
 }
 
@@ -432,7 +593,13 @@ private struct TafsirMarkdownBlock {
 
     var attributedText: AttributedString? {
         guard kind == .body else { return nil }
-        return try? AttributedString(markdown: displayText)
+        guard var attributed = try? AttributedString(markdown: displayText) else { return nil }
+        for run in attributed.runs {
+            if let intent = run.inlinePresentationIntent, intent.contains(.code) {
+                attributed[run.range].inlinePresentationIntent = nil
+            }
+        }
+        return attributed
     }
 }
 
@@ -651,6 +818,7 @@ struct AyahContextMenuModifier: ViewModifier {
                     surahNumber: surah,
                     ayahNumber: ayah
                 )
+                .smallMediumSheetPresentation()
             }
             .sheet(isPresented: $showTafsirSheet) {
                 if let surahObj = surahObj {
@@ -676,7 +844,11 @@ struct AyahContextMenuModifier: ViewModifier {
                     PlayCustomRangeSheet(
                         surah: surahObj,
                         initialStartAyah: ayah,
-                        initialEndAyah: surahObj.numberOfAyahs(for: settings.displayQiraahForArabic),
+                        initialEndAyah: PlayCustomRangeSheet.defaultEndAyah(
+                            startAyah: ayah,
+                            surah: surahObj,
+                            displayQiraah: settings.displayQiraahForArabic
+                        ),
                         onPlay: { start, end, repAyah, repSec in
                             quranPlayer.playCustomRange(
                                 surahNumber: surahObj.id,
@@ -690,6 +862,7 @@ struct AyahContextMenuModifier: ViewModifier {
                         onCancel: { showCustomRangeSheet = false }
                     )
                     .environmentObject(settings)
+                    .fullScreenSheetPresentation()
                 }
             }
             .sheet(isPresented: $showingNoteSheet) {
@@ -979,18 +1152,16 @@ struct NoteEditorSheet: View {
                             .stroke(cardStroke, lineWidth: 1)
                     )
 
-                HStack(spacing: 8) {
-                    Text("\(remaining) characters left")
-                        .font(.footnote.monospacedDigit())
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Character limit")
-                .accessibilityValue("\(maxChars) limit, \(remaining) remaining")
+                Text("\(remaining) characters left")
+                    .font(.footnote.monospacedDigit())
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Character limit")
+                    .accessibilityValue("\(maxChars) limit, \(remaining) remaining")
 
                 VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    HStack(spacing: 8) {
                         Image(systemName: "hands.sparkles")
                             .imageScale(.large)
                         Text("A respectful reminder")

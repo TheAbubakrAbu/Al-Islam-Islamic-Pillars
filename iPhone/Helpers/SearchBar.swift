@@ -75,7 +75,11 @@ struct SearchBarUIKit: UIViewRepresentable {
             uiView.text = text
         }
 
-        uiView.searchTextField.rightViewMode = text.isEmpty ? .never : .always
+        uiView.searchTextField.rightViewMode = .always
+        ClearButtonContainer.updateVisibility(
+            in: uiView.searchTextField.rightView,
+            isVisible: !text.isEmpty
+        )
         context.coordinator.onSearchButtonClicked = onSearchButtonClicked
         context.coordinator.onFocusChanged = onFocusChanged
     }
@@ -87,7 +91,8 @@ struct SearchBarUIKit: UIViewRepresentable {
         searchTextField.font = .systemFont(ofSize: 16)
         searchTextField.clearButtonMode = .never
         searchTextField.rightView = ClearButtonContainer.make(for: coordinator)
-        searchTextField.rightViewMode = .never
+        searchTextField.rightViewMode = .always
+        ClearButtonContainer.updateVisibility(in: searchTextField.rightView, isVisible: false)
 
         let heightConstraint = searchTextField.heightAnchor.constraint(equalToConstant: 44)
         heightConstraint.priority = .required
@@ -165,9 +170,16 @@ struct SearchBarUIKit: UIViewRepresentable {
             button.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
             button.tintColor = .secondaryLabel
             button.addTarget(coordinator, action: #selector(SearchBarUIKit.Coordinator.clearSearchText(_:)), for: .touchUpInside)
+            button.tag = 999
 
             container.addSubview(button)
             return container
+        }
+
+        static func updateVisibility(in rightView: UIView?, isVisible: Bool) {
+            guard let button = rightView?.viewWithTag(999) as? UIButton else { return }
+            button.isHidden = !isVisible
+            button.isUserInteractionEnabled = isVisible
         }
     }
 }

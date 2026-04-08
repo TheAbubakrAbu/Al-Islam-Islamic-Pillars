@@ -2,7 +2,6 @@ import SwiftUI
 
 struct IslamView: View {
     @EnvironmentObject var settings: Settings
-    @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var namesData: NamesViewModel
 
     var body: some View {
@@ -46,6 +45,7 @@ struct IslamView: View {
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Al-Islam")
+        //.navigationTitle("Tools")
     }
 
     private var resourcesSection: some View {
@@ -218,17 +218,17 @@ struct AlIslamAppsSection: View {
 
     private var appCardsRow: some View {
         HStack(spacing: spacing) {
-            if let url = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493") {
+            if let url = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493?platform=iphone") {
                 Card(title: "Al-Adhan", url: url)
                     .frame(maxWidth: .infinity)
             }
 
-            if let url = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655") {
+            if let url = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655?platform=iphone") {
                 Card(title: "Al-Islam", url: url)
                     .frame(maxWidth: .infinity)
             }
 
-            if let url = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373") {
+            if let url = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373?platform=iphone") {
                 Card(title: "Al-Quran", url: url)
                     .frame(maxWidth: .infinity)
             }
@@ -252,38 +252,38 @@ private struct Card: View {
     }
 
     var body: some View {
-        Button {
-            settings.hapticFeedback()
-            openURL(url)
-        } label: {
-            VStack {
-                Image(title)
-                    .resizable()
-                    .scaledToFit()
-                    .cornerRadius(18)
-                    .shadow(radius: 4)
+        VStack {
+            Image(title)
+                .resizable()
+                .scaledToFit()
+                .cornerRadius(18)
+                .shadow(radius: 4)
 
-                #if os(iOS)
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .padding(.top, 4)
-                #endif
+            #if os(iOS)
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .padding(.top, 4)
+            #endif
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation {
+                settings.hapticFeedback()
+                openURL(url)
             }
         }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        #if os(iOS)
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.4).onEnded { _ in
                 settings.hapticFeedback()
                 showActions = true
             }
         )
-        #if os(iOS)
         .confirmationDialog(title, isPresented: $showActions, titleVisibility: .visible) {
             Button {
                 UIPasteboard.general.string = url.absoluteString

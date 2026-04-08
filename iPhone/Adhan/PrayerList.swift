@@ -119,12 +119,10 @@ struct PrayerList: View {
                     #endif
                 }
             )
-            .padding(.bottom, rowBottomPadding(isExpanded: isExpanded, isCurrent: isCurrent))
 
             if isExpanded {
                 PrayerDetailBlock(prayer: prayer, referenceText: prayerReferenceText(for: prayer))
-                    .clipShape(Rectangle())
-                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
             }
         }
         .onTapGesture {
@@ -225,22 +223,22 @@ struct PrayerList: View {
         Text("Traveling mode is on. If you are traveling more than 48 mi, then you can pray Qasr, where you combine prayers. You can customize and learn more in settings.")
             .font(.caption)
             .foregroundColor(.secondary)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func footerActionButton(_ title: String, action: @escaping () -> Void) -> some View {
         Text(title)
-            .font(.subheadline)
             .foregroundColor(settings.accentColor.color)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(8)
+            .conditionalGlassEffect()
             .onTapGesture {
                 settings.hapticFeedback()
                 withAnimation {
                     action()
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .conditionalGlassEffect()
     }
 
     private func updateDisplayedDate(to value: Date) {
@@ -257,11 +255,6 @@ struct PrayerList: View {
 
     private func isCurrentPrayer(_ prayer: Prayer) -> Bool {
         settings.currentPrayer?.nameTransliteration.contains(prayer.nameTransliteration) ?? false
-    }
-
-    private func rowBottomPadding(isExpanded: Bool, isCurrent: Bool) -> CGFloat {
-        guard isExpanded else { return 0 }
-        return isCurrent ? 8 : 0
     }
 
     private func prayerColor(for prayer: Prayer, in prayers: [Prayer]) -> Color {
@@ -353,46 +346,45 @@ struct PrayerList: View {
     private func prayerBell(for prayer: Prayer, rowColor: Color) -> some View {
         let mode = settings.notificationMode(for: prayer)
 
-        Button {
-            settings.hapticFeedback()
-            triggerBellAnimation(for: prayer)
-            settings.cycleNotificationMode(for: prayer)
-        } label: {
-            Image(systemName: mode.symbolName)
-                .font(.subheadline)
-                .frame(width: 18, height: 18)
-                .foregroundColor(mode == .off ? rowColor : settings.accentColor.color)
-                .scaleEffect(bellScale(for: prayer))
-                .rotationEffect(bellRotation(for: prayer))
-        }
-        .buttonStyle(.plain)
-        .padding(4)
-        .conditionalGlassEffect()
-        .padding(.leading, 6)
-        #if os(iOS)
-        .contextMenu {
-            Button {
+        Image(systemName: mode.symbolName)
+            .font(.subheadline)
+            .frame(width: 18, height: 18)
+            .foregroundColor(mode == .off ? rowColor : settings.accentColor.color)
+            .scaleEffect(bellScale(for: prayer))
+            .rotationEffect(bellRotation(for: prayer))
+            .contentShape(Rectangle())
+            .padding(4)
+            .conditionalGlassEffect()
+            .onTapGesture {
                 settings.hapticFeedback()
-                settings.setNotificationMode(.preNotification, for: prayer)
-            } label: {
-                Label("Prenotification", systemImage: Settings.PrayerNotificationMode.preNotification.symbolName)
+                triggerBellAnimation(for: prayer)
+                settings.cycleNotificationMode(for: prayer)
             }
+            .padding(.leading, 6)
+            #if os(iOS)
+            .contextMenu {
+                Button {
+                    settings.hapticFeedback()
+                    settings.setNotificationMode(.preNotification, for: prayer)
+                } label: {
+                    Label("Prenotification", systemImage: Settings.PrayerNotificationMode.preNotification.symbolName)
+                }
 
-            Button {
-                settings.hapticFeedback()
-                settings.setNotificationMode(.atTime, for: prayer)
-            } label: {
-                Label("Notification", systemImage: Settings.PrayerNotificationMode.atTime.symbolName)
-            }
+                Button {
+                    settings.hapticFeedback()
+                    settings.setNotificationMode(.atTime, for: prayer)
+                } label: {
+                    Label("Notification", systemImage: Settings.PrayerNotificationMode.atTime.symbolName)
+                }
 
-            Button {
-                settings.hapticFeedback()
-                settings.setNotificationMode(.off, for: prayer)
-            } label: {
-                Label("No Notification", systemImage: Settings.PrayerNotificationMode.off.symbolName)
+                Button {
+                    settings.hapticFeedback()
+                    settings.setNotificationMode(.off, for: prayer)
+                } label: {
+                    Label("No Notification", systemImage: Settings.PrayerNotificationMode.off.symbolName)
+                }
             }
-        }
-        #endif
+            #endif
     }
 }
 
@@ -407,7 +399,7 @@ private struct PrayerListRowCard<TrailingContent: View>: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 20)
-                .fill(isCurrent ? settings.accentColor.color.opacity(0.25) : .white.opacity(0.00001))
+                .fill(isCurrent ? settings.accentColor.color.opacity(0.25) : .clear)
                 #if os(iOS)
                 .padding(.vertical, backgroundVerticalPadding)
                 .padding(.horizontal, -12)
@@ -439,8 +431,7 @@ private struct PrayerListRowCard<TrailingContent: View>: View {
                         #endif
                         .foregroundColor(.primary)
                 }
-                .clipShape(Rectangle())
-                .buttonStyle(.plain)
+                .contentShape(Rectangle())
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
 

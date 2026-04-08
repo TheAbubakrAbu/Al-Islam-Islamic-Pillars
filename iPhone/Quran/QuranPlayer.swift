@@ -349,12 +349,19 @@ final class QuranPlayer: ObservableObject {
         return " (x\(index)/\(total))"
     }
 
+    private func ayahNowPlayingReciterName(for reciter: Reciter) -> String {
+        if reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
+            return "Muhammad Al-Minshawi (Murattal)"
+        }
+        return reciter.displayNameForNowPlaying
+    }
+
     private func resolvedSelectedReciter() -> Reciter? {
         if settings.reciter == Settings.randomReciterName {
             return reciters.randomElement()
         }
 
-        return reciters.first(where: { $0.name == settings.reciter })
+        return settings.resolvedSelectedReciterIgnoringRandom()
     }
 
     func playSurah(
@@ -424,9 +431,9 @@ final class QuranPlayer: ObservableObject {
                         self.isPaused = false
                         self.nowPlayingTitle  = "Surah \(surahNumber): \(surahName)" +
                             self.repeatSuffix(total: self.repeatCount, remaining: self.repeatRemaining)
-                        self.nowPlayingReciter = reciter.name
+                        self.nowPlayingReciter = reciter.displayNameForNowPlaying
                         self.updateNowPlayingInfo()
-                        self.recordListeningHistory(surahNumber: surahNumber, surahName: surahName, reciter: reciter.name)
+                        self.recordListeningHistory(surahNumber: surahNumber, surahName: surahName, reciter: reciter.displayNameWithEnglishQiraah)
                     }
 
                     self.idleTimerSet(true)
@@ -695,8 +702,7 @@ final class QuranPlayer: ObservableObject {
                         let (ayahNum, isBismillah) = self.customRangeSequence[0]
                         let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, repeatWithinAyah: 1)
                         self.nowPlayingTitle = base
-                        self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
-                            ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
+                        self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                         self.updateNowPlayingInfo()
                     } else {
                         self.presentPlaybackFailure("Unable to start this custom range. Check your internet connection and try again.", title: "Range Playback Failed")
@@ -739,8 +745,7 @@ final class QuranPlayer: ObservableObject {
                     self.customRangeCurrentRepeatWithinAyah = repeatWithinAyah
                     self.customRangeRepeatSectionIndex = sectionIndex
                     self.nowPlayingTitle = base
-                    self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
-                        ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
+                    self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                     self.updateNowPlayingInfo()
                 }
 
@@ -817,8 +822,7 @@ final class QuranPlayer: ObservableObject {
                             self.isPaused  = false
                             let base = "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
                             self.nowPlayingTitle = base + self.repeatSuffix(total: self.ayahRepeatCount, remaining: self.ayahRepeatRemaining)
-                            self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
-                                ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
+                            self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                             self.updateNowPlayingInfo()
                         }
                     } else {
@@ -903,8 +907,7 @@ final class QuranPlayer: ObservableObject {
                     let base = "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
                     withAnimation {
                         self.nowPlayingTitle = base
-                        self.nowPlayingReciter = reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi")
-                            ? "Muhammad Al-Minshawi (Murattal)" : reciter.name
+                        self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                         self.updateNowPlayingInfo()
                     }
                 } else {
@@ -934,8 +937,7 @@ final class QuranPlayer: ObservableObject {
                         self.currentAyahNumber = a + 1
                         if let recNow = self.playbackReciter ?? self.resolvedSelectedReciter() {
                             self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(self.currentAyahNumber!)"
-                            self.nowPlayingReciter = recNow.ayahIdentifier.contains("minshawi") && !recNow.name.contains("Minshawi")
-                                ? "Muhammad Al-Minshawi (Murattal)" : recNow.name
+                            self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: recNow)
                             self.updateNowPlayingInfo()
                         }
                     }
@@ -1070,9 +1072,10 @@ final class QuranPlayer: ObservableObject {
         guard
             nowPlayingTitle != nil,
             let num = currentSurahNumber,
-            let rec = reciters.first(where: { $0.name == nowPlayingReciter }),
             let p = player
         else { return }
+        let rec = playbackReciter ?? settings.resolvedSelectedReciterIgnoringRandom()
+        guard let rec else { return }
 
         let currDur = CMTimeGetSeconds(p.currentTime())
         let fullDur = CMTimeGetSeconds(p.currentItem?.duration ?? .zero)
@@ -1435,6 +1438,27 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
         }
 
         statesByReciterID.removeAll()
+    }
+
+    /// Removes reciter folders that have some surahs but not the full 114-surah package (interrupted or failed download).
+    /// Skips reciters that still have an active URLSession task or `isDownloading` state.
+    func purgeIncompleteReciterDownloads() {
+        session.getAllTasks { tasks in
+            let busyReciterIDs = Set(
+                tasks.compactMap { self.taskContext(for: $0)?.reciter.id }
+            )
+            DispatchQueue.main.async {
+                for reciter in reciters {
+                    if busyReciterIDs.contains(reciter.id) { continue }
+                    if self.activeTasks[reciter.id] != nil { continue }
+                    if self.statesByReciterID[reciter.id]?.isDownloading == true { continue }
+                    let (count, _) = self.downloadedStats(for: reciter)
+                    if count > 0 && count < 114 {
+                        self.deleteDownloads(for: reciter)
+                    }
+                }
+            }
+        }
     }
 
     func storageText(for reciter: Reciter) -> String {

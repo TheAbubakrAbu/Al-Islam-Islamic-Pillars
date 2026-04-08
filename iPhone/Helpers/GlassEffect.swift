@@ -56,6 +56,7 @@ struct ConditionalGlassEffect: ViewModifier {
                 content.glassEffect(.regular.interactive())
             }
         }
+        .contentShape(Rectangle())
     }
 
     @ViewBuilder
@@ -99,6 +100,32 @@ struct ConditionalGlassEffect: ViewModifier {
     }
 }
 
+#if os(iOS)
+struct SmallMediumSheetPresentationModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            content
+        }
+    }
+}
+
+struct FullScreenSheetPresentationModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        } else {
+            content
+        }
+    }
+}
+#endif
+
 extension View {
     func conditionalGlassEffect(
         clear: Bool = false,
@@ -108,4 +135,14 @@ extension View {
     ) -> some View {
         modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, useColor: useColor, customTint: customTint))
     }
+
+    #if os(iOS)
+    func smallMediumSheetPresentation() -> some View {
+        modifier(SmallMediumSheetPresentationModifier())
+    }
+
+    func fullScreenSheetPresentation() -> some View {
+        modifier(FullScreenSheetPresentationModifier())
+    }
+    #endif
 }

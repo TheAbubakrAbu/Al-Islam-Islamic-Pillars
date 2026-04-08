@@ -62,20 +62,14 @@ struct SurahRow: View {
         .minimumScaleFactor(0.5)
         #else
         VStack {
-            HStack {
-                Spacer()
-                
-                Text("\(surah.nameArabic) - \(surah.idArabic)")
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-            }
+            Text("\(surah.nameArabic) - \(surah.idArabic)")
+                .font(.headline)
+                .foregroundColor(settings.accentColor.color)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             
-            HStack {
-                Text("\(surah.id) - \(surah.nameTransliteration)")
-                    .font(.subheadline)
-                
-                Spacer()
-            }
+            Text("\(surah.id) - \(surah.nameTransliteration)")
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
@@ -91,7 +85,8 @@ struct SurahAyahRow: View {
     var note: String? = nil
 
     private func arabicDisplayText() -> String {
-        let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
+        let clean = settings.cleanArabicText && !shouldShowTajweedColors
+        let text = ayah.displayArabicText(surahId: surah.id, clean: clean)
         return settings.beginnerMode ? text.map { "\($0) " }.joined() : text
     }
 
@@ -235,8 +230,9 @@ struct LastListenedSurahRow: View {
                             .padding(4)
                             .conditionalGlassEffect()
                             .onTapGesture {
+                                settings.hapticFeedback()
+                                
                                 withAnimation {
-                                    settings.hapticFeedback()
                                     showListeningHistory.toggle()
                                 }
                             }
@@ -294,7 +290,7 @@ struct LastListenedSurahRow: View {
                     .padding(.bottom, 1)
 
                     HStack {
-                        Text(lastListenedSurah.reciter.name)
+                        Text(lastListenedSurah.reciter.displayNameWithEnglishQiraah)
                             .font(.caption)
                             .foregroundColor(.primary)
                             .lineLimit(1)
@@ -439,8 +435,9 @@ struct LastReadAyahRow: View {
                         .padding(4)
                         .conditionalGlassEffect()
                         .onTapGesture {
+                            settings.hapticFeedback()
+                            
                             withAnimation {
-                                settings.hapticFeedback()
                                 showReadingHistory.toggle()
                             }
                         }
@@ -578,6 +575,9 @@ struct AyahSearchRow: View, Equatable {
     
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
+
+    /// When true (Quran search grouped by surah): `surah:ayah` label + same Arabic / transliteration / English visibility rules as the full row, without the top surah name line.
+    var compact: Bool = false
     
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
@@ -609,62 +609,128 @@ struct AyahSearchRow: View, Equatable {
             query
         ].joined(separator: "|")
     }
-    
-    var body: some View {
+
+    @ViewBuilder
+    private func buildCompactSearchRow() -> some View {
         let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
 
-        // Precompute cleaned sources ONCE per render
-        let srcArabic  = settings.cleanSearch(arabic,          whitespace: false).removingArabicDiacriticsAndSigns
-        let srcTr      = settings.cleanSearch(transliteration, whitespace: false).removingArabicDiacriticsAndSigns
-        let srcSaheeh  = settings.cleanSearch(englishSaheeh,   whitespace: false).removingArabicDiacriticsAndSigns
-        let srcMustafa = settings.cleanSearch(englishMustafa,  whitespace: false).removingArabicDiacriticsAndSigns
+        let srcArabic = settings.cleanSearch(arabic, whitespace: false).removingArabicDiacriticsAndSigns
+        let srcTr = settings.cleanSearch(transliteration, whitespace: false).removingArabicDiacriticsAndSigns
+        let srcSaheeh = settings.cleanSearch(englishSaheeh, whitespace: false).removingArabicDiacriticsAndSigns
+        let srcMustafa = settings.cleanSearch(englishMustafa, whitespace: false).removingArabicDiacriticsAndSigns
 
-        // Matches
-        let mArabic  = !normalizedQuery.isEmpty && srcArabic.contains(normalizedQuery)
-        let mTr      = !normalizedQuery.isEmpty && srcTr.contains(normalizedQuery)
-        let mSaheeh  = !normalizedQuery.isEmpty && srcSaheeh.contains(normalizedQuery)
+        let mArabic = !normalizedQuery.isEmpty && srcArabic.contains(normalizedQuery)
+        let mTr = !normalizedQuery.isEmpty && srcTr.contains(normalizedQuery)
+        let mSaheeh = !normalizedQuery.isEmpty && srcSaheeh.contains(normalizedQuery)
         let mMustafa = !normalizedQuery.isEmpty && srcMustafa.contains(normalizedQuery)
 
-        // Arabic + Transliteration: show if ON or matched. When non-Hafs qiraah, only Arabic.
-        let showArabicLine  = settings.showArabicText      || mArabic
-        let showTrLine      = settings.isHafsDisplay && (settings.showTransliteration || mTr)
+        let showArabicLine = settings.showArabicText || mArabic
+        let showTrLine = settings.isHafsDisplay && (settings.showTransliteration || mTr)
 
-        // --- English selection logic (only one unless both match). Hidden when non-Hafs. ---
         let (showSaheehLine, showMustafaLine): (Bool, Bool) = {
             guard settings.isHafsDisplay else { return (false, false) }
-            let userSaheehOn  = settings.showEnglishSaheeh
+            let userSaheehOn = settings.showEnglishSaheeh
             let userMustafaOn = settings.showEnglishMustafa
+            if mSaheeh && mMustafa { return (true, true) }
+            if mSaheeh || mMustafa { return (mSaheeh, mMustafa) }
+            if userSaheehOn && !userMustafaOn { return (true, false) }
+            if userMustafaOn && !userSaheehOn { return (false, true) }
+            if userSaheehOn && userMustafaOn { return (true, false) }
+            return (false, false)
+        }()
 
-            if mSaheeh && mMustafa {
-                // both matched -> show both
-                return (true, true)
-            } else if mSaheeh || mMustafa {
-                // only the one that matched
-                return (mSaheeh, mMustafa)
-            } else {
-                // no matches -> respect toggles but cap to ONE line
-                if userSaheehOn && !userMustafaOn {
-                    return (true, false)
-                } else if userMustafaOn && !userSaheehOn {
-                    return (false, true)
-                } else if userSaheehOn && userMustafaOn {
-                    // both ON, no match -> pick default single
-                    // default = Saheeh; switch to (false, true) if you prefer Mustafa
-                    return (true, false)
-                } else {
-                    // neither ON -> none
-                    return (false, false)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text("\(surah):\(ayah)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .frame(minWidth: 52, alignment: .leading)
+
+                if showArabicLine {
+                    HighlightedSnippet(
+                        source: arabic,
+                        term: query,
+                        font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
+                        accent: settings.accentColor.color,
+                        fg: .primary,
+                        preStyledSource: arabicTajweedText(),
+                        beginnerMode: settings.beginnerMode
+                    )
+                    .animation(.easeInOut, value: tajweedAnimationKey)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
                 }
             }
+
+            if showTrLine {
+                HighlightedSnippet(
+                    source: transliteration,
+                    term: query,
+                    font: .footnote,
+                    accent: settings.accentColor.color,
+                    fg: .secondary
+                )
+            }
+
+            if showSaheehLine {
+                HighlightedSnippet(
+                    source: englishSaheeh,
+                    term: query,
+                    font: .footnote,
+                    accent: settings.accentColor.color,
+                    fg: .secondary
+                )
+            }
+
+            if showMustafaLine {
+                HighlightedSnippet(
+                    source: englishMustafa,
+                    term: query,
+                    font: .footnote,
+                    accent: settings.accentColor.color,
+                    fg: .secondary
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func buildFullSearchRow() -> some View {
+        let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
+
+        let srcArabic = settings.cleanSearch(arabic, whitespace: false).removingArabicDiacriticsAndSigns
+        let srcTr = settings.cleanSearch(transliteration, whitespace: false).removingArabicDiacriticsAndSigns
+        let srcSaheeh = settings.cleanSearch(englishSaheeh, whitespace: false).removingArabicDiacriticsAndSigns
+        let srcMustafa = settings.cleanSearch(englishMustafa, whitespace: false).removingArabicDiacriticsAndSigns
+
+        let mArabic = !normalizedQuery.isEmpty && srcArabic.contains(normalizedQuery)
+        let mTr = !normalizedQuery.isEmpty && srcTr.contains(normalizedQuery)
+        let mSaheeh = !normalizedQuery.isEmpty && srcSaheeh.contains(normalizedQuery)
+        let mMustafa = !normalizedQuery.isEmpty && srcMustafa.contains(normalizedQuery)
+
+        let showArabicLine = settings.showArabicText || mArabic
+        let showTrLine = settings.isHafsDisplay && (settings.showTransliteration || mTr)
+
+        let (showSaheehLine, showMustafaLine): (Bool, Bool) = {
+            guard settings.isHafsDisplay else { return (false, false) }
+            let userSaheehOn = settings.showEnglishSaheeh
+            let userMustafaOn = settings.showEnglishMustafa
+            if mSaheeh && mMustafa { return (true, true) }
+            if mSaheeh || mMustafa { return (mSaheeh, mMustafa) }
+            if userSaheehOn && !userMustafaOn { return (true, false) }
+            if userMustafaOn && !userSaheehOn { return (false, true) }
+            if userSaheehOn && userMustafaOn { return (true, false) }
+            return (false, false)
         }()
 
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("\(surahName) \(surah):\(ayah)")
-                
+
                 if isBookmarked {
                     Spacer()
-                    
+
                     Image(systemName: "bookmark.fill")
                 }
             }
@@ -717,6 +783,16 @@ struct AyahSearchRow: View, Equatable {
                 )
             }
         }
+    }
+    
+    var body: some View {
+        Group {
+            if compact {
+                buildCompactSearchRow()
+            } else {
+                buildFullSearchRow()
+            }
+        }
         .padding(.vertical, 2)
         .rightSwipeActions(
             surahID: surah,
@@ -745,6 +821,7 @@ struct AyahSearchRow: View, Equatable {
     static func == (l: Self, r: Self) -> Bool {
         l.surah == r.surah && l.ayah == r.ayah &&
         l.query == r.query &&
+        l.compact == r.compact &&
         l.favoriteSurahs == r.favoriteSurahs &&
         l.bookmarkedAyahs == r.bookmarkedAyahs
     }

@@ -64,6 +64,7 @@ struct PrayersEntryView: View {
                 
                 HStack {
                     Image(systemName: "location.fill")
+                        .foregroundColor(entry.accentColor.color)
                         .padding(.trailing, -4)
                     
                     Text(entry.currentCity)

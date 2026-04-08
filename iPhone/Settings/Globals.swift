@@ -67,7 +67,7 @@ private let quranStripScalars: Set<UnicodeScalar> = {
     // Quranic annotation signs  U+06D6…U+06ED
     for v in 0x06D6...0x06ED { if let u = UnicodeScalar(v) { s.insert(u) } }
 
-    // Extras: short alif, madda, open ta-marbuta, dagger alif
+    // Extras: short alif, madda, open taa marbuutah, dagger alif
     [0x0670, 0x0657, 0x0674, 0x0656].forEach { v in
         if let u = UnicodeScalar(v) { s.insert(u) }
     }

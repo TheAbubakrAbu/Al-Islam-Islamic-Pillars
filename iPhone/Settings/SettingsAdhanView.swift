@@ -198,7 +198,7 @@ struct SettingsAdhanView: View {
             .font(.subheadline)
             .disabled(settings.calculationAutomatic)
 
-            Text("Fajr and Isha timings vary by calculation method. If automatic mode is on, Al-Islam picks a method based on your location (for example, North America or Turkey). If your country is not mapped, it defaults to Muslim World League.")
+            Text("Fajr and Isha timings vary by calculation method, as they are based on twilight. If automatic mode is on, Al-Islam picks a method based on your location (for example, North America or Turkey). If your country is not mapped, it defaults to Muslim World League.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
@@ -224,7 +224,7 @@ struct SettingsAdhanView: View {
                 .font(.subheadline)
                 .tint(settings.accentColor.color)
 
-            Text("The Hanafi madhab sets Asr later than other schools of thought. Enable this only if you follow the Hanafi method.")
+            Text("The Hanafi madhab uses the shadow ratio of 2 to 1 for Asr, while many other schools use 1 to 1. Enable this only if you follow the Hanafi method.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
@@ -242,21 +242,23 @@ struct SettingsAdhanView: View {
     @ViewBuilder
     private var homeCityButton: some View {
         #if os(iOS)
-        Button {
+        HStack {
+            Text("Set Home City")
+                .font(.subheadline)
+                .foregroundColor(settings.accentColor.color)
+            
+            if !(settings.homeLocation?.city.isEmpty ?? true) {
+                Spacer()
+                
+                Text(settings.homeLocation?.city ?? "")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
             settings.hapticFeedback()
             showingMap = true
-        } label: {
-            HStack {
-                Text("Set Home City")
-                    .font(.subheadline)
-                    .foregroundColor(settings.accentColor.color)
-                if !(settings.homeLocation?.city.isEmpty ?? true) {
-                    Spacer()
-                    Text(settings.homeLocation?.city ?? "")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-            }
         }
         .sheet(isPresented: $showingMap) {
             MapView(choosingPrayerTimes: false)
@@ -282,7 +284,7 @@ struct SettingsAdhanView: View {
                 .disabled(settings.travelAutomatic && !isWatch)
 
             #if os(iOS)
-            Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “And when you (Muslims) travel in the land, there is no sin on you if you shorten As-Salah (the prayer)” [Quran, An-Nisa, 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
+            Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “When you travel through the land, it is permissible for you to shorten the prayer” [Quran 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
@@ -381,6 +383,11 @@ struct PrayerOffsetsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)
+                
+                Text("In Islam, the day begins at sunset (Maghrib). Keeping this on follows that Islamic tradition, while turning it off matches the usual midnight-to-midnight day.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
             }
         }
         
@@ -446,16 +453,14 @@ struct NotificationView: View {
                         .foregroundColor(.secondary)
                 }
 
-                if settings.adhanNotificationSound != "default" {
-                    Button {
-                        settings.hapticFeedback()
-                        playAdhanPreview()
-                    } label: {
-                        Label("Preview Sound", systemImage: "play.circle.fill")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                    .buttonStyle(.plain)
+                if settings.adhanNotificationSound != "default" {                    
+                    Label("Preview Sound", systemImage: "play.circle.fill")
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor.color)
+                        .onTapGesture {
+                            settings.hapticFeedback()
+                            playAdhanPreview()
+                        }
                 }
 
                 Text("Used only for the actual prayer-time notification. Prenotifications and nagging reminders still use the default sound.")
@@ -539,7 +544,6 @@ struct NotificationView: View {
                 } label: {
                     smallButton("Request Access", systemImage: "checkmark.seal")
                 }
-                .buttonStyle(.plain)
                 .contentShape(Rectangle())
 
                 Button {
@@ -548,7 +552,6 @@ struct NotificationView: View {
                 } label: {
                     smallButton("Open Settings", systemImage: "gear")
                 }
-                .buttonStyle(.plain)
                 .contentShape(Rectangle())
             }
         }
@@ -585,9 +588,13 @@ struct NotificationView: View {
     
     private func infoRow(_ left: String, _ right: String) -> some View {
         HStack {
-            Text(left).foregroundColor(.secondary)
+            Text(left)
+                .foregroundColor(.secondary)
+            
             Spacer()
-            Text(right).foregroundColor(.primary)
+            
+            Text(right)
+                .foregroundColor(.primary)
         }
     }
     

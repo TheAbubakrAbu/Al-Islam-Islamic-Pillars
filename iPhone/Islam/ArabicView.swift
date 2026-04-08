@@ -65,9 +65,9 @@ struct ArabicView: View {
         if let weight = letter.weight {
             switch weight {
             case .heavy:
-                parts += ["heavy", "tafkhim", "tafkhīm", "isti'la", "istila", "isti‘la"]
+                parts += ["heavy", "tafkhim", "istila", "isti'la"]
             case .light:
-                parts += ["light", "tarqiq", "tarqīq"]
+                parts += ["light", "tarqiq"]
             case .conditional:
                 parts += ["conditional"]
             case .followsPrevious:
@@ -93,6 +93,9 @@ struct ArabicView: View {
 
     var body: some View {
         List {
+            #if os(watchOS)
+            fontPickerSection
+            #endif
             favoriteLettersSection
             mainLetterSections
             searchResultsSection
@@ -125,9 +128,10 @@ struct ArabicView: View {
                             .foregroundColor(settings.accentColor.color)
                             .transition(.opacity)
                     }
-                    .frame(width: 26, height: 26)
+                    .frame(width: 27, height: 27)
                     .padding()
                     .conditionalGlassEffect()
+                    .padding(.bottom, 2)
                 }
                 .padding([.leading, .top], -8)
             }
@@ -149,6 +153,18 @@ struct ArabicView: View {
                     ArabicLetterRow(letterData: $0)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var fontPickerSection: some View {
+        Section {
+            Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
+                Text("Quranic Font").tag(true)
+                Text("Basic Font").tag(false)
+            }
+        } header: {
+            Text("ARABIC FONT")
         }
     }
 
@@ -249,13 +265,9 @@ struct ArabicView: View {
                         .foregroundStyle(settings.accentColor.color)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        #if os(iOS)
-                        .background(.ultraThinMaterial)
-                        #endif
-                        .clipShape(Capsule())
                         .conditionalGlassEffect()
+                        .opacity(searchText.isEmpty ? 0 : 1)
                 }
-                .padding(.vertical, 4)
             }
         }
     }
@@ -360,8 +372,8 @@ struct ArabicLetterView: View {
             if let weight = letterData.weight {
                 Section(header: Text("LIGHT / HEAVY PRONUNCIATION")) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(weight == .heavy ? "Heavy letter (Tafkhīm)"
-                             : weight == .light ? "Light letter (Tarqīq)"
+                            Text(weight == .heavy ? "Heavy letter (Tafkhim)"
+                                : weight == .light ? "Light letter (Tarqiq)"
                              : weight == .conditional ? "Conditional letter"
                              : "Follows previous letter")
                             .font(.headline)

@@ -11,6 +11,8 @@ struct QiblaView: View {
 
     let size: CGFloat
 
+    private static let kaabaCoordinate = CLLocationCoordinate2D(latitude: 21.4225, longitude: 39.8262)
+
     @StateObject private var compass: LocalQiblaCompass
 
     #if os(iOS)
@@ -35,6 +37,25 @@ struct QiblaView: View {
         angularDistance(compass.direction, 0)
     }
 
+    private var qiblaTurnText: String? {
+        guard distanceToQibla > 1 else { return "You are facing the Kaaba" }
+
+        let delta = shortestDelta(from: 0, to: compass.direction)
+        let direction = delta < 0 ? "left" : "right"
+        let degrees = Int(abs(delta).rounded())
+        return "Turn \(direction) \(degrees)°"
+    }
+
+    private var distanceToKaabaMiles: Double? {
+        guard let currentLocation = settings.currentLocation,
+              currentLocation.latitude != 1000,
+              currentLocation.longitude != 1000 else { return nil }
+
+        let here = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
+        let kaaba = CLLocation(latitude: Self.kaabaCoordinate.latitude, longitude: Self.kaabaCoordinate.longitude)
+        return here.distance(from: kaaba) / 1_609.344
+    }
+
     private var alignmentScore: Double {
         1.0 - (min(20.0, distanceToQibla) / 20.0)
     }
@@ -48,13 +69,19 @@ struct QiblaView: View {
     }
 
     var body: some View {
-        ZStack {
-            GlassyQiblaRing(size: size, tint: ringColor, alignmentScore: alignmentScore)
-            
-            pointerStack
-                .rotationEffect(.degrees(compass.direction))
+        VStack(spacing: 10) {
+            ZStack {
+                GlassyQiblaRing(size: size, tint: ringColor, alignmentScore: alignmentScore)
+                    .animation(.easeInOut(duration: 0.2), value: ringColor)
+
+                pointerStack
+                    .rotationEffect(.degrees(compass.direction))
+            }
+
+            if size >= 70 {
+                qiblaInfoCard
+            }
         }
-        .padding(.trailing, -12)
         .animation(nil, value: compass.direction)
         .onAppear {
             compass.start()
@@ -73,6 +100,7 @@ struct QiblaView: View {
     private var pointerStack: some View {
         VStack(spacing: -(size * 0.40)) {
             QiblaArrow(width: layout.arrowWidth, height: layout.arrowHeight, tint: arrowColor)
+                .animation(.easeInOut(duration: 0.2), value: arrowColor)
             Text("🕋")
                 .font(.system(size: layout.kaabaSize))
                 .shadow(
@@ -83,6 +111,31 @@ struct QiblaView: View {
                 )
         }
         .padding(.vertical, size * 0.16)
+    }
+
+    private var qiblaInfoCard: some View {
+        VStack(spacing: 3) {
+            if let qiblaTurnText {
+                Text(qiblaTurnText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(distanceToQibla <= 20 ? settings.accentColor.color : .primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+
+            if let distanceToKaabaMiles {
+                Text(String(format: "%.1f miles from the Kaaba", distanceToKaabaMiles))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .conditionalGlassEffect()
+        .shadow(color: .primary.opacity(0.08), radius: 8, y: 2)
     }
 
     private func angularDistance(_ lhs: Double, _ rhs: Double) -> Double {
@@ -118,17 +171,15 @@ struct QiblaView: View {
         let delta = shortestDelta(from: lastAngle, to: newAngle)
         let absoluteDelta = abs(delta)
         let distance = angularDistance(newAngle, 0)
-        let threshold = max(3.0, min(12.0, distance / 2.0))
+        let threshold = max(2.0, min(8.0, distance / 3.0))
 
         guard absoluteDelta >= threshold else { return }
-
-        let proximity = max(0.0, min(1.0, (30.0 - distance) / 30.0))
-        let intensity = CGFloat(0.3 + 0.7 * proximity)
 
         if distance <= 5 {
             notify.notificationOccurred(.success)
             notify.prepare()
         } else {
+            let intensity = CGFloat(distance <= 20 ? 0.25 : 0.15)
             impact.impactOccurred(intensity: intensity)
             impact.prepare()
         }
@@ -212,7 +263,7 @@ struct GlassyQiblaRing: View {
                 .mask(Circle().stroke(lineWidth: outerGlowWidth))
         }
         .frame(width: size, height: size)
-        .clipShape(Circle())
+        .contentShape(Circle())
         .compositingGroup()
     }
 }

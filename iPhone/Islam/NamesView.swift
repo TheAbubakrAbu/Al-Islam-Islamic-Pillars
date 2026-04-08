@@ -1,16 +1,5 @@
 import SwiftUI
 
-struct Root: Decodable {
-    let code: Int
-    let status: String
-    let data: [NameOfAllah]
-}
-
-struct NameTranslation: Decodable {
-    let meaning: String
-    let desc: String
-}
-
 struct NameOfAllah: Decodable, Identifiable {
     let number: Int
     let id: String
@@ -18,12 +7,15 @@ struct NameOfAllah: Decodable, Identifiable {
     let transliteration: String
     let found: String
     let meaning: String
+    let otherNames: [String]
     let desc: String
     let numberArabic: String
     let searchTokens: [String]
+    let firstFoundSurah: Int?
+    let firstFoundAyah: Int?
 
     enum CodingKeys: String, CodingKey {
-        case name, transliteration, number, found, meaning, desc, en
+        case name, transliteration, number, found, meaning, otherNames, desc
     }
 
     init(from decoder: Decoder) throws {
@@ -33,24 +25,21 @@ struct NameOfAllah: Decodable, Identifiable {
         name = try c.decode(String.self, forKey: .name)
         transliteration = try c.decode(String.self, forKey: .transliteration)
         found = try c.decode(String.self, forKey: .found)
-
-        if let topLevelMeaning = try c.decodeIfPresent(String.self, forKey: .meaning),
-           let topLevelDesc = try c.decodeIfPresent(String.self, forKey: .desc) {
-            meaning = topLevelMeaning
-            desc = topLevelDesc
-        } else {
-            let en = try c.decode(NameTranslation.self, forKey: .en)
-            meaning = en.meaning
-            desc = en.desc
-        }
+        meaning = try c.decode(String.self, forKey: .meaning)
+        otherNames = try c.decodeIfPresent([String].self, forKey: .otherNames) ?? []
+        desc = try c.decode(String.self, forKey: .desc)
 
         id = "\(number)"
         numberArabic = arabicNumberString(from: number)
+        let firstFound = Self.parseFirstFound(found)
+        firstFoundSurah = firstFound?.surah
+        firstFoundAyah = firstFound?.ayah
 
         searchTokens = [
             Self.clean(name),
             Self.clean(transliteration),
             Self.clean(meaning),
+            otherNames.map(Self.clean).joined(separator: " "),
             Self.clean(desc),
             Self.clean(found),
             "\(number)",
@@ -66,6 +55,20 @@ struct NameOfAllah: Decodable, Identifiable {
         return (stripped.applyingTransform(.stripDiacritics, reverse: false) ?? stripped).lowercased()
     }
 
+    private static func parseFirstFound(_ found: String) -> (surah: Int, ayah: Int)? {
+        let pattern = #"\((\d+)\s*:\s*(\d+)\)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let fullRange = NSRange(found.startIndex..<found.endIndex, in: found)
+        guard let match = regex.firstMatch(in: found, range: fullRange), match.numberOfRanges >= 3,
+              let surahRange = Range(match.range(at: 1), in: found),
+              let ayahRange = Range(match.range(at: 2), in: found),
+              let surah = Int(found[surahRange]),
+              let ayah = Int(found[ayahRange]) else {
+            return nil
+        }
+        return (surah, ayah)
+    }
+
     var firstFoundShort: String {
         guard let closingParen = found.firstIndex(of: ")") else { return found }
         return String(found[...closingParen])
@@ -76,6 +79,8 @@ final class NamesViewModel: ObservableObject {
     static let shared = NamesViewModel()
 
     @Published var namesOfAllah: [NameOfAllah] = []
+    @Published private(set) var firstFoundTargetsByNameNumber: [Int: (surahID: Int, ayahID: Int)] = [:]
+    private var filterCache = [String: [NameOfAllah]]()
 
     private init() { loadJSON() }
 
@@ -87,23 +92,46 @@ final class NamesViewModel: ObservableObject {
             do {
                 let data = try Data(contentsOf: url, options: .mappedIfSafe)
                 let decoder = JSONDecoder()
-
-                if let names = try? decoder.decode([NameOfAllah].self, from: data) {
-                    DispatchQueue.main.async { self.namesOfAllah = names }
-                    return
+                let names = (try? decoder.decode([NameOfAllah].self, from: data)) ?? []
+                var targets = [Int: (surahID: Int, ayahID: Int)]()
+                targets.reserveCapacity(names.count)
+                for name in names {
+                    guard let surah = name.firstFoundSurah,
+                          let ayah = name.firstFoundAyah else { continue }
+                    targets[name.number] = (surahID: surah, ayahID: ayah)
                 }
-
-                let root = try decoder.decode(Root.self, from: data)
-                DispatchQueue.main.async { self.namesOfAllah = root.data }
+                DispatchQueue.main.async {
+                    self.namesOfAllah = names
+                    self.firstFoundTargetsByNameNumber = targets
+                    self.filterCache.removeAll()
+                }
             } catch {
                 logger.debug("❌ JSON decode error: \(error)")
             }
         }
     }
+
+    func filteredNames(cleanedQuery: String) -> [NameOfAllah] {
+        guard !cleanedQuery.isEmpty else { return namesOfAllah }
+
+        if let cached = filterCache[cleanedQuery] {
+            return cached
+        }
+
+        let matches = namesOfAllah.filter { name in
+            if cleanedQuery.allSatisfy(\.isNumber), let n = Int(cleanedQuery) {
+                return name.number == n
+            }
+            return name.searchTokens.contains { $0.contains(cleanedQuery) } || Int(cleanedQuery) == name.number
+        }
+        filterCache[cleanedQuery] = matches
+        return matches
+    }
 }
 
 struct NamesView: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var namesData: NamesViewModel
 
     @State private var searchText = ""
@@ -119,22 +147,18 @@ struct NamesView: View {
         return (stripped.applyingTransform(.stripDiacritics, reverse: false) ?? stripped).lowercased()
     }
 
-    private func matches(_ name: NameOfAllah) -> Bool {
-        guard !cleanedSearch.isEmpty else { return true }
-        if cleanedSearch.allSatisfy(\.isNumber), let n = Int(cleanedSearch) {
-            return name.number == n
-        }
-        return name.searchTokens.contains { $0.contains(cleanedSearch) } || Int(cleanedSearch) == name.number
+    private var filteredNames: [NameOfAllah] {
+        namesData.filteredNames(cleanedQuery: cleanedSearch)
     }
 
     var body: some View {
-        let filteredNames = namesData.namesOfAllah.filter(matches)
         let hasActiveSearch = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         ScrollViewReader { proxy in
             List {
                 descriptionSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
                 namesSections(filteredNames: filteredNames, hasActiveSearch: hasActiveSearch, proxy: proxy)
+                finalInvocationSection
             }
         }
         #if os(watchOS)
@@ -174,20 +198,15 @@ struct NamesView: View {
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                #if os(iOS)
-                .background(.ultraThinMaterial)
-                #endif
-                .clipShape(Capsule())
                 .conditionalGlassEffect()
                 .opacity(hasActiveSearch ? 1 : 0)
         }
-        .padding(.vertical, 4)
     }
 
     @ViewBuilder
     private func namesSections(filteredNames: [NameOfAllah], hasActiveSearch: Bool, proxy: ScrollViewProxy) -> some View {
-        ForEach(Array(filteredNames.enumerated()), id: \.element.id) { _, name in
-            Section {
+        ForEach(filteredNames, id: \.id) { name in
+            Section(header: nameSectionHeader(name: name, target: namesData.firstFoundTargetsByNameNumber[name.number])) {
                 NameRow(
                     name: name,
                     showDescription: settings.showDescription,
@@ -197,6 +216,35 @@ struct NamesView: View {
                 }
             }
             .id("name_\(name.number)")
+        }
+    }
+
+    private func nameSectionHeader(name: NameOfAllah, target: (surahID: Int, ayahID: Int)?) -> some View {
+        #if os(iOS)
+        HStack {
+            Text("NAME \(name.number)")
+            
+            Spacer()
+
+            if let target {
+                NavigationLink(destination: ayahsDestination(for: target)) {
+                    Image(systemName: "character.book.closed.ar")
+                        .padding(4)
+                        .conditionalGlassEffect()
+                }
+            }
+        }
+        #else
+        EmptyView()
+        #endif
+    }
+
+    @ViewBuilder
+    private func ayahsDestination(for target: (surahID: Int, ayahID: Int)) -> some View {
+        if let surah = quranData.surah(target.surahID) {
+            AyahsView(surah: surah, ayah: target.ayahID)
+        } else {
+            Text("Reference not found")
         }
     }
 
@@ -219,6 +267,38 @@ struct NamesView: View {
                     expandedNameNumbers.insert(name.number)
                 }
             }
+        }
+    }
+
+    private var finalInvocationSection: some View {
+        Section(header: Text("AFTER THE 99 NAMES")) {
+            Text("Call upon Allah or call upon Ar-Rahman. Whichever Name you call, to Him belong the Most Beautiful Names.")
+                .font(.headline)
+                .foregroundStyle(.primary)
+
+            Text("Surah Al-Isra 17:110")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            VerseReflectionCard(
+                title: "Surah Al-Hashr 59:21",
+                body: "If this Quran were sent upon a mountain, it would humble and break from awe of Allah. These examples are given so people reflect."
+            )
+
+            VerseReflectionCard(
+                title: "Surah Al-Hashr 59:22",
+                body: "He is Allah, none is worthy of worship except Him. Knower of the seen and unseen, the Most Compassionate, the Most Merciful."
+            )
+
+            VerseReflectionCard(
+                title: "Surah Al-Hashr 59:23",
+                body: "He is Allah: the King, the Most Holy, the Source of Peace, the Guardian, the Almighty, the Compeller, the Supreme. Exalted is He above all partners."
+            )
+
+            VerseReflectionCard(
+                title: "Surah Al-Hashr 59:24",
+                body: "He is Allah, the Creator, the Originator, the Fashioner. To Him belong the Most Beautiful Names; all in the heavens and earth glorify Him."
+            )
         }
     }
 }
@@ -270,16 +350,12 @@ private struct NameRow: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
             }
+            .padding(.vertical, 4)
             
-            if showDescription || isExpanded {
-                Text(name.desc)
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .transition(.opacity)
-                    .padding(.top, 2)
+            if isExpanded {
+                NameRowDetails(name: name, showDescription: showDescription, isExpanded: isExpanded)
             }
         }
-        .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
             if !showDescription {
@@ -316,4 +392,64 @@ private struct NameRow: View {
         }
     }
     #endif
+}
+
+private struct NameRowDetails: View {
+    @EnvironmentObject var settings: Settings
+    let name: NameOfAllah
+    let showDescription: Bool
+    let isExpanded: Bool
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            if showDescription || isExpanded {
+                if !name.otherNames.isEmpty {
+                    HStack {
+                        Text("Other Names:")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+
+                        Text(name.otherNames.joined(separator: ", "))
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                    }
+                    .transition(.opacity)
+                }
+
+                Text(name.desc)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .transition(.opacity)
+                    .padding(.top, 2)
+            }
+        }
+    }
+}
+
+private struct VerseReflectionCard: View {
+    let title: String
+    let body: String
+
+    var bodyView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+
+            Text(body)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.secondary.opacity(0.1))
+        )
+    }
+
+    var body: some View {
+        bodyView
+    }
 }

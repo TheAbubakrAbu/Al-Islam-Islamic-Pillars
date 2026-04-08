@@ -39,7 +39,6 @@ struct PrayerCountdown: View {
             .onChange(of: nextPrayer) { _ in
                 updateProgress()
             }
-            .buttonStyle(.plain)
             .contentShape(Rectangle())
             .onTapGesture {
                 settings.hapticFeedback()
@@ -79,7 +78,9 @@ struct PrayerCountdown: View {
     private var sectionHeader: some View {
         HStack {
             Text("CURRENT")
+            
             Spacer()
+            
             Text("UPCOMING")
         }
     }
@@ -88,6 +89,7 @@ struct PrayerCountdown: View {
     private func prayerSummary(current: Prayer, next: Prayer) -> some View {
         VStack {
             summaryRow(current: current, next: next)
+            
             if settings.showPrayerInfo {
                 prayerInfoRow(current: current, next: next)
             }
@@ -132,11 +134,9 @@ struct PrayerCountdown: View {
     }
 
     private func timeLeftRow(next: Prayer) -> some View {
-        HStack {
-            Text("Time Left: \(next.time, style: .timer)")
-            Spacer()
-        }
-        .font(.headline)
+        Text("Time Left: \(next.time, style: .timer)")
+            .font(.headline)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func handleScenePhaseChange(_ phase: ScenePhase) {
@@ -201,7 +201,11 @@ private struct CurrentPrayerCell: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             title
+            
+            #if os(iOS)
             subtitle
+            #endif
+            
             Text("Started at \(prayer.time, style: .time)")
                 .font(.headline)
         }
@@ -230,9 +234,11 @@ private struct UpcomingPrayerCell: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 5) {
             title
+            
             #if os(iOS)
             subtitle
             #endif
+            
             Text("Starts at \(prayer.time, style: .time)")
                 .font(.headline)
         }
@@ -369,6 +375,7 @@ private struct PrayerRakahInfoView: View {
                 Text("Shurooq is not a prayer, but marks the end of Fajr")
                     .font(.caption2)
                     .foregroundColor(.secondary)
+                    .lineLimit(2)
             }
         }
         .frame(maxWidth: .infinity, alignment: alignment)
@@ -386,6 +393,7 @@ private struct PrayerSunnahInfoView: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
+            
             if prayer.sunnahAfter != "0" {
                 Text("Sunnah Rakahs After: \(prayer.sunnahAfter)")
                     .font(.caption2)

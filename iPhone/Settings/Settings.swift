@@ -52,17 +52,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         Self.locationManager.delegate = self
         requestLocationAuthorization()
 
-        if self.reciter == Self.randomReciterName {
-            // Keep the saved random-reciter preference as-is.
-        } else if self.reciter.starts(with: "ar") {
-            if let match = reciters.first(where: { $0.ayahIdentifier == self.reciter }) {
-                self.reciter = match.name
-            } else {
-                self.reciter = "Muhammad Al-Minshawi (Murattal)"
-            }
-        } else if self.reciter.isEmpty {
-            self.reciter = "Muhammad Al-Minshawi (Murattal)"
-        }
+        runQuranStartupMigrations()
     }
 
     // MARK: - App group — shared with widgets / extensions
@@ -345,6 +335,9 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
 
+    /// Disambiguates reciters that share the same display name (qiraah / surah base URL).
+    @AppStorage("reciterId") var reciterId: String = ""
+
     @AppStorage("reciteType") var reciteType: String = "Continue to Next"
 
     @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
@@ -375,7 +368,23 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     @AppStorage("beginnerMode") var beginnerMode: Bool = false
 
-    @AppStorage("groupBySurah") var groupBySurah: Bool = true
+    enum QuranSortMode: String, CaseIterable, Identifiable {
+        case surah
+        case juz
+        case page
+        case revelation
+
+        var id: String { rawValue }
+    }
+
+    @AppStorage("quranSortMode") var quranSortModeRaw: String = QuranSortMode.surah.rawValue
+
+    var quranSortMode: QuranSortMode {
+        get { QuranSortMode(rawValue: quranSortModeRaw) ?? .surah }
+        set { quranSortModeRaw = newValue.rawValue }
+    }
+
+    var groupBySurah: Bool { quranSortMode == .surah }
     @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
 
     @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
@@ -405,6 +414,68 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
+    enum Riwayah {
+        static let hafsTag = ""
+        static let hafsLabel = "Hafs an Asim (default)"
+
+        static let shubah = "Shubah an Asim"
+        static let khalaf = "Khalaf an Hamzah"
+        static let buzzi = "al-Bazzi an Ibn Kathir"
+        static let qunbul = "Qunbul an Ibn Kathir"
+        static let warsh = "Warsh an Nafi"
+        static let qaloon = "Qalun an Nafi"
+        static let duri = "ad-Duri an Abi Amr"
+        static let susi = "as-Susi an Abi Amr"
+
+        static let warshArabic = "ورش عن نافع"
+        static let qaloonArabic = "قالون عن نافع"
+        static let duriArabic = "الدوري عن أبي عمرو"
+        static let susiArabic = "السوسي عن أبي عمرو"
+        static let buzziArabic = "البزي عن ابن كثير"
+        static let qunbulArabic = "قنبل عن ابن كثير"
+        static let shubahArabic = "شعبة عن عاصم"
+        static let khalafArabic = "خلف عن حمزة"
+
+        static let menuOptions: [(label: String, tag: String)] = [
+            (hafsLabel, hafsTag),
+            (shubah, shubah),
+            (buzzi, buzzi),
+            (qunbul, qunbul),
+            (warsh, warsh),
+            (qaloon, qaloon),
+            (duri, duri),
+            (susi, susi),
+        ]
+
+        static let arabicCaptionByTag: [String: String] = [
+            hafsTag: "حفص عن عاصم",
+            warsh: warshArabic,
+            qaloon: qaloonArabic,
+            duri: duriArabic,
+            susi: susiArabic,
+            buzzi: buzziArabic,
+            qunbul: qunbulArabic,
+            shubah: shubahArabic,
+            khalaf: khalafArabic,
+        ]
+
+        static func canonicalTag(_ stored: String) -> String {
+            let raw = stored.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch raw {
+            case "", "Hafs", "Hafs an Asim", hafsLabel: return hafsTag
+            case warsh, "Warsh An Nafi": return warsh
+            case qaloon, "Qaloon an Nafi", "Qaloon An Nafi": return qaloon
+            case duri, "Ad-Duri an Abi Amr": return duri
+            case susi, "As-Susi an Abi Amr": return susi
+            case buzzi, "Al-Buzzi an Ibn Kathir": return buzzi
+            case qunbul, "Qumbul an Ibn Kathir": return qunbul
+            case shubah, "Shu'bah an Asim", "Shu'bah an Aasim", "Shouba an Asim": return shubah
+            case khalaf: return khalaf
+            default: return raw
+            }
+        }
+    }
+
     /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
     @AppStorage("displayQiraah") var displayQiraah: String = ""
 
@@ -413,6 +484,12 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     /// When on, ReciterListView reveals non-Hafs qiraat reciters.
     @AppStorage("showOtherQiraatReciters") var showOtherQiraatReciters: Bool = false
+
+    /// Shared expand/collapse state for qiraah details in Quran settings and reciter lists.
+    var showQiraahDetails: Bool {
+        get { showOtherQiraatReciters }
+        set { showOtherQiraatReciters = newValue }
+    }
 
     /// Pass to Ayah.displayArabic(qiraah:clean:). Nil means Hafs.
     var displayQiraahForArabic: String? {
@@ -424,16 +501,27 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         displayQiraah.isEmpty || displayQiraah == "Hafs"
     }
 
+    /// Arabic riwayah line for settings section headers (matches on-screen Arabic text riwayah).
+    var displayQiraahArabicCaption: String {
+        let key = Self.normalizeLegacyRiwayahTag(displayQiraah)
+        return Self.Riwayah.arabicCaptionByTag[key] ?? Self.Riwayah.arabicCaptionByTag[Self.Riwayah.hafsTag]!
+    }
+
     @AppStorage("showArabicText") var showArabicText: Bool = true
     @AppStorage("showTajweedColors") var showTajweedColors: Bool = false
     @AppStorage("showTajweedTafkhim") var showTajweedTafkhim: Bool = true
     @AppStorage("showTajweedQalqalah") var showTajweedQalqalah: Bool = true
-    @AppStorage("showTajweedIkhfaGhunnah") var showTajweedIkhfaGhunnah: Bool = true
-    @AppStorage("showTajweedIdghaamSilent") var showTajweedIdghaamSilent: Bool = true
-    @AppStorage("showTajweedMadd246") var showTajweedMadd246: Bool = true
-    @AppStorage("showTajweedMadd2") var showTajweedMadd2: Bool = true
-    @AppStorage("showTajweedMadd6") var showTajweedMadd6: Bool = true
-    @AppStorage("showTajweedMadd45") var showTajweedMadd45: Bool = true
+    @AppStorage("showTajweedLamShamsiyah") var showTajweedLamShamsiyah: Bool = true
+    @AppStorage("showTajweedSukoonJazm") var showTajweedSukoonJazm: Bool = true
+    @AppStorage("showTajweedBareNuunMeem") var showTajweedIdghamBiGhunnah: Bool = true
+    @AppStorage("showTajweedIkhfaa") var showTajweedIkhfaa: Bool = true
+    @AppStorage("showTajweedIqlab") var showTajweedIqlab: Bool = true
+    @AppStorage("showTajweedIdghamBilaGhunnah") var showTajweedIdghamBilaGhunnah: Bool = true
+    @AppStorage("showTajweedHamzatWaslSilent") var showTajweedHamzatWaslSilent: Bool = true
+    @AppStorage("showTajweedMaddNatural2") var showTajweedMaddNatural2: Bool = true
+    @AppStorage("showTajweedMaddNecessary6") var showTajweedMaddNecessary6: Bool = true
+    @AppStorage("showTajweedMaddSeparated") var showTajweedMaddSeparated: Bool = true
+    @AppStorage("showTajweedMaddConnected") var showTajweedMaddConnected: Bool = true
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
     @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
     @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10
@@ -444,7 +532,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
     @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
-    @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = true
+    @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = false
 
     @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()
     var quranSearchHistory: [String] {

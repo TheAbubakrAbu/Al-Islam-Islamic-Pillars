@@ -28,11 +28,12 @@ struct PrayersProvider: TimelineProvider {
             settings.currentLocation = loc
         }
 
-        settings.accentColor      = AccentColor(rawValue: store?.string(forKey: "accentColor") ?? "") ?? .green
-        settings.travelingMode    = store?.bool(forKey: "travelingMode") ?? false
-        settings.hanafiMadhab     = store?.bool(forKey: "hanafiMadhab") ?? false
-        settings.prayerCalculation = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"
-        settings.hijriOffset       = store?.integer(forKey: "hijriOffset") ?? 0
+        settings.accentColor            = AccentColor(rawValue: store?.string(forKey: "accentColor") ?? "") ?? .green
+        settings.travelingMode          = store?.bool(forKey: "travelingMode") ?? false
+        settings.hanafiMadhab           = store?.bool(forKey: "hanafiMadhab") ?? false
+        settings.prayerCalculation      = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"
+        settings.hijriOffset            = store?.integer(forKey: "hijriOffset") ?? 0
+        settings.switchHijriDateAtMaghrib = store?.bool(forKey: "switchHijriDateAtMaghrib") ?? false
 
         settings.fetchPrayerTimes()
 
@@ -41,14 +42,15 @@ struct PrayersProvider: TimelineProvider {
         }
 
         return PrayersEntry(
-            date:           Date(),
-            accentColor:    settings.accentColor,
-            currentCity:    settings.currentLocation?.city ?? "",
-            prayers:        obj.prayers,
-            fullPrayers:    obj.fullPrayers,
-            currentPrayer:  settings.currentPrayer,
-            nextPrayer:     settings.nextPrayer,
-            hijriOffset:    settings.hijriOffset
+            date:                       Date(),
+            accentColor:                settings.accentColor,
+            currentCity:                settings.currentLocation?.city ?? "",
+            prayers:                    obj.prayers,
+            fullPrayers:                obj.fullPrayers,
+            currentPrayer:              settings.currentPrayer,
+            nextPrayer:                 settings.nextPrayer,
+            hijriOffset:                settings.hijriOffset,
+            switchHijriDateAtMaghrib:   settings.switchHijriDateAtMaghrib
         )
     }
 
@@ -58,7 +60,8 @@ struct PrayersProvider: TimelineProvider {
               currentCity: "",
               prayers: [], fullPrayers: [],
               currentPrayer: nil, nextPrayer: nil,
-              hijriOffset: 0)
+              hijriOffset: 0,
+              switchHijriDateAtMaghrib: false)
     }
 }
 
@@ -71,4 +74,5 @@ struct PrayersEntry: TimelineEntry {
     let currentPrayer: Prayer?
     let nextPrayer: Prayer?
     let hijriOffset: Int
+    let switchHijriDateAtMaghrib: Bool
 }

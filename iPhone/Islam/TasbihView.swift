@@ -44,28 +44,28 @@ struct TasbihView: View {
     }
 
     private func tasbihSelectionButton(for index: Int) -> some View {
-        Button {
-            settings.hapticFeedback()
-            withAnimation {
-                selectedDhikrIndex = index
-            }
-        } label: {
-            ZStack {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
-                    #if os(iOS)
-                    .padding(.horizontal, -12)
-                    .padding(.vertical, tasbihSelectionBackgroundVerticalPadding)
-                    #else
-                    .padding(-7)
-                    #endif
+        ZStack {
+            RoundedRectangle(cornerRadius: 24)
+                .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
+                #if os(iOS)
+                .padding(.horizontal, -12)
+                .padding(.vertical, tasbihSelectionBackgroundVerticalPadding)
+                #else
+                .padding(-7)
+                #endif
 
-                TasbihRow(tasbih: tasbihData[index], counter: binding(for: index))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            TasbihRow(tasbih: tasbihData[index], counter: binding(for: index))
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if index != selectedDhikrIndex {
+                withAnimation {
+                    settings.hapticFeedback()
+                    selectedDhikrIndex = index
+                }
+            }
+        }
         #if os(watchOS)
         .padding(.vertical, 12)
         #endif
@@ -85,32 +85,33 @@ struct TasbihView: View {
         let counterBinding = binding(for: selectedDhikrIndex)
 
         return Section {
-            Button {
-                settings.hapticFeedback()
-                counters[selectedDhikrIndex, default: 0] += 1
-            } label: {
-                ZStack {
-                    ProgressCircleView(progress: counterBinding.wrappedValue)
-                        .scaledToFit()
-                        .frame(maxWidth: 185, maxHeight: 185)
+            ZStack {
+                ProgressCircleView(progress: counterBinding.wrappedValue)
+                    .scaledToFit()
+                    .frame(maxWidth: 185, maxHeight: 185)
 
-                    VStack(alignment: .center, spacing: 5) {
-                        Text(selectedDhikr.arabic)
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(settings.accentColor.color)
+                VStack(alignment: .center, spacing: 5) {
+                    Text(selectedDhikr.arabic)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(settings.accentColor.color)
 
-                        Text(selectedDhikr.english)
-                            .font(.subheadline)
+                    Text(selectedDhikr.english)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
 
-                        CounterView(counter: counterBinding)
-                    }
+                    CounterView(counter: counterBinding)
                 }
-                .padding()
-                .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .padding()
+            .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
+            .contentShape(Rectangle())
+        }
+        .onTapGesture {
+            settings.hapticFeedback()
+            withAnimation {
+                counters[selectedDhikrIndex, default: 0] += 1
+            }
         }
     }
 }
@@ -145,8 +146,9 @@ struct CounterView: View {
     var body: some View {
         VStack(alignment: .center) {
             Text("\(counter)")
-                .font(.title)
+                .font(.title.monospaced())
                 .fontWeight(.semibold)
+                .foregroundColor(.primary)
                 .padding(.horizontal, 2)
 
             Image(systemName: "plus.circle")
@@ -165,29 +167,31 @@ struct TasbihRow: View {
     var body: some View {
         HStack {
             textColumn
+            
             Spacer()
+            
             counterControls
         }
         .contentShape(Rectangle())
         #if os(iOS)
         .contextMenu {
             Button {
-                UIPasteboard.general.string = tasbih.arabic
                 settings.hapticFeedback()
+                UIPasteboard.general.string = tasbih.arabic
             } label: {
                 Label("Copy Arabic", systemImage: "doc.on.doc")
             }
 
             Button {
-                UIPasteboard.general.string = tasbih.english
                 settings.hapticFeedback()
+                UIPasteboard.general.string = tasbih.english
             } label: {
                 Label("Copy Transliteration", systemImage: "doc.on.doc")
             }
 
             Button {
-                UIPasteboard.general.string = tasbih.translation
                 settings.hapticFeedback()
+                UIPasteboard.general.string = tasbih.translation
             } label: {
                 Label("Copy Translation", systemImage: "doc.on.doc")
             }
@@ -203,6 +207,7 @@ struct TasbihRow: View {
 
             Text(tasbih.english)
                 .font(.subheadline)
+                .foregroundColor(.primary)
 
             Text(tasbih.translation)
                 .font(.subheadline)
@@ -213,44 +218,40 @@ struct TasbihRow: View {
     private var counterControls: some View {
         VStack {
             HStack {
-                Button {
-                    settings.hapticFeedback()
-                    if counter > 0 {
-                        counter -= 1
+                Image(systemName: "minus.circle")
+                    .foregroundColor(counter == 0 ? .secondary : settings.accentColor.color)
+                    .padding(6)
+                    .conditionalGlassEffect()
+                    .onTapGesture {
+                        if counter > 0 {
+                            settings.hapticFeedback()
+                            withAnimation { counter -= 1 }
+                        }
                     }
-                } label: {
-                    Image(systemName: "minus.circle")
-                        .foregroundColor(counter == 0 ? .secondary : settings.accentColor.color)
-                        .padding(6)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                    .disabled(counter <= 0)
 
                 Text("\(counter)")
+                    .font(.subheadline.monospaced())
 
-                Button {
+                Image(systemName: "plus.circle")
+                    .foregroundColor(settings.accentColor.color)
+                    .padding(6)
+                    .conditionalGlassEffect()
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        withAnimation { counter += 1 }
+                    }
+            }
+
+            Text("Reset")
+                .font(.subheadline)
+                .padding(6)
+                .conditionalGlassEffect()
+                .onTapGesture {
                     settings.hapticFeedback()
-                    counter += 1
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .foregroundColor(settings.accentColor.color)
-                        .padding(6)
-                        .contentShape(Rectangle())
+                    withAnimation { counter = 0 }
                 }
-                .buttonStyle(.plain)
-            }
-
-            Button {
-                settings.hapticFeedback()
-                counter = 0
-            } label: {
-                Text("Reset")
-                    .font(.subheadline)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 6)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+                .disabled(counter <= 0)
         }
     }
 }

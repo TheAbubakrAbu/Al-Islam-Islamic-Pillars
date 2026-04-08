@@ -226,7 +226,7 @@ struct MasjidLocatorView: View {
             if shouldShowResultsPanel {
                 HStack {
                     if isSearching {
-                        Text("Searching nearby masajid…")
+                        Text("Loading masaajid…")
                     } else {
                         Text("\(results.count) match\(results.count == 1 ? "" : "es") found")
                     }
@@ -245,7 +245,6 @@ struct MasjidLocatorView: View {
     private var actionInset: some View {
         VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             actionButtonsRow
-            selectedDirectionsButton
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
@@ -282,25 +281,6 @@ struct MasjidLocatorView: View {
         }
     }
 
-    @ViewBuilder
-    private var selectedDirectionsButton: some View {
-        if let selectedItem {
-            Button {
-                settings.hapticFeedback()
-                selectedItem.openInMaps(launchOptions: [
-                    MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
-                ])
-            } label: {
-                Label("Open Directions to \(selectedItem.name ?? "Masjid")", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
-            .font(.headline)
-            .foregroundColor(.primary)
-            .padding()
-            .conditionalGlassEffect(useColor: 0.25)
-        }
-    }
-
     private var shouldShowResultsPanel: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching || !results.isEmpty
     }
@@ -314,13 +294,13 @@ struct MasjidLocatorView: View {
             if isSearching && results.isEmpty {
                 HStack(spacing: 10) {
                     ProgressView()
-                    Text("Searching nearby masajid…")
+                    Text("Searching nearby masaajid…")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 .padding()
             } else if results.isEmpty {
-                Text("No masajid found in this area")
+                Text("No masaajid found in this area")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.subheadline)
                     .padding()
@@ -361,7 +341,7 @@ struct MasjidLocatorView: View {
                                     settings.hapticFeedback()
                                     openInMaps(item)
                                 } label: {
-                                    Image(systemName: "map.fill")
+                                    Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
                                         .font(.headline)
                                         .foregroundColor(settings.accentColor.color)
                                         .frame(width: 36, height: 36)
@@ -559,6 +539,35 @@ struct MasjidLocatorView: View {
         let unique = items.filter { item in
             let key = "\(item.name ?? "")|\(item.placemark.coordinate.latitude)|\(item.placemark.coordinate.longitude)"
             return seen.insert(key).inserted
+        }
+
+        if trimmed.isEmpty {
+            let originCoordinate: CLLocationCoordinate2D = {
+                if let cur = settings.currentLocation,
+                   cur.latitude != 1000,
+                   cur.longitude != 1000 {
+                    return cur.coordinate
+                }
+                if let homeCoordinate {
+                    return homeCoordinate
+                }
+                return searchRegion.center
+            }()
+
+            let origin = CLLocation(latitude: originCoordinate.latitude, longitude: originCoordinate.longitude)
+            let sortedByDistance = unique.sorted { lhs, rhs in
+                let lhsDistance = origin.distance(from: CLLocation(
+                    latitude: lhs.placemark.coordinate.latitude,
+                    longitude: lhs.placemark.coordinate.longitude
+                ))
+                let rhsDistance = origin.distance(from: CLLocation(
+                    latitude: rhs.placemark.coordinate.latitude,
+                    longitude: rhs.placemark.coordinate.longitude
+                ))
+                return lhsDistance < rhsDistance
+            }
+
+            return Array(sortedByDistance.prefix(12))
         }
 
         return Array(unique.prefix(12))

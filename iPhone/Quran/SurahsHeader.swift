@@ -11,6 +11,7 @@ struct SurahsHeader: View {
 
             #if os(iOS)
             Spacer()
+            
             randomSurahLink
             #endif
         }
@@ -35,8 +36,7 @@ struct SurahsHeader: View {
                 randomSurah = quranData.quran.randomElement()
             }
         } label: {
-            Image(systemName: "shuffle")
-                .buttonStyle(.plain)
+            Image(systemName: "shuffle.circle")
                 .padding(4)
                 .conditionalGlassEffect()
         }
@@ -63,6 +63,7 @@ struct JuzHeader: View {
 
             #if os(iOS)
             Spacer()
+            
             randomSurahLink
             #endif
         }
@@ -95,13 +96,25 @@ struct JuzHeader: View {
                 randomSurah = randomSurahInJuz
             }
         } label: {
-            Image(systemName: "shuffle")
-                .buttonStyle(.plain)
+            Image(systemName: "shuffle.circle")
                 .padding(4)
                 .conditionalGlassEffect()
         }
     }
     #endif
+}
+
+struct PageHeader: View {
+    let page: Int
+
+    var body: some View {
+        HStack {
+            Text("PAGE \(page)")
+                .lineLimit(1)
+
+            Spacer()
+        }
+    }
 }
 
 struct SurahSectionHeader: View {
@@ -127,10 +140,12 @@ struct SurahSectionHeader: View {
 
     private var ayahSummary: some View {
         Group {
+            let revelationEmoji = surah.type == "meccan" ? "🕋" : "🕌"
+            
             #if os(iOS)
-            Text("\(surah.numberOfAyahs(for: settings.displayQiraahForArabic)) Ayahs - \(surah.type) \(surah.type == "meccan" ? "🕋" : "🕌")")
+            Text("\(surah.ayahCountLabel(for: settings.displayQiraahForArabic)) - \(surah.pageCountLabel) \(revelationEmoji)")
             #else
-            Text("\(surah.numberOfAyahs(for: settings.displayQiraahForArabic)) Ayahs - \(surah.type == "meccan" ? "🕋" : "🕌")")
+            Text("\(surah.ayahCountLabel(for: settings.displayQiraahForArabic)) - \(surah.pageCountLabel) \(revelationEmoji)")
             #endif
         }
         .textCase(.uppercase)
@@ -138,7 +153,6 @@ struct SurahSectionHeader: View {
         .lineLimit(1)
         .minimumScaleFactor(compact ? 0.6 : 0.25)
     }
-
     #if os(watchOS)
     private var watchPlaybackButton: some View {
         Group {
@@ -200,7 +214,6 @@ struct HeaderRow: View {
     var body: some View {
         VStack(alignment: .center) {
             Text(displayArabicText)
-                .foregroundColor(settings.accentColor.color)
                 .font(.custom(settings.fontArabic, size: settings.fontArabicSize))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -210,7 +223,6 @@ struct HeaderRow: View {
                 Text(englishTransliteration)
                     .font(.system(size: settings.englishFontSize))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 4)
             }
@@ -219,11 +231,11 @@ struct HeaderRow: View {
                 Text(englishTranslation)
                     .font(.system(size: settings.englishFontSize))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 4)
             }
         }
+        .foregroundColor(settings.accentColor.color)
         .padding(.top, -4)
         #if os(iOS)
         .contextMenu {
