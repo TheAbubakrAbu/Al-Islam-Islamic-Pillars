@@ -80,7 +80,7 @@ let standardArabicLetters: [LetterData] = [
         weightRule: "Heavy with fatha/damma, or sukoon preceded by fatha/damma; light with kasra."
     ),
 
-    LetterData(id: LetterID.next(), letter: "ز", forms: ["ـز", "ـز ـ", "ز ـ"], name: "زَاي", transliteration: "zay", showTashkeel: true, sound: "z", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ز", forms: ["ـز", "ـز ـ", "ز ـ"], name: "زَاي", transliteration: "zaay", showTashkeel: true, sound: "z", weight: .light),
     LetterData(id: LetterID.next(), letter: "س", forms: ["ـس", "ـسـ", "سـ"], name: "سِين", transliteration: "seen", showTashkeel: true, sound: "s", weight: .light),
     LetterData(id: LetterID.next(), letter: "ش", forms: ["ـش", "ـشـ", "شـ"], name: "شِين", transliteration: "sheen", showTashkeel: true, sound: "sh", weight: .light),
 
@@ -108,7 +108,7 @@ let standardArabicLetters: [LetterData] = [
     ),
 
     LetterData(id: LetterID.next(), letter: "م", forms: ["ـم", "ـمـ", "مـ"], name: "مِيم", transliteration: "meem", showTashkeel: true, sound: "m", weight: .light),
-    LetterData(id: LetterID.next(), letter: "ن", forms: ["ـن", "ـنـ", "نـ"], name: "نُون", transliteration: "noon", showTashkeel: true, sound: "n", weight: .light),
+    LetterData(id: LetterID.next(), letter: "ن", forms: ["ـن", "ـنـ", "نـ"], name: "نُون", transliteration: "nuun", showTashkeel: true, sound: "n", weight: .light),
     LetterData(id: LetterID.next(), letter: "ه", forms: ["ـه", "ـهـ", "هـ"], name: "هَاء", transliteration: "haa", showTashkeel: true, sound: "h", weight: .light),
 
     LetterData(
@@ -116,11 +116,11 @@ let standardArabicLetters: [LetterData] = [
         letter: "و",
         forms: ["ـو", "ـو ـ", "و ـ"],
         name: "وَاو",
-        transliteration: "waw",
+        transliteration: "waaw",
         showTashkeel: true,
         sound: "w",
         weight: .light,
-        weightRule: "Waw is pronounced as a light letter in all positions."
+        weightRule: "Waaw is pronounced as a light letter in all positions."
     ),
 
     LetterData(
@@ -137,16 +137,16 @@ let standardArabicLetters: [LetterData] = [
 ]
 
 let otherArabicLetters: [LetterData] = [
-    LetterData(id: LetterID.next(), letter: "ة", forms: ["ـة", "ـة ـ", "ة ـ"], name: "تَاء مَربُوطَة", transliteration: "taa marbuuTa", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "ة", forms: ["ـة", "ـة ـ", "ة ـ"], name: "تَاء مَربُوطَة", transliteration: "taa marbuuTah", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "ء", forms: ["ـ ء", "ـ ء ـ", "ء ـ"], name: "هَمزَة", transliteration: "hamza", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "أ", forms: ["ـأ", "ـأ ـ", "أ ـ"], name: "هَمزَة عَلَى أَلِف", transliteration: "hamza on alif", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "إ", forms: ["ـإ", "ـإ ـ", "إ ـ"], name: "هَمزَة عَلَى أَلِف", transliteration: "hamza on alif", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "ئ", forms: ["ـئ", "ـئ ـ", "ئ ـ"], name: "هَمزَة عَلَى يَاء", transliteration: "hamza on yaa", showTashkeel: false, sound: ""),
-    LetterData(id: LetterID.next(), letter: "ؤ", forms: ["ـؤ", "ـؤ ـ", "ؤ ـ"], name: "هَمزَة عَلَى وَاو", transliteration: "hamza on waw", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "ؤ", forms: ["ـؤ", "ـؤ ـ", "ؤ ـ"], name: "هَمزَة عَلَى وَاو", transliteration: "hamza on waaw", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "ٱ", forms: ["ٱـ", "ـٱ", "ـٱـ"], name: "هَمزَة الوَصل", transliteration: "hamzatul waSl", showTashkeel: false, sound: ""),
-    LetterData(id: LetterID.next(), letter: "آ", forms: ["ـآ", "ـآ ـ", "آ ـ"], name: "أَلِف مَدَّ", transliteration: "alif mad", showTashkeel: false, sound: ""),
-    LetterData(id: LetterID.next(), letter: "يٓ", forms: ["ـيٓ", "ـيٓـ", "يٓـ"], name: "يَاء مَدّ", transliteration: "yaa mad", showTashkeel: false, sound: ""),
-    LetterData(id: LetterID.next(), letter: "وٓ", forms: ["ـوٓ", "ـوٓـ", "وٓـ"], name: "واو مَدّ", transliteration: "waw mad", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "آ", forms: ["ـآ", "ـآ ـ", "آ ـ"], name: "أَلِف مَدَّ", transliteration: "alif madd", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "يٓ", forms: ["ـيٓ", "ـيٓـ", "يٓـ"], name: "يَاء مَدّ", transliteration: "yaa madd", showTashkeel: false, sound: ""),
+    LetterData(id: LetterID.next(), letter: "وٓ", forms: ["ـوٓ", "ـوٓـ", "وٓـ"], name: "واو مَدّ", transliteration: "waaw madd", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "ى", forms: ["ـى", "ـى ـ", "ى ـ"], name: "أَلِف مَقصُورَة", transliteration: "alif maqSoorah", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "ل ا - لا", forms: ["ـلا", "ـلا ـ", "لا ـ"], name: "لَاء", transliteration: "laa", showTashkeel: false, sound: ""),
     LetterData(id: LetterID.next(), letter: "ـ", forms: ["ـ", "ـ", "ـ"], name: "تَطوِيل", transliteration: "tatweel", showTashkeel: false, sound: "")
@@ -184,17 +184,17 @@ let tashkeels: [Tashkeel] = [
     Tashkeel(english: "Dammatayn", arabic: "ضَمَّتَين", tashkeelMark: "ٌ", transliteration: "un"),
     Tashkeel(english: "Alif", arabic: "أَلِف", tashkeelMark: "َا", transliteration: "aa"),
     Tashkeel(english: "Yaa", arabic: "يَاء", tashkeelMark: "ِي", transliteration: "ii"),
-    Tashkeel(english: "Waw", arabic: "وَاو", tashkeelMark: "ُو", transliteration: "uu"),
+    Tashkeel(english: "Waaw", arabic: "وَاو", tashkeelMark: "ُو", transliteration: "uu"),
     Tashkeel(english: "Dagger Alif", arabic: "ألف خنجرية", tashkeelMark: "\u{064E}\u{0670}\u{0640}", transliteration: "aa"),
     Tashkeel(english: "Miniature Yaa", arabic: "يَاء صغيرة", tashkeelMark: "ِۦ", transliteration: "ii"),
-    Tashkeel(english: "Miniature Waw", arabic: "واو صغيرة", tashkeelMark: "ُۥ", transliteration: "uu"),
-    Tashkeel(english: "Alif Mad", arabic: "أَلِف مَدّ", tashkeelMark: "َآ", transliteration: "aaaa"),
-    Tashkeel(english: "Yaa Mad", arabic: "يَاء مَدّ", tashkeelMark: "ِيٓ", transliteration: "iiii"),
-    Tashkeel(english: "Waw Mad", arabic: "واو مَدّ", tashkeelMark: "ُوٓ", transliteration: "uuuu"),
-    Tashkeel(english: "Alif Maqsoorah", arabic: "ياء بلا نقاط", tashkeelMark: "َى", transliteration: "aa"),
+    Tashkeel(english: "Miniature Waaw", arabic: "واو صغيرة", tashkeelMark: "ُۥ", transliteration: "uu"),
+    Tashkeel(english: "Alif Madd", arabic: "أَلِف مَدّ", tashkeelMark: "َآ", transliteration: "aaaa"),
+    Tashkeel(english: "Yaa Madd", arabic: "يَاء مَدّ", tashkeelMark: "ِيٓ", transliteration: "iiii"),
+    Tashkeel(english: "Waaw Madd", arabic: "واو مَدّ", tashkeelMark: "ُوٓ", transliteration: "uuuu"),
+    Tashkeel(english: "Alif MaqSuurah", arabic: "ياء بلا نقاط", tashkeelMark: "َى", transliteration: "aa"),
     Tashkeel(english: "Small Yaa Madd", arabic: "ياء مدّ صغيرة", tashkeelMark: "ِۦٓ", transliteration: "iiii"),
-    Tashkeel(english: "Small Waw Madd", arabic: "واو مدّ صغيرة", tashkeelMark: "ُۥٓ", transliteration: "uuuu"),
+    Tashkeel(english: "Small Waaw Madd", arabic: "واو مدّ صغيرة", tashkeelMark: "ُۥٓ", transliteration: "uuuu"),
     Tashkeel(english: "Shaddah", arabic: "شَدَّة", tashkeelMark: "ّ", transliteration: ""),
-    Tashkeel(english: "Sukoon 1", arabic: "سُكُون", tashkeelMark: "ْ", transliteration: ""),
-    Tashkeel(english: "Sukoon 2", arabic: "سكون عثماني", tashkeelMark: "ۡ", transliteration: "")
+    Tashkeel(english: "Sukuun 1", arabic: "سُكُون", tashkeelMark: "ْ", transliteration: ""),
+    Tashkeel(english: "Sukuun 2", arabic: "سكون عثماني", tashkeelMark: "ۡ", transliteration: "")
 ]

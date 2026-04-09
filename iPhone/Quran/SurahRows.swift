@@ -6,60 +6,102 @@ struct SurahRow: View {
     let surah: Surah
     var ayah: Int?
     var end: Bool?
+
+    private var revelationEmoji: String {
+        surah.type == "meccan" ? "🕋" : "🕌"
+    }
+
+    private var revelationName: String {
+        surah.type == "meccan" ? "Meccan" : "Medinan"
+    }
+
+    private var pageCountLabel: String {
+        let count = max(surah.pageCount, 1)
+        if count == 1, surah.isLessThanOnePage == true {
+            return "<1 Page"
+        }
+        return count == 1 ? "1 Page" : "\(count) Pages"
+    }
+
+    private var startPageNumber: Int {
+        surah.pageStart ?? surah.ayahs.compactMap(\.page).min() ?? 1
+    }
+
+    private var ayahAndRevelationLine: String {
+        "\(surah.numberOfAyahs) Ayahs • \(revelationName) \(revelationEmoji)"
+    }
+
+    private var pageLine: String {
+        "Page \(startPageNumber) • \(pageCountLabel)"
+    }
+
+    private var positionContextLine: String? {
+        guard let ayah else { return nil }
+        if end != nil {
+            return "Ends at \(surah.id):\(ayah)"
+        }
+        return "Starts at \(surah.id):\(ayah)"
+    }
+
+    @ViewBuilder
+    private var surahNumberPill: some View {
+        Text("\(surah.id)")
+            .font(.subheadline.weight(.bold))
+            .foregroundColor(settings.accentColor.color)
+            .frame(minWidth: 40)
+            .frame(maxHeight: .infinity)
+            .conditionalGlassEffect()
+            .accessibilityLabel("Surah \(surah.id)")
+    }
     
     var body: some View {
         #if os(iOS)
-        VStack {
-            HStack {
-                VStack(alignment: .leading) {
-                    HStack {
-                        if let ayah = ayah {
-                            if end != nil {
-                                Text("Ends at \(surah.id):\(ayah)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text("Starts at \(surah.id):\(ayah)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                        } else {
-                            Text("\(surah.numberOfAyahs) Ayahs")
-                                .font(.subheadline)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(.secondary)
-                            
-                            Text(surah.type == "meccan" ? "🕋" : "🕌")
-                                .font(.caption2)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                    }
+        HStack(alignment: .top, spacing: 12) {
+            surahNumberPill
+
+            VStack(alignment: .leading, spacing: 2) {
+                if let context = positionContextLine {
+                    Text(context)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text(surah.nameTransliteration)
+                        .foregroundColor(.primary)
+                        .font(.subheadline.weight(.semibold))
                     
                     Text(surah.nameEnglish)
-                        .foregroundColor(.primary)
-                        .font(.subheadline)
-                        .multilineTextAlignment(.leading)
+                        .foregroundColor(.secondary)
+                        .font(.caption)
                 }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing) {
-                    Text("\(surah.nameArabic) - \(surah.idArabic)")
-                        .font(.headline)
-                        .multilineTextAlignment(.trailing)
-                        .foregroundColor(settings.accentColor.color)
-                    
-                    Text("\(surah.nameTransliteration) - \(surah.id)")
-                        .foregroundColor(.primary)
-                        .font(.subheadline)
-                        .multilineTextAlignment(.trailing)
-                }
-                .padding(.vertical, 8)
+
+                Text(ayahAndRevelationLine)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text(pageLine)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
+
+            Spacer(minLength: 8)
+
+            HStack {
+                Text(surah.nameArabic)
+                    .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
+                    .multilineTextAlignment(.trailing)
+                    .foregroundColor(.primary)
+                
+                Text(surah.idArabic)
+                    .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
+                    .foregroundColor(settings.accentColor.color)
+            }
+            .padding(.top, 1)
         }
+        .padding(.vertical, 6)
         .lineLimit(1)
-        .minimumScaleFactor(0.5)
+        .minimumScaleFactor(0.75)
         #else
         VStack {
             Text("\(surah.nameArabic) - \(surah.idArabic)")
@@ -69,6 +111,11 @@ struct SurahRow: View {
             
             Text("\(surah.id) - \(surah.nameTransliteration)")
                 .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("\(revelationEmoji) • \(surah.numberOfAyahs) Ayahs • \(pageLine)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .lineLimit(1)
@@ -83,6 +130,7 @@ struct SurahAyahRow: View {
     var surah: Surah
     var ayah: Ayah
     var note: String? = nil
+    var disableTajweedColors: Bool = false
 
     private func arabicDisplayText() -> String {
         let clean = settings.cleanArabicText && !shouldShowTajweedColors
@@ -91,7 +139,8 @@ struct SurahAyahRow: View {
     }
 
     private var shouldShowTajweedColors: Bool {
-        settings.showTajweedColors
+        if disableTajweedColors { return false }
+        return settings.showTajweedColors
             && settings.showArabicText
             && settings.isHafsDisplay
             && !settings.cleanArabicText
@@ -524,6 +573,7 @@ struct AyahSearchResultRow: View {
 
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
+    var disableTajweedColors: Bool = false
 
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah.id)-\(ayah.id)")
@@ -531,7 +581,7 @@ struct AyahSearchResultRow: View {
 
     var body: some View {
         NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-            SurahAyahRow(surah: surah, ayah: ayah)
+            SurahAyahRow(surah: surah, ayah: ayah, disableTajweedColors: disableTajweedColors)
         }
         .rightSwipeActions(
             surahID: surah.id,
@@ -578,13 +628,15 @@ struct AyahSearchRow: View, Equatable {
 
     /// When true (Quran search grouped by surah): `surah:ayah` label + same Arabic / transliteration / English visibility rules as the full row, without the top surah name line.
     var compact: Bool = false
+    var disableTajweedColors: Bool = false
     
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
     }
 
     private var shouldShowTajweedColors: Bool {
-        settings.showTajweedColors
+        if disableTajweedColors { return false }
+        return settings.showTajweedColors
             && settings.showArabicText
             && settings.isHafsDisplay
             && !settings.cleanArabicText
@@ -822,6 +874,7 @@ struct AyahSearchRow: View, Equatable {
         l.surah == r.surah && l.ayah == r.ayah &&
         l.query == r.query &&
         l.compact == r.compact &&
+        l.disableTajweedColors == r.disableTajweedColors &&
         l.favoriteSurahs == r.favoriteSurahs &&
         l.bookmarkedAyahs == r.bookmarkedAyahs
     }
@@ -830,6 +883,10 @@ struct AyahSearchRow: View, Equatable {
 private struct SurahRowsPreviewContent: View {
     var body: some View {
         List {
+            SurahRow(
+                surah: AlIslamPreviewData.surah,
+            )
+            
             SurahAyahRow(
                 surah: AlIslamPreviewData.surah,
                 ayah: AlIslamPreviewData.ayah

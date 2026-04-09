@@ -30,12 +30,8 @@ struct VerseIndexEntry: Identifiable, Hashable {
     let englishExactBlob: String
     let arabicBlob: String
     let englishBlob: String
-    let arabicCompactBlob: String
-    let englishCompactBlob: String
     let arabicTokens: [String]
     let englishTokens: [String]
-    let arabicTokenSet: Set<String>
-    let englishTokenSet: Set<String>
 }
 
 enum BoundaryDividerStyle {

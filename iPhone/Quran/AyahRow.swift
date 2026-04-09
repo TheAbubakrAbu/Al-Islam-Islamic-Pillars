@@ -354,7 +354,7 @@ struct AyahRow: View {
         }
         #endif
         .confirmationDialog("Note not saved", isPresented: $showRespectAlert, titleVisibility: .visible) {
-            Button("OK", role: .cancel) { }
+            Button("OK") { }
         } message: {
             Text("Please keep notes Islamic and respectful.")
         }
@@ -363,7 +363,7 @@ struct AyahRow: View {
                 settings.hapticFeedback()
                 settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
             }
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel") {}
         } message: {
             Text("This ayah has a note. Unbookmarking will delete the note.")
         }

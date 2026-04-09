@@ -528,7 +528,7 @@ struct AyahsView: View {
         }
         .sheet(isPresented: $showReciterPickerSheet) {
             NavigationView {
-                ReciterListView(dismissAfterSelectingReciter: true)
+                ReciterListView(dismissAfterSelectingReciter: true, autoScrollToInitialSelection: false)
                     .environmentObject(settings)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
@@ -542,7 +542,7 @@ struct AyahsView: View {
             .modifier(ReciterPickerSheetPresentationModifier())
         }
         #endif
-        .alert(
+        .confirmationDialog(
             dividerInfo?.title ?? "Boundary",
             isPresented: Binding(
                 get: { dividerInfo != nil },
@@ -550,7 +550,7 @@ struct AyahsView: View {
             ),
             presenting: dividerInfo
         ) { _ in
-            Button("OK", role: .cancel) {
+            Button("OK") {
                 dividerInfo = nil
             }
         } message: { info in
@@ -558,7 +558,7 @@ struct AyahsView: View {
         }
         .onChange(of: quranPlayer.showInternetAlert) { if $0 { showAlert = true; quranPlayer.showInternetAlert = false } }
         .confirmationDialog(quranPlayer.playbackAlertTitle, isPresented: $showAlert, titleVisibility: .visible) {
-            Button("OK", role: .cancel) { }
+            Button("OK") { }
         } message: {
             Text(quranPlayer.playbackAlertMessage)
         }
@@ -765,15 +765,6 @@ struct AyahsView: View {
                             )
                             .padding(.vertical)
                         }
-                        
-                        #if os(iOS)
-                        if !settings.defaultView {
-                            Divider()
-                                .background(settings.accentColor.color)
-                                .padding(.trailing, -100)
-                                .padding(.bottom, -100)
-                        }
-                        #endif
                     }
                 } header: {
                     ZStack {
@@ -808,10 +799,6 @@ struct AyahsView: View {
                     .transition(.opacity)
                 }
 
-                #if os(iOS)
-                .listRowSeparator(.hidden, edges: .bottom)
-                #endif
-
                 if isDividerKeywordSearch {
                     ForEach(Array(keywordDividerModels.enumerated()), id: \.offset) { _, dividerModel in
                         Section {
@@ -828,9 +815,6 @@ struct AyahsView: View {
                                 boundaryDivider(model: dividerModel, nextAyahID: nil)
                             }
                         }
-                        #if os(iOS)
-                        .listRowSeparator(.hidden)
-                        #endif
                     }
                 } else {
                     if let startOfSurahDivider {
@@ -849,9 +833,6 @@ struct AyahsView: View {
                                 syncVisibleAyahAnchor()
                             }
                         }
-                        #if os(iOS)
-                        .listRowSeparator(.hidden)
-                        #endif
                     }
 
                     ForEach(filteredAyahs, id: \.id) { ayah in
@@ -869,9 +850,6 @@ struct AyahsView: View {
                                 visibleBoundaryAyahIDs.remove(ayah.id)
                                 syncVisibleAyahAnchor()
                             }
-                            #if os(iOS)
-                            .listRowSeparator(.hidden)
-                            #endif
                         }
 
                         Group {
@@ -902,18 +880,7 @@ struct AyahsView: View {
                             visibleAyahIDs.remove(ayah.id)
                             syncVisibleAyahAnchor()
                         }
-                        #if os(iOS)
-                        .listRowSeparator(
-                            (ayah.id == filteredAyahs.first?.id && searchText.isEmpty) || settings.defaultView
-                                ? .hidden : .visible,
-                            edges: .top
-                        )
-                        .listRowSeparator(
-                            ayah.id == filteredAyahs.last?.id || settings.defaultView
-                                ? .hidden : .visible,
-                            edges: .bottom
-                        )
-                        #else
+                        #if os(watchOS)
                         .padding(.vertical)
                         #endif
                     }
@@ -922,9 +889,6 @@ struct AyahsView: View {
                         Section {
                             boundaryDivider(model: endOfSurahDivider, nextAyahID: nil)
                         }
-                        #if os(iOS)
-                        .listRowSeparator(.hidden)
-                        #endif
                     }
 
                     if let trailingSearchBoundaryDivider {
@@ -934,9 +898,6 @@ struct AyahsView: View {
                                 nextAyahID: trailingSearchBoundaryScrollTarget
                             )
                         }
-                        #if os(iOS)
-                        .listRowSeparator(.hidden)
-                        #endif
                     }
                 }
             }
@@ -1026,7 +987,7 @@ struct AyahsView: View {
                     )
                 }
             }
-            .safeAreaInset(edge: .bottom) {
+            .adaptiveSafeArea(edge: .bottom) {
                 bottomInsetContent(proxy: proxy)
             }
             #endif
@@ -1058,7 +1019,7 @@ struct AyahsView: View {
         .padding(.horizontal, settings.defaultView ? 20 : 16)
         .background(Color.clear)
         .opacity(showFloatingHeader ? 1 : 0)
-        .padding(.horizontal, 45)
+        .padding(.horizontal, 50)
         .zIndex(1)
         .offset(y: showFloatingHeader ? 0 : -80)
         .opacity(showFloatingHeader ? 1 : 0)

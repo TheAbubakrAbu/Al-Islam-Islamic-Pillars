@@ -164,8 +164,9 @@ struct NamesView: View {
         #if os(watchOS)
         .searchable(text: $searchText)
         #else
-        .safeAreaInset(edge: .bottom) {
+        .adaptiveSafeArea(edge: .bottom) {
             SearchBar(text: $searchText.animation(.easeInOut))
+                .padding(.horizontal, -8)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 8)
         }
@@ -194,7 +195,7 @@ struct NamesView: View {
             Spacer()
 
             Text(String(resultCount))
-                .font(.caption.weight(.semibold))
+                .font(.caption.monospaced().weight(.semibold))
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -272,32 +273,34 @@ struct NamesView: View {
 
     private var finalInvocationSection: some View {
         Section(header: Text("AFTER THE 99 NAMES")) {
-            Text("Call upon Allah or call upon Ar-Rahman. Whichever Name you call, to Him belong the Most Beautiful Names.")
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            Text("Surah Al-Isra 17:110")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading) {
+                Text("Call upon Allah or call upon Ar-Rahman. Whichever Name you call, to Him belong the Most Beautiful Names.")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                
+                Text("Surah Al-Isra 17:110")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             VerseReflectionCard(
                 title: "Surah Al-Hashr 59:21",
-                body: "If this Quran were sent upon a mountain, it would humble and break from awe of Allah. These examples are given so people reflect."
+                contentText: "If this Quran were sent upon a mountain, it would humble and break from awe of Allah. These examples are given so people reflect."
             )
 
             VerseReflectionCard(
                 title: "Surah Al-Hashr 59:22",
-                body: "He is Allah, none is worthy of worship except Him. Knower of the seen and unseen, the Most Compassionate, the Most Merciful."
+                contentText: "He is Allah, none is worthy of worship except Him. Knower of the seen and unseen, the Most Compassionate, the Most Merciful."
             )
 
             VerseReflectionCard(
                 title: "Surah Al-Hashr 59:23",
-                body: "He is Allah: the King, the Most Holy, the Source of Peace, the Guardian, the Almighty, the Compeller, the Supreme. Exalted is He above all partners."
+                contentText: "He is Allah: the King, the Most Holy, the Source of Peace, the Guardian, the Almighty, the Compeller, the Supreme. Exalted is He above all partners."
             )
 
             VerseReflectionCard(
                 title: "Surah Al-Hashr 59:24",
-                body: "He is Allah, the Creator, the Originator, the Fashioner. To Him belong the Most Beautiful Names; all in the heavens and earth glorify Him."
+                contentText: "He is Allah, the Creator, the Originator, the Fashioner. To Him belong the Most Beautiful Names; all in the heavens and earth glorify Him."
             )
         }
     }
@@ -352,7 +355,7 @@ private struct NameRow: View {
             }
             .padding(.vertical, 4)
             
-            if isExpanded {
+            if showDescription || isExpanded {
                 NameRowDetails(name: name, showDescription: showDescription, isExpanded: isExpanded)
             }
         }
@@ -428,15 +431,19 @@ private struct NameRowDetails: View {
 
 private struct VerseReflectionCard: View {
     let title: String
-    let body: String
+    let contentText: String
 
-    var bodyView: some View {
+    var body: some View {
+        content
+    }
+    
+    var content: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
 
-            Text(body)
+            Text(contentText)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -447,9 +454,5 @@ private struct VerseReflectionCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.secondary.opacity(0.1))
         )
-    }
-
-    var body: some View {
-        bodyView
     }
 }

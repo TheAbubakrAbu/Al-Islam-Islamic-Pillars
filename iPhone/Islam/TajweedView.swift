@@ -1826,15 +1826,7 @@ private struct TajweedWaqfView: View {
             }
 
             Section("WAQF SYMBOLS") {
-                VStack(alignment: .leading, spacing: 12) {
-                    TajweedRuleRow(arabic: "م", pronunciation: "Mandatory stop", rule: "", arabicFont: arabicHeadlineFont)
-                    TajweedRuleRow(arabic: "لا", pronunciation: "Do not stop", rule: "", arabicFont: arabicHeadlineFont)
-                    TajweedRuleRow(arabic: "ج", pronunciation: "Permissible", rule: "", arabicFont: arabicHeadlineFont)
-                    TajweedRuleRow(arabic: "قلى", pronunciation: "Stop is better", rule: "", arabicFont: arabicHeadlineFont)
-                    TajweedRuleRow(arabic: "صلى", pronunciation: "Continue is better", rule: "", arabicFont: arabicHeadlineFont)
-                    TajweedRuleRow(arabic: "∴", pronunciation: "Choose one stop, not both", rule: "", arabicFont: arabicHeadlineFont)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                QuranSignsSectionContent(accentColor: settings.accentColor.color)
 
                 Text("These symbols guide meaning, not breathing convenience.")
                     .font(.body)

@@ -5,6 +5,7 @@ struct ConditionalGlassEffect: ViewModifier {
 
     var clear: Bool = false
     var rectangle: Bool = false
+    var circle: Bool = false
     var useColor: Double? = nil
     /// When set, tints glass with this color (opacity from `useColor`, default 0.35) instead of the app accent.
     var customTint: Color? = nil
@@ -20,7 +21,31 @@ struct ConditionalGlassEffect: ViewModifier {
     @available(iOS 26.0, watchOS 26.0, *)
     private func modernGlass(content: Content) -> some View {
         Group {
-            if rectangle {
+            if circle {
+                if clear {
+                    if let tintColor {
+                        content.glassEffect(
+                            .clear.tint(tintColor).interactive(),
+                            in: Circle()
+                        )
+                    } else {
+                        content.glassEffect(
+                            .clear.interactive(),
+                            in: Circle()
+                        )
+                    }
+                } else if let tintColor {
+                    content.glassEffect(
+                        .regular.tint(tintColor).interactive(),
+                        in: Circle()
+                    )
+                } else {
+                    content.glassEffect(
+                        .regular.interactive(),
+                        in: Circle()
+                    )
+                }
+            } else if rectangle {
                 if clear {
                     if let tintColor {
                         content.glassEffect(
@@ -61,7 +86,9 @@ struct ConditionalGlassEffect: ViewModifier {
 
     @ViewBuilder
     private func fallbackGlass(content: Content) -> some View {
-        if rectangle {
+        if circle {
+            fallbackGlassShape(content: content, shape: Circle())
+        } else if rectangle {
             fallbackGlassShape(content: content, shape: RoundedRectangle(cornerRadius: 24, style: .continuous))
         } else {
             fallbackGlassShape(content: content, shape: Capsule())
@@ -130,10 +157,11 @@ extension View {
     func conditionalGlassEffect(
         clear: Bool = false,
         rectangle: Bool = false,
+        circle: Bool = false,
         useColor: Double? = nil,
         customTint: Color? = nil
     ) -> some View {
-        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, useColor: useColor, customTint: customTint))
+        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, circle: circle, useColor: useColor, customTint: customTint))
     }
 
     #if os(iOS)

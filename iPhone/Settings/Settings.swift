@@ -338,6 +338,20 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     /// Disambiguates reciters that share the same display name (qiraah / surah base URL).
     @AppStorage("reciterId") var reciterId: String = ""
 
+    @AppStorage("favoriteReciterIDsData") private var favoriteReciterIDsData = Data()
+    var favoriteReciterIDs: [String] {
+        get {
+            (try? Self.decoder.decode([String].self, from: favoriteReciterIDsData)) ?? []
+        }
+        set {
+            let normalized = Array(NSOrderedSet(array: newValue.compactMap {
+                let trimmed = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmed.isEmpty ? nil : trimmed
+            })) as? [String] ?? []
+            favoriteReciterIDsData = (try? Self.encoder.encode(normalized)) ?? Data()
+        }
+    }
+
     @AppStorage("reciteType") var reciteType: String = "Continue to Next"
 
     @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
@@ -367,6 +381,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
 
     @AppStorage("beginnerMode") var beginnerMode: Bool = false
+    @AppStorage("useQuranicArabicFontForAdhkarDua") var useQuranicArabicFontForAdhkarDua: Bool = true
 
     enum QuranSortMode: String, CaseIterable, Identifiable {
         case surah
@@ -620,6 +635,25 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
                 favoriteLetters.append(letterData)
             }
         }
+    }
+
+    func toggleReciterFavorite(reciterID: String) {
+        let trimmed = reciterID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        withAnimation {
+            if isReciterFavorite(reciterID: trimmed) {
+                favoriteReciterIDs.removeAll(where: { $0 == trimmed })
+            } else {
+                favoriteReciterIDs.append(trimmed)
+            }
+        }
+    }
+
+    func isReciterFavorite(reciterID: String) -> Bool {
+        let trimmed = reciterID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        return favoriteReciterIDs.contains(trimmed)
     }
 
     func isLetterFavorite(letterData: LetterData) -> Bool {

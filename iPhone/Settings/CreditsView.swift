@@ -8,7 +8,7 @@ struct CreditsView: View {
     var body: some View {
         NavigationView {
             creditsList
-                .safeAreaInset(edge: .bottom) {
+                .adaptiveSafeArea(edge: .bottom) {
                     doneButton
                 }
         }
@@ -68,7 +68,7 @@ struct CreditsView: View {
     private var storySection: some View {
         Section {
             Text("""
-            This app was inspired by my desire to help new reverts and non-Muslims learn about Islam and easily access the Quran and prayer times. I’m deeply grateful to my parents for instilling in me a love for the faith (may Allah ﷻ‎ reward them).
+            This app was inspired by my desire to help new reverts and non-Muslims learn about Islam and easily access the Quran and prayer times. I’m deeply grateful to my parents for instilling in me a love for the faith (may Allah reward them).
 
             I also want to express my gratitude to my high school teacher, Mr. Joe Silvey, who, despite not being Muslim, stood with our Muslim Student Association and helped us organize weekly Jumuah prayers.
             """)
@@ -125,7 +125,9 @@ struct CreditsView: View {
                 
                 creditLink("Credit for the Ayah Quran Recitations goes to Al Quran", url: "https://alquran.cloud/cdn")
 
-                creditLink("Credit for the Tafsir API goes to Kamran", url: "https://github.com/spa5k/tafsir_api")
+                creditLink("Credit for the Tafsir API goes to Quran API Pages", url: "https://quranapi.pages.dev/")
+
+                creditLink("Tafsir Website", url: "https://quranapi.pages.dev/api/tafsir/1_1.json")
                 
                 creditLink("Credit for the 99 Names of Allah goes to MyIslam", url: "https://myislam.org/99-names-of-allah/")
             }

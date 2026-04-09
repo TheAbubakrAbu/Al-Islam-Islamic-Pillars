@@ -218,7 +218,7 @@ struct PlayCustomRangeSheet: View {
                     .foregroundColor(settings.accentColor.color)
                 }
             }
-            .safeAreaInset(edge: .bottom) {
+            .adaptiveSafeArea(edge: .bottom) {
                 playButtonBar
             }
         }

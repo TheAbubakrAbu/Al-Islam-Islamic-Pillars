@@ -53,7 +53,7 @@ struct ShareAyahSheet: View {
     private var ayah: Ayah? { surah?.ayahs.first(where: { $0.id == ayahNumber }) }
     
     private var shareText: String {
-        guard let surah = surah, let ayah = ayah else { return "Loading…" }
+        guard let surah = surah, let ayah = ayah else { return "" }
 
         var s = ""
 
@@ -187,10 +187,7 @@ struct ShareAyahSheet: View {
                                 .contextMenu { copyMenu(image: img) }
                                 .transition(.opacity.combined(with: .scale(scale: 0.98)))
                         } else {
-                            ProgressView("Preparing image…")
-                                .foregroundColor(settings.accentColor.color)
-                                .padding(.vertical, 40)
-                                .transition(.opacity)
+                            EmptyView()
                         }
                     } else {
                         Text(shareText)
@@ -207,9 +204,7 @@ struct ShareAyahSheet: View {
                     }
                 }
                 .scaleEffect(isSharing ? 0.98 : 1)
-                .opacity(isGeneratingImage && actionMode == .image ? 0.72 : 1)
                 .animation(.easeInOut, value: actionMode)
-                .animation(.easeInOut, value: isGeneratingImage)
                 .animation(.easeInOut, value: isSharing)
                 
                 Spacer()
@@ -278,15 +273,17 @@ struct ShareAyahSheet: View {
                             .padding(.horizontal, -24)
                             .padding(.vertical, 2)
 
-                        Toggle("Include Riwayah/Qiraah type", isOn: Binding(
-                            get: { shareSettings.includeQiraah },
-                            set: { shareIncludeRiwayah = $0; shareSettings = ShareSettings(arabic: shareSettings.arabic, transliteration: shareSettings.transliteration, englishSaheeh: shareSettings.englishSaheeh, englishMustafa: shareSettings.englishMustafa, includeQiraah: $0, shareArabicFont: shareSettings.shareArabicFont, cleanArabic: shareSettings.cleanArabic) }
-                        )
-                        .animation(.easeInOut))
-                        .tint(settings.accentColor.color)
-                        .scaleEffect(0.8)
-                        .padding(.horizontal, -24)
-                        .padding(.vertical, 2)
+                        if settings.showQiraahDetails {
+                            Toggle("Show Riwayah/Qiraah", isOn: Binding(
+                                get: { shareSettings.includeQiraah },
+                                set: { shareIncludeRiwayah = $0; shareSettings = ShareSettings(arabic: shareSettings.arabic, transliteration: shareSettings.transliteration, englishSaheeh: shareSettings.englishSaheeh, englishMustafa: shareSettings.englishMustafa, includeQiraah: $0, shareArabicFont: shareSettings.shareArabicFont, cleanArabic: shareSettings.cleanArabic) }
+                            )
+                                .animation(.easeInOut))
+                            .tint(settings.accentColor.color)
+                            .scaleEffect(0.8)
+                            .padding(.horizontal, -24)
+                            .padding(.vertical, 2)
+                        }
                     }
                 }
                 .frame(maxHeight: 200)

@@ -54,13 +54,6 @@ struct PillarsView: View {
                         .font(.headline)
                 }
                 .padding(.vertical, 4)
-
-                NavigationLink(destination: QiraatView()) {
-                    Text("What are the 10 Qiraat?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
             }
 
             IslamicPillarsView()
@@ -2551,7 +2544,7 @@ struct CompileView: View {
             }
 
             Section(header: Text("FIRST COMPILATION UNDER ABU BAKR")) {
-                Text("After the Battle of Yamamah, many memorizers were martyred. At the counsel of Umar ibn al-Khattab, Caliph Abu Bakr commissioned Zayd ibn Thabit to collect the Quran into one compiled manuscript.")
+                Text("After the Battle of Yamamah, many memorizers were martyred. About one year after the Prophet’s death (12 AH), at the counsel of Umar ibn al-Khattab, Caliph Abu Bakr commissioned Zayd ibn Thabit to collect the Quran into one compiled manuscript.")
                     .font(.body)
 
                 Text("Zayd gathered the Quran from written materials and from those who had memorized it, accepting verses only when corroborated by multiple reliable witnesses and his own memorization, all according to what had been reviewed with Prophet Muhammad (peace and blessings be upon him).")
@@ -2590,7 +2583,7 @@ struct CompileView: View {
             }
 
             Section(header: Text("AHRUF, QIRAAT, AND THE UTHMANIC RASM")) {
-                Text("Prophet Muhammad (peace and blessings be upon him) taught that the Quran was revealed in seven Ahruf (modes) for ease. The Uthmanic rasm allowed what remained of those modes to be read and transmitted through canonical Qiraat verified by chains. The Ten Qiraat (with their twenty riwayaat) are mutawatir and reflect how the prophetic recitation was preserved in writing and oral teaching.")
+                Text("Prophet Muhammad (peace and blessings be upon him) taught that the Quran was revealed in seven Ahruf (modes) for ease. The Quran was first compiled into one manuscript under Abu Bakr (may Allah be pleased with him), around one year after the Prophet’s death. Later, the Uthmanic rasm allowed what remained of those modes to be read and transmitted through canonical Qiraat verified by chains. The 10 Qiraat (with their 20 Riwayaat) are mutawatir and reflect how the prophetic recitation was preserved in writing and oral teaching.")
                     .font(.body)
 
                 Text("Thus, standardization did not limit revelation; it safeguarded it — preventing private notes and unverified materials from being mistaken for the Quran — while preserving the legitimate readings taught by Prophet Muhammad (peace and blessings be upon him).")
@@ -2598,7 +2591,7 @@ struct CompileView: View {
             }
 
             Section(header: Text("KEY REPORTS (BRIEF)")) {
-                Text("• Seven Ahruf: “The Quran was revealed in seven Ahruf, so recite whichever is easiest for you.” (Sahih al-Bukhari; Sahih Muslim)")
+                Text("• 7 Ahruf: “The Quran was revealed in seven Ahruf, so recite whichever is easiest for you.” (Sahih al-Bukhari; Sahih Muslim)")
                     .font(.body)
                 Text("• Double review in final Ramadan (al-Ardah al-Akhirah): reported in authentic narrations.")
                     .font(.body)
@@ -2829,15 +2822,15 @@ struct AhrufView: View {
                 Text("• Prophet Muhammad (peace and blessings be upon him) taught the Companions each harf personally.\n• Jibril reviewed the Quran with Prophet Muhammad (peace and blessings be upon him) every year in Ramadan.\n• In the year Prophet Muhammad (peace and blessings be upon him) passed away, Jibril reviewed it twice (al-Ardah al-Akhirah).")
                     .font(.body)
 
-                Text("During the caliphate of Uthman (may Allah be pleased with him), the Ummah was unified upon the written Uthmanic mushaf, which preserved what the Ummah recited — containing what remained from the seven Ahruf in the Uthmanic rasm.")
+                Text("About one year after the Prophet’s passing, Abu Bakr (may Allah be pleased with him) commissioned the first complete compilation of the Quran into one manuscript. During the caliphate of Uthman (may Allah be pleased with him), the Ummah was then unified upon official copies from that preserved compilation, written in the Uthmanic rasm, which preserved what the Ummah recited — containing what remained from the seven Ahruf in the rasm.")
                     .font(.body)
 
                 Text("The Ahruf are preserved through oral transmission, ijazahs, and chains of narration (isnad).")
                     .font(.body)
             }
 
-            Section(header: Text("WHAT ABOUT THE TEN QIRAAT?")) {
-                Text("The Ten Qiraat are the mass-transmitted (mutawatir) methods that show how the Ahruf were preserved through the Uthmanic mushaf and teaching traditions.")
+            Section(header: Text("WHAT ABOUT THE 10 QIRAAT?")) {
+                Text("The 10 Qiraat are the mass-transmitted (mutawatir) methods that show how the Ahruf were preserved through the Uthmanic mushaf and teaching traditions.")
                     .font(.body)
 
                 Text("Each Qiraah has an unbroken chain (isnad) from the reciter → to his teacher → back to Prophet Muhammad (peace and blessings be upon him).")
@@ -2854,7 +2847,7 @@ struct AhrufView: View {
             }
 
         }
-        .navigationTitle("Seven Ahruf (Modes)")
+        .navigationTitle("7 Ahruf (Modes)")
         .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
@@ -2865,10 +2858,10 @@ struct QiraatView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("The Ten Qiraat (قِرَاءَات) — from the root q–r–a (قرأ) meaning “to read/recite” — literally means “readings/recitations.” Islamically and Quranically, a Qiraah (قِرَاءَة) is a specific, verified method of reciting the Quran. The Ten Qiraat are the preserved, mass-transmitted (mutawatir - مُتَوَاتِر) recitations of the Quran — each a precise method taught by Prophet Muhammad (peace and blessings be upon him) and transmitted through authentic chains of narrators (isnad إِسنَاد). They do not represent different Qurans, but different prophetic ways of reciting the same revelation.")
+                Text("The 10 Qiraat (قِرَاءَات) — from the root q–r–a (قرأ) meaning “to read/recite” — literally means “readings/recitations.” Islamically and Quranically, a Qiraah (قِرَاءَة) is a specific, verified method of reciting the Quran. The 10 Qiraat are the preserved, mass-transmitted (mutawatir - مُتَوَاتِر) recitations of the Quran — each a precise method taught by Prophet Muhammad (peace and blessings be upon him) and transmitted through authentic chains of narrators (isnad إِسنَاد). They do not represent different Qurans, but different prophetic ways of reciting the same revelation.")
                     .font(.body)
 
-                Text("As covered in the previous section, the Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحرُف) — modes of recitation for ease. Jibril (Gabriel) brought these modes to Prophet Muhammad (peace and blessings be upon him), who taught them to the Ummah. The Qiraat show how those Ahruf were preserved in practice through the Uthmanic rasm (الرَّسم العُثمَانِي) — the consonantal skeleton of the mushaf (مُصحَف).")
+                Text("As covered in the previous section, the Quran was revealed by Allah (Glorified and Exalted be He) in seven Ahruf (أَحرُف) — modes of recitation for ease. Jibril (Gabriel) brought these modes to Prophet Muhammad (peace and blessings be upon him), who taught them to the Ummah. Around one year after the Prophet’s passing, Abu Bakr (may Allah be pleased with him) commissioned the first complete compilation of the Quran into one manuscript, and later Uthman (may Allah be pleased with him) unified public recitation upon official copies from that preserved text. The Qiraat show how those Ahruf were preserved in practice through the Uthmanic rasm (الرَّسم العُثمَانِي) — the consonantal skeleton of the mushaf (مُصحَف).")
                     .font(.body)
             }
 
@@ -2876,7 +2869,7 @@ struct QiraatView: View {
                 Text("A Qiraah (قراءة) is a canonical, authenticated way of reciting the Quran that meets three criteria: (1) agreement with the Uthmanic rasm (الرسم العثماني), (2) sound Arabic language, and (3) authentic, widespread transmission (tawatur تواتر).")
                     .font(.body)
 
-                Text("All Ten Qiraat return to Prophet Muhammad (peace and blessings be upon him). Every reciter has an unbroken chain of students → teachers → Companions → Prophet Muhammad (peace and blessings be upon him).")
+                Text("All 10 Qiraat return to Prophet Muhammad (peace and blessings be upon him). Every reciter has an unbroken chain of students → teachers → Companions → Prophet Muhammad (peace and blessings be upon him).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
 
@@ -2896,7 +2889,7 @@ struct QiraatView: View {
                 Text("Example: “Hafs an Asim” means the riwayah (narration) of Hafs (حفص) from the Qiraah (recitation) of Asim (عاصم). “Warsh an Nafi” means the riwayah of Warsh (ورش) from the Qiraah of Nafi (نافع).")
                     .font(.body)
 
-                Text("Hafs an Asim is the most widespread globally today; that does not mean it is the only right one. All Ten Qiraat (and their Twenty Riwayaat) are valid, mutawatir, and from Prophet Muhammad (peace and blessings be upon him).")
+                Text("Hafs an Asim is the most widespread globally today; that does not mean it is the only right one. All 10 Qiraat (and their 20 Riwayaat) are valid, mutawatir, and from Prophet Muhammad (peace and blessings be upon him).")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -2917,7 +2910,7 @@ struct QiraatView: View {
             }
 
             Section(header: Text("AUTHENTICITY & PRESERVATION")) {
-                Text("The Ten Qiraat are mutawatir — mass attested by many independent chains. They are part of the precise preservation Allah (Glorified and Exalted be He) promised for His Book.")
+                Text("The 10 Qiraat are mutawatir — mass attested by many independent chains. They are part of the precise preservation Allah (Glorified and Exalted be He) promised for His Book.")
                     .font(.body)
 
                 Text("“Indeed, We have sent down the Reminder, and indeed, We will be its Guardian.” (Quran 15:9)")
@@ -2938,7 +2931,7 @@ struct QiraatView: View {
             }
 
             Section(header: Text("THE 10 QIRAAT (القراءات)")) {
-                Text("The Ten Qiraat are the canonical recitation methods of the Quran. Each is named after its primary teacher (the Imam of that recitation).")
+                Text("The 10 Qiraat are the canonical recitation methods of the Quran. Each is named after its primary teacher (the Imam of that recitation).")
                     .font(.body)
 
                 Group {
@@ -2995,10 +2988,10 @@ struct QiraatView: View {
             }
 
             Section(header: Text("OTHER REPORTED QIRAAT")) {
-                Text("There are other reported qiraat besides these Ten. Unlike the Ten Qiraat, which are mutawatir and mass attested, those others do not reach mutawatir status. That does not automatically make them inauthentic — some have isnad to Prophet Muhammad (peace and blessings be upon him) — but because they are not mass attested, we avoid them in public recitation and worship.")
+                Text("There are other reported qiraat besides these Ten. Unlike the 10 Qiraat, which are mutawatir and mass attested, those others do not reach mutawatir status. That does not automatically make them inauthentic — some have isnad to Prophet Muhammad (peace and blessings be upon him) — but because they are not mass attested, we avoid them in public recitation and worship.")
                     .font(.body)
 
-                Text("We recite what is known with certainty (yaqin يقين) to be from Prophet Muhammad (peace and blessings be upon him) — the Ten Qiraat and their 20 riwayaat. This unites the Ummah upon what is rigorously established.")
+                Text("We recite what is known with certainty (yaqin يقين) to be from Prophet Muhammad (peace and blessings be upon him) — the 10 Qiraat and their 20 Riwayaat. This unites the Ummah upon what is rigorously established.")
                     .font(.body)
             }
 
@@ -3017,7 +3010,7 @@ struct QiraatView: View {
             }
 
             Section(header: Text("RECAP")) {
-                Text("“The Ten Qiraat are the preserved, mass-transmitted (mutawatir) recitations taught by Prophet Muhammad (peace and blessings be upon him), passed down through authentic chains. Each Qiraah is a specific, verified method of reciting the Quran — not a different text. They reflect how the Ahruf were preserved in writing and oral transmission. All Ten Qiraat (and their Twenty Riwayaat) return to Prophet Muhammad (peace and blessings be upon him).”")
+                Text("“The 10 Qiraat are the preserved, mass-transmitted (mutawatir) recitations taught by Prophet Muhammad (peace and blessings be upon him), passed down through authentic chains. Each Qiraah is a specific, verified method of reciting the Quran — not a different text. They reflect how the Ahruf were preserved in writing and oral transmission. All 10 Qiraat (and their 20 Riwayaat) return to Prophet Muhammad (peace and blessings be upon him).”")
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -3030,7 +3023,7 @@ struct QiraatView: View {
                     .font(.caption)
             }
         }
-        .navigationTitle("Ten Qiraat (Recitations)")
+        .navigationTitle("10 Qiraat (Recitations)")
         .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
@@ -3124,6 +3117,9 @@ struct SahabahView: View {
 
                 Text("He was known as As-Siddiq (the Truthful) for immediately affirming the Prophet’s Night Journey (Isra’ and Mi’raj). He was chosen as the first Caliph after the Prophet’s death and led the Muslim Ummah with wisdom and justice.")
                     .font(.body)
+
+                Text("About one year after the Prophet’s passing, he commissioned Zayd ibn Thabit to compile the Quran into a single manuscript, preserving the revelation in written form alongside mass memorization.")
+                    .font(.body)
             }
 
             Section(header: Text("UMAR IBN AL-KHATTAB")) {
@@ -3139,7 +3135,7 @@ struct SahabahView: View {
             }
 
             Section(header: Text("UTHMAN IBN AFFAN")) {
-                Text("Uthman (may Allah be pleased with him) was known for his generosity, modesty, and devotion. He compiled the Quran into a single standardized text.")
+                Text("Uthman (may Allah be pleased with him) was known for his generosity, modesty, and devotion. He unified the Ummah upon official copies of the already compiled Quran, based on the manuscript first compiled under Abu Bakr.")
                     .font(.body)
 
                 Text("The Prophet (peace be upon him) said: “Every Prophet has a companion in Paradise, and my companion in Paradise is Uthman” (Sunan al-Tirmidhi 3707).")
@@ -3345,7 +3341,7 @@ struct CaliphatesView: View {
                 Text("Abu Bakr (may Allah be pleased with him), the Prophet’s closest companion and the first adult male to accept Islam, was chosen as the **first caliph** immediately after the Prophet’s passing. He was selected through consensus at Saqifah.")
                     .font(.body)
 
-                Text("He led decisively during a time of crisis, launching the **Riddah Wars** to bring back apostate tribes and false prophets. He initiated the first compilation of the Qur’an into a single manuscript.")
+                Text("He led decisively during a time of crisis, launching the **Riddah Wars** to bring back apostate tribes and false prophets. About one year after the Prophet’s death (12 AH), he initiated the first complete compilation of the Qur’an into a single manuscript.")
                     .font(.body)
 
                 Text("The Prophet (peace be upon him) said: “There is no one who has helped me more with his wealth and companionship than Abu Bakr” (Sahih al-Bukhari 3661).")
@@ -3375,7 +3371,7 @@ struct CaliphatesView: View {
                 Text("Uthman (may Allah be pleased with him) was chosen through a **council of six** appointed by Umar. Known for his generosity and modesty, he married two daughters of the Prophet Muhammad (peace be upon him) and was called **Dhu al-Nurayn** (ذُو ٱلنُّورَين – the Possessor of Two Lights).")
                     .font(.body)
 
-                Text("He **standardized the Qur’an** to preserve it in one dialect, avoiding future disputes. He sent official copies to major cities and burned differing versions.")
+                Text("He **standardized official copies of the Qur’an** from the already compiled manuscript preserved from Abu Bakr’s time, unifying public recitation and preventing disputes over unverified personal materials. He sent official copies to major cities and retired non-verified personal codices used outside official transmission.")
                     .font(.body)
 
                 Text("The Prophet (peace be upon him) said: “Should I not feel shy of the one whom the angels are shy of?” (Sahih Muslim 2401).")

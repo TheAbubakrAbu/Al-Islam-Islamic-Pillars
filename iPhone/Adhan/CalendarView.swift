@@ -40,7 +40,7 @@ struct HijriCalendarView: View {
                     }
                 }
             }
-            .safeAreaInset(edge: .top) {
+            .adaptiveSafeArea(edge: .top) {
                 dateOverlayHeader
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)

@@ -180,7 +180,7 @@ struct MasjidLocatorView: View {
             .overlay(alignment: .top) {
                 searchOverlay
             }
-            .safeAreaInset(edge: .bottom) {
+            .adaptiveSafeArea(edge: .bottom) {
                 actionInset
             }
             .navigationTitle("Masjid Locator")

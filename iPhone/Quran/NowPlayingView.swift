@@ -190,7 +190,7 @@ struct NowPlayingView: View {
                 settings.hapticFeedback()
                 settings.toggleBookmark(surah: surah, ayah: ayah)
             }
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel") {}
         } message: {
             Text("This ayah has a note. Unbookmarking will delete the note.")
         }

@@ -124,7 +124,7 @@ struct MapView: View {
                         cityIconName: cityIconName(for:)
                     )
                 }
-                .safeAreaInset(edge: .bottom) {
+                .adaptiveSafeArea(edge: .bottom) {
                     bottomInsetContent
                 }
                 .navigationTitle("Select Location")

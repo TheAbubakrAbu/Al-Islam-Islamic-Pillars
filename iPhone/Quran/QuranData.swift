@@ -1318,6 +1318,14 @@ final class TajweedStore {
 
 }
 final class QuranData: ObservableObject {
+    enum LoadState: Equatable {
+        case idle
+        case loadingCore
+        case buildingIndexes
+        case ready
+        case failed
+    }
+
     private enum RevelationSearchMode {
         case meccan
         case medinan
@@ -1330,6 +1338,9 @@ final class QuranData: ObservableObject {
     private static let medinanAliases: Set<String> = [
         "medina", "medinan", "madina", "madinah", "madinan", "madani"
     ]
+
+    /// Surahs that should always display as less than one page in UI metadata.
+    private static let forcedLessThanOnePageSurahIDs: Set<Int> = Set([82, 86, 87]).union(Set(90...114))
 
     struct SurahSearchIndexEntry: Identifiable {
         let surahID: Int
@@ -1363,6 +1374,7 @@ final class QuranData: ObservableObject {
     private let settings = Settings.shared
 
     @Published private(set) var quran: [Surah] = []
+    @Published private(set) var loadState: LoadState = .idle
     @Published private(set) var pageSections: [PageSectionData] = []
     @Published private(set) var juzSections: [JuzSectionData] = []
     @Published private(set) var revelationOrderSurahIDs: [Int] = []
@@ -1390,10 +1402,7 @@ final class QuranData: ObservableObject {
     private var allVerseIndices: [Int] = []
 
     private var loadTask: Task<Void, Never>?
-    private static var isRunningInPreview: Bool {
-        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-            || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PLAYGROUNDS"] == "1"
-    }
+    private var loadErrorDescription: String? = nil
 
     private init() {}
 
@@ -1408,13 +1417,10 @@ final class QuranData: ObservableObject {
     }
 
     private func startLoading() {
+        guard loadTask == nil else { return }
         loadTask = Task(priority: .userInitiated) { [weak self] in
             await self?.load()
         }
-    }
-
-    private func compactSearchBlob(_ cleanedText: String) -> String {
-        cleanedText.replacingOccurrences(of: " ", with: "")
     }
 
     private func searchTokens(from cleanedText: String) -> [String] {
@@ -1471,12 +1477,8 @@ final class QuranData: ObservableObject {
             englishExactBlob: exactPhraseBlob([englishSaheeh, englishMustafa, transliteration].joined(separator: " ")),
             arabicBlob: arabicBlob,
             englishBlob: englishBlob,
-            arabicCompactBlob: compactSearchBlob(arabicBlob),
-            englishCompactBlob: compactSearchBlob(englishBlob),
             arabicTokens: arabicTokens,
-            englishTokens: englishTokens,
-            arabicTokenSet: Set(arabicTokens),
-            englishTokenSet: Set(englishTokens)
+            englishTokens: englishTokens
         )
     }
 
@@ -1490,14 +1492,15 @@ final class QuranData: ObservableObject {
         prefix3Index.reserveCapacity(4000)
 
         for (idx, entry) in entries.enumerated() {
-            for token in entry.englishTokenSet {
+            let uniqueTokens = Set(entry.englishTokens)
+            for token in uniqueTokens {
                 guard !token.isEmpty else { continue }
                 tokenIndex[token, default: []].append(idx)
             }
 
             var uniquePrefixes = Set<String>()
-            uniquePrefixes.reserveCapacity(entry.englishTokenSet.count)
-            for token in entry.englishTokenSet where token.count >= 3 {
+            uniquePrefixes.reserveCapacity(uniqueTokens.count)
+            for token in uniqueTokens where token.count >= 3 {
                 uniquePrefixes.insert(String(token.prefix(3)))
             }
             for prefix in uniquePrefixes {
@@ -1518,14 +1521,15 @@ final class QuranData: ObservableObject {
         prefix2Index.reserveCapacity(3000)
 
         for (idx, entry) in entries.enumerated() {
-            for token in entry.arabicTokenSet {
+            let uniqueTokens = Set(entry.arabicTokens)
+            for token in uniqueTokens {
                 guard !token.isEmpty else { continue }
                 tokenIndex[token, default: []].append(idx)
             }
 
             var uniquePrefixes = Set<String>()
-            uniquePrefixes.reserveCapacity(entry.arabicTokenSet.count)
-            for token in entry.arabicTokenSet where token.count >= 2 {
+            uniquePrefixes.reserveCapacity(uniqueTokens.count)
+            for token in uniqueTokens where token.count >= 2 {
                 uniquePrefixes.insert(String(token.prefix(2)))
             }
             for prefix in uniquePrefixes {
@@ -1537,12 +1541,9 @@ final class QuranData: ObservableObject {
     }
 
     func waitUntilLoaded() async {
-        if await MainActor.run(body: { !self.quran.isEmpty }) {
-            return
-        }
-
         while true {
-            if await MainActor.run(body: { !self.quran.isEmpty }) {
+            let state = await MainActor.run { self.loadState }
+            if state == .ready || state == .failed {
                 return
             }
             if loadTask == nil {
@@ -1550,6 +1551,14 @@ final class QuranData: ObservableObject {
             }
             try? await Task.sleep(nanoseconds: 25_000_000)
         }
+    }
+
+    var isReadyForUI: Bool {
+        loadState == .ready
+    }
+
+    var hasLoadFailed: Bool {
+        loadState == .failed
     }
 
     private struct QiraatAyahEntry: Codable {
@@ -1592,111 +1601,153 @@ final class QuranData: ObservableObject {
     }
 
     private func load() async {
-        guard let url = Bundle.main.url(forResource: "Quran", withExtension: "json") else {
-            let message = "Quran.json missing"
-            logger.error("\(message)")
-            if Self.isRunningInPreview { return }
-            fatalError(message)
+        await MainActor.run {
+            self.loadState = .loadingCore
+            self.loadErrorDescription = nil
         }
 
-        do {
-            let data = try Data(contentsOf: url)
-            var surahs = try JSONDecoder().decode([Surah].self, from: data)
+        defer {
+            Task { @MainActor in
+                self.loadTask = nil
+            }
+        }
 
-            let overlay = loadQiraatOverlay()
-            if !overlay.isEmpty {
-                surahs = surahs.map { surah in
-                    let baseAyahsByID = Dictionary(uniqueKeysWithValues: surah.ayahs.map { ($0.id, $0) })
+        let maxAttempts = 2
+        for attempt in 1...maxAttempts {
+            do {
+                try await loadAttempt()
+                await MainActor.run {
+                    self.loadState = .ready
+                }
+                return
+            } catch {
+                let message = "Failed to load Quran attempt \(attempt)/\(maxAttempts): \(error.localizedDescription)"
+                logger.error("\(message)")
+                await MainActor.run {
+                    self.loadErrorDescription = message
+                }
 
-                    var allAyahIDs = Set(baseAyahsByID.keys)
-                    for key in ["textWarsh", "textQaloon", "textDuri", "textBuzzi", "textQunbul", "textShubah", "textSusi"] {
-                        if let overlayIDs = overlay[key]?[surah.id]?.keys {
-                            allAyahIDs.formUnion(overlayIDs)
-                        }
-                    }
-
-                    let ayahs = allAyahIDs.sorted().map { ayahID in
-                        let base = baseAyahsByID[ayahID]
-
-                        return Ayah(
-                            id: ayahID,
-                            idArabic: base?.idArabic ?? arabicNumberString(from: ayahID),
-                            textHafs: base?.textHafs ?? "",
-                            textTransliteration: base?.textTransliteration ?? "",
-                            textEnglishSaheeh: base?.textEnglishSaheeh ?? "",
-                            textEnglishMustafa: base?.textEnglishMustafa ?? "",
-                            juz: base?.juz,
-                            page: base?.page,
-                            textWarsh: overlay["textWarsh"]?[surah.id]?[ayahID] ?? base?.textWarsh,
-                            textQaloon: overlay["textQaloon"]?[surah.id]?[ayahID] ?? base?.textQaloon,
-                            textDuri: overlay["textDuri"]?[surah.id]?[ayahID] ?? base?.textDuri,
-                            textBuzzi: overlay["textBuzzi"]?[surah.id]?[ayahID] ?? base?.textBuzzi,
-                            textQunbul: overlay["textQunbul"]?[surah.id]?[ayahID] ?? base?.textQunbul,
-                            textShubah: overlay["textShubah"]?[surah.id]?[ayahID] ?? base?.textShubah,
-                            textSusi: overlay["textSusi"]?[surah.id]?[ayahID] ?? base?.textSusi
-                        )
-                    }
-
-                    return Surah(
-                        id: surah.id,
-                        idArabic: surah.idArabic,
-                        nameArabic: surah.nameArabic,
-                        nameTransliteration: surah.nameTransliteration,
-                        nameEnglish: surah.nameEnglish,
-                        type: surah.type,
-                        numberOfAyahs: surah.numberOfAyahs,
-                        revelationOrder: surah.revelationOrder,
-                        revelationType: surah.revelationType,
-                        revelationExceptions: surah.revelationExceptions,
-                        pageStart: surah.pageStart,
-                        pageEnd: surah.pageEnd,
-                        numberOfPages: surah.numberOfPages,
-                        isLessThanOnePage: surah.isLessThanOnePage,
-                        firstJuz: surah.firstJuz,
-                        lastJuz: surah.lastJuz,
-                        juzs: surah.juzs,
-                        ayahs: ayahs
-                    )
+                if attempt < maxAttempts {
+                    // Small backoff avoids repeated pressure spikes on slower devices.
+                    try? await Task.sleep(nanoseconds: 180_000_000)
+                    continue
                 }
             }
+        }
 
-            surahs = applyDerivedSurahMetadata(to: surahs, displayQiraah: nil)
+        await MainActor.run {
+            self.loadState = .failed
+        }
+    }
 
-            let (sIndex, aIndex) = buildIndexes(for: surahs)
-            let surahsToPublish = surahs
-            let preprocessedSections = buildPreprocessedSections(for: surahsToPublish)
-            let surahSearchIndex = buildSurahSearchIndex(for: surahsToPublish)
+    private func loadAttempt() async throws {
+        guard let url = Bundle.main.url(forResource: "Quran", withExtension: "json") else {
+            throw NSError(domain: "QuranData", code: 1, userInfo: [NSLocalizedDescriptionKey: "Quran.json missing"])
+        }
 
-            await MainActor.run {
-                self.surahIndex = sIndex
-                self.ayahIndex = aIndex
-                self.quran = surahsToPublish
-                self.pageSections = preprocessedSections.pageSections
-                self.juzSections = preprocessedSections.juzSections
-                self.revelationOrderSurahIDs = preprocessedSections.revelationOrderSurahIDs
-                self.surahSearchIndex = surahSearchIndex
+        let data = try Data(contentsOf: url)
+        var surahs = try JSONDecoder().decode([Surah].self, from: data)
 
-                // Expensive structures are built right after core publish.
-                self.verseIndex = []
-                self.arabicTokenIndex = [:]
-                self.arabicPrefix2Index = [:]
-                self.englishTokenIndex = [:]
-                self.englishPrefix3Index = [:]
-                self.allVerseIndices = []
-                self.cachedVerseIndexQiraah = nil
-                self.surahBoundaryModels = [:]
-                self.cachedBoundaryQiraah = nil
-                self.firstAyahByPage = [:]
-                self.firstAyahByJuz = [:]
-                self.cachedFirstAyahLookupQiraah = nil
+        let overlay = loadQiraatOverlay()
+        if !overlay.isEmpty {
+            surahs = surahs.map { surah in
+                let baseAyahsByID = Dictionary(uniqueKeysWithValues: surah.ayahs.map { ($0.id, $0) })
+
+                var allAyahIDs = Set(baseAyahsByID.keys)
+                for key in ["textWarsh", "textQaloon", "textDuri", "textBuzzi", "textQunbul", "textShubah", "textSusi"] {
+                    if let overlayIDs = overlay[key]?[surah.id]?.keys {
+                        allAyahIDs.formUnion(overlayIDs)
+                    }
+                }
+
+                let ayahs = allAyahIDs.sorted().map { ayahID in
+                    let base = baseAyahsByID[ayahID]
+
+                    return Ayah(
+                        id: ayahID,
+                        idArabic: base?.idArabic ?? arabicNumberString(from: ayahID),
+                        textHafs: base?.textHafs ?? "",
+                        textTransliteration: base?.textTransliteration ?? "",
+                        textEnglishSaheeh: base?.textEnglishSaheeh ?? "",
+                        textEnglishMustafa: base?.textEnglishMustafa ?? "",
+                        juz: base?.juz,
+                        page: base?.page,
+                        textWarsh: overlay["textWarsh"]?[surah.id]?[ayahID] ?? base?.textWarsh,
+                        textQaloon: overlay["textQaloon"]?[surah.id]?[ayahID] ?? base?.textQaloon,
+                        textDuri: overlay["textDuri"]?[surah.id]?[ayahID] ?? base?.textDuri,
+                        textBuzzi: overlay["textBuzzi"]?[surah.id]?[ayahID] ?? base?.textBuzzi,
+                        textQunbul: overlay["textQunbul"]?[surah.id]?[ayahID] ?? base?.textQunbul,
+                        textShubah: overlay["textShubah"]?[surah.id]?[ayahID] ?? base?.textShubah,
+                        textSusi: overlay["textSusi"]?[surah.id]?[ayahID] ?? base?.textSusi
+                    )
+                }
+
+                return Surah(
+                    id: surah.id,
+                    idArabic: surah.idArabic,
+                    nameArabic: surah.nameArabic,
+                    nameTransliteration: surah.nameTransliteration,
+                    nameEnglish: surah.nameEnglish,
+                    type: surah.type,
+                    numberOfAyahs: surah.numberOfAyahs,
+                    revelationOrder: surah.revelationOrder,
+                    revelationType: surah.revelationType,
+                    revelationExceptions: surah.revelationExceptions,
+                    pageStart: surah.pageStart,
+                    pageEnd: surah.pageEnd,
+                    numberOfPages: surah.numberOfPages,
+                    isLessThanOnePage: surah.isLessThanOnePage,
+                    firstJuz: surah.firstJuz,
+                    lastJuz: surah.lastJuz,
+                    juzs: surah.juzs,
+                    ayahs: ayahs
+                )
             }
+        }
 
-            let displayQiraah = settings.displayQiraahForArabic
-            let vIndex = surahsToPublish.flatMap { surah in
-                surah.ayahs.map { ayah in
-                    let raw = ayah.textArabic(for: displayQiraah)
-                    let clean = ayah.textCleanArabic(for: displayQiraah)
-                    return makeVerseIndexEntry(
+        surahs = applyDerivedSurahMetadata(to: surahs, displayQiraah: nil)
+
+        let (sIndex, aIndex) = buildIndexes(for: surahs)
+        let surahsToPublish = surahs
+        let preprocessedSections = buildPreprocessedSections(for: surahsToPublish)
+        let surahSearchIndex = buildSurahSearchIndex(for: surahsToPublish)
+
+        await MainActor.run {
+            self.surahIndex = sIndex
+            self.ayahIndex = aIndex
+            self.quran = surahsToPublish
+            self.pageSections = preprocessedSections.pageSections
+            self.juzSections = preprocessedSections.juzSections
+            self.revelationOrderSurahIDs = preprocessedSections.revelationOrderSurahIDs
+            self.surahSearchIndex = surahSearchIndex
+            self.loadState = .buildingIndexes
+
+            // Expensive structures are built right after core publish.
+            self.verseIndex = []
+            self.arabicTokenIndex = [:]
+            self.arabicPrefix2Index = [:]
+            self.englishTokenIndex = [:]
+            self.englishPrefix3Index = [:]
+            self.allVerseIndices = []
+            self.cachedVerseIndexQiraah = nil
+            self.surahBoundaryModels = [:]
+            self.cachedBoundaryQiraah = nil
+            self.firstAyahByPage = [:]
+            self.firstAyahByJuz = [:]
+            self.cachedFirstAyahLookupQiraah = nil
+        }
+
+        let displayQiraah = await MainActor.run { settings.displayQiraahForArabic }
+
+        var vIndex: [VerseIndexEntry] = []
+        let estimatedVerseCount = surahsToPublish.reduce(0) { $0 + $1.ayahs.count }
+        vIndex.reserveCapacity(estimatedVerseCount)
+        for surah in surahsToPublish {
+            for ayah in surah.ayahs {
+                let raw = ayah.textArabic(for: displayQiraah)
+                let clean = ayah.textCleanArabic(for: displayQiraah)
+                vIndex.append(
+                    makeVerseIndexEntry(
                         surahID: surah.id,
                         ayahID: ayah.id,
                         rawArabic: raw,
@@ -1705,32 +1756,31 @@ final class QuranData: ObservableObject {
                         englishMustafa: ayah.textEnglishMustafa,
                         transliteration: ayah.textTransliteration
                     )
-                }
+                )
             }
-            let arabicIndexes = buildArabicSearchIndexes(for: vIndex)
-            let englishIndexes = buildEnglishSearchIndexes(for: vIndex)
-            let boundaryModels = buildBoundaryModels(for: surahsToPublish, displayQiraah: displayQiraah)
-            let firstAyahLookups = buildFirstAyahLookups(for: surahsToPublish, displayQiraah: displayQiraah)
+        }
 
-            await MainActor.run {
-                self.verseIndex = vIndex
-                self.arabicTokenIndex = arabicIndexes.token
-                self.arabicPrefix2Index = arabicIndexes.prefix2
-                self.englishTokenIndex = englishIndexes.token
-                self.englishPrefix3Index = englishIndexes.prefix3
-                self.allVerseIndices = Array(vIndex.indices)
-                self.cachedVerseIndexQiraah = displayQiraah ?? ""
-                self.surahBoundaryModels = boundaryModels
-                self.cachedBoundaryQiraah = displayQiraah ?? ""
-                self.firstAyahByPage = firstAyahLookups.page
-                self.firstAyahByJuz = firstAyahLookups.juz
-                self.cachedFirstAyahLookupQiraah = displayQiraah ?? ""
-            }
-        } catch {
-            let message = "Failed to load Quran: \(error.localizedDescription)"
-            logger.error("\(message)")
-            if Self.isRunningInPreview { return }
-            fatalError(message)
+        let arabicIndexes = buildArabicSearchIndexes(for: vIndex)
+        let englishIndexes = buildEnglishSearchIndexes(for: vIndex)
+        let boundaryModels = buildBoundaryModels(for: surahsToPublish, displayQiraah: displayQiraah)
+        let firstAyahLookups = buildFirstAyahLookups(for: surahsToPublish, displayQiraah: displayQiraah)
+        let finalizedVerseIndex = vIndex
+        let finalizedAllVerseIndices = Array(finalizedVerseIndex.indices)
+        let finalizedQiraahKey = displayQiraah ?? ""
+
+        await MainActor.run {
+            self.verseIndex = finalizedVerseIndex
+            self.arabicTokenIndex = arabicIndexes.token
+            self.arabicPrefix2Index = arabicIndexes.prefix2
+            self.englishTokenIndex = englishIndexes.token
+            self.englishPrefix3Index = englishIndexes.prefix3
+            self.allVerseIndices = finalizedAllVerseIndices
+            self.cachedVerseIndexQiraah = finalizedQiraahKey
+            self.surahBoundaryModels = boundaryModels
+            self.cachedBoundaryQiraah = finalizedQiraahKey
+            self.firstAyahByPage = firstAyahLookups.page
+            self.firstAyahByJuz = firstAyahLookups.juz
+            self.cachedFirstAyahLookupQiraah = finalizedQiraahKey
         }
     }
 
@@ -1739,6 +1789,7 @@ final class QuranData: ObservableObject {
 
         return surahs.enumerated().map { index, surah in
             let derivedLessThanOnePage: Bool = {
+                if Self.forcedLessThanOnePageSurahIDs.contains(surah.id) { return true }
                 if let explicit = surah.isLessThanOnePage { return explicit }
                 guard surah.pageCount == 1 else { return false }
                 guard index + 1 < surahs.count else { return false }
@@ -2224,8 +2275,16 @@ final class QuranData: ObservableObject {
     }
 
     private struct BooleanAyahTerm {
+        enum MatchMode {
+            case contains
+            case startsWith
+            case endsWith
+            case exact
+        }
+
         let value: String
         let isNegated: Bool
+        let matchMode: MatchMode
         let requiresTashkeelMatch: Bool
         let tashkeelPattern: String
         let requiresExactEnglishMatch: Bool
@@ -2245,7 +2304,7 @@ final class QuranData: ObservableObject {
             .replacingOccurrences(of: "&&", with: "&")
             .replacingOccurrences(of: "||", with: "|")
 
-        guard normalized.contains("&") || normalized.contains("|") || normalized.contains("!") || normalized.contains("#") else {
+        guard normalized.contains("&") || normalized.contains("|") || normalized.contains("!") || normalized.contains("#") || normalized.contains("^") || normalized.contains("%") || normalized.contains("$") else {
             return nil
         }
 
@@ -2278,13 +2337,39 @@ final class QuranData: ObservableObject {
             term = term.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
+        var startsWithMatch = false
+        if term.hasPrefix("^") {
+            startsWithMatch = true
+            term.removeFirst()
+            term = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        var endsWithMatch = false
+        if term.hasSuffix("%") || term.hasSuffix("$") {
+            endsWithMatch = true
+            term.removeLast()
+            term = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
         guard !term.isEmpty else { return nil }
         let cleaned = settings.cleanSearch(term, whitespace: true)
         guard !cleaned.isEmpty else { return nil }
 
+        let matchMode: BooleanAyahTerm.MatchMode
+        if startsWithMatch && endsWithMatch {
+            matchMode = .exact
+        } else if startsWithMatch {
+            matchMode = .startsWith
+        } else if endsWithMatch {
+            matchMode = .endsWith
+        } else {
+            matchMode = .contains
+        }
+
         return BooleanAyahTerm(
             value: cleaned,
             isNegated: isNegated,
+            matchMode: matchMode,
             requiresTashkeelMatch: requiresTashkeelMatch && term.containsArabicLetters,
             tashkeelPattern: arabicTashkeelBlob(term),
             requiresExactEnglishMatch: requiresTashkeelMatch && !term.containsArabicLetters,
@@ -2292,19 +2377,44 @@ final class QuranData: ObservableObject {
         )
     }
 
+    private func ayahTermMatch(haystack: String, tokens: [String], term: String, mode: BooleanAyahTerm.MatchMode) -> Bool {
+        switch mode {
+        case .contains:
+            return haystack.contains(term)
+        case .startsWith:
+            return haystack.hasPrefix(term) || tokens.contains(where: { $0.hasPrefix(term) })
+        case .endsWith:
+            return haystack.hasSuffix(term) || tokens.contains(where: { $0.hasSuffix(term) })
+        case .exact:
+            return haystack == term || tokens.contains(term)
+        }
+    }
+
     private func matchesBooleanAyahSearch(entry: VerseIndexEntry, useArabic: Bool, groups: [[BooleanAyahTerm]]) -> Bool {
         groups.contains { andTerms in
             andTerms.allSatisfy { term in
                 let containsTerm: Bool
                 if useArabic, term.requiresTashkeelMatch {
-                    let lettersMatch = entry.arabicBlob.contains(term.value)
+                    let lettersMatch = ayahTermMatch(
+                        haystack: entry.arabicBlob,
+                        tokens: entry.arabicTokens,
+                        term: term.value,
+                        mode: term.matchMode
+                    )
                     let tashkeelMatch = term.tashkeelPattern.isEmpty || entry.arabicTashkeelBlob.contains(term.tashkeelPattern)
                     containsTerm = lettersMatch && tashkeelMatch
                 } else if !useArabic, term.requiresExactEnglishMatch {
-                    containsTerm = !term.exactEnglishPhrase.isEmpty && entry.englishExactBlob.contains(term.exactEnglishPhrase)
+                    let exactTokens = searchTokens(from: term.exactEnglishPhrase)
+                    containsTerm = !term.exactEnglishPhrase.isEmpty && ayahTermMatch(
+                        haystack: entry.englishExactBlob,
+                        tokens: exactTokens,
+                        term: term.exactEnglishPhrase,
+                        mode: term.matchMode
+                    )
                 } else {
                     let haystack = useArabic ? entry.arabicBlob : entry.englishBlob
-                    containsTerm = haystack.contains(term.value)
+                    let tokens = useArabic ? entry.arabicTokens : entry.englishTokens
+                    containsTerm = ayahTermMatch(haystack: haystack, tokens: tokens, term: term.value, mode: term.matchMode)
                 }
                 return term.isNegated ? !containsTerm : containsTerm
             }

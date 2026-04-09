@@ -389,11 +389,11 @@ struct SettingsQuranView: View {
 
     private var qiraahExplanation: some View {
         Text("""
-        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the 10 Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
         The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-        To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+        To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
         """)
             .font(.caption)
             .foregroundColor(.primary)
@@ -480,6 +480,8 @@ private struct QiraahReciterSectionHeader: View {
 struct ReciterListView: View {
     /// When `true`, dismisses the sheet (or pops navigation) after the user picks a reciter or Random.
     var dismissAfterSelectingReciter = false
+    /// When `false`, list opens at top without scrolling to favorites/selected reciter.
+    var autoScrollToInitialSelection = true
 
     @EnvironmentObject var settings: Settings
     @Environment(\.presentationMode) private var presentationMode
@@ -493,10 +495,18 @@ struct ReciterListView: View {
     #endif
 
     private var qiraahChangeDialogTitle: String {
-        "Change Quran Text?"
+        pendingRequestedQiraahIsUnsupported ? "Qiraah Text Not Supported" : "Change Quran Text?"
     }
 
     private var qiraahChangeDialogMessage: String {
+        if pendingRequestedQiraahIsUnsupported {
+            let qiraahName = pendingQiraahReciter?.qiraah?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let qiraahName, !qiraahName.isEmpty {
+                return "This reciter uses \(qiraahName). This qiraah text form is not supported right now. Keep your current Quran text and continue?"
+            }
+            return "This reciter's qiraah text form is not supported right now. Keep your current Quran text and continue?"
+        }
+
         if pendingDisplayQiraahTag == nil {
             return "This reciter uses Hafs an Asim (default). Would you like to switch the Quran text to match it?"
         }
@@ -517,6 +527,15 @@ struct ReciterListView: View {
 
         // Hafs reciters are represented by nil/empty qiraah in these primary sections.
         return nil
+    }
+
+    private func isSupportedQiraahForText(_ qiraahTag: String?) -> Bool {
+        guard let qiraahTag, !qiraahTag.isEmpty else { return true }
+        return Settings.Riwayah.menuOptions.contains(where: { $0.tag == qiraahTag })
+    }
+
+    private var pendingRequestedQiraahIsUnsupported: Bool {
+        !isSupportedQiraahForText(pendingDisplayQiraahTag)
     }
 
     private struct ReciterSectionGroup: Identifiable {
@@ -563,8 +582,22 @@ struct ReciterListView: View {
         return false
     }
 
+    private var orderedUniqueReciters: [Reciter] {
+        var seen = Set<String>()
+        return allReciterSections
+            .flatMap(\.reciters)
+            .filter { seen.insert($0.id).inserted }
+    }
+
+    private var favoriteReciters: [Reciter] {
+        orderedUniqueReciters.filter { settings.isReciterFavorite(reciterID: $0.id) }
+    }
+
     /// Matches row `.id(...)` for `ScrollViewReader.scrollTo`.
     private var reciterListScrollTargetID: String {
+        if let firstFavorite = favoriteReciters.first {
+            return firstFavorite.id
+        }
         if settings.reciter == Settings.randomReciterName {
             return Settings.randomReciterName
         }
@@ -734,7 +767,7 @@ struct ReciterListView: View {
             Spacer()
 
             Text("\(searchResultCount)")
-                .font(.caption.weight(.semibold))
+                .font(.caption.monospaced().weight(.semibold))
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -790,6 +823,12 @@ struct ReciterListView: View {
         settings.setSelectedReciter(reciter)
 
         let targetQiraahTag = resolvedQiraahTag(for: reciter)
+        if !isSupportedQiraahForText(targetQiraahTag) {
+            pendingQiraahReciter = reciter
+            pendingDisplayQiraahTag = targetQiraahTag
+            return false
+        }
+
         if settings.displayQiraahForArabic != targetQiraahTag {
             pendingQiraahReciter = reciter
             pendingDisplayQiraahTag = targetQiraahTag
@@ -802,7 +841,18 @@ struct ReciterListView: View {
     }
 
     private func confirmPendingQiraahSelection() {
-        guard let pendingQiraahReciter else { return }
+        guard pendingQiraahReciter != nil else { return }
+
+        if pendingRequestedQiraahIsUnsupported {
+            self.pendingQiraahReciter = nil
+            self.pendingDisplayQiraahTag = nil
+
+            if dismissAfterSelectingReciter {
+                presentationMode.wrappedValue.dismiss()
+            }
+            return
+        }
+
         settings.displayQiraah = pendingDisplayQiraahTag ?? Settings.Riwayah.hafsTag
         self.pendingQiraahReciter = nil
         self.pendingDisplayQiraahTag = nil
@@ -824,24 +874,53 @@ struct ReciterListView: View {
     var body: some View {
         ScrollViewReader { proxy in
             List {
+                if isSearchingReciters {
+                    searchResultsBanner
+
+                    if searchResultSections.isEmpty {
+                        noSearchResultsView
+                    } else {
+                        ForEach(searchResultSections) { section in
+                            reciterSection(section)
+                        }
+                    }
+                } else {
+
+                if !favoriteReciters.isEmpty {
+                    Section(header: Text("FAVORITE RECITERS")) {
+                        reciterButtons(favoriteReciters)
+                    }
+                }
+                
                 #if os(iOS)
-                if !isSearchingReciters {
+                if !showDownloadedOnly {
+                    Section {
+                        randomReciterButton
+                    }
+                }
+                #else
+                Section {
+                    randomReciterButton
+                }
+                #endif
+
+                #if os(iOS)
                 Section(header: Text("DOWNLOADED SURAHS")) {
                     Picker("Reciter Filter", selection: $showDownloadedOnly.animation(.easeInOut)) {
                         Text("All Reciters").tag(false)
                         Text("Downloaded Only").tag(true)
                     }
-                    #if os(iOS)
                     .pickerStyle(.segmented)
-                    #endif
 
-                    Text("Downloads are full-reciter packages (all 114 surahs).")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Downloads are full-reciter packages (all 114 surahs).")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                    Text("Ayah download is not supported, only surah download.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Text("Ayah download is not supported, only surah download.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
 
                     let downloadedCount = uniqueDownloadedReciterCount
                     Text("Downloaded reciters: \(downloadedCount)")
@@ -863,31 +942,6 @@ struct ReciterListView: View {
                         .buttonStyle(.borderless)
                         .font(.caption.weight(.semibold))
                     }
-                }
-                }
-                #endif
-
-                if isSearchingReciters {
-                    searchResultsBanner
-
-                    if searchResultSections.isEmpty {
-                        noSearchResultsView
-                    } else {
-                        ForEach(searchResultSections) { section in
-                            reciterSection(section)
-                        }
-                    }
-                } else {
-                
-                #if os(iOS)
-                if !showDownloadedOnly {
-                    Section {
-                        randomReciterButton
-                    }
-                }
-                #else
-                Section {
-                    randomReciterButton
                 }
                 #endif
 
@@ -938,11 +992,11 @@ struct ReciterListView: View {
                         
                         Section(header: Text("ABOUT QIRAAT"), footer: Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
                             Text("""
-                            The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+                            The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the 10 Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
                             The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                            To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                            To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
                             """)
                             .font(.subheadline)
                             .foregroundColor(.primary)
@@ -1013,11 +1067,11 @@ struct ReciterListView: View {
                     
                     Section(header: Text("ABOUT QIRAAT"), footer: Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
                         Text("""
-                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the Ten Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the 10 Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
 
                         The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                        To learn more about the Seven Ahruf and the Ten Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                        To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
                         """)
                         .font(.subheadline)
                         .foregroundColor(.primary)
@@ -1066,11 +1120,12 @@ struct ReciterListView: View {
                     }
                 }
                 #endif
+
                 }
             }
             .navigationTitle("Select Reciter")
             #if os(iOS)
-            .safeAreaInset(edge: .bottom) {
+            .adaptiveSafeArea(edge: .bottom) {
                 reciterSearchControlsInset
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
@@ -1089,12 +1144,12 @@ struct ReciterListView: View {
                     }
                 }
             ), titleVisibility: .visible) {
-                Button("Confirm and Change") {
+                Button(pendingRequestedQiraahIsUnsupported ? "Yes, Keep Current Quran Text" : "Confirm and Change") {
                     settings.hapticFeedback()
                     confirmPendingQiraahSelection()
                 }
 
-                Button("No, Don't Change Qiraah") {
+                Button(pendingRequestedQiraahIsUnsupported ? "Cancel Selection" : "No, Don't Change Qiraah") {
                     settings.hapticFeedback()
                     declinePendingQiraahSelection()
                 }
@@ -1116,7 +1171,7 @@ struct ReciterListView: View {
                 downloadManager.purgeIncompleteReciterDownloads()
                 #endif
 
-                if !didAutoScrollToSelection {
+                if autoScrollToInitialSelection && !didAutoScrollToSelection {
                     let target = reciterListScrollTargetID
                     didAutoScrollToSelection = true
 
@@ -1225,6 +1280,17 @@ struct ReciterListView: View {
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
+                Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
+                    .font(.body.weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+                    .padding(.top, 5)
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            settings.toggleReciterFavorite(reciterID: reciter.id)
+                        }
+                    }
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(reciter.name)
                         .font(.subheadline)
@@ -1237,7 +1303,7 @@ struct ReciterListView: View {
                     }
 
                     if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
-                        Text("Doesn't support ayahs, defaults to Minshawi (Murattal).")
+                        Text("This reciter supports surahs only. Ayahs default to Minshawi (Murattal).")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -1332,7 +1398,10 @@ struct ReciterListView: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
+                        .foregroundColor(settings.accentColor.color)
+
                     Text(reciter.name)
                         .font(.subheadline)
                         .foregroundColor(isSelectedReciter(reciter) ? settings.accentColor.color : .primary)
@@ -1346,7 +1415,7 @@ struct ReciterListView: View {
                 }
 
                 if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
-                    Text("Doesn't support ayahs, defaults to Minshawi (Murattal).")
+                    Text("This reciter supports surahs only. Ayahs default to Minshawi (Murattal).")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -1357,6 +1426,7 @@ struct ReciterListView: View {
         #endif
     }
 }
+
 
 #if os(iOS)
 enum FavoriteType {
@@ -1533,7 +1603,7 @@ struct FavoritesView: View {
 #endif
 
 #Preview {
-    AlIslamPreviewContainer(embedInNavigation: false) {
+    AlIslamPreviewContainer(embedInNavigation: true) {
         SettingsQuranView()
     }
 }
