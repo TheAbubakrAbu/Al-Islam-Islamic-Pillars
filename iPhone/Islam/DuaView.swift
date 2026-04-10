@@ -61,17 +61,13 @@ struct DuaView: View {
     }
 
     private var introductionSection: some View {
-        Section(header: Text("BEGINNING")) {
+        Section(header: Text("SUPPLICATIONS TO ALLAH")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Common Duas")
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-
                 Text("Short, daily supplications that keep your heart connected to Allah in every situation.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.primary)
 
-                Text("“Call upon Me; I will respond to you.” (Quran 40:60)")
+                Text("“Call upon Me (Dua); I will respond to you.” (Quran 40:60)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

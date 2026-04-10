@@ -155,12 +155,19 @@ struct NamesView: View {
         Set(settings.favoriteNameNumbers)
     }
 
+    private var favoriteNames: [NameOfAllah] {
+        namesData.namesOfAllah
+            .filter { favoriteNameNumberSet.contains($0.number) }
+            .sorted { $0.number < $1.number }
+    }
+
     var body: some View {
         let hasActiveSearch = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         ScrollViewReader { proxy in
             List {
                 descriptionSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
+                favoriteNamesSection(hasActiveSearch: hasActiveSearch, proxy: proxy)
                 namesSections(filteredNames: filteredNames, hasActiveSearch: hasActiveSearch, proxy: proxy)
                 finalInvocationSection
             }
@@ -185,7 +192,7 @@ struct NamesView: View {
             Text("Prophet Muhammad ﷺ said, “Allah has 99 names, and whoever believes in their meanings and acts accordingly, will enter Paradise” (Bukhari 6410).")
                 .font(.body)
 
-            Toggle("Show Description", isOn: $settings.showDescription.animation(.easeInOut))
+            Toggle("Show All Descriptions", isOn: $settings.showDescription.animation(.easeInOut))
                 .font(.subheadline)
                 .tint(settings.accentColor.color)
         }
@@ -205,6 +212,26 @@ struct NamesView: View {
                 .padding(.vertical, 6)
                 .conditionalGlassEffect()
                 .opacity(hasActiveSearch ? 1 : 0)
+        }
+    }
+
+    @ViewBuilder
+    private func favoriteNamesSection(hasActiveSearch: Bool, proxy: ScrollViewProxy) -> some View {
+        if !hasActiveSearch && !favoriteNames.isEmpty {
+            Section(header: Text("FAVORITE NAMES")) {
+                ForEach(favoriteNames, id: \.id) { name in
+                    NameRow(
+                        name: name,
+                        firstFoundTarget: namesData.firstFoundTargetsByNameNumber[name.number],
+                        showDescription: settings.showDescription,
+                        isExpanded: expandedNameNumbers.contains(name.number),
+                        isFavorite: true
+                    ) {
+                        handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
+                    }
+                    .id("favorite_name_\(name.number)")
+                }
+            }
         }
     }
 
@@ -309,7 +336,21 @@ private struct NameRow: View {
 
     var body: some View {
         #if os(iOS)
-        content.contextMenu { copyMenu }
+        content
+            .contextMenu {
+                favoriteMenuItem
+                Divider()
+                copyMenu
+            }
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                Button {
+                    settings.hapticFeedback()
+                    settings.toggleNameFavorite(number: name.number)
+                } label: {
+                    Label(isFavorite ? "Unfavorite" : "Favorite", systemImage: isFavorite ? "star.slash.fill" : "star.fill")
+                }
+                .tint(settings.accentColor.color)
+            }
         #else
         content
         #endif
@@ -317,38 +358,47 @@ private struct NameRow: View {
 
     private var content: some View {
         Group {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 numberPill
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(name.transliteration)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(name.transliteration)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
 
-                    Text(name.meaning)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                        Text(name.meaning)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
 
-                    Text("First Found: \(name.firstFoundShort)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                        Text("First Found: \(name.firstFoundShort)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    HStack {
+                        Text(name.name.removeDiacriticsFromLastLetter())
+                            .font(.custom(settings.fontArabic, size: 24))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+
+                        Text(name.numberArabic)
+                            .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: 28))
+                            .foregroundColor(settings.accentColor.color)
+                            .lineLimit(1)
+                    }
                 }
-
-                Spacer(minLength: 8)
-
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(name.name.removeDiacriticsFromLastLetter())
-                        .font(.custom(settings.fontArabic, size: 24))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-
-                    Text(name.numberArabic)
-                        .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: 28))
-                        .foregroundColor(settings.accentColor.color)
-                        .lineLimit(1)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if !showDescription {
+                        settings.hapticFeedback()
+                        onTap()
+                    }
                 }
             }
             .padding(.vertical, 6)
@@ -362,12 +412,15 @@ private struct NameRow: View {
                 )
             }
         }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if !showDescription {
-                settings.hapticFeedback()
-                onTap()
-            }
+    }
+
+    @ViewBuilder
+    private var favoriteMenuItem: some View {
+        Button {
+            settings.hapticFeedback()
+            settings.toggleNameFavorite(number: name.number)
+        } label: {
+            Label(isFavorite ? "Unfavorite" : "Favorite", systemImage: isFavorite ? "star.slash.fill" : "star.fill")
         }
     }
 

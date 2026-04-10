@@ -16,12 +16,13 @@ struct AdhkarRow: View {
     }
 
     private var rowContent: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(arabicText)
                 .font(useQuranicFont ? .custom(settings.fontArabic, size: 30) : .title2)
                 .foregroundColor(settings.accentColor.color)
                 .multilineTextAlignment(alignArabicTrailing ? .trailing : .leading)
                 .frame(maxWidth: .infinity, alignment: alignArabicTrailing ? .trailing : .leading)
+                .padding(.vertical, -12)
 
             Text(transliteration)
                 .font(.subheadline)
@@ -119,17 +120,13 @@ struct AdhkarView: View {
     }
 
     private var introductionSection: some View {
-        Section(header: Text("BEGINNING")) {
+        Section(header: Text("REMEMBRANCES OF ALLAH")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Common Adhkar")
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-
                 Text("Short remembrances to keep your heart connected to Allah throughout the day.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.primary)
 
-                Text("“Unquestionably, by the remembrance of Allah hearts are assured.” (Quran 13:28)")
+                Text("“Surely in the remembrance (dhikr) of Allah do hearts find comfort.” (Quran 13:28)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -146,24 +143,20 @@ struct AdhkarView: View {
     @ViewBuilder
     private var adhkarRows: some View {
         filteredAdhkarRow(arabicText: "سُبحَانَ اللَّهِ", transliteration: "SubhanAllah", translation: "Glory be to Allah")
-        filteredAdhkarRow(arabicText: "ٱلـحَمدُ لِلَّهِ", transliteration: "Alhamdulillah", translation: "Praise be to Allah")
+        filteredAdhkarRow(arabicText: "ٱلحَمدُ لِلَّهِ", transliteration: "Alhamdulillah", translation: "Praise be to Allah")
         filteredAdhkarRow(arabicText: "اللَّهُ أَكبَرُ", transliteration: "Allahu Akbar", translation: "Allah is the Greatest")
         filteredAdhkarRow(arabicText: "لَا إِلَٰهَ إِلَّا اللَّهُ", transliteration: "La ilaha illallah", translation: "There is no deity worthy of worship except Allah")
         filteredAdhkarRow(arabicText: "أَستَغفِرُ اللَّهَ", transliteration: "Astaghfirullah", translation: "I seek forgiveness from Allah")
         filteredAdhkarRow(arabicText: "لَا حَولَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", transliteration: "La hawla wala quwwata illa billah", translation: "There is no power or might except with Allah")
-        filteredAdhkarRow(arabicText: "ٱلـحَمدُ لِلَّهِ رَبِّ ٱلعَٰلَمِينَ", transliteration: "Alhamdulillahi rabbil 'alamin", translation: "Praise be to Allah, the Lord of all the worlds")
+        filteredAdhkarRow(arabicText: "ٱلحَمدُ لِلَّهِ رَبِّ ٱلعَٰلَمِينَ", transliteration: "Alhamdulillahi rabbil 'alamin", translation: "Praise be to Allah, the Lord of all the worlds")
         filteredAdhkarRow(arabicText: "سُبحَانَ اللَّهِ وَبِحَمدِهِ سُبحَانَ اللَّهِ العَظِيمِ", transliteration: "SubhanAllahi wa bihamdihi, SubhanAllahil Adheem", translation: "Glory be to Allah and praise be to Him; Glory be to Allah, the Most Great")
         filteredAdhkarRow(arabicText: "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ وَعَلَىٰ آلِ مُحَمَّدٍ", transliteration: "Allahumma salli 'ala Muhammad wa 'ala ali Muhammad", translation: "O Allah, send blessings upon Muhammad and his family")
         filteredAdhkarRow(arabicText: "لَا إِلَٰهَ إِلَّا اللَّهُ وَحدَهُ لَا شَرِيكَ لَهُ لَهُ ٱلمُلكُ وَلَهُ ٱلـحَمدُ وَهُوَ عَلَىٰ كُلِّ شَيءٍ قَدِيرٌ", transliteration: "La ilaha illallah wahdahu la sharika lah, lahul-mulk wa lahul-hamd, wa huwa 'ala kulli shayin qadir", translation: "There is no deity worthy of worship except Allah, alone, without any partner. His is the sovereignty and His is the praise, and He is capable of all things")
     }
 
     private var virtuesSection: some View {
-        Section(header: Text("ENDING REFLECTION")) {
+        Section(header: Text("The Virtues of Dhikr")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("The Virtues of Dhikr")
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-
                 Text("Dhikr revives the heart, protects the soul, and keeps a believer steady in trials. Every remembrance is light on the tongue and heavy on the scale.")
                     .font(.subheadline)
                     .foregroundColor(.primary)

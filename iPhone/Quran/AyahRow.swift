@@ -196,20 +196,31 @@ struct AyahRow: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 4) {
-                    Text("\(surah.id):\(ayah.id)")
-                        .font(.subheadline.monospacedDigit().weight(.semibold))
-                        .foregroundColor(settings.accentColor.color)
-                        .padding(5)
-                        .frame(width: 60, height: 28)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .conditionalGlassEffect(useColor: 0.1)
-                        #if os(iOS)
-                        .onTapGesture {
-                            settings.hapticFeedback()
-                            showingAyahSheet = true
+                    ZStack(alignment: .topTrailing) {
+                        Text("\(surah.id):\(ayah.id)")
+                            .font(.subheadline.monospacedDigit().weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                            .padding(5)
+                            .frame(width: 60, height: 28)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .conditionalGlassEffect(
+                                useColor: isBookmarked ? 0.3 : nil,
+                                customTint: isBookmarked ? settings.accentColor.color : nil
+                            )
+                            .onTapGesture {
+                                settings.hapticFeedback()
+                                settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                            }
+
+                        if isBookmarked {
+                            Image(systemName: "bookmark.fill")
+                                .font(.caption2)
+                                .foregroundStyle(settings.accentColor.color)
+                                .padding(4)
+                                .offset(x: 8, y: -6)
                         }
-                        #endif
+                    }
                     
                     Spacer()
                     

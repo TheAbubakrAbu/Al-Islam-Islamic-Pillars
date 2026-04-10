@@ -56,6 +56,10 @@ struct SurahRow: View {
                     useColor: isFavorite ? 0.3 : nil,
                     customTint: isFavorite ? settings.accentColor.color : nil
                 )
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    settings.toggleSurahFavorite(surah: surah.id)
+                }
                 .accessibilityLabel("Surah \(surah.id)")
 
             if isFavorite {
@@ -146,6 +150,10 @@ struct SurahAyahRow: View {
     var note: String? = nil
     var disableTajweedColors: Bool = false
 
+    private var isBookmarked: Bool {
+        settings.bookmarkedAyahs.contains { $0.surah == surah.id && $0.ayah == ayah.id }
+    }
+
     private func arabicDisplayText() -> String {
         let clean = settings.cleanArabicText && !shouldShowTajweedColors
         let text = ayah.displayArabicText(surahId: surah.id, clean: clean)
@@ -190,12 +198,29 @@ struct SurahAyahRow: View {
     var body: some View {
         HStack {
             VStack {
-                Text("\(surah.id):\(ayah.id)")
-                    .font(.headline)
-                    .monospacedDigit()
-                    .frame(width: badgeWidth, alignment: .center)
-                    .padding(4)
-                    .conditionalGlassEffect(useColor: 0.25)
+                ZStack(alignment: .topTrailing) {
+                    Text("\(surah.id):\(ayah.id)")
+                        .font(.headline)
+                        .monospacedDigit()
+                        .frame(width: badgeWidth, alignment: .center)
+                        .padding(4)
+                        .conditionalGlassEffect(
+                            useColor: isBookmarked ? 0.3 : nil,
+                            customTint: isBookmarked ? settings.accentColor.color : nil
+                        )
+                        .onTapGesture {
+                            settings.hapticFeedback()
+                            settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                        }
+
+                    if isBookmarked {
+                        Image(systemName: "bookmark.fill")
+                            .font(.caption2)
+                            .foregroundStyle(settings.accentColor.color)
+                            .padding(4)
+                            .offset(x: 8, y: -6)
+                    }
+                }
                 
                 Text(surah.nameTransliteration)
                     .font(.caption)
@@ -661,6 +686,35 @@ struct AyahSearchRow: View, Equatable {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
     }
 
+    @ViewBuilder
+    private var ayahReferenceBadge: some View {
+        ZStack(alignment: .topTrailing) {
+            Text("\(surah):\(ayah)")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(settings.accentColor.color)
+                .monospacedDigit()
+                .frame(minWidth: 52, alignment: .center)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .conditionalGlassEffect(
+                    useColor: isBookmarked ? 0.3 : nil,
+                    customTint: isBookmarked ? settings.accentColor.color : nil
+                )
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    settings.toggleBookmark(surah: surah, ayah: ayah)
+                }
+
+            if isBookmarked {
+                Image(systemName: "bookmark.fill")
+                    .font(.caption2)
+                    .foregroundStyle(settings.accentColor.color)
+                    .padding(4)
+                    .offset(x: 8, y: -6)
+            }
+        }
+    }
+
     private var shouldShowTajweedColors: Bool {
         if disableTajweedColors { return false }
         return settings.showTajweedColors
@@ -720,11 +774,7 @@ struct AyahSearchRow: View, Equatable {
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Text("\(surah):\(ayah)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-                    .frame(minWidth: 52, alignment: .leading)
+                ayahReferenceBadge
 
                 if showArabicLine {
                     HighlightedSnippet(
@@ -805,13 +855,9 @@ struct AyahSearchRow: View, Equatable {
 
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(surahName) \(surah):\(ayah)")
+                ayahReferenceBadge
 
-                if isBookmarked {
-                    Spacer()
-
-                    Image(systemName: "bookmark.fill")
-                }
+                Text(surahName)
             }
             .font(.caption)
             .foregroundColor(settings.accentColor.color)
