@@ -1315,6 +1315,7 @@ struct AyahsView: View {
         if let targetID = selectedSurahNavigation,
            let targetSurah = quranData.surah(targetID) {
             AyahsView(surah: targetSurah)
+                .id("ayahs-selected-\(targetSurah.id)")
         } else {
             EmptyView()
         }

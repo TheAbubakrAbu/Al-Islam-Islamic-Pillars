@@ -826,19 +826,9 @@ struct QuranView: View {
             let noteToShow = (noteText?.isEmpty == false) ? noteText : nil
 
             Group {
-                #if os(iOS)
-                Button {
-                    push(surahID: bookmarkedAyah.surah, ayahID: bookmarkedAyah.ayah)
-                } label: {
-                    NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
-                        SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
-                    }
-                }
-                #else
                 NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
                     SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
                 }
-                #endif
             }
             .rightSwipeActions(
                 surahID: surah.id,
@@ -907,19 +897,9 @@ struct QuranView: View {
     private func favoriteRow(surahID: Int, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(surahID) {
             Group {
-                #if os(iOS)
-                Button {
-                    push(surahID: surahID)
-                } label: {
-                    NavigationLink(destination: ayahsDestination(surah: surah)) {
-                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
-                    }
-                }
-                #else
                 NavigationLink(destination: ayahsDestination(surah: surah)) {
                     SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                 }
-                #endif
             }
             .rightSwipeActions(
                 surahID: surahID,
