@@ -17,7 +17,6 @@ struct Surah: Codable, Identifiable {
     let numberOfAyahs: Int
 
     let revelationOrder: Int?
-    let revelationType: String?
     let revelationExceptions: String?
 
     let pageStart: Int?
@@ -33,7 +32,7 @@ struct Surah: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id, nameArabic, nameTransliteration, nameEnglish, type, numberOfAyahs
-        case revelationOrder, revelationType, revelationExceptions
+        case revelationOrder, revelationExceptions
         case pageStart, pageEnd, numberOfPages, isLessThanOnePage
         case firstJuz, lastJuz, juzs
         case ayahs
@@ -51,8 +50,6 @@ struct Surah: Codable, Identifiable {
         ayahs = try c.decode([Ayah].self, forKey: .ayahs)
 
         revelationOrder = try c.decodeIfPresent(Int.self, forKey: .revelationOrder)
-        revelationType = try c.decodeIfPresent(String.self, forKey: .revelationType)
-            ?? (type == "meccan" ? "Meccan" : (type == "medinan" ? "Medinan" : nil))
         revelationExceptions = try c.decodeIfPresent(String.self, forKey: .revelationExceptions)
 
         pageStart = try c.decodeIfPresent(Int.self, forKey: .pageStart)
@@ -76,7 +73,6 @@ struct Surah: Codable, Identifiable {
         type: String,
         numberOfAyahs: Int,
         revelationOrder: Int? = nil,
-        revelationType: String? = nil,
         revelationExceptions: String? = nil,
         pageStart: Int? = nil,
         pageEnd: Int? = nil,
@@ -95,7 +91,6 @@ struct Surah: Codable, Identifiable {
         self.type = type
         self.numberOfAyahs = numberOfAyahs
         self.revelationOrder = revelationOrder
-        self.revelationType = revelationType
         self.revelationExceptions = revelationExceptions
 
         self.pageStart = pageStart
@@ -1327,16 +1322,16 @@ final class QuranData: ObservableObject {
     }
 
     private enum RevelationSearchMode {
-        case meccan
-        case medinan
+        case makkan
+        case madinan
     }
 
-    private static let meccanAliases: Set<String> = [
-        "mecca", "meccan", "makkah", "makkan", "makki"
+    private static let makkanAliases: Set<String> = [
+        "makkah", "makkan", "makki"
     ]
 
-    private static let medinanAliases: Set<String> = [
-        "medina", "medinan", "madina", "madinah", "madinan", "madani"
+    private static let madinanAliases: Set<String> = [
+        "madinah", "madinan", "madina", "madani"
     ]
 
     /// Surahs that should always display as less than one page in UI metadata.
@@ -1359,8 +1354,31 @@ final class QuranData: ObservableObject {
     }
 
     struct JuzSectionData: Identifiable {
+        struct Row: Identifiable {
+            enum Kind {
+                case plain
+                case start(ayah: Int)
+                case end(ayah: Int)
+            }
+
+            let surahID: Int
+            let kind: Kind
+
+            var id: String {
+                switch kind {
+                case .plain:
+                    return "\(surahID)-plain"
+                case .start(let ayah):
+                    return "\(surahID)-start-\(ayah)"
+                case .end(let ayah):
+                    return "\(surahID)-end-\(ayah)"
+                }
+            }
+        }
+
         let juz: Juz
         let surahIDs: [Int]
+        let rows: [Row]
 
         var id: Int { juz.id }
     }
@@ -1691,7 +1709,6 @@ final class QuranData: ObservableObject {
                     type: surah.type,
                     numberOfAyahs: surah.numberOfAyahs,
                     revelationOrder: surah.revelationOrder,
-                    revelationType: surah.revelationType,
                     revelationExceptions: surah.revelationExceptions,
                     pageStart: surah.pageStart,
                     pageEnd: surah.pageEnd,
@@ -1818,7 +1835,6 @@ final class QuranData: ObservableObject {
                 type: surah.type,
                 numberOfAyahs: surah.numberOfAyahs,
                 revelationOrder: surah.revelationOrder,
-                revelationType: surah.revelationType,
                 revelationExceptions: surah.revelationExceptions,
                 pageStart: surah.pageStart,
                 pageEnd: surah.pageEnd,
@@ -2117,7 +2133,8 @@ final class QuranData: ObservableObject {
             let surahIDs = surahs
                 .filter { $0.id >= juz.startSurah && $0.id <= juz.endSurah }
                 .map(\.id)
-            return JuzSectionData(juz: juz, surahIDs: surahIDs)
+            let rows = buildPreprocessedJuzRows(juz: juz, surahs: surahs)
+            return JuzSectionData(juz: juz, surahIDs: surahIDs, rows: rows)
         }
 
         let revelationOrderSurahIDs = surahs
@@ -2132,6 +2149,42 @@ final class QuranData: ObservableObject {
             .map(\.id)
 
         return (pageSections, juzSections, revelationOrderSurahIDs)
+    }
+
+    private func buildPreprocessedJuzRows(juz: Juz, surahs: [Surah]) -> [JuzSectionData.Row] {
+        let surahByID = Dictionary(uniqueKeysWithValues: surahs.map { ($0.id, $0) })
+        var rows: [JuzSectionData.Row] = []
+
+        for surahID in juz.startSurah...juz.endSurah {
+            guard let surah = surahByID[surahID] else { continue }
+            let totalAyahs = surah.numberOfAyahs
+
+            if surahID == juz.startSurah && surahID == juz.endSurah {
+                rows.append(.init(surahID: surahID, kind: .start(ayah: juz.startAyah)))
+                if juz.endAyah < totalAyahs {
+                    rows.append(.init(surahID: surahID, kind: .end(ayah: juz.endAyah)))
+                }
+                continue
+            }
+
+            if surahID == juz.startSurah {
+                rows.append(.init(surahID: surahID, kind: .start(ayah: juz.startAyah)))
+                continue
+            }
+
+            if surahID == juz.endSurah {
+                // Keep one plain surah entry first so this surah is not shown only as an "end" row.
+                rows.append(.init(surahID: surahID, kind: .plain))
+                if juz.endAyah < totalAyahs {
+                    rows.append(.init(surahID: surahID, kind: .end(ayah: juz.endAyah)))
+                }
+                continue
+            }
+
+            rows.append(.init(surahID: surahID, kind: .plain))
+        }
+
+        return rows
     }
     
     func surah(_ number: Int) -> Surah? {
@@ -2161,15 +2214,15 @@ final class QuranData: ObservableObject {
         let revelationSearchMode: RevelationSearchMode? = {
             guard !normalizedQuery.isEmpty else { return nil }
 
-            let meccanHit = Self.meccanAliases.contains { alias in
+            let makkanHit = Self.makkanAliases.contains { alias in
                 alias.hasPrefix(normalizedQuery) || normalizedQuery.hasPrefix(alias)
             }
-            if meccanHit { return .meccan }
+            if makkanHit { return .makkan }
 
-            let medinanHit = Self.medinanAliases.contains { alias in
+            let madinanHit = Self.madinanAliases.contains { alias in
                 alias.hasPrefix(normalizedQuery) || normalizedQuery.hasPrefix(alias)
             }
-            if medinanHit { return .medinan }
+            if madinanHit { return .madinan }
 
             return nil
         }()
@@ -2178,10 +2231,10 @@ final class QuranData: ObservableObject {
             if let revelationSearchMode {
                 guard let s = surah(entry.surahID) else { return nil }
                 switch revelationSearchMode {
-                case .meccan:
-                    return s.type == "meccan" ? s : nil
-                case .medinan:
-                    return s.type == "medinan" ? s : nil
+                case .makkan:
+                    return s.type == "makkan" ? s : nil
+                case .madinan:
+                    return s.type == "madinan" ? s : nil
                 }
             }
 
@@ -2444,21 +2497,21 @@ final class QuranData: ObservableObject {
 
         Juz(id: 3,
             nameArabic: "تِلكَ ٱلرُّسُلُ",
-            nameTransliteration: "Tilka Rusulu",
+            nameTransliteration: "Tilka Ar-Rusul",
             startSurah: 2, startAyah: 253,
             endSurah: 3, endAyah: 92
         ),
 
         Juz(id: 4,
             nameArabic: "كُلُّ ٱلطَّعَامِ",
-            nameTransliteration: "Kullu al-ta'am",
+            nameTransliteration: "Kullu At-Ta'am",
             startSurah: 3, startAyah: 93,
             endSurah: 4, endAyah: 23
         ),
 
         Juz(id: 5,
             nameArabic: "وَٱلمُحصَنَاتُ",
-            nameTransliteration: "Walmohsanaatu",
+            nameTransliteration: "Wal-Muhsanat",
             startSurah: 4, startAyah: 24,
             endSurah: 4, endAyah: 147
         ),
@@ -2479,14 +2532,14 @@ final class QuranData: ObservableObject {
 
         Juz(id: 8,
             nameArabic: "وَلَو أَنَّنَا",
-            nameTransliteration: "Walau Annanaa",
+            nameTransliteration: "Walaw Annana",
             startSurah: 6, startAyah: 111,
             endSurah: 7, endAyah: 87
         ),
 
         Juz(id: 9,
             nameArabic: "قَالَ ٱلمَلَأُ",
-            nameTransliteration: "Qaalal-Mala'u",
+            nameTransliteration: "Qala Al-Mala'u",
             startSurah: 7, startAyah: 88,
             endSurah: 8, endAyah: 40
         ),
@@ -2500,49 +2553,49 @@ final class QuranData: ObservableObject {
 
         Juz(id: 11,
             nameArabic: "إِنَّمَا ٱلسَّبِيلُ",
-            nameTransliteration: "Innama al-sabeel",
+            nameTransliteration: "Innama As-Sabil",
             startSurah: 9, startAyah: 93,
             endSurah: 11, endAyah: 5
         ),
 
         Juz(id: 12,
             nameArabic: "وَمَا مِن دَآبَّةٍ",
-            nameTransliteration: "Wamaa Min Da'abatin",
+            nameTransliteration: "Wama Min Dabbah",
             startSurah: 11, startAyah: 6,
             endSurah: 12, endAyah: 52
         ),
 
         Juz(id: 13,
             nameArabic: "وَمَا أُبَرِّئُ",
-            nameTransliteration: "Wamaa Ubari'oo",
+            nameTransliteration: "Wama Ubarri'u",
             startSurah: 12, startAyah: 53,
             endSurah: 14, endAyah: 52
         ),
 
         Juz(id: 14,
             nameArabic: "رُبَمَا",
-            nameTransliteration: "Rubamaa",
+            nameTransliteration: "Rubama",
             startSurah: 15, startAyah: 1,
             endSurah: 16, endAyah: 128
         ),
 
         Juz(id: 15,
             nameArabic: "سُبحَانَ ٱلَّذِى",
-            nameTransliteration: "Subhana Allathee",
+            nameTransliteration: "Subhana Al-Ladhi",
             startSurah: 17, startAyah: 1,
             endSurah: 18, endAyah: 74
         ),
 
         Juz(id: 16,
             nameArabic: "قَالَ أَلَم",
-            nameTransliteration: "Qaala Alam",
+            nameTransliteration: "Qala Alam",
             startSurah: 18, startAyah: 75,
             endSurah: 20, endAyah: 135
         ),
 
         Juz(id: 17,
             nameArabic: "ٱقتَرَبَ لِلنَّاسِ",
-            nameTransliteration: "Iqtaraba Linnaasi",
+            nameTransliteration: "Iqtaraba Lin-Nas",
             startSurah: 21, startAyah: 1,
             endSurah: 22, endAyah: 78
         ),
@@ -2556,21 +2609,21 @@ final class QuranData: ObservableObject {
 
         Juz(id: 19,
             nameArabic: "وَقَالَ ٱلَّذِينَ",
-            nameTransliteration: "Waqaal Alladheena",
+            nameTransliteration: "Waqala Al-Ladhina",
             startSurah: 25, startAyah: 21,
             endSurah: 27, endAyah: 55
         ),
 
         Juz(id: 20,
             nameArabic: "فَمَا كَانَ جَوَابَ",
-            nameTransliteration: "Fama kana jawaab",
+            nameTransliteration: "Fama Kana Jawab",
             startSurah: 27, startAyah: 56,
             endSurah: 29, endAyah: 45
         ),
 
         Juz(id: 21,
             nameArabic: "وَلَا تُجَٰدِلُوٓاْ",
-            nameTransliteration: "Wa la tujadiloo",
+            nameTransliteration: "Wa La Tujadiloo",
             startSurah: 29, startAyah: 46,
             endSurah: 33, endAyah: 30
         ),
@@ -2584,7 +2637,7 @@ final class QuranData: ObservableObject {
 
         Juz(id: 23,
             nameArabic: "وَمَآ أَنزَلۡنَا",
-            nameTransliteration: "Wa ma anzalna",
+            nameTransliteration: "Wa Ma Anzalna",
             startSurah: 36, startAyah: 28,
             endSurah: 39, endAyah: 31
         ),
@@ -2605,7 +2658,7 @@ final class QuranData: ObservableObject {
 
         Juz(id: 26,
             nameArabic: "حم",
-            nameTransliteration: "Haaa Meem",
+            nameTransliteration: "Ha Meem",
             startSurah: 46, startAyah: 1,
             endSurah: 51, endAyah: 30
         ),
@@ -2619,14 +2672,14 @@ final class QuranData: ObservableObject {
 
         Juz(id: 28,
             nameArabic: "قَد سَمِعَ ٱللهُ",
-            nameTransliteration: "Qadd Samia Allahu",
+            nameTransliteration: "Qad Sami'a Allahu",
             startSurah: 58, startAyah: 1,
             endSurah: 66, endAyah: 12
         ),
 
         Juz(id: 29,
             nameArabic: "تَبَارَكَ ٱلَّذِى",
-            nameTransliteration: "Tabaraka Alladhee",
+            nameTransliteration: "Tabaraka Al-Ladhi",
             startSurah: 67, startAyah: 1,
             endSurah: 77, endAyah: 50
         ),

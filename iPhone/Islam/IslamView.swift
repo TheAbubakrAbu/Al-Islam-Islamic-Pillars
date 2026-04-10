@@ -153,8 +153,10 @@ struct ProphetQuote: View {
                 }
             }
             .onDisappear {
-                isCardVisible = false
-                animateBadge = false
+                withAnimation {
+                    isCardVisible = false
+                    animateBadge = false
+                }
             }
         }
         #if os(iOS)
@@ -186,13 +188,6 @@ struct ProphetQuote: View {
                     .stroke(settings.accentColor.color.opacity(0.2), lineWidth: 1)
             )
             .shadow(color: settings.accentColor.color.opacity(0.12), radius: 10, x: 0, y: 3)
-                    .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(settings.accentColor.color.opacity(0.16))
-                        .frame(width: 58, height: 58)
-                        .blur(radius: 6)
-                        .offset(x: 14, y: -10)
-                    }
     }
 
     private var quoteBadge: some View {
@@ -282,7 +277,7 @@ struct AlIslamAppsSection: View {
                         .padding(.vertical, 10)
                         .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
                     .conditionalGlassEffect()
                     .padding([.horizontal, .bottom], 8)
                     #endif
@@ -291,9 +286,11 @@ struct AlIslamAppsSection: View {
             .conditionalGlassEffect(rectangle: true)
             .onAppear(perform: runAppCardsPopAnimation)
             .onDisappear {
-                popLeft = false
-                popCenter = false
-                popRight = false
+                withAnimation {
+                    popLeft = false
+                    popCenter = false
+                    popRight = false
+                }
             }
             #if os(iOS)
             .sheet(isPresented: $showLearnMoreSheet) {

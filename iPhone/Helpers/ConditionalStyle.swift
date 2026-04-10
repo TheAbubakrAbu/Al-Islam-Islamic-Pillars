@@ -84,6 +84,7 @@ struct ConditionalListStyle: ViewModifier {
         }
         .accentColor(settings.accentColor.color)
         .tint(settings.accentColor.color)
+        .dismissKeyboardOnScroll()
     }
 
     @ViewBuilder

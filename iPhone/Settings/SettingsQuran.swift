@@ -95,6 +95,20 @@ extension Settings {
         return favoriteSurahs.contains(surah)
     }
 
+    func toggleNameFavorite(number: Int) {
+        withAnimation {
+            if isNameFavorite(number: number) {
+                favoriteNameNumbers.removeAll(where: { $0 == number })
+            } else {
+                favoriteNameNumbers.append(number)
+            }
+        }
+    }
+
+    func isNameFavorite(number: Int) -> Bool {
+        favoriteNameNumbers.contains(number)
+    }
+
     func toggleBookmark(surah: Int, ayah: Int) {
         withAnimation {
             let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)

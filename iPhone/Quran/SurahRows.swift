@@ -6,13 +6,14 @@ struct SurahRow: View {
     let surah: Surah
     var ayah: Int?
     var end: Bool?
+    var isFavorite: Bool = false
 
     private var revelationEmoji: String {
-        surah.type == "meccan" ? "🕋" : "🕌"
+        surah.type == "makkan" ? "🕋" : "🕌"
     }
 
     private var revelationName: String {
-        surah.type == "meccan" ? "Meccan" : "Medinan"
+        surah.type == "makkan" ? "Makkan" : "Madinan"
     }
 
     private var pageCountLabel: String {
@@ -45,13 +46,26 @@ struct SurahRow: View {
 
     @ViewBuilder
     private var surahNumberPill: some View {
-        Text("\(surah.id)")
-            .font(.subheadline.weight(.bold))
-            .foregroundColor(settings.accentColor.color)
-            .frame(minWidth: 40)
-            .frame(maxHeight: .infinity)
-            .conditionalGlassEffect()
-            .accessibilityLabel("Surah \(surah.id)")
+        ZStack(alignment: .topTrailing) {
+            Text("\(surah.id)")
+                .font(.subheadline.weight(.bold))
+                .foregroundColor(settings.accentColor.color)
+                .frame(minWidth: 40)
+                .frame(maxHeight: .infinity)
+                .conditionalGlassEffect(
+                    useColor: isFavorite ? 0.3 : nil,
+                    customTint: isFavorite ? settings.accentColor.color : nil
+                )
+                .accessibilityLabel("Surah \(surah.id)")
+
+            if isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundStyle(settings.accentColor.color)
+                    .padding(4)
+                    .offset(x: 8, y: -6)
+            }
+        }
     }
     
     var body: some View {
@@ -100,7 +114,6 @@ struct SurahRow: View {
             .padding(.top, 1)
         }
         .padding(.vertical, 6)
-        .lineLimit(1)
         .minimumScaleFactor(0.75)
         #else
         VStack {
@@ -260,6 +273,7 @@ struct LastListenedSurahRow: View {
     
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
+    var qiraahRefreshKey: String = ""
     @Binding var showListeningHistory: Bool
 
     var body: some View {
@@ -625,6 +639,7 @@ struct AyahSearchRow: View, Equatable {
     
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
+    var qiraahRefreshKey: String = ""
 
     /// When true (Quran search grouped by surah): `surah:ayah` label + same Arabic / transliteration / English visibility rules as the full row, without the top surah name line.
     var compact: Bool = false
@@ -873,6 +888,7 @@ struct AyahSearchRow: View, Equatable {
     static func == (l: Self, r: Self) -> Bool {
         l.surah == r.surah && l.ayah == r.ayah &&
         l.query == r.query &&
+        l.qiraahRefreshKey == r.qiraahRefreshKey &&
         l.compact == r.compact &&
         l.disableTajweedColors == r.disableTajweedColors &&
         l.favoriteSurahs == r.favoriteSurahs &&

@@ -205,7 +205,6 @@ struct PlayCustomRangeSheet: View {
                 .padding(.top, 8)
                 .padding(.bottom, 100)
             }
-            .dismissKeyboardOnScroll()
             .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Custom Range")
             .navigationBarTitleDisplayMode(.inline)

@@ -364,6 +364,16 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
+    @AppStorage("favoriteNameNumbersData") private var favoriteNameNumbersData = Data()
+    var favoriteNameNumbers: [Int] {
+        get {
+            (try? Self.decoder.decode([Int].self, from: favoriteNameNumbersData)) ?? []
+        }
+        set {
+            favoriteNameNumbersData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
+
     @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
     var bookmarkedAyahs: [BookmarkedAyah] {
         get {

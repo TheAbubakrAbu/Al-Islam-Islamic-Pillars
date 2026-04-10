@@ -184,6 +184,7 @@ struct LaunchScreen: View {
 
         await QuranData.shared.waitUntilLoaded()
 
+        triggerHapticFeedback(.soft)
         withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {
             glassFloat = -10
             glassTilt = 7

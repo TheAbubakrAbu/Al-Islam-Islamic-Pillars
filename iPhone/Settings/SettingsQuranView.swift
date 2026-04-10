@@ -477,6 +477,27 @@ private struct QiraahReciterSectionHeader: View {
     }
 }
 
+private struct MurattalSectionHeader: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+
+            Text("- \(subtitle)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.65)
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
 struct ReciterListView: View {
     /// When `true`, dismisses the sheet (or pops navigation) after the user picks a reciter or Random.
     var dismissAfterSelectingReciter = false
@@ -489,10 +510,18 @@ struct ReciterListView: View {
     @State private var searchText = ""
     @State private var pendingQiraahReciter: Reciter?
     @State private var pendingDisplayQiraahTag: String?
+    @AppStorage("splitMurattalRecitersByGroup") private var splitMurattalRecitersByGroup = false
     #if os(iOS)
     @StateObject private var downloadManager = ReciterDownloadManager.shared
     @State private var showDownloadedOnly = false
     #endif
+
+    private struct MurattalReciterGroup: Identifiable {
+        let id: String
+        let title: String
+        let subtitle: String
+        let reciters: [Reciter]
+    }
 
     private var qiraahChangeDialogTitle: String {
         pendingRequestedQiraahIsUnsupported ? "Qiraah Text Not Supported" : "Change Quran Text?"
@@ -756,6 +785,98 @@ struct ReciterListView: View {
         searchResultSections.reduce(0) { $0 + $1.reciters.count }
     }
 
+    private var murattalRecitersFiltered: [Reciter] {
+        filteredReciters(recitersMurattal, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries)
+    }
+
+    private var murattalGroupedSections: [MurattalReciterGroup] {
+        var groups: [MurattalReciterGroup] = []
+
+        let all = murattalRecitersFiltered
+
+        func matches(_ reciter: Reciter, containsAny values: [String]) -> Bool {
+            let n = normalized(reciter.name)
+            return values.contains { n.contains($0) }
+        }
+
+        func group(id: String, title: String, subtitle: String, containsAny values: [String]) -> [Reciter] {
+            all.filter { reciter in matches(reciter, containsAny: values) }
+        }
+
+        let haramain = group(
+            id: "haramain",
+            title: "HARAMAIN (MAKKAH & MADINAH)",
+            subtitle: "Most recognized globally",
+            containsAny: [
+                "abdul rahman al-sudais",
+                "saud al-shuraim",
+                "maher al-muaiqly",
+                "abdullah al-juhany",
+                "bandar baleela",
+                "yasser al-dosari"
+            ]
+        )
+
+        let classicalEgyptian = group(
+            id: "classical-egypt",
+            title: "CLASSICAL EGYPTIAN SCHOOL",
+            subtitle: "Deep tajweed and slower murattal",
+            containsAny: [
+                "abdul basit",
+                "mahmoud al-hussary",
+                "muhammad al-minshawi",
+                "mustafa ismail",
+                "mahmoud ali al-banna"
+            ]
+        )
+
+        let contemporary = group(
+            id: "contemporary",
+            title: "FAMOUS CONTEMPORARY RECITERS",
+            subtitle: "Well-known and widely listened to",
+            containsAny: [
+                "mishary alafasy",
+                "ahmad al-ajmy",
+                "saad al-ghamdi",
+                "hani al-rifai",
+                "abu bakr al-shatri",
+                "muhammad al-luhaidan",
+                "hazza al-balushi"
+            ]
+        )
+
+        let classicHaramain = group(
+            id: "classic-haramain",
+            title: "CLASSIC HARAMAIN & OLDER IMAMS",
+            subtitle: "Older but iconic voices",
+            containsAny: [
+                "ali jaber",
+                "muhammad ayyub"
+            ]
+        )
+
+        let usedIDs = Set((haramain + classicalEgyptian + contemporary + classicHaramain).map(\.id))
+        let other = all.filter { !usedIDs.contains($0.id) }
+
+        if !haramain.isEmpty {
+            groups.append(.init(id: "haramain", title: "HARAMAIN (MAKKAH & MADINAH)", subtitle: "Most recognized globally", reciters: haramain))
+        }
+        if !classicalEgyptian.isEmpty {
+            groups.append(.init(id: "classical-egypt", title: "CLASSICAL EGYPTIAN SCHOOL", subtitle: "Deep tajweed and slower murattal", reciters: classicalEgyptian))
+        }
+        if !contemporary.isEmpty {
+            groups.append(.init(id: "contemporary", title: "FAMOUS CONTEMPORARY RECITERS", subtitle: "Well-known and widely listened to", reciters: contemporary))
+        }
+        if !classicHaramain.isEmpty {
+            groups.append(.init(id: "classic-haramain", title: "CLASSIC HARAMAIN & OLDER IMAMS", subtitle: "Older but iconic voices", reciters: classicHaramain))
+        }
+        if !other.isEmpty {
+            groups.append(.init(id: "other", title: "OTHER RECITERS", subtitle: "Less mainstream or distinct styles", reciters: other))
+        }
+
+        return groups
+    }
+
     private var searchableQiraahSections: [ReciterSectionGroup] {
         qiraahReciterSections.filter { !$0.reciters.isEmpty }
     }
@@ -963,9 +1084,35 @@ struct ReciterListView: View {
                     }
                 }
 
-                if !filteredReciters(recitersMurattal, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
-                    Section(header: Text("NORMAL (MURATTAL)")) {
-                        reciterButtons(filteredReciters(recitersMurattal, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
+                if !murattalRecitersFiltered.isEmpty {
+                    Section {
+                        Button {
+                            settings.hapticFeedback()
+                            withAnimation(.easeInOut) {
+                                splitMurattalRecitersByGroup.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Text(splitMurattalRecitersByGroup ? "Show Murattal as One Section" : "Group Murattal Reciters")
+
+                                Spacer()
+
+                                Image(systemName: splitMurattalRecitersByGroup ? "rectangle.grid.1x2" : "square.grid.2x2")
+                            }
+                            .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+
+                    if splitMurattalRecitersByGroup {
+                        ForEach(murattalGroupedSections) { group in
+                            Section(header: MurattalSectionHeader(title: group.title, subtitle: group.subtitle)) {
+                                reciterButtons(group.reciters)
+                            }
+                        }
+                    } else {
+                        Section(header: Text("NORMAL (MURATTAL)")) {
+                            reciterButtons(murattalRecitersFiltered)
+                        }
                     }
                 }
                 
@@ -1450,7 +1597,7 @@ struct FavoritesView: View {
                 } else {
                     ForEach(settings.favoriteSurahs.sorted(), id: \.self) { surahId in
                         if let surah = quranData.quran.first(where: { $0.id == surahId }) {
-                            SurahRow(surah: surah)
+                            SurahRow(surah: surah, isFavorite: true)
                         }
                     }
                     .onDelete(perform: removeSurahs)

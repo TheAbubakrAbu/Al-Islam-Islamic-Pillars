@@ -430,7 +430,6 @@ struct QuranView: View {
                 searchResultSections(context: context)
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
-            .dismissKeyboardOnScroll()
             .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
             .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
             #if os(watchOS)
@@ -474,6 +473,11 @@ struct QuranView: View {
         .onDisappear {
             withAnimation {
                 persistQuranSearchHistoryIfNeeded(searchText)
+            }
+        }
+        .onChange(of: settings.displayQiraah) { _ in
+            if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                handleAyahSearchChange(searchText)
             }
         }
         .overlay(alignment: .top) {
@@ -872,12 +876,12 @@ struct QuranView: View {
                     push(surahID: surahID)
                 } label: {
                     NavigationLink(destination: AyahsView(surah: surah)) {
-                        SurahRow(surah: surah)
+                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                     }
                 }
                 #else
                 NavigationLink(destination: AyahsView(surah: surah)) {
-                    SurahRow(surah: surah)
+                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                 }
                 #endif
             }
@@ -929,7 +933,7 @@ struct QuranView: View {
         Section(header: surahSectionHeader(context: context)) {
             ForEach(context.filteredSurahs, id: \.id) { surah in
                 NavigationLink(destination: AyahsView(surah: surah)) {
-                    surahSearchRow(surah: surah)
+                    surahSearchRow(surah: surah, context: context)
                 }
                 .id("surah_\(surah.id)")
                 .onAppear {
@@ -963,28 +967,27 @@ struct QuranView: View {
     }
 
     @ViewBuilder
-    private func surahSearchRow(surah: Surah) -> some View {
+    private func surahSearchRow(surah: Surah, context: SearchDisplayContext) -> some View {
         if settings.quranSortMode == .revelation {
             HStack(spacing: 10) {
-                ZStack(alignment: .leading) {
-                    Text("#114")
-                        .font(.caption.weight(.semibold))
-                        .monospacedDigit()
-                        .opacity(0)
-                        .accessibilityHidden(true)
+                revelationOrderBadge(surah.revelationOrder ?? 0)
 
-                    Text("#\(surah.revelationOrder ?? 0)")
-                        .font(.caption.weight(.semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(settings.accentColor.color)
-                }
-                .frame(alignment: .leading)
-
-                SurahRow(surah: surah)
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
             }
         } else {
-            SurahRow(surah: surah)
+            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
         }
+    }
+
+    private func revelationOrderBadge(_ order: Int) -> some View {
+        Text("#\(order)")
+            .font(.caption.weight(.semibold))
+            .monospacedDigit()
+            .foregroundStyle(settings.accentColor.color)
+            .frame(minWidth: 40, alignment: .center)
+            .padding(4)
+            .conditionalGlassEffect(useColor: 0.2)
+            .accessibilityLabel("Revelation order \(order)")
     }
 
     @ViewBuilder
@@ -1013,13 +1016,62 @@ struct QuranView: View {
         ForEach(quranData.juzSections) { sectionData in
             let juz = sectionData.juz
             Section(header: JuzHeader(juz: juz)) {
-                ForEach(sectionData.surahIDs, id: \.self) { surahID in
-                    if let surah = quranData.surah(surahID) {
-                        juzSurahRow(surah: surah, juz: juz, context: context)
-                    }
+                ForEach(sectionData.rows) { row in
+                    preprocessedJuzRow(row: row, context: context)
                 }
             }
             .sectionIndexLabelWhenAvailable("\(juz.id)")
+        }
+    }
+
+    @ViewBuilder
+    private func preprocessedJuzRow(row: QuranData.JuzSectionData.Row, context: SearchDisplayContext) -> some View {
+        if let surah = quranData.surah(row.surahID) {
+            let destination: AnyView = {
+                switch row.kind {
+                case .plain:
+                    return AnyView(AyahsView(surah: surah))
+                case .start(let ayah):
+                    if ayah > 1 {
+                        return AnyView(AyahsView(surah: surah, ayah: ayah))
+                    }
+                    return AnyView(AyahsView(surah: surah))
+                case .end(let ayah):
+                    if ayah < surah.numberOfAyahs {
+                        return AnyView(AyahsView(surah: surah, ayah: ayah))
+                    }
+                    return AnyView(AyahsView(surah: surah))
+                }
+            }()
+
+            NavigationLink(destination: destination) {
+                switch row.kind {
+                case .plain:
+                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                case .start(let ayah):
+                    SurahRow(surah: surah, ayah: ayah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                case .end(let ayah):
+                    SurahRow(surah: surah, ayah: ayah, end: true, isFavorite: context.favoriteSurahs.contains(surah.id))
+                }
+            }
+            #if os(iOS)
+            .rightSwipeActions(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
+            .contextMenu {
+                SurahContextMenu(
+                    surahID: surah.id,
+                    surahName: surah.nameTransliteration,
+                    favoriteSurahs: context.favoriteSurahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID
+                )
+            }
+            #endif
         }
     }
 
@@ -1039,26 +1091,14 @@ struct QuranView: View {
 
     @ViewBuilder
     private func revelationSections(context: SearchDisplayContext) -> some View {
-        Section(header: Text("REVELATION ORDER")) {
+        Section(header: SurahsHeader(text: "REVELATION ORDER")) {
             ForEach(quranData.revelationOrderSurahIDs, id: \.self) { surahID in
                 if let surah = quranData.surah(surahID) {
                     NavigationLink(destination: AyahsView(surah: surah)) {
                         HStack(spacing: 10) {
-                            ZStack(alignment: .leading) {
-                                Text("#114")
-                                    .font(.caption.weight(.semibold))
-                                    .monospacedDigit()
-                                    .opacity(0)
-                                    .accessibilityHidden(true)
-
-                                Text("#\(surah.revelationOrder ?? 0)")
-                                    .font(.caption.weight(.semibold))
-                                    .monospacedDigit()
-                                    .foregroundStyle(settings.accentColor.color)
-                            }
-                            .frame(alignment: .leading)
+                            revelationOrderBadge(surah.revelationOrder ?? 0)
                             
-                            SurahRow(surah: surah)
+                            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                         }
                     }
                     .id("surah_\(surah.id)")
@@ -1088,85 +1128,7 @@ struct QuranView: View {
     @ViewBuilder
     private func surahRow(surah: Surah, context: SearchDisplayContext) -> some View {
         NavigationLink(destination: AyahsView(surah: surah)) {
-            SurahRow(surah: surah)
-        }
-        .id("surah_\(surah.id)")
-        #if os(iOS)
-        .rightSwipeActions(
-            surahID: surah.id,
-            surahName: surah.nameTransliteration,
-            searchText: $searchText,
-            scrollToSurahID: $scrollToSurahID
-        )
-        .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
-        .contextMenu {
-            SurahContextMenu(
-                surahID: surah.id,
-                surahName: surah.nameTransliteration,
-                favoriteSurahs: context.favoriteSurahs,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID
-            )
-        }
-        #endif
-    }
-
-    @ViewBuilder
-    private func juzSurahRow(surah: Surah, juz: Juz, context: SearchDisplayContext) -> some View {
-        let startAyah = (surah.id == juz.startSurah) ? juz.startAyah : 1
-        let endAyah = (surah.id == juz.endSurah) ? juz.endAyah : surah.numberOfAyahs
-        let singleSurah = juz.startSurah == surah.id && juz.endSurah == surah.id
-
-        Group {
-            if singleSurah {
-                if startAyah > 1 {
-                    NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
-                        SurahRow(surah: surah, ayah: startAyah)
-                    }
-                } else {
-                    NavigationLink(destination: AyahsView(surah: surah)) {
-                        SurahRow(surah: surah, ayah: startAyah)
-                    }
-                }
-
-                if endAyah < surah.numberOfAyahs {
-                    NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
-                        SurahRow(surah: surah, ayah: endAyah, end: true)
-                    }
-                } else {
-                    NavigationLink(destination: AyahsView(surah: surah)) {
-                        SurahRow(surah: surah)
-                    }
-                }
-            } else if surah.id == juz.startSurah {
-                if startAyah > 1 {
-                    NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
-                        SurahRow(surah: surah, ayah: startAyah)
-                    }
-                } else {
-                    NavigationLink(destination: AyahsView(surah: surah)) {
-                        SurahRow(surah: surah, ayah: startAyah)
-                    }
-                }
-            } else if surah.id == juz.endSurah {
-                if surah.id == 114 {
-                    NavigationLink(destination: AyahsView(surah: surah)) {
-                        SurahRow(surah: surah)
-                    }
-                } else if endAyah < surah.numberOfAyahs {
-                    NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
-                        SurahRow(surah: surah, ayah: endAyah, end: true)
-                    }
-                } else {
-                    NavigationLink(destination: AyahsView(surah: surah)) {
-                        SurahRow(surah: surah)
-                    }
-                }
-            } else {
-                NavigationLink(destination: AyahsView(surah: surah)) {
-                    SurahRow(surah: surah)
-                }
-            }
+            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
         }
         .id("surah_\(surah.id)")
         #if os(iOS)
@@ -1261,6 +1223,16 @@ struct QuranView: View {
 
     @ViewBuilder
     private func ayahSearchSection(context: SearchDisplayContext) -> some View {
+        let bestHits = bestAyahHitsForCurrentQuery()
+
+        if !bestHits.isEmpty {
+            Section(header: bestAyahHeader(count: bestHits.count)) {
+                ForEach(bestHits) { hit in
+                    ayahHitRow(hit: hit, context: context)
+                }
+            }
+        }
+
         Section(header: ayahSearchHeader(context: context)) {
             ayahExactMatchRows(context: context)
         }
@@ -1277,6 +1249,110 @@ struct QuranView: View {
         Section {
             ayahLoadMoreControls(context: context)
         }
+    }
+
+    private func bestAyahHeader(count: Int) -> some View {
+        HStack {
+            Text("BEST RESULTS")
+
+            Spacer()
+
+            Text(String(count))
+                .font(.caption.monospaced().weight(.semibold))
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
+        }
+    }
+
+    private func bestAyahHitsForCurrentQuery(maxResults: Int = 3) -> [VerseIndexEntry] {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 4, !verseHits.isEmpty else { return [] }
+
+        let normalizedQuery = normalizedBestMatchText(trimmed)
+        guard !normalizedQuery.isEmpty else { return [] }
+
+        let queryTokens = normalizedQuery
+            .split(separator: " ")
+            .map(String.init)
+            .filter { !$0.isEmpty }
+
+        guard !queryTokens.isEmpty else { return [] }
+
+        typealias RankedHit = (hit: VerseIndexEntry, score: Int)
+        var ranked: [RankedHit] = []
+        ranked.reserveCapacity(verseHits.count)
+
+        for hit in verseHits {
+            guard let ayah = quranData.ayah(surah: hit.surah, ayah: hit.ayah) else { continue }
+
+            let arabic = normalizedBestMatchText(ayah.displayArabicText(surahId: hit.surah, clean: settings.cleanArabicText))
+            let tr = normalizedBestMatchText(ayah.textTransliteration)
+            let en1 = normalizedBestMatchText(ayah.textEnglishSaheeh)
+            let en2 = normalizedBestMatchText(ayah.textEnglishMustafa)
+            let sources = [arabic, tr, en1, en2]
+
+            var score = 0
+
+            if sources.contains(where: { $0 == normalizedQuery }) {
+                score += 260
+            }
+
+            if sources.contains(where: { $0.hasPrefix(normalizedQuery) }) {
+                score += 180
+            } else if sources.contains(where: { $0.contains(normalizedQuery) }) {
+                score += 120
+            }
+
+            let tokenHits = queryTokens.filter { token in
+                sources.contains(where: { $0.contains(token) })
+            }.count
+
+            score += tokenHits * 24
+
+            if tokenHits == queryTokens.count {
+                score += 60
+            }
+
+            if score > 0 {
+                ranked.append((hit: hit, score: score))
+            }
+        }
+
+        guard !ranked.isEmpty else { return [] }
+
+        ranked.sort {
+            if $0.score != $1.score { return $0.score > $1.score }
+            if $0.hit.surah != $1.hit.surah { return $0.hit.surah < $1.hit.surah }
+            return $0.hit.ayah < $1.hit.ayah
+        }
+
+        let topScore = ranked[0].score
+        let secondScore = ranked.count > 1 ? ranked[1].score : 0
+        let isClearlyBetter = topScore >= 220 || (ranked.count > 1 && (topScore - secondScore) >= 40)
+        guard isClearlyBetter else { return [] }
+
+        let minAcceptedScore = max(150, topScore - 55)
+        var selected: [VerseIndexEntry] = []
+        var seen = Set<String>()
+
+        for candidate in ranked where candidate.score >= minAcceptedScore {
+            let key = "\(candidate.hit.surah)-\(candidate.hit.ayah)"
+            if seen.insert(key).inserted {
+                selected.append(candidate.hit)
+            }
+            if selected.count >= maxResults { break }
+        }
+
+        return selected
+    }
+
+    private func normalizedBestMatchText(_ text: String) -> String {
+        settings.cleanSearch(text, whitespace: true)
+            .removingArabicDiacriticsAndSigns
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     @ViewBuilder
@@ -1352,6 +1428,7 @@ struct QuranView: View {
                     bookmarkedAyahs: context.bookmarkedAyahs,
                     searchText: $searchText,
                     scrollToSurahID: $scrollToSurahID,
+                    qiraahRefreshKey: settings.displayQiraah,
                     compact: true,
                     disableTajweedColors: true
                 )

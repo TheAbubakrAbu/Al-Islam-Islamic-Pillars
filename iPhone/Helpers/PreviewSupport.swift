@@ -96,7 +96,7 @@ enum AlIslamPreviewData {
             nameArabic: "الفاتحة",
             nameTransliteration: "Al-Fatihah",
             nameEnglish: "The Opening",
-            type: "meccan",
+            type: "makkan",
             numberOfAyahs: 7,
             ayahs: [fallbackAyah]
         )

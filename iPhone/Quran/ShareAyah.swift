@@ -135,14 +135,14 @@ struct ShareAyahSheet: View {
         }
 
         // Qiraah type (optional) — one line: Riwayah: English - Arabic
-        if shareSettings.includeQiraah {
+        if settings.showQiraahDetails && shareSettings.includeQiraah {
             let labels = Self.qiraahLabels(displayQiraah: settings.displayQiraah)
             appendBlock(label: nil, text: "Riwayah: \(labels.english) – \(labels.arabic)")
         }
 
         if settings.showSurahInformation {
-            if shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
-            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
+            if settings.showQiraahDetails && shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
+            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")"
         }
 
         return s
@@ -331,7 +331,7 @@ struct ShareAyahSheet: View {
                     transliteration: settings.isHafsDisplay ? settings.showTransliteration : false,
                     englishSaheeh: settings.isHafsDisplay ? settings.showEnglishSaheeh : false,
                     englishMustafa: settings.isHafsDisplay ? settings.showEnglishMustafa : false,
-                    includeQiraah: shareIncludeRiwayah,
+                    includeQiraah: settings.showQiraahDetails ? shareIncludeRiwayah : false,
                     shareArabicFont: font,
                     cleanArabic: settings.cleanArabicText
                 )
@@ -353,6 +353,21 @@ struct ShareAyahSheet: View {
         .onChange(of: settings.showAyahInformation) { _ in generatePreviewImage() }
         .onChange(of: includeNote) { _ in generatePreviewImage() }
         .onChange(of: shareIncludeRiwayah) { _ in generatePreviewImage() }
+        .onChange(of: settings.showQiraahDetails) { show in
+            if !show {
+                shareIncludeRiwayah = false
+                shareSettings = ShareSettings(
+                    arabic: shareSettings.arabic,
+                    transliteration: shareSettings.transliteration,
+                    englishSaheeh: shareSettings.englishSaheeh,
+                    englishMustafa: shareSettings.englishMustafa,
+                    includeQiraah: false,
+                    shareArabicFont: shareSettings.shareArabicFont,
+                    cleanArabic: shareSettings.cleanArabic
+                )
+            }
+            generatePreviewImage()
+        }
         .onChange(of: showingActivityView) { if !$0 { presentationMode.wrappedValue.dismiss() } }
     }
     
@@ -583,7 +598,7 @@ struct ShareAyahSheet: View {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah { append("\n", bodyAttr) } else { sepIfNeeded() }
-            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
+            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")", captionCentAttr)
         }
         // --- Watermark
         let wmString = "Al-Islam | Islamic Pillars"
@@ -642,7 +657,7 @@ extension ShareAyahSheet {
     static func copyAyahToPasteboard(surahNumber: Int, ayahNumber: Int, settings: Settings, quranData: QuranData) {
         guard let surah = quranData.quran.first(where: { $0.id == surahNumber }),
               let ayah = surah.ayahs.first(where: { $0.id == ayahNumber }) else { return }
-        let includeRiwayah = UserDefaults.standard.bool(forKey: shareIncludeRiwayahKey)
+        let includeRiwayah = settings.showQiraahDetails && UserDefaults.standard.bool(forKey: shareIncludeRiwayahKey)
         let shareFont = UserDefaults.standard.string(forKey: "shareArabicFont") ?? ""
         let shareSettings = ShareSettings(
             arabic: settings.showArabicText,
@@ -723,7 +738,7 @@ extension ShareAyahSheet {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
-            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
+            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")"
         }
         return s
     }
@@ -791,7 +806,7 @@ extension ShareAyahSheet {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah { append("\n", bodyAttr) } else { sepIfNeeded() }
-            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
+            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")", captionCentAttr)
         }
         let wmString = "Al-Islam | Islamic Pillars"
         let wmText = NSAttributedString(string: wmString, attributes: centAccent)

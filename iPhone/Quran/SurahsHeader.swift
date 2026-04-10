@@ -4,10 +4,16 @@ struct SurahsHeader: View {
     @EnvironmentObject var quranData: QuranData
 
     @State private var randomSurah: Surah?
+    
+    var headerText: String
+    
+    init(text: String = "SURAHS") {
+        headerText = text
+    }
 
     var body: some View {
         HStack {
-            Text("SURAHS")
+            Text(headerText)
 
             #if os(iOS)
             Spacer()
@@ -140,7 +146,7 @@ struct SurahSectionHeader: View {
 
     private var ayahSummary: some View {
         Group {
-            let revelationEmoji = surah.type == "meccan" ? "🕋" : "🕌"
+            let revelationEmoji = surah.type == "makkan" ? "🕋" : "🕌"
             
             #if os(iOS)
             Text("\(surah.ayahCountLabel(for: settings.displayQiraahForArabic)) - \(surah.pageCountLabel) \(revelationEmoji)")

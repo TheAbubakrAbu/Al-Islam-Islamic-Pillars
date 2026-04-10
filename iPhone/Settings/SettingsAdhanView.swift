@@ -355,10 +355,10 @@ struct PrayerOffsetsView: View {
                 Text("\(value.wrappedValue) min")
                     .foregroundColor(settings.accentColor.color)
             }
+            .tint(settings.accentColor.color)
+            .foregroundColor(settings.accentColor.color)
         }
         .font(.subheadline)
-        .tint(settings.accentColor.color)
-        .foregroundColor(settings.accentColor.color)
     }
 
     private func travelOffsetCaption(for prayerName: String) -> String? {
@@ -538,21 +538,21 @@ struct NotificationView: View {
             }
 
             HStack(spacing: 10) {
-                Button {
-                    settings.hapticFeedback()
-                    Task { @MainActor in await onRequestAccessTapped() }
-                } label: {
-                    smallButton("Request Access", systemImage: "checkmark.seal")
-                }
-                .contentShape(Rectangle())
+                smallButton("Request Access", systemImage: "checkmark.seal")
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        Task { @MainActor in
+                            await onRequestAccessTapped()
+                        }
+                    }
 
-                Button {
-                    settings.hapticFeedback()
-                    openSystemSettings()
-                } label: {
-                    smallButton("Open Settings", systemImage: "gear")
-                }
-                .contentShape(Rectangle())
+                smallButton("Open Settings", systemImage: "gear")
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        openSystemSettings()
+                    }
             }
         }
         .padding()

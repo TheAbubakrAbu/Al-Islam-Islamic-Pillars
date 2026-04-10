@@ -929,7 +929,6 @@ struct AyahsView: View {
                 }
             }
             #endif
-            .dismissKeyboardOnScroll()
             .onAppear {
                 rebuildQiraahCaches()
                 visibleAyahIDs.removeAll()
@@ -1392,7 +1391,7 @@ private struct SurahPickerSheet: View {
                         dismiss()
                     } label: {
                         HStack(spacing: 12) {
-                            SurahRow(surah: surah)
+                            SurahRow(surah: surah, isFavorite: settings.favoriteSurahs.contains(surah.id))
 
                             if surah.id == currentSurahID {
                                 Image(systemName: "checkmark.circle.fill")

@@ -133,7 +133,6 @@ struct MapView: View {
                     settings.hapticFeedback()
                     dismiss()
                 })
-                .dismissKeyboardOnScroll()
                 .confirmationDialog("Location Access Denied", isPresented: $showAlert) {
                     Button("Open Settings") { openSettings() }
                     Button("Never Ask Again", role: .destructive) { settings.locationNeverAskAgain = true }

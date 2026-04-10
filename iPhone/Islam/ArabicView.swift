@@ -141,7 +141,6 @@ struct ArabicView: View {
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .dismissKeyboardOnScroll()
         .navigationTitle("Arabic Alphabet")
     }
 
@@ -471,7 +470,6 @@ struct ArabicLetterView: View {
             }
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .dismissKeyboardOnScroll()
         .navigationTitle(letterData.letter)
     }
 

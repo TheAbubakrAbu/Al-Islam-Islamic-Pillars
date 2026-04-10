@@ -151,6 +151,10 @@ struct NamesView: View {
         namesData.filteredNames(cleanedQuery: cleanedSearch)
     }
 
+    private var favoriteNameNumberSet: Set<Int> {
+        Set(settings.favoriteNameNumbers)
+    }
+
     var body: some View {
         let hasActiveSearch = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
@@ -173,7 +177,6 @@ struct NamesView: View {
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .compactListSectionSpacing()
-        .dismissKeyboardOnScroll()
         .navigationTitle("99 Names of Allah")
     }
 
@@ -207,37 +210,19 @@ struct NamesView: View {
     @ViewBuilder
     private func namesSections(filteredNames: [NameOfAllah], hasActiveSearch: Bool, proxy: ScrollViewProxy) -> some View {
         ForEach(filteredNames, id: \.id) { name in
-            Section(header: nameSectionHeader(name: name, target: namesData.firstFoundTargetsByNameNumber[name.number])) {
+            Section {
                 NameRow(
                     name: name,
+                    firstFoundTarget: namesData.firstFoundTargetsByNameNumber[name.number],
                     showDescription: settings.showDescription,
-                    isExpanded: expandedNameNumbers.contains(name.number)
+                    isExpanded: expandedNameNumbers.contains(name.number),
+                    isFavorite: favoriteNameNumberSet.contains(name.number)
                 ) {
                     handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
                 }
             }
             .id("name_\(name.number)")
         }
-    }
-
-    private func nameSectionHeader(name: NameOfAllah, target: (surahID: Int, ayahID: Int)?) -> some View {
-        #if os(iOS)
-        HStack {
-            Text("NAME \(name.number)")
-            
-            Spacer()
-
-            if let target {
-                NavigationLink(destination: ayahsDestination(for: target)) {
-                    Image(systemName: "character.book.closed.ar")
-                        .padding(4)
-                        .conditionalGlassEffect()
-                }
-            }
-        }
-        #else
-        EmptyView()
-        #endif
     }
 
     @ViewBuilder
@@ -315,8 +300,10 @@ struct NamesView: View {
 private struct NameRow: View {
     @EnvironmentObject var settings: Settings
     let name: NameOfAllah
+    let firstFoundTarget: (surahID: Int, ayahID: Int)?
     let showDescription: Bool
     let isExpanded: Bool
+    let isFavorite: Bool
     let onTap: () -> Void
 
     var body: some View {
@@ -329,34 +316,49 @@ private struct NameRow: View {
 
     private var content: some View {
         Group {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("First Found: \(name.firstFoundShort)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(name.meaning).font(.subheadline)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("\(name.name.removeDiacriticsFromLastLetter()) - \(name.numberArabic)")
-                            .font(.headline)
-                            .foregroundColor(settings.accentColor.color)
-                        
-                        Text("\(name.transliteration) - \(name.number)")
-                            .font(.subheadline)
-                    }
+            HStack(alignment: .top, spacing: 12) {
+                numberPill
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(name.transliteration)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+
+                    Text(name.meaning)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+
+                    Text("First Found: \(name.firstFoundShort)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
+
+                Spacer(minLength: 8)
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(name.name.removeDiacriticsFromLastLetter())
+                        .font(.custom(settings.fontArabic, size: 24))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+
+                    Text(name.numberArabic)
+                        .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: 28))
+                        .foregroundColor(settings.accentColor.color)
+                        .lineLimit(1)
+                }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
             
             if showDescription || isExpanded {
-                NameRowDetails(name: name, showDescription: showDescription, isExpanded: isExpanded)
+                NameRowDetails(
+                    name: name,
+                    firstFoundTarget: firstFoundTarget,
+                    showDescription: showDescription,
+                    isExpanded: isExpanded
+                )
             }
         }
         .contentShape(Rectangle())
@@ -365,6 +367,33 @@ private struct NameRow: View {
                 settings.hapticFeedback()
                 onTap()
             }
+        }
+    }
+
+    @ViewBuilder
+    private var numberPill: some View {
+        ZStack(alignment: .topTrailing) {
+            Text("\(name.number)")
+                .font(.subheadline.weight(.bold))
+                .foregroundColor(settings.accentColor.color)
+                .frame(minWidth: 40)
+                .frame(maxHeight: .infinity)
+                .conditionalGlassEffect(
+                    useColor: isFavorite ? 0.3 : nil,
+                    customTint: isFavorite ? settings.accentColor.color : nil
+                )
+
+            if isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundStyle(settings.accentColor.color)
+                    .padding(4)
+                    .offset(x: 8, y: -6)
+            }
+        }
+        .onTapGesture {
+            settings.hapticFeedback()
+            settings.toggleNameFavorite(number: name.number)
         }
     }
 
@@ -399,7 +428,9 @@ private struct NameRow: View {
 
 private struct NameRowDetails: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
     let name: NameOfAllah
+    let firstFoundTarget: (surahID: Int, ayahID: Int)?
     let showDescription: Bool
     let isExpanded: Bool
 
@@ -424,7 +455,29 @@ private struct NameRowDetails: View {
                     .foregroundColor(.secondary)
                     .transition(.opacity)
                     .padding(.top, 2)
+
+                if isExpanded, let target = firstFoundTarget {
+                    NavigationLink(destination: ayahsDestination(for: target)) {
+                        Text("View First Found")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                    .conditionalGlassEffect(useColor: 0.2)
+                    .padding(.top, 6)
+                }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func ayahsDestination(for target: (surahID: Int, ayahID: Int)) -> some View {
+        if let surah = quranData.surah(target.surahID) {
+            AyahsView(surah: surah, ayah: target.ayahID)
+        } else {
+            Text("Reference not found")
         }
     }
 }

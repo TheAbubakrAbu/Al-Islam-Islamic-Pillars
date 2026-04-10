@@ -248,7 +248,7 @@ struct IslamPillarView: View {
                 Text("2. **Salah**: Praying five times a day at prescribed times, a direct link between the believer and Allah.")
                 Text("3. **Zakah**: Giving a portion of wealth to the needy (typically 2.5% of savings), purifying wealth and fostering social justice.")
                 Text("4. **Sawm**: Fasting during the month of Ramadan, abstaining from food, drink, and sinful behavior from dawn to sunset as a means of spiritual reflection and self-discipline.")
-                Text("5. **Hajj**: Pilgrimage to Mecca, a once-in-a-lifetime obligation for those who are physically and financially able, symbolizing unity and submission to Allah.")
+                Text("5. **Hajj**: Pilgrimage to Makkah, a once-in-a-lifetime obligation for those who are physically and financially able, symbolizing unity and submission to Allah.")
             }
 
             Section(header: Text("THE SIX PILLARS OF IMAN")) {
@@ -514,7 +514,7 @@ struct ProphetPillarView: View {
     var body: some View {
         List {
             Section(header: Text("BIOGRAPHY")) {
-                Text("Prophet Muhammad (peace and blessings be upon him), whose name in Arabic is “مُحَمَّد“ (Muhammad), meaning “The Praised One,“ was born in Mecca (in present-day Saudi Arabia) around 570 CE into the noble tribe of Quraysh. Orphaned at a young age, he became known as “Al-Amin“ (The Trustworthy) due to his honesty and upright character.")
+                Text("Prophet Muhammad (peace and blessings be upon him), whose name in Arabic is “مُحَمَّد“ (Muhammad), meaning “The Praised One,“ was born in Makkah (in present-day Saudi Arabia) around 570 CE into the noble tribe of Quraysh. Orphaned at a young age, he became known as “Al-Amin“ (The Trustworthy) due to his honesty and upright character.")
                     .font(.body)
                 
                 Text("At the age of 40, while meditating in the cave of Hira, he received his first revelation from Allah (Glorified and Exalted be He) through the angel Jibreel (Gabriel). This marked the beginning of his prophethood and the revelation of the Quran, the final divine guidance for humanity.")
@@ -587,7 +587,7 @@ struct ProphetPillarView: View {
             }
 
             Section(header: Text("HIS LEGACY")) {
-                Text("Prophet Muhammad (peace and blessings be upon him) passed away at the age of 63 in Medina, leaving behind the Quran and Sunnah as guidance for humanity. In his Farewell Sermon, he emphasized the equality of all people, adherence to the Quran and Sunnah, and the importance of justice and righteousness.")
+                Text("Prophet Muhammad (peace and blessings be upon him) passed away at the age of 63 in Madinah, leaving behind the Quran and Sunnah as guidance for humanity. In his Farewell Sermon, he emphasized the equality of all people, adherence to the Quran and Sunnah, and the importance of justice and righteousness.")
                     .font(.body)
                 
                 Text("He said:").font(.body)
@@ -792,7 +792,7 @@ struct IslamicPillarsView: View {
             .padding(.vertical, 4)
             
             NavigationLink(destination: HajjView()) {
-                Text("Hajj (Pilgrimate to Mecca)")
+                Text("Hajj (Pilgrimate to Makkah)")
                     .font(.subheadline)
             }
             .padding(.vertical, 4)
@@ -1074,7 +1074,7 @@ struct HajjView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Hajj, derived from the Arabic word “حَجّ“ (Hajj), meaning “to intend a journey“ or to “to make a pilgrimage,“ is the fifth and final pillar of Islam. It is an obligatory pilgrimage to the Kaaba in Mecca, the Qibla (direction of prayer) for Muslims worldwide. Hajj takes place annually in the last and twelfth Islamic month of Dhul-Hijjah and serves as a profound act of worship and submission to Allah (Glorified and Exalted be He).")
+                Text("Hajj, derived from the Arabic word “حَجّ“ (Hajj), meaning “to intend a journey“ or to “to make a pilgrimage,“ is the fifth and final pillar of Islam. It is an obligatory pilgrimage to the Kaaba in Makkah, the Qibla (direction of prayer) for Muslims worldwide. Hajj takes place annually in the last and twelfth Islamic month of Dhul-Hijjah and serves as a profound act of worship and submission to Allah (Glorified and Exalted be He).")
                     .font(.body)
                 
                 Text("Hajj is a journey of spiritual renewal, forgiveness, and unity among Muslims, symbolizing submission to Allah and the equality of all believers.")
@@ -1137,7 +1137,7 @@ struct HajjView: View {
                 Text("Learn how to perform Hajj here: https://www.islamic-relief.ie/hajj-guide/")
                     .font(.caption)
                 
-                Text("Malcolm X's letter about Hajj: https://www.icit-digital.org/articles/malcolm-x-s-letter-from-mecca-april-20-1964")
+                Text("Malcolm X's letter about Hajj: https://www.icit-digital.org/articles/malcolm-x-s-letter-from-makkah-april-20-1964")
                     .font(.caption)
             }
         }
@@ -1693,7 +1693,7 @@ struct HaramView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Masjid Al-Haram (ٱلمَسجِدُ ٱلحَرَام), or “The Sacred Mosque,“ is located in **Mecca**, Saudi Arabia. It is the largest mosque in the world and surrounds the **Ka'bah** (ٱلكَعبَة), the holiest site in Islam. The Ka'bah is also known as “The House of Allah“ (بَيتُ ٱللَّه).")
+                Text("Masjid Al-Haram (ٱلمَسجِدُ ٱلحَرَام), or “The Sacred Mosque,“ is located in **Makkah**, Saudi Arabia. It is the largest mosque in the world and surrounds the **Ka'bah** (ٱلكَعبَة), the holiest site in Islam. The Ka'bah is also known as “The House of Allah“ (بَيتُ ٱللَّه).")
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:").font(.body)
@@ -1737,9 +1737,9 @@ struct HaramView: View {
                     .font(.body)
             }
             
-            Section(header: Text("QURANIC VERSES ABOUT MECCA")) {
-                Text("Allah mentions the sanctity of Mecca and Masjid Al-Haram in several verses:").font(.body)
-                Text("“Indeed, the first House [of worship] established for mankind was that at Mecca—blessed and a guidance for the worlds” (Quran 3:96).").font(.body).foregroundColor(settings.accentColor.color)
+            Section(header: Text("QURANIC VERSES ABOUT MAKKAH")) {
+                Text("Allah mentions the sanctity of Makkah and Masjid Al-Haram in several verses:").font(.body)
+                Text("“Indeed, the first House [of worship] established for mankind was that at Makkah—blessed and a guidance for the worlds” (Quran 3:96).").font(.body).foregroundColor(settings.accentColor.color)
                 Text("“And [mention] when We made the House (the Ka'bah) a place of return for the people and [a place of] security” (Quran 2:125).").font(.body).foregroundColor(settings.accentColor.color)
             }
             
@@ -1772,7 +1772,7 @@ struct NabawiView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Masjid An-Nabawi (ٱلمَسجِد ٱلنَّبَوِي), or “The Prophet’s Mosque,“ is located in Medina, Saudi Arabia. Originally known as Yathrib, the city was later renamed **Medina Al-Nabi (مَدِينَة ٱلنَّبِي)**, meaning “The City of the Prophet,“ or **Medina Al-Munawwara (ٱلمَدِينَة ٱلمُنَوَّرَة)**, “The Enlightened City,“ after the migration (Hijrah) of Prophet Muhammad (peace and blessings be upon him).")
+                Text("Masjid An-Nabawi (ٱلمَسجِد ٱلنَّبَوِي), or “The Prophet’s Mosque,“ is located in Madinah, Saudi Arabia. Originally known as Yathrib, the city was later renamed **Madinah Al-Nabi (مَدِينَة ٱلنَّبِي)**, meaning “The City of the Prophet,“ or **Madinah Al-Munawwara (ٱلمَدِينَة ٱلمُنَوَّرَة)**, “The Enlightened City,“ after the migration (Hijrah) of Prophet Muhammad (peace and blessings be upon him).")
                     .font(.body)
 
                 Text("This mosque, built by the Prophet (peace and blessings be upon him) in 622 CE, is the second holiest site in Islam after Masjid Al-Haram. The Prophet (peace and blessings be upon him) made it a center of worship, governance, and community life.")
@@ -1791,7 +1791,7 @@ struct NabawiView: View {
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
 
-                Text("The mosque also contains the tomb of the Prophet Muhammad (peace and blessings be upon him) and his companions Abu Bakr As-Siddiq and Umar ibn Al-Khattab (may Allah be pleased with them). Visiting the Prophet’s grave is a recommended act of devotion when in Medina.")
+                Text("The mosque also contains the tomb of the Prophet Muhammad (peace and blessings be upon him) and his companions Abu Bakr As-Siddiq and Umar ibn Al-Khattab (may Allah be pleased with them). Visiting the Prophet’s grave is a recommended act of devotion when in Madinah.")
                     .font(.body)
             }
 
@@ -1841,7 +1841,7 @@ struct AqsaView: View {
     var body: some View {
         List {
             Section(header: Text("OVERVIEW")) {
-                Text("Masjid Al-Aqsa (ٱلمَسجِد ٱلأَقصَىٰ), meaning “The Farthest Mosque,“ is located in Jerusalem, Palestine, within a compound known as **Al-Haram Ash-Sharif (ٱلحَرَم ٱلشَّرِيف)**, or “The Noble Sanctuary.“ It is the third holiest mosque in Islam after Masjid Al-Haram in Mecca and Masjid An-Nabawi in Medina.")
+                Text("Masjid Al-Aqsa (ٱلمَسجِد ٱلأَقصَىٰ), meaning “The Farthest Mosque,“ is located in Jerusalem, Palestine, within a compound known as **Al-Haram Ash-Sharif (ٱلحَرَم ٱلشَّرِيف)**, or “The Noble Sanctuary.“ It is the third holiest mosque in Islam after Masjid Al-Haram in Makkah and Masjid An-Nabawi in Madinah.")
                     .font(.body)
                 
                 Text("Masjid Al-Aqsa holds immense historical and spiritual significance in Islam. Allah (Glorified and Exalted be He) mentions it in the Quran:").font(.body)
@@ -1849,7 +1849,7 @@ struct AqsaView: View {
                     .font(.body)
                     .foregroundColor(settings.accentColor.color)
                 
-                Text("It was the first Qiblah (direction of prayer) for Muslims before it was changed to the Ka'bah in Mecca, and it was the destination of the Prophet Muhammad’s (peace and blessings be upon him) Night Journey (Isra) before his Ascension (Mi'raj).")
+                Text("It was the first Qiblah (direction of prayer) for Muslims before it was changed to the Ka'bah in Makkah, and it was the destination of the Prophet Muhammad’s (peace and blessings be upon him) Night Journey (Isra) before his Ascension (Mi'raj).")
                     .font(.body)
             }
 
@@ -2170,7 +2170,7 @@ struct AdhanOtherView: View {
                 Text("It is recited in Arabic to announce the time for each of the five daily prayers.")
                     .font(.body)
 
-                Text("The Adhan originated during the time of Prophet Muhammad (peace and blessings be upon him) in Medina.")
+                Text("The Adhan originated during the time of Prophet Muhammad (peace and blessings be upon him) in Madinah.")
                     .font(.body)
 
                 Text("The method of calling to prayer was revealed through the dream of Abdullah ibn Zaid (may Allah be pleased with him), and the Prophet (peace and blessings be upon him) chose Bilal ibn Rabah (may Allah be pleased with him) to deliver it because of his melodious and powerful voice.")
@@ -2349,7 +2349,7 @@ struct TakbiratView: View {
                 Text("1. **Eid al-Fitr (عيد الفطر):** Celebrated at the end of Ramadan (the month of fasting). It is a time of joy, gratitude to Allah (Glorified and Exalted be He), and giving to the needy (Zakat al-Fitr).")
                     .font(.body)
                 
-                Text("2. **Eid al-Adha (عيد الأضحى):** Celebrated on the 10th day of Dhu al-Hijjah. It commemorates the willingness of Prophet Ibrahim (peace be upon him) to sacrifice his son Isma'il (peace be upon him). Muslims who are able to do so perform the sacrifice (Qurbani) and distribute the meat to the poor. This Eid coincides with Hajj, the annual pilgrimage to Mecca.")
+                Text("2. **Eid al-Adha (عيد الأضحى):** Celebrated on the 10th day of Dhu al-Hijjah. It commemorates the willingness of Prophet Ibrahim (peace be upon him) to sacrifice his son Isma'il (peace be upon him). Muslims who are able to do so perform the sacrifice (Qurbani) and distribute the meat to the poor. This Eid coincides with Hajj, the annual pilgrimage to Makkah.")
                     .font(.body)
             }
 
@@ -2449,7 +2449,7 @@ struct CalendarView: View {
                 Text("The Hijri calendar, also known as the Islamic or Lunar Hijri calendar, consists of 12 lunar months in a year of 354 or 355 days.")
                     .font(.body)
                 
-                Text("It is used to determine key Islamic dates such as Ramadan, Hajj, and the two Eid festivals. The reference point (epoch) of the calendar is the Hijrah—the migration of Prophet Muhammad (peace and blessings be upon him) from Mecca to Medina in 622 CE.")
+                Text("It is used to determine key Islamic dates such as Ramadan, Hajj, and the two Eid festivals. The reference point (epoch) of the calendar is the Hijrah—the migration of Prophet Muhammad (peace and blessings be upon him) from Makkah to Madinah in 622 CE.")
                     .font(.body)
                 
                 Text("Allah (Glorified and Exalted be He) says in the Quran:")
