@@ -972,7 +972,8 @@ struct NoteEditorSheet: View {
                     )
 
                 Text("\(remaining) characters left")
-                    .font(.footnote.monospacedDigit())
+                    .font(.footnote)
+                    .monospacedDigit()
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .accessibilityElement(children: .combine)

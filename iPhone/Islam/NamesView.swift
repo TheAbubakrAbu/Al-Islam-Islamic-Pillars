@@ -198,7 +198,8 @@ struct NamesView: View {
             Spacer()
 
             Text(String(resultCount))
-                .font(.caption.monospaced().weight(.semibold))
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)

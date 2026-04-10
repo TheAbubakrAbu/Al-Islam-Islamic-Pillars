@@ -978,15 +978,20 @@ struct QuranView: View {
             SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
         }
     }
+    
+    private var revelationBadgeWidth: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: .caption1)
+        let text = "#114" as NSString
+        let size = text.size(withAttributes: [.font: font])
+        return size.width + 8
+    }
 
     private func revelationOrderBadge(_ order: Int) -> some View {
         Text("#\(order)")
             .font(.caption.weight(.semibold))
             .monospacedDigit()
             .foregroundStyle(settings.accentColor.color)
-            .frame(minWidth: 40, alignment: .center)
-            .padding(4)
-            .conditionalGlassEffect(useColor: 0.2)
+            .frame(width: revelationBadgeWidth, alignment: .center)
             .accessibilityLabel("Revelation order \(order)")
     }
 
@@ -1212,7 +1217,8 @@ struct QuranView: View {
             Spacer()
 
             Text(valueText)
-                .font(.caption.monospaced().weight(.semibold))
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -1258,7 +1264,8 @@ struct QuranView: View {
             Spacer()
 
             Text(String(count))
-                .font(.caption.monospaced().weight(.semibold))
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -1399,7 +1406,8 @@ struct QuranView: View {
             Spacer()
 
             Text(context.ayahCountDisplayText)
-                .font(.caption.monospaced().weight(.semibold))
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
                 .foregroundStyle(settings.accentColor.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)

@@ -70,7 +70,7 @@ struct SurahRow: View {
     
     var body: some View {
         #if os(iOS)
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             surahNumberPill
 
             VStack(alignment: .leading, spacing: 2) {
@@ -114,6 +114,7 @@ struct SurahRow: View {
             .padding(.top, 1)
         }
         .padding(.vertical, 6)
+        .lineLimit(1)
         .minimumScaleFactor(0.75)
         #else
         VStack {
@@ -179,11 +180,22 @@ struct SurahAyahRow: View {
         ].joined(separator: "|")
     }
     
+    private var badgeWidth: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: .headline)
+        let text = "10:100" as NSString
+        let size = text.size(withAttributes: [.font: font])
+        return size.width + 8
+    }
+    
     var body: some View {
         HStack {
             VStack {
                 Text("\(surah.id):\(ayah.id)")
                     .font(.headline)
+                    .monospacedDigit()
+                    .frame(width: badgeWidth, alignment: .center)
+                    .padding(4)
+                    .conditionalGlassEffect(useColor: 0.25)
                 
                 Text(surah.nameTransliteration)
                     .font(.caption)

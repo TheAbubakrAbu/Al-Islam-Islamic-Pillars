@@ -146,7 +146,8 @@ struct CounterView: View {
     var body: some View {
         VStack(alignment: .center) {
             Text("\(counter)")
-                .font(.title.monospaced())
+                .font(.title)
+                .monospacedDigit()
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
                 .padding(.horizontal, 2)
@@ -231,7 +232,8 @@ struct TasbihRow: View {
                     .disabled(counter <= 0)
 
                 Text("\(counter)")
-                    .font(.subheadline.monospaced())
+                    .font(.subheadline)
+                    .monospacedDigit()
 
                 Image(systemName: "plus.circle")
                     .foregroundColor(settings.accentColor.color)

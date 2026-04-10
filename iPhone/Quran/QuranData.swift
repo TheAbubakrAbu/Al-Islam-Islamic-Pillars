@@ -2482,21 +2482,21 @@ final class QuranData: ObservableObject {
     
     static let juzList: [Juz] = [
         Juz(id: 1,
-            nameArabic: "آلم",
+            nameArabic: "الم",
             nameTransliteration: "Alif Lam Meem",
             startSurah: 1, startAyah: 1,
             endSurah: 2, endAyah: 141
         ),
 
         Juz(id: 2,
-            nameArabic: "سَيَقُولُ",
+            nameArabic: "سَيَقُول",
             nameTransliteration: "Sayaqoolu",
             startSurah: 2, startAyah: 142,
             endSurah: 2, endAyah: 252
         ),
 
         Juz(id: 3,
-            nameArabic: "تِلكَ ٱلرُّسُلُ",
+            nameArabic: "تِلكَ ٱلرُّسُل",
             nameTransliteration: "Tilka Ar-Rusul",
             startSurah: 2, startAyah: 253,
             endSurah: 3, endAyah: 92
@@ -2510,7 +2510,7 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 5,
-            nameArabic: "وَٱلمُحصَنَاتُ",
+            nameArabic: "وَٱلمُحصَنَات",
             nameTransliteration: "Wal-Muhsanat",
             startSurah: 4, startAyah: 24,
             endSurah: 4, endAyah: 147
@@ -2524,7 +2524,7 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 7,
-            nameArabic: "لَتَجِدَنَّ أَشَدَّ",
+            nameArabic: "لَتَجِدَنَّ أَشَدّ",
             nameTransliteration: "Latajidanna Ashadd",
             startSurah: 5, startAyah: 82,
             endSurah: 6, endAyah: 110
@@ -2546,42 +2546,42 @@ final class QuranData: ObservableObject {
 
         Juz(id: 10,
             nameArabic: "وَٱعلَمُوا",
-            nameTransliteration: "Wa'alamu",
+            nameTransliteration: "Wa'alamoo",
             startSurah: 8, startAyah: 41,
             endSurah: 9, endAyah: 92
         ),
 
         Juz(id: 11,
             nameArabic: "إِنَّمَا ٱلسَّبِيلُ",
-            nameTransliteration: "Innama As-Sabil",
+            nameTransliteration: "Innama As-Sabeel",
             startSurah: 9, startAyah: 93,
             endSurah: 11, endAyah: 5
         ),
 
         Juz(id: 12,
-            nameArabic: "وَمَا مِن دَآبَّةٍ",
-            nameTransliteration: "Wama Min Dabbah",
+            nameArabic: "وَمَا مِن دَآبَّة",
+            nameTransliteration: "Wamaa Min Daabbah",
             startSurah: 11, startAyah: 6,
             endSurah: 12, endAyah: 52
         ),
 
         Juz(id: 13,
             nameArabic: "وَمَا أُبَرِّئُ",
-            nameTransliteration: "Wama Ubarri'u",
+            nameTransliteration: "Wamaa Ubarri'u",
             startSurah: 12, startAyah: 53,
             endSurah: 14, endAyah: 52
         ),
 
         Juz(id: 14,
             nameArabic: "رُبَمَا",
-            nameTransliteration: "Rubama",
+            nameTransliteration: "Rubamaa",
             startSurah: 15, startAyah: 1,
             endSurah: 16, endAyah: 128
         ),
 
         Juz(id: 15,
             nameArabic: "سُبحَانَ ٱلَّذِى",
-            nameTransliteration: "Subhana Al-Ladhi",
+            nameTransliteration: "Subhaana Al-Ladhee",
             startSurah: 17, startAyah: 1,
             endSurah: 18, endAyah: 74
         ),
@@ -2595,7 +2595,7 @@ final class QuranData: ObservableObject {
 
         Juz(id: 17,
             nameArabic: "ٱقتَرَبَ لِلنَّاسِ",
-            nameTransliteration: "Iqtaraba Lin-Nas",
+            nameTransliteration: "Iqtaraba Lin-Naas",
             startSurah: 21, startAyah: 1,
             endSurah: 22, endAyah: 78
         ),
@@ -2609,21 +2609,21 @@ final class QuranData: ObservableObject {
 
         Juz(id: 19,
             nameArabic: "وَقَالَ ٱلَّذِينَ",
-            nameTransliteration: "Waqala Al-Ladhina",
+            nameTransliteration: "Waqaala Al-Ladheena",
             startSurah: 25, startAyah: 21,
             endSurah: 27, endAyah: 55
         ),
 
         Juz(id: 20,
-            nameArabic: "فَمَا كَانَ جَوَابَ",
-            nameTransliteration: "Fama Kana Jawab",
+            nameArabic: "فَمَا كَانَ جَوَاب",
+            nameTransliteration: "Fama Kaana Jawaab",
             startSurah: 27, startAyah: 56,
             endSurah: 29, endAyah: 45
         ),
 
         Juz(id: 21,
             nameArabic: "وَلَا تُجَٰدِلُوٓاْ",
-            nameTransliteration: "Wa La Tujadiloo",
+            nameTransliteration: "Walaa Tujadiloo",
             startSurah: 29, startAyah: 46,
             endSurah: 33, endAyah: 30
         ),
@@ -2637,21 +2637,21 @@ final class QuranData: ObservableObject {
 
         Juz(id: 23,
             nameArabic: "وَمَآ أَنزَلۡنَا",
-            nameTransliteration: "Wa Ma Anzalna",
+            nameTransliteration: "Wammaa Anzalnaa",
             startSurah: 36, startAyah: 28,
             endSurah: 39, endAyah: 31
         ),
 
         Juz(id: 24,
-            nameArabic: "فَمَن أَظلَمُ",
-            nameTransliteration: "Faman Adhlamu",
+            nameArabic: "فَمَن أَظلَم",
+            nameTransliteration: "Faman Adhlam",
             startSurah: 39, startAyah: 32,
             endSurah: 41, endAyah: 46
         ),
 
         Juz(id: 25,
-            nameArabic: "إِلَيهِ يُرَدُّ",
-            nameTransliteration: "Ilayhi Yuraddu",
+            nameArabic: "إِلَيهِ يُرَدّ",
+            nameTransliteration: "Ilayhi Yuradd",
             startSurah: 41, startAyah: 47,
             endSurah: 45, endAyah: 37
         ),
@@ -2671,15 +2671,15 @@ final class QuranData: ObservableObject {
         ),
 
         Juz(id: 28,
-            nameArabic: "قَد سَمِعَ ٱللهُ",
-            nameTransliteration: "Qad Sami'a Allahu",
+            nameArabic: "قَد سَمِعَ",
+            nameTransliteration: "Qad Sami'a",
             startSurah: 58, startAyah: 1,
             endSurah: 66, endAyah: 12
         ),
 
         Juz(id: 29,
-            nameArabic: "تَبَارَكَ ٱلَّذِى",
-            nameTransliteration: "Tabaraka Al-Ladhi",
+            nameArabic: "تَبَارَك",
+            nameTransliteration: "Tabaarak",
             startSurah: 67, startAyah: 1,
             endSurah: 77, endAyah: 50
         ),
