@@ -12,6 +12,7 @@ struct Surah: Codable, Identifiable {
     let nameArabic: String
     let nameTransliteration: String
     let nameEnglish: String
+    let similarNames: [String]
 
     let type: String
     let numberOfAyahs: Int
@@ -31,7 +32,7 @@ struct Surah: Codable, Identifiable {
     let ayahs: [Ayah]
 
     enum CodingKeys: String, CodingKey {
-        case id, nameArabic, nameTransliteration, nameEnglish, type, numberOfAyahs
+        case id, nameArabic, nameTransliteration, nameEnglish, similarNames, type, numberOfAyahs
         case revelationOrder, revelationExceptions
         case pageStart, pageEnd, numberOfPages, isLessThanOnePage
         case firstJuz, lastJuz, juzs
@@ -45,6 +46,7 @@ struct Surah: Codable, Identifiable {
         nameArabic = try c.decode(String.self, forKey: .nameArabic)
         nameTransliteration = try c.decode(String.self, forKey: .nameTransliteration)
         nameEnglish = try c.decode(String.self, forKey: .nameEnglish)
+        similarNames = try c.decodeIfPresent([String].self, forKey: .similarNames) ?? []
         type = try c.decode(String.self, forKey: .type)
         numberOfAyahs = try c.decode(Int.self, forKey: .numberOfAyahs)
         ayahs = try c.decode([Ayah].self, forKey: .ayahs)
@@ -70,6 +72,7 @@ struct Surah: Codable, Identifiable {
         nameArabic: String,
         nameTransliteration: String,
         nameEnglish: String,
+        similarNames: [String] = [],
         type: String,
         numberOfAyahs: Int,
         revelationOrder: Int? = nil,
@@ -88,6 +91,7 @@ struct Surah: Codable, Identifiable {
         self.nameArabic = nameArabic
         self.nameTransliteration = nameTransliteration
         self.nameEnglish = nameEnglish
+        self.similarNames = similarNames
         self.type = type
         self.numberOfAyahs = numberOfAyahs
         self.revelationOrder = revelationOrder
@@ -1342,8 +1346,30 @@ final class QuranData: ObservableObject {
         let nameEnglishUpper: String
         let nameTransliterationUpper: String
         let searchableBlob: String
+        let compactSearchableBlob: String
 
         var id: Int { surahID }
+    }
+
+    struct JuzSearchIndexEntry: Identifiable {
+        let juzID: Int
+        let searchableBlob: String
+        let compactSearchableBlob: String
+
+        var id: Int { juzID }
+    }
+
+    enum CountOperator {
+        case equal
+        case lessThan
+        case lessThanOrEqual
+        case greaterThan
+        case greaterThanOrEqual
+    }
+
+    struct CountFilter {
+        let op: CountOperator
+        let value: Int
     }
 
     struct PageSectionData: Identifiable {
@@ -1418,6 +1444,10 @@ final class QuranData: ObservableObject {
     private var englishPrefix3Index = [String: [Int]]()
     /// Cached contiguous index list to avoid reallocating Array(verseIndex.indices) on every query.
     private var allVerseIndices: [Int] = []
+    private var surahIDsByAyahCount = [Int: [Int]]()
+    private var surahIDsByPageCount = [Int: [Int]]()
+    private var surahIDsByJuz = [Int: [Int]]()
+    private var juzSearchIndex: [JuzSearchIndexEntry] = []
 
     private var loadTask: Task<Void, Never>?
     private var loadErrorDescription: String? = nil
@@ -1706,6 +1736,7 @@ final class QuranData: ObservableObject {
                     nameArabic: surah.nameArabic,
                     nameTransliteration: surah.nameTransliteration,
                     nameEnglish: surah.nameEnglish,
+                    similarNames: surah.similarNames,
                     type: surah.type,
                     numberOfAyahs: surah.numberOfAyahs,
                     revelationOrder: surah.revelationOrder,
@@ -1728,6 +1759,9 @@ final class QuranData: ObservableObject {
         let surahsToPublish = surahs
         let preprocessedSections = buildPreprocessedSections(for: surahsToPublish)
         let surahSearchIndex = buildSurahSearchIndex(for: surahsToPublish)
+        let countIndexes = buildSurahCountIndexes(for: surahsToPublish)
+        let surahIDsByJuz = Dictionary(uniqueKeysWithValues: preprocessedSections.juzSections.map { ($0.juz.id, $0.surahIDs) })
+        let juzSearchIndex = buildJuzSearchIndex()
 
         await MainActor.run {
             self.surahIndex = sIndex
@@ -1737,6 +1771,10 @@ final class QuranData: ObservableObject {
             self.juzSections = preprocessedSections.juzSections
             self.revelationOrderSurahIDs = preprocessedSections.revelationOrderSurahIDs
             self.surahSearchIndex = surahSearchIndex
+            self.surahIDsByAyahCount = countIndexes.ayah
+            self.surahIDsByPageCount = countIndexes.page
+            self.surahIDsByJuz = surahIDsByJuz
+            self.juzSearchIndex = juzSearchIndex
             self.loadState = .buildingIndexes
 
             // Expensive structures are built right after core publish.
@@ -2075,15 +2113,48 @@ final class QuranData: ObservableObject {
                 settings.cleanSearch(surah.nameArabic),
                 settings.cleanSearch(surah.nameTransliteration),
                 settings.cleanSearch(surah.nameEnglish),
+                surah.similarNames.map { settings.cleanSearch($0) }.joined(separator: " "),
                 settings.cleanSearch(String(surah.id)),
                 settings.cleanSearch(surah.idArabic)
             ].joined(separator: " ")
+            let compactSearchableBlob = searchableBlob.replacingOccurrences(of: " ", with: "")
 
             return SurahSearchIndexEntry(
                 surahID: surah.id,
                 nameEnglishUpper: surah.nameEnglish.uppercased(),
                 nameTransliterationUpper: surah.nameTransliteration.uppercased(),
-                searchableBlob: searchableBlob
+                searchableBlob: searchableBlob,
+                compactSearchableBlob: compactSearchableBlob
+            )
+        }
+    }
+
+    private func buildSurahCountIndexes(for surahs: [Surah]) -> (ayah: [Int: [Int]], page: [Int: [Int]]) {
+        var ayah = [Int: [Int]]()
+        var page = [Int: [Int]]()
+
+        for surah in surahs {
+            ayah[surah.numberOfAyahs, default: []].append(surah.id)
+            page[surah.pageCount, default: []].append(surah.id)
+        }
+
+        return (ayah: ayah, page: page)
+    }
+
+    private func buildJuzSearchIndex() -> [JuzSearchIndexEntry] {
+        Self.juzList.map { juz in
+            let searchableBlob = [
+                settings.cleanSearch(juz.nameArabic),
+                settings.cleanSearch(juz.nameTransliteration),
+                settings.cleanSearch("juz \(juz.id)"),
+                settings.cleanSearch("juz\(juz.id)"),
+                settings.cleanSearch("para \(juz.id)")
+            ].joined(separator: " ")
+
+            return JuzSearchIndexEntry(
+                juzID: juz.id,
+                searchableBlob: searchableBlob,
+                compactSearchableBlob: searchableBlob.replacingOccurrences(of: " ", with: "")
             )
         }
     }
@@ -2196,6 +2267,99 @@ final class QuranData: ObservableObject {
         return quran[sIdx].ayahs[aIdx]
     }
 
+    func resolveSurahIdentifier(_ raw: String) -> Surah? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if let number = Int(trimmed) ?? arabicToEnglishNumber(trimmed), (1...114).contains(number) {
+            return surah(number)
+        }
+
+        let cleaned = settings.cleanSearch(trimmed)
+        let compactCleaned = cleaned.replacingOccurrences(of: " ", with: "")
+        guard !cleaned.isEmpty else { return nil }
+
+        if let exact = quran.first(where: { surah in
+            let exactNames = [
+                settings.cleanSearch(surah.nameArabic),
+                settings.cleanSearch(surah.nameTransliteration),
+                settings.cleanSearch(surah.nameEnglish)
+            ] + surah.similarNames.map { settings.cleanSearch($0) }
+            let compactExactNames = exactNames.map { $0.replacingOccurrences(of: " ", with: "") }
+            return exactNames.contains(cleaned) || compactExactNames.contains(compactCleaned)
+        }) {
+            return exact
+        }
+
+        return surahSearchIndex.first(where: {
+            $0.searchableBlob.contains(cleaned) || $0.compactSearchableBlob.contains(compactCleaned)
+        })
+            .flatMap { surah($0.surahID) }
+    }
+
+    func resolveJuzIdentifier(_ raw: String) -> Int? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if let number = Int(trimmed) ?? arabicToEnglishNumber(trimmed), (1...30).contains(number) {
+            return number
+        }
+
+        let cleaned = settings.cleanSearch(trimmed)
+        let compactCleaned = cleaned.replacingOccurrences(of: " ", with: "")
+        guard !cleaned.isEmpty else { return nil }
+
+        if let exact = juzSearchIndex.first(where: {
+            $0.searchableBlob.split(separator: " ").map(String.init).contains(cleaned)
+                || $0.compactSearchableBlob.split(separator: " ").map(String.init).contains(compactCleaned)
+        }) {
+            return exact.juzID
+        }
+
+        return juzSearchIndex.first(where: {
+            $0.searchableBlob.contains(cleaned) || $0.compactSearchableBlob.contains(compactCleaned)
+        })?.juzID
+    }
+
+    func surahs(inJuz juzID: Int?) -> [Surah] {
+        guard let juzID else { return [] }
+        return (surahIDsByJuz[juzID] ?? []).compactMap { surah($0) }
+    }
+
+    func surahsMatchingCount(ayahFilter: CountFilter?, pageFilter: CountFilter?) -> [Surah] {
+        func matchingIDs(from index: [Int: [Int]], filter: CountFilter?) -> Set<Int>? {
+            guard let filter else { return nil }
+
+            if filter.value < 1 { return [] }
+            switch filter.op {
+            case .equal:
+                return Set(index[filter.value] ?? [])
+            case .lessThan:
+                return Set(index.filter { $0.key < filter.value }.flatMap { $0.value })
+            case .lessThanOrEqual:
+                return Set(index.filter { $0.key <= filter.value }.flatMap { $0.value })
+            case .greaterThan:
+                return Set(index.filter { $0.key > filter.value }.flatMap { $0.value })
+            case .greaterThanOrEqual:
+                return Set(index.filter { $0.key >= filter.value }.flatMap { $0.value })
+            }
+        }
+
+        let ayahIDs = matchingIDs(from: surahIDsByAyahCount, filter: ayahFilter)
+        let pageIDs = matchingIDs(from: surahIDsByPageCount, filter: pageFilter)
+
+        let selectedIDs: Set<Int>
+        switch (ayahIDs, pageIDs) {
+        case let (a?, p?): selectedIDs = a.intersection(p)
+        case let (a?, nil): selectedIDs = a
+        case let (nil, p?): selectedIDs = p
+        case (nil, nil):
+            return quran
+        }
+
+        return quran.filter { selectedIDs.contains($0.id) }
+    }
+
     func filteredSurahs(query rawQuery: String) -> [Surah] {
         let trimmed = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return quran }
@@ -2206,6 +2370,9 @@ final class QuranData: ObservableObject {
         let surahAyahPair = trimmed.split(separator: ":").map(String.init)
         let numericQuery: Int? = {
             if surahAyahPair.count == 2 {
+                if let resolved = resolveSurahIdentifier(surahAyahPair[0]) {
+                    return resolved.id
+                }
                 return Int(surahAyahPair[0]) ?? arabicToEnglishNumber(surahAyahPair[0])
             }
             return Int(cleanedQuery) ?? arabicToEnglishNumber(cleanedQuery)
@@ -2243,7 +2410,8 @@ final class QuranData: ObservableObject {
             }
             if upperQuery.contains(entry.nameEnglishUpper)
                 || upperQuery.contains(entry.nameTransliterationUpper)
-                || entry.searchableBlob.contains(cleanedQuery) {
+                || entry.searchableBlob.contains(cleanedQuery)
+                || entry.compactSearchableBlob.contains(normalizedQuery) {
                 return surah(entry.surahID)
             }
             return nil

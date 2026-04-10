@@ -178,6 +178,22 @@ struct AyahsView: View {
         return PageJuzQuery(page: nil, juz: nil)
     }
 
+    private func parseAyahNumberQuery(from raw: String) -> Int? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let lowered = trimmed.lowercased()
+        let prefixes = ["ayah ", "ayahs ", "aayah ", "aayahs ", "verse ", "verses "]
+        for prefix in prefixes where lowered.hasPrefix(prefix) {
+            let valueText = String(trimmed.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let n = Int(valueText) ?? arabicToEnglishNumber(valueText), n >= 1 {
+                return n
+            }
+        }
+
+        return nil
+    }
+
     private func booleanAyahSearchGroups(from rawQuery: String) -> [[BooleanAyahTerm]]? {
         let normalized = rawQuery
             .replacingOccurrences(of: "&&", with: "&")
@@ -587,6 +603,7 @@ struct AyahsView: View {
         let cleanQuery = settings.cleanSearch(searchText, whitespace: true)
         let booleanGroups = booleanAyahSearchGroups(from: searchText)
         let pageJuzQuery = parsePageJuzQuery(from: searchText)
+        let ayahNumberQuery = parseAyahNumberQuery(from: searchText)
         let trimmedLowerSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let dividerKeywordMode: DividerKeywordMode? = {
             if trimmedLowerSearch == "page" || trimmedLowerSearch == "pages" { return .page }
@@ -613,6 +630,10 @@ struct AyahsView: View {
                 let pageMatch = pageJuzQuery.page != nil && a.page == pageJuzQuery.page
                 let juzMatch = pageJuzQuery.juz != nil && a.juz == pageJuzQuery.juz
                 return pageMatch || juzMatch
+            }
+
+            if let ayahNumberQuery {
+                return a.id == ayahNumberQuery
             }
 
             if let blob = cachedSearchBlobByAyahID[a.id] {

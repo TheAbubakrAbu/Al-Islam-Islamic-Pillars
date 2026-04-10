@@ -66,6 +66,7 @@ struct AdhkarView: View {
     var body: some View {
         List {
             introductionSection
+            etymologySection
             adhkarRows
             virtuesSection
         }
@@ -120,14 +121,26 @@ struct AdhkarView: View {
     }
 
     private var introductionSection: some View {
-        Section(header: Text("REMEMBRANCES OF ALLAH")) {
+        Section(header: Text("REMEMBRANCES OF ALLAH ﷻ‎")) {
+            Text("Adhkar are the short phrases of remembrance taught by Prophet Muhammad ﷺ. They revive the heart, polish the soul, and keep the tongue engaged in praise. Allah ﷻ says, “Unquestionably, by the remembrance of Allah hearts are assured” (Quran 13:28). The Prophet ﷺ said, “Keep your tongue moist with the remembrance of Allah” (Tirmidhi 3375).")
+                .font(.subheadline)
+                .foregroundColor(.primary)
+        }
+    }
+
+    private var etymologySection: some View {
+        Section(header: Text("ETYMOLOGY")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Short remembrances to keep your heart connected to Allah throughout the day.")
-                    .font(.caption)
+                Text("Arabic root: ذ ك ر (dh-k-r)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Core meaning: to remember, to mention, to be mindful")
+                    .font(.subheadline)
                     .foregroundColor(.primary)
 
-                Text("“Surely in the remembrance (dhikr) of Allah do hearts find comfort.” (Quran 13:28)")
-                    .font(.caption)
+                Text("Dhikr literally means remembrance or mentioning. It includes saying SubhanAllah, Alhamdulillah, Allāhu Akbar, reciting the Quran, and keeping Allah حاضر in the heart and tongue.")
+                    .font(.footnote)
                     .foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -136,7 +149,7 @@ struct AdhkarView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.secondary.opacity(0.1))
             )
-            .padding(-4)
+            .padding(.horizontal, -4)
         }
     }
 
@@ -154,9 +167,9 @@ struct AdhkarView: View {
     }
 
     private var virtuesSection: some View {
-        Section(header: Text("The Virtues of Dhikr")) {
+        Section(header: Text("VIRTUES OF DHIKR")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Dhikr revives the heart, protects the soul, and keeps a believer steady in trials. Every remembrance is light on the tongue and heavy on the scale.")
+                Text("Dhikr is a continuous awareness of Allah. It revives the heart, protects the soul, and keeps a believer steady in trials.")
                     .font(.subheadline)
                     .foregroundColor(.primary)
             }
@@ -166,7 +179,8 @@ struct AdhkarView: View {
                 lines: [
                     "So remember Me; I will remember you. (Quran 2:152)",
                     "By the remembrance of Allah hearts are assured. (Quran 13:28)",
-                    "Remember Allah with much remembrance. (Quran 33:41)"
+                    "Remember Allah with much remembrance. (Quran 33:41)",
+                    "The men who remember Allah often and the women who do so, for them Allah has prepared forgiveness and a great reward. (Quran 33:35)"
                 ],
                 accent: settings.accentColor.color
             )
@@ -174,8 +188,8 @@ struct AdhkarView: View {
             ReflectionCard(
                 title: "Prophetic Encouragement",
                 lines: [
-                    "Dua and Dhikr are among the most beloved deeds to Allah.",
-                    "SubhanAllahi wa bihamdihi, SubhanAllahil Adheem are beloved and weighty.",
+                    "The best of deeds is the remembrance of Allah.",
+                    "Two phrases are light on the tongue and heavy on the scale: SubhanAllahi wa bihamdihi, SubhanAllahil Adheem.",
                     "Keep your tongue moist with the remembrance of Allah."
                 ],
                 accent: settings.accentColor.color
@@ -212,7 +226,7 @@ private struct ReflectionCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.secondary.opacity(0.1))
         )
-        .padding(-4)
+        .padding(.horizontal, -4)
     }
 }
 

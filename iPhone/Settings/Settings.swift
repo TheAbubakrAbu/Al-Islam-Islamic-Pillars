@@ -544,6 +544,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showTajweedIdghamBilaGhunnah") var showTajweedIdghamBilaGhunnah: Bool = true
     @AppStorage("showTajweedHamzatWaslSilent") var showTajweedHamzatWaslSilent: Bool = true
     @AppStorage("showTajweedMaddNatural2") var showTajweedMaddNatural2: Bool = true
+    @AppStorage("showTajweedMadd246") var showTajweedMadd246: Bool = true
     @AppStorage("showTajweedMaddNecessary6") var showTajweedMaddNecessary6: Bool = true
     @AppStorage("showTajweedMaddSeparated") var showTajweedMaddSeparated: Bool = true
     @AppStorage("showTajweedMaddConnected") var showTajweedMaddConnected: Bool = true

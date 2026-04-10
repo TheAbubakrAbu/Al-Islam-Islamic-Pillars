@@ -62,6 +62,7 @@
 		72574CC72E49EDDE00BFF138 /* AdhanShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CC52E49EDDE00BFF138 /* AdhanShortcuts.swift */; };
 		72574CC92E49EE7F00BFF138 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CC82E49EE7F00BFF138 /* AppIntents.swift */; };
 		72574CCA2E49EE7F00BFF138 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CC82E49EE7F00BFF138 /* AppIntents.swift */; };
+		725AA8F12F8953D700F15098 /* QuranWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725AA8F02F8953D700F15098 /* QuranWidget.swift */; };
 		725B42262AA00660009C8C91 /* LockScreen2Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725B42142AA00639009C8C91 /* LockScreen2Widget.swift */; };
 		725B42282AA00660009C8C91 /* Widgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725B42132AA00639009C8C91 /* Widgets.swift */; };
 		725B42292AA00660009C8C91 /* PrayersWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725B42112AA00639009C8C91 /* PrayersWidget.swift */; };
@@ -200,6 +201,11 @@
 		72F7DB762F0431740037B059 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72F7DB742F0431740037B059 /* Assets.xcassets */; };
 		72F7DB772F0431740037B059 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72F7DB742F0431740037B059 /* Assets.xcassets */; };
 		72F7DB782F0431740037B059 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72F7DB742F0431740037B059 /* Assets.xcassets */; };
+		73A100112F90000100ABCDE1 /* QuranProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A100012F90000100ABCDE1 /* QuranProvider.swift */; };
+		73A100122F90000100ABCDE1 /* LastReadSurahWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A100022F90000100ABCDE1 /* LastReadSurahWidget.swift */; };
+		73A100132F90000100ABCDE1 /* LastListenedSurahWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A100032F90000100ABCDE1 /* LastListenedSurahWidget.swift */; };
+		73A100142F90000100ABCDE1 /* RandomAyahWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A100042F90000100ABCDE1 /* RandomAyahWidget.swift */; };
+		73A100152F90000100ABCDE1 /* RandomBookmarkedAyahWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A100052F90000100ABCDE1 /* RandomBookmarkedAyahWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -302,6 +308,7 @@
 		72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranShortcuts.swift; sourceTree = "<group>"; };
 		72574CC52E49EDDE00BFF138 /* AdhanShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanShortcuts.swift; sourceTree = "<group>"; };
 		72574CC82E49EE7F00BFF138 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
+		725AA8F02F8953D700F15098 /* QuranWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranWidget.swift; sourceTree = "<group>"; };
 		725B42112AA00639009C8C91 /* PrayersWidget.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayersWidget.swift; sourceTree = "<group>"; };
 		725B42132AA00639009C8C91 /* Widgets.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Widgets.swift; sourceTree = "<group>"; };
 		725B42142AA00639009C8C91 /* LockScreen2Widget.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LockScreen2Widget.swift; sourceTree = "<group>"; };
@@ -371,6 +378,11 @@
 		72F7DB6C2F030A630037B059 /* AdhanStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanStructs.swift; sourceTree = "<group>"; };
 		72F7DB712F03FEE50037B059 /* AppReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReview.swift; sourceTree = "<group>"; };
 		72F7DB742F0431740037B059 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		73A100012F90000100ABCDE1 /* QuranProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranProvider.swift; sourceTree = "<group>"; };
+		73A100022F90000100ABCDE1 /* LastReadSurahWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastReadSurahWidget.swift; sourceTree = "<group>"; };
+		73A100032F90000100ABCDE1 /* LastListenedSurahWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastListenedSurahWidget.swift; sourceTree = "<group>"; };
+		73A100042F90000100ABCDE1 /* RandomAyahWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomAyahWidget.swift; sourceTree = "<group>"; };
+		73A100052F90000100ABCDE1 /* RandomBookmarkedAyahWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomBookmarkedAyahWidget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -456,10 +468,9 @@
 			path = Qiraat;
 			sourceTree = "<group>";
 		};
-		725B42032AA0061C009C8C91 /* Widget */ = {
+		725AA8EE2F89539A00F15098 /* Adhan */ = {
 			isa = PBXGroup;
 			children = (
-				725B42132AA00639009C8C91 /* Widgets.swift */,
 				725B42172AA00639009C8C91 /* PrayersProvider.swift */,
 				72C7DD752D79A59B00FC6058 /* SimpleWidget.swift */,
 				725B42162AA00639009C8C91 /* CountdownWidget.swift */,
@@ -469,6 +480,29 @@
 				725B42142AA00639009C8C91 /* LockScreen2Widget.swift */,
 				7205C1EA2D796DFD001D4979 /* LockScreen3Widget.swift */,
 				7205C1EC2D796E0F001D4979 /* LockScreen4Widget.swift */,
+			);
+			path = Adhan;
+			sourceTree = "<group>";
+		};
+		725AA8EF2F89539E00F15098 /* Quran */ = {
+			isa = PBXGroup;
+			children = (
+				73A100012F90000100ABCDE1 /* QuranProvider.swift */,
+				73A100022F90000100ABCDE1 /* LastReadSurahWidget.swift */,
+				73A100032F90000100ABCDE1 /* LastListenedSurahWidget.swift */,
+				73A100042F90000100ABCDE1 /* RandomAyahWidget.swift */,
+				73A100052F90000100ABCDE1 /* RandomBookmarkedAyahWidget.swift */,
+				725AA8F02F8953D700F15098 /* QuranWidget.swift */,
+			);
+			path = Quran;
+			sourceTree = "<group>";
+		};
+		725B42032AA0061C009C8C91 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				725B42132AA00639009C8C91 /* Widgets.swift */,
+				725AA8EE2F89539A00F15098 /* Adhan */,
+				725AA8EF2F89539E00F15098 /* Quran */,
 			);
 			path = Widget;
 			sourceTree = "<group>";
@@ -880,6 +914,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				73A100152F90000100ABCDE1 /* RandomBookmarkedAyahWidget.swift in Sources */,
+				73A100142F90000100ABCDE1 /* RandomAyahWidget.swift in Sources */,
+				73A100132F90000100ABCDE1 /* LastListenedSurahWidget.swift in Sources */,
+				73A100122F90000100ABCDE1 /* LastReadSurahWidget.swift in Sources */,
+				73A100112F90000100ABCDE1 /* QuranProvider.swift in Sources */,
 				725B422A2AA00660009C8C91 /* CountdownWidget.swift in Sources */,
 				725B42292AA00660009C8C91 /* PrayersWidget.swift in Sources */,
 				728E2EE32E6E017E00F2C24C /* SettingsAdhan.swift in Sources */,
@@ -895,6 +934,7 @@
 				72F7DB6F2F030A630037B059 /* AdhanStructs.swift in Sources */,
 				725B42282AA00660009C8C91 /* Widgets.swift in Sources */,
 				725B42262AA00660009C8C91 /* LockScreen2Widget.swift in Sources */,
+				725AA8F12F8953D700F15098 /* QuranWidget.swift in Sources */,
 				72C7DD762D79A59B00FC6058 /* SimpleWidget.swift in Sources */,
 				725B422E2AA0066D009C8C91 /* Settings.swift in Sources */,
 				725B422B2AA00660009C8C91 /* LockScreen1Widget.swift in Sources */,

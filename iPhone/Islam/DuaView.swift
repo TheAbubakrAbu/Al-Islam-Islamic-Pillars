@@ -7,6 +7,7 @@ struct DuaView: View {
     var body: some View {
         List {
             introductionSection
+            etymologySection
             duaRows
             virtuesSection
         }
@@ -61,22 +62,35 @@ struct DuaView: View {
     }
 
     private var introductionSection: some View {
-        Section(header: Text("SUPPLICATIONS TO ALLAH")) {
+        Section(header: Text("SUPPLICATIONS TO ALLAH ﷻ‎")) {
+            Text("Duʿāʾ is the heart of worship and a direct line to Allah ﷻ. It lets a servant call upon Him in need, hope, fear, gratitude, and love. Allah ﷻ says, “Call upon Me; I will respond to you” (Quran 40:60). The Prophet ﷺ said, “Duʿāʾ is worship” (Tirmidhi 2969).")
+                .font(.subheadline)
+                .foregroundColor(.primary)
+        }
+    }
+
+    private var etymologySection: some View {
+        Section(header: Text("ETYMOLOGY")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Short, daily supplications that keep your heart connected to Allah in every situation.")
-                    .font(.caption)
+                Text("Arabic root: د ع و (d-ʿ-w)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Core meaning: to call, to invite, to summon")
+                    .font(.subheadline)
                     .foregroundColor(.primary)
 
-                Text("“Call upon Me (Dua); I will respond to you.” (Quran 40:60)")
-                    .font(.caption)
+                Text("Duʿāʾ literally means calling out, especially calling upon Allah. In Islam it is not just asking for things; it is an act of worship, turning to Him with need, hope, fear, and love.")
+                    .font(.footnote)
                     .foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(Color.secondary.opacity(0.1))
             )
+            .padding(.horizontal, -4)
         }
     }
 
@@ -100,13 +114,13 @@ struct DuaView: View {
     }
 
     private var virtuesSection: some View {
-        Section(header: Text("ENDING REFLECTION")) {
+        Section(header: Text("VIRTUES OF DUA")) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("The Virtues of Dua")
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
 
-                Text("Dua is a direct connection with Allah. No sincere call is lost: it is answered now, delayed for wisdom, or stored as reward.")
+                Text("Duʿāʾ is an act of worship and a direct connection with Allah. No sincere call is lost: it is answered now, delayed for wisdom, or stored as reward.")
                     .font(.subheadline)
                     .foregroundColor(.primary)
             }
@@ -124,14 +138,14 @@ struct DuaView: View {
             DuaReflectionCard(
                 title: "Prophetic Guidance",
                 lines: [
-                    "Dua is worship.",
-                    "Nothing is more noble to Allah than dua.",
-                    "A sincere dua is never wasted: immediate answer, deferred reward, or harm removed."
+                    "Duʿāʾ is worship.",
+                    "There is nothing more noble to Allah than duʿāʾ.",
+                    "A sincere duʿāʾ is never wasted: immediate answer, deferred reward, or harm removed."
                 ],
                 accent: settings.accentColor.color
             )
 
-            Text("Keep making dua in ease and hardship, in private and public, with certainty and patience. The One you call is always near.")
+            Text("Keep making duʿāʾ in ease and hardship, in private and public, with certainty and patience. The One you call is always near.")
                 .font(.subheadline)
                 .foregroundColor(.primary)
         }
@@ -162,6 +176,7 @@ private struct DuaReflectionCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.secondary.opacity(0.1))
         )
+        .padding(.horizontal, -4)
     }
 }
 

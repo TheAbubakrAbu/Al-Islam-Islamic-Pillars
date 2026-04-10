@@ -1007,118 +1007,184 @@ struct ReciterListView: View {
                         }
                     }
                 } else {
-
-                if !favoriteReciters.isEmpty {
-                    Section(header: Text("FAVORITE RECITERS")) {
-                        reciterButtons(favoriteReciters)
+                    if !favoriteReciters.isEmpty {
+                        Section(header: Text("FAVORITE RECITERS")) {
+                            reciterButtons(favoriteReciters)
+                        }
                     }
-                }
-                
-                #if os(iOS)
-                if !showDownloadedOnly {
+                    
                     Section {
                         randomReciterButton
                     }
-                }
-                #else
-                Section {
-                    randomReciterButton
-                }
-                #endif
 
-                #if os(iOS)
-                Section(header: Text("DOWNLOADED SURAHS")) {
-                    Picker("Reciter Filter", selection: $showDownloadedOnly.animation(.easeInOut)) {
-                        Text("All Reciters").tag(false)
-                        Text("Downloaded Only").tag(true)
-                    }
-                    .pickerStyle(.segmented)
+                    #if os(iOS)
+                    Section(header: Text("DOWNLOADED SURAHS")) {
+                        Picker("Reciter Filter", selection: $showDownloadedOnly.animation(.easeInOut)) {
+                            Text("All Reciters").tag(false)
+                            Text("Downloaded Only").tag(true)
+                        }
+                        .pickerStyle(.segmented)
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Downloads are full-reciter packages (all 114 surahs).")
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Downloads are full-reciter packages (all 114 surahs).")
+                                .font(.caption)
+                                .foregroundColor(.primary)
+
+                            Text("Ayah download is not supported, only surah download.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        let downloadedCount = uniqueDownloadedReciterCount
+                        Text("Downloaded reciters: \(downloadedCount)")
                             .font(.caption)
                             .foregroundColor(.secondary)
 
-                        Text("Ayah download is not supported, only surah download.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    let downloadedCount = uniqueDownloadedReciterCount
-                    Text("Downloaded reciters: \(downloadedCount)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    if downloadedCount > 0 {
-                        Button(role: .destructive) {
-                            settings.hapticFeedback()
-                            withAnimation(.easeInOut) {
-                                downloadManager.deleteAllDownloads()
+                        if downloadedCount > 0 {
+                            Button(role: .destructive) {
+                                settings.hapticFeedback()
+                                withAnimation(.easeInOut) {
+                                    downloadManager.deleteAllDownloads()
+                                }
+                            } label: {
+                                Label("Delete All Downloads", systemImage: "trash.fill")
+                                    .frame(maxWidth: .infinity)
+                                    .foregroundColor(.red)
+                                    .tint(.red)
                             }
-                        } label: {
-                            Label("Delete All Downloads", systemImage: "trash.fill")
-                                .frame(maxWidth: .infinity)
-                                .foregroundColor(.red)
-                                .tint(.red)
+                            .buttonStyle(.borderless)
+                            .font(.caption.weight(.semibold))
                         }
-                        .buttonStyle(.borderless)
-                        .font(.caption.weight(.semibold))
                     }
-                }
-                #endif
+                    #endif
 
-                if !filteredReciters(recitersMinshawi).isEmpty {
-                    Section(header: Text("MUHAMMAD SIDDIQ AL-MINSHAWI")) {
-                        reciterButtons(filteredReciters(recitersMinshawi))
+                    if !filteredReciters(recitersMinshawi).isEmpty {
+                        Section(header: Text("MUHAMMAD SIDDIQ AL-MINSHAWI")) {
+                            reciterButtons(filteredReciters(recitersMinshawi))
+                        }
                     }
-                }
-                
-                if !filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
-                    Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
-                        reciterButtons(filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
-                    }
-                }
-
-                if !filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
-                    Section(header: Text("TEACHING (MUALLIM)")) {
-                        reciterButtons(filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
-                    }
-                }
-
-                if !murattalRecitersFiltered.isEmpty {
-                    Section {
-                        Button {
-                            settings.hapticFeedback()
-                            withAnimation(.easeInOut) {
-                                splitMurattalRecitersByGroup.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Text(splitMurattalRecitersByGroup ? "Show Murattal as One Section" : "Group Murattal Reciters")
-
-                                Spacer()
-
-                                Image(systemName: splitMurattalRecitersByGroup ? "rectangle.grid.1x2" : "square.grid.2x2")
-                            }
-                            .foregroundColor(settings.accentColor.color)
+                    
+                    if !filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
+                        Section(header: Text("SLOW & MELODIC (MUJAWWAD)")) {
+                            reciterButtons(filteredReciters(recitersMujawwad, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
                         }
                     }
 
-                    if splitMurattalRecitersByGroup {
-                        ForEach(murattalGroupedSections) { group in
-                            Section(header: MurattalSectionHeader(title: group.title, subtitle: group.subtitle)) {
-                                reciterButtons(group.reciters)
-                            }
-                        }
-                    } else {
-                        Section(header: Text("NORMAL (MURATTAL)")) {
-                            reciterButtons(murattalRecitersFiltered)
+                    if !filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries).isEmpty {
+                        Section(header: Text("TEACHING (MUALLIM)")) {
+                            reciterButtons(filteredReciters(recitersMuallim, excludingFeaturedMinshawi: shouldHideDuplicateMinshawiEntries))
                         }
                     }
-                }
-                
-                #if os(iOS)
-                if !showDownloadedOnly {
+
+                    if !murattalRecitersFiltered.isEmpty {
+                        Section {
+                            Button {
+                                settings.hapticFeedback()
+                                withAnimation(.easeInOut) {
+                                    splitMurattalRecitersByGroup.toggle()
+                                }
+                            } label: {
+                                HStack {
+                                    Text(splitMurattalRecitersByGroup ? "Show Murattal as One Section" : "Group Murattal Reciters")
+
+                                    Spacer()
+
+                                    Image(systemName: splitMurattalRecitersByGroup ? "rectangle.grid.1x2" : "square.grid.2x2")
+                                }
+                                .foregroundColor(settings.accentColor.color)
+                            }
+                        }
+
+                        if splitMurattalRecitersByGroup {
+                            ForEach(murattalGroupedSections) { group in
+                                Section(header: MurattalSectionHeader(title: group.title, subtitle: group.subtitle)) {
+                                    reciterButtons(group.reciters)
+                                }
+                            }
+                        } else {
+                            Section(header: Text("NORMAL (MURATTAL)")) {
+                                reciterButtons(murattalRecitersFiltered)
+                            }
+                        }
+                    }
+                    
+                    #if os(iOS)
+                    if !showDownloadedOnly {
+                        if settings.showQiraahDetails {
+                            Section {
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        settings.showQiraahDetails = false
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text("Hide Other Qiraat Reciters")
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.up")
+                                    }
+                                    .foregroundColor(settings.accentColor.color)
+                                }
+                            }
+                            
+                            Section(header: Text("ABOUT QIRAAT"), footer: Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
+                                Text("""
+                                The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the 10 Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
+
+                                The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
+
+                                To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                                """)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+
+                                NavigationLink(destination: AhrufView()) {
+                                    Text("The 7 Ahruf (Modes)")
+                                }
+                                .font(.subheadline)
+
+                                NavigationLink(destination: QiraatView()) {
+                                    Text("The 10 Qiraat (Recitations)")
+                                }
+                                .font(.subheadline)
+
+                                Text("**All recitations above are *Hafs an Asim*, the most common and widespread Qiraah in the world today.**")
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                    .padding(.top, 4)
+                                
+                                Text("All reciters below are available only for full surahs. Play Ayahs is unsupported for other qiraat.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                            }
+                            
+                            ForEach(searchableQiraahSections) { section in
+                                reciterSection(section)
+                            }
+                        } else {
+                            Section {
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation(.easeInOut) {
+                                        settings.showQiraahDetails = true
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text("Show Other Qiraat Reciters")
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.down")
+                                    }
+                                    .foregroundColor(settings.accentColor.color)
+                                }
+                            }
+                        }
+                    }
+                    #else
                     if settings.showQiraahDetails {
                         Section {
                             Button {
@@ -1163,7 +1229,7 @@ struct ReciterListView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.primary)
                                 .padding(.top, 4)
-                            
+
                             Text("All reciters below are available only for full surahs. Play Ayahs is unsupported for other qiraat.")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -1192,83 +1258,7 @@ struct ReciterListView: View {
                             }
                         }
                     }
-                }
-                #else
-                if settings.showQiraahDetails {
-                    Section {
-                        Button {
-                            settings.hapticFeedback()
-                            withAnimation(.easeInOut) {
-                                settings.showQiraahDetails = false
-                            }
-                        } label: {
-                            HStack {
-                                Text("Hide Other Qiraat Reciters")
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.up")
-                            }
-                            .foregroundColor(settings.accentColor.color)
-                        }
-                    }
-                    
-                    Section(header: Text("ABOUT QIRAAT"), footer: Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")) {
-                        Text("""
-                        The Quran was revealed by Allah in seven Ahruf (modes) to make recitation easy for the Muslims. From these, the 10 Qiraat (recitations) were preserved, where they are all mass-transmitted and authentically traced back to the Prophet ﷺ through unbroken chains of narration.
-
-                        The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
-
-                        To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
-                        """)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-
-                        NavigationLink(destination: AhrufView()) {
-                            Text("The 7 Ahruf (Modes)")
-                        }
-                        .font(.subheadline)
-
-                        NavigationLink(destination: QiraatView()) {
-                            Text("The 10 Qiraat (Recitations)")
-                        }
-                        .font(.subheadline)
-
-                        Text("**All recitations above are *Hafs an Asim*, the most common and widespread Qiraah in the world today.**")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                            .padding(.top, 4)
-
-                        Text("All reciters below are available only for full surahs. Play Ayahs is unsupported for other qiraat.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                    }
-                    
-                    ForEach(searchableQiraahSections) { section in
-                        reciterSection(section)
-                    }
-                } else {
-                    Section {
-                        Button {
-                            settings.hapticFeedback()
-                            withAnimation(.easeInOut) {
-                                settings.showQiraahDetails = true
-                            }
-                        } label: {
-                            HStack {
-                                Text("Show Other Qiraat Reciters")
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.down")
-                            }
-                            .foregroundColor(settings.accentColor.color)
-                        }
-                    }
-                }
-                #endif
-
+                    #endif
                 }
             }
             .navigationTitle("Select Reciter")

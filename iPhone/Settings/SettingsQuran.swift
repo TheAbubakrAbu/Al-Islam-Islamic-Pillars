@@ -196,6 +196,7 @@ extension Settings {
         case .idghamBilaGhunnah: return showTajweedIdghamBilaGhunnah
         case .hamzatWaslSilent: return showTajweedHamzatWaslSilent
         case .maddNatural2: return showTajweedMaddNatural2
+        case .madd246: return showTajweedMadd246
         case .maddNecessary6: return showTajweedMaddNecessary6
         case .maddSeparated: return showTajweedMaddSeparated
         case .maddConnected: return showTajweedMaddConnected
@@ -214,6 +215,7 @@ extension Settings {
         case .idghamBilaGhunnah: showTajweedIdghamBilaGhunnah = visible
         case .hamzatWaslSilent: showTajweedHamzatWaslSilent = visible
         case .maddNatural2: showTajweedMaddNatural2 = visible
+        case .madd246: showTajweedMadd246 = visible
         case .maddNecessary6: showTajweedMaddNecessary6 = visible
         case .maddSeparated: showTajweedMaddSeparated = visible
         case .maddConnected: showTajweedMaddConnected = visible

@@ -166,7 +166,8 @@ struct NamesView: View {
 
         ScrollViewReader { proxy in
             List {
-                descriptionSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
+                descriptionSection
+                namesHeaderSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
                 favoriteNamesSection(hasActiveSearch: hasActiveSearch, proxy: proxy)
                 namesSections(filteredNames: filteredNames, hasActiveSearch: hasActiveSearch, proxy: proxy)
                 finalInvocationSection
@@ -187,8 +188,8 @@ struct NamesView: View {
         .navigationTitle("99 Names of Allah")
     }
 
-    private func descriptionSection(resultCount: Int, hasActiveSearch: Bool) -> some View {
-        Section(header: descriptionHeader(resultCount: resultCount, hasActiveSearch: hasActiveSearch)) {
+    private var descriptionSection: some View {
+        Section(header: Text("DESCRIPTION")) {
             Text("Prophet Muhammad ﷺ said, “Allah has 99 names, and whoever believes in their meanings and acts accordingly, will enter Paradise” (Bukhari 6410).")
                 .font(.body)
 
@@ -198,20 +199,29 @@ struct NamesView: View {
         }
     }
 
-    private func descriptionHeader(resultCount: Int, hasActiveSearch: Bool) -> some View {
+    private func namesHeaderSection(resultCount: Int, hasActiveSearch: Bool) -> some View {
+        Section(header: namesHeader(resultCount: resultCount, hasActiveSearch: hasActiveSearch)) {
+            Text("Tap a name to expand the description, or search to jump straight to a matching Name of Allah.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func namesHeader(resultCount: Int, hasActiveSearch: Bool) -> some View {
         HStack {
-            Text("DESCRIPTION")
+            Text(hasActiveSearch ? "NAME SEARCH RESULTS" : "NAMES OF ALLAH")
 
             Spacer()
 
-            Text(String(resultCount))
-                .font(.caption.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(settings.accentColor.color)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .conditionalGlassEffect()
-                .opacity(hasActiveSearch ? 1 : 0)
+            if hasActiveSearch {
+                Text(String(resultCount))
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(settings.accentColor.color)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .conditionalGlassEffect()
+            }
         }
     }
 
@@ -510,17 +520,19 @@ private struct NameRowDetails: View {
                     .transition(.opacity)
                     .padding(.top, 2)
 
-                if isExpanded, let target = firstFoundTarget {
-                    NavigationLink(destination: ayahsDestination(for: target)) {
-                        Text("View First Found")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.plain)
-                    .conditionalGlassEffect(useColor: 0.2)
-                    .padding(.top, 6)
+                if showDescription || isExpanded, let target = firstFoundTarget {
+                    Text("View First Found")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
+                        .conditionalGlassEffect(useColor: 0.2)
+                        .padding(.top, 6)
+                        .background(
+                            NavigationLink("", destination: ayahsDestination(for: target))
+                                .opacity(0)
+                        )
                 }
             }
         }

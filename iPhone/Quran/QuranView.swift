@@ -49,13 +49,15 @@ struct QuranView: View {
         var ayahNumber: Int? = nil
 
         if surahAyahPair.count == 2 {
-            if let s = Int(surahAyahPair[0]), (1...114).contains(s) {
+            if let resolvedByName = quranData.resolveSurahIdentifier(surahAyahPair[0]) {
+                surahNumber = resolvedByName.id
+            } else if let s = Int(surahAyahPair[0]), (1...114).contains(s) {
                 surahNumber = s
-                ayahNumber = Int(surahAyahPair[1])
             } else if let s = arabicToEnglishNumber(surahAyahPair[0]), (1...114).contains(s) {
                 surahNumber = s
-                ayahNumber = arabicToEnglishNumber(surahAyahPair[1])
             }
+
+            ayahNumber = Int(surahAyahPair[1]) ?? arabicToEnglishNumber(surahAyahPair[1])
         }
 
         if let sNum = surahNumber,
@@ -98,6 +100,7 @@ struct QuranView: View {
         let favoriteSurahs: Set<Int>
         let bookmarkedAyahs: Set<String>
         let pageJuzQuery: PageJuzQuery
+        let juzSurahs: [Surah]
         let explicitPageOrJuzMode: Bool
         let pageSearchResult: (surah: Surah, ayah: Ayah)?
         let juzSearchResult: (surah: Surah, ayah: Ayah)?
@@ -109,8 +112,8 @@ struct QuranView: View {
     }
 
     private struct SurahCountQuery {
-        let ayahs: Int?
-        let pages: Int?
+        let ayahs: QuranData.CountFilter?
+        let pages: QuranData.CountFilter?
 
         var hasAny: Bool { ayahs != nil || pages != nil }
     }
@@ -132,9 +135,13 @@ struct QuranView: View {
 
         if lowered.hasPrefix("juz ") {
             let valueText = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
-            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
+            let n = quranData.resolveJuzIdentifier(valueText) ?? Int(valueText) ?? arabicToEnglishNumber(valueText)
             let validJuz = (n != nil && (1...30).contains(n!)) ? n : nil
             return PageJuzQuery(page: nil, juz: validJuz, isExplicitPage: false, isExplicitJuz: true)
+        }
+
+        if let juzByName = quranData.resolveJuzIdentifier(trimmed) {
+            return PageJuzQuery(page: nil, juz: juzByName, isExplicitPage: false, isExplicitJuz: true)
         }
 
         let n = Int(trimmed) ?? arabicToEnglishNumber(trimmed)
@@ -151,29 +158,46 @@ struct QuranView: View {
         quranData.firstAyahResult(page: page, juz: juz)
     }
 
+    private func parseCountOperator(_ symbol: String?) -> QuranData.CountOperator {
+        switch symbol {
+        case "<": return .lessThan
+        case "<=": return .lessThanOrEqual
+        case ">": return .greaterThan
+        case ">=": return .greaterThanOrEqual
+        case "==": return .equal
+        default: return .equal
+        }
+    }
+
     private func parseSurahCountQuery(from raw: String) -> SurahCountQuery? {
-        let parts = raw
-            .lowercased()
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .map(String.init)
+        let pattern = #"(?:^|\s)(<=|>=|==|<|>)?\s*([0-9٠-٩]+)\s*(ayah|ayahs|aayah|aayahs|ay|page|pages|pg|pgs)\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
 
-        guard parts.count >= 2 else { return nil }
+        let nsRange = NSRange(raw.startIndex..<raw.endIndex, in: raw)
+        let matches = regex.matches(in: raw, options: [], range: nsRange)
+        guard !matches.isEmpty else { return nil }
 
-        let ayahUnits: Set<String> = ["ayah", "ayahs", "aayah", "aayahs", "ay"]
-        let pageUnits: Set<String> = ["page", "pages", "pg", "pgs"]
+        var ayahs: QuranData.CountFilter? = nil
+        var pages: QuranData.CountFilter? = nil
 
-        var ayahs: Int? = nil
-        var pages: Int? = nil
+        for match in matches {
+            guard let numberRange = Range(match.range(at: 2), in: raw),
+                  let unitRange = Range(match.range(at: 3), in: raw) else { continue }
 
-        for idx in 0..<(parts.count - 1) {
-            let numberToken = parts[idx]
-            let unit = parts[idx + 1]
+            let numberToken = String(raw[numberRange])
+            let unit = String(raw[unitRange]).lowercased()
             guard let value = Int(numberToken) ?? arabicToEnglishNumber(numberToken), value >= 1 else { continue }
 
-            if ayahUnits.contains(unit) {
-                ayahs = value
-            } else if pageUnits.contains(unit) {
-                pages = value
+            let opToken: String? = {
+                guard let r = Range(match.range(at: 1), in: raw) else { return nil }
+                return String(raw[r])
+            }()
+
+            let filter = QuranData.CountFilter(op: parseCountOperator(opToken), value: value)
+            if ["ayah", "ayahs", "aayah", "aayahs", "ay"].contains(unit) {
+                ayahs = filter
+            } else {
+                pages = filter
             }
         }
 
@@ -186,23 +210,7 @@ struct QuranView: View {
             return quranData.filteredSurahs(query: query)
         }
 
-        return quranData.quran.filter { surah in
-            let ayahMatches: Bool = {
-                guard let requestedAyahs = countQuery.ayahs else { return true }
-                return surah.numberOfAyahs == requestedAyahs
-            }()
-
-            let pageMatches: Bool = {
-                guard let requestedPages = countQuery.pages else { return true }
-                if requestedPages == 1 {
-                    // Include explicit <1-page surahs in 1-page count search.
-                    return surah.pageCount == 1 || surah.isLessThanOnePage == true
-                }
-                return surah.pageCount == requestedPages
-            }()
-
-            return ayahMatches && pageMatches
-        }
+        return quranData.surahsMatchingCount(ayahFilter: countQuery.ayahs, pageFilter: countQuery.pages)
     }
 
     private func persistQuranSearchHistoryIfNeeded(_ rawQuery: String, requireMinLength: Bool = false) {
@@ -312,7 +320,8 @@ struct QuranView: View {
                     Text("Use #Arabic for normalized letters + matching tashkeel")
                     Text("Use #English for exact phrase (case-insensitive)")
                     Text("Use ^term for starts-with and term% for ends-with")
-                    Text("Use count filters: 'X ayahs', 'X pages', or both")
+                    Text("Count filters: 'X ayahs/pages', '<X', '>X', '<=X', '>=X', '==X'")
+                    Text("Juz names work too: Arabic or transliteration (example: Alif Lam Meem)")
                     Text("Example: ^Allah & mercy%")
                 }
                 .font(.caption2)
@@ -934,14 +943,44 @@ struct QuranView: View {
         } else {
             switch settings.quranSortMode {
             case .surah:
-                surahSearchSection(context: context)
+                surahBrowseSections(context: context, showsRevelationOrder: false)
             case .juz:
                 juzSections(context: context)
             case .page:
                 pageSections(context: context)
             case .revelation:
-                revelationSections(context: context)
+                surahBrowseSections(context: context, showsRevelationOrder: true)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func surahBrowseSections(context: SearchDisplayContext, showsRevelationOrder: Bool) -> some View {
+        let browsedSurahs = showsRevelationOrder
+            ? quranData.quran.sorted {
+                let left = $0.revelationOrder ?? Int.max
+                let right = $1.revelationOrder ?? Int.max
+                if left == right { return $0.id < $1.id }
+                return left < right
+            }
+            : quranData.quran
+
+        ForEach(browsedSurahs, id: \.id) { surah in
+            Section(header: surahBrowseSectionHeader(surah: surah, showsRevelationOrder: showsRevelationOrder)) {
+                surahRow(surah: surah, context: context)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func surahBrowseSectionHeader(surah: Surah, showsRevelationOrder: Bool) -> some View {
+        if showsRevelationOrder, let order = surah.revelationOrder {
+            HStack(spacing: 10) {
+                revelationOrderBadge(order)
+                SurahSectionHeader(surah: surah, compact: true)
+            }
+        } else {
+            SurahSectionHeader(surah: surah, compact: true)
         }
     }
 
@@ -1210,18 +1249,23 @@ struct QuranView: View {
 
     @ViewBuilder
     private func juzSearchSection(context: SearchDisplayContext) -> some View {
-        if let juz = context.pageJuzQuery.juz,
-           let juzResult = context.juzSearchResult {
-            Section(header: pageSearchHeader(title: "JUZ SEARCH RESULT", valueText: "Juz \(juz)")) {
-                AyahSearchResultRow(
-                    surah: juzResult.surah,
-                    ayah: juzResult.ayah,
-                    favoriteSurahs: context.favoriteSurahs,
-                    bookmarkedAyahs: context.bookmarkedAyahs,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID,
-                    disableTajweedColors: true
-                )
+        if let juz = context.pageJuzQuery.juz {
+            Section(header: pageSearchHeader(title: "JUZ SEARCH RESULT", valueText: "Juz \(juz) • \(context.juzSurahs.count) Surahs")) {
+                if let juzResult = context.juzSearchResult {
+                    AyahSearchResultRow(
+                        surah: juzResult.surah,
+                        ayah: juzResult.ayah,
+                        favoriteSurahs: context.favoriteSurahs,
+                        bookmarkedAyahs: context.bookmarkedAyahs,
+                        searchText: $searchText,
+                        scrollToSurahID: $scrollToSurahID,
+                        disableTajweedColors: true
+                    )
+                }
+
+                ForEach(context.juzSurahs, id: \.id) { surah in
+                    surahRow(surah: surah, context: context)
+                }
             }
         }
     }
@@ -1275,7 +1319,7 @@ struct QuranView: View {
 
     private func bestAyahHeader(count: Int) -> some View {
         HStack {
-            Text("BEST RESULTS")
+            Text("TOP AYAH RESULTS")
 
             Spacer()
 
@@ -1583,6 +1627,7 @@ struct QuranView: View {
             favoriteSurahs: Set(settings.favoriteSurahs),
             bookmarkedAyahs: Set(settings.bookmarkedAyahs.map(\.id)),
             pageJuzQuery: pageJuzQuery,
+            juzSurahs: quranData.surahs(inJuz: pageJuzQuery.juz),
             explicitPageOrJuzMode: pageJuzQuery.isExplicitPage || pageJuzQuery.isExplicitJuz,
             pageSearchResult: firstAyahResult(page: pageJuzQuery.page),
             juzSearchResult: firstAyahResult(juz: pageJuzQuery.juz),

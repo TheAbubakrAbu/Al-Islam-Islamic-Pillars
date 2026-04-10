@@ -8,6 +8,12 @@ struct Widgets: WidgetBundle {
         CountdownWidget()
         Prayers2Widget()
         PrayersWidget()
+        
+        LastReadSurahWidget()
+        LastListenedSurahWidget()
+        RandomAyahWidget()
+        RandomBookmarkedAyahWidget()
+        
         #if os(iOS)
         if #available(iOS 16.1, *) {
             LockScreen1Widget()
