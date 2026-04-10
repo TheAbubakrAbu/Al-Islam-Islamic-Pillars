@@ -296,7 +296,7 @@ struct NamesView: View {
 
     private var finalInvocationSection: some View {
         Section(header: Text("AFTER THE 99 NAMES")) {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 16) {
                 Text("Call upon Allah or call upon Ar-Rahman. Whichever Name you call, to Him belong the Most Beautiful Names.")
                     .font(.headline)
                     .foregroundStyle(.primary)
@@ -573,5 +573,6 @@ private struct VerseReflectionCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.secondary.opacity(0.1))
         )
+        .padding(-4)
     }
 }

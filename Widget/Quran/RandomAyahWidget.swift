@@ -8,7 +8,7 @@ struct RandomAyahWidget: Widget {
         StaticConfiguration(kind: kind, provider: QuranWidgetProvider(kind: .randomAyah)) { entry in
             QuranWidgetEntryView(entry: entry)
         }
-        .supportedFamilies(quranWidgetFamilies())
+        .supportedFamilies([.systemSmall])
         .configurationDisplayName("Random Ayah")
         .description("Shows a safe random ayah from the Quran")
     }

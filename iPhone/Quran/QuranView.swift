@@ -416,10 +416,21 @@ struct QuranView: View {
         switch route {
         case let .ayahs(surahID, ayah):
             if let surah = quranData.surah(surahID) {
-                AyahsView(surah: surah, ayah: ayah)
+                ayahsDestination(surah: surah, ayah: ayah)
             } else {
                 loadingFallbackView
             }
+        }
+    }
+
+    @ViewBuilder
+    private func ayahsDestination(surah: Surah, ayah: Int? = nil) -> some View {
+        if let ayah {
+            AyahsView(surah: surah, ayah: ayah)
+                .id("ayahs-\(surah.id)-\(ayah)")
+        } else {
+            AyahsView(surah: surah)
+                .id("ayahs-\(surah.id)")
         }
     }
     
@@ -819,12 +830,12 @@ struct QuranView: View {
                 Button {
                     push(surahID: bookmarkedAyah.surah, ayahID: bookmarkedAyah.ayah)
                 } label: {
-                    NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
+                    NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
                         SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
                     }
                 }
                 #else
-                NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
+                NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
                     SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
                 }
                 #endif
@@ -900,12 +911,12 @@ struct QuranView: View {
                 Button {
                     push(surahID: surahID)
                 } label: {
-                    NavigationLink(destination: AyahsView(surah: surah)) {
+                    NavigationLink(destination: ayahsDestination(surah: surah)) {
                         SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                     }
                 }
                 #else
-                NavigationLink(destination: AyahsView(surah: surah)) {
+                NavigationLink(destination: ayahsDestination(surah: surah)) {
                     SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                 }
                 #endif
@@ -943,19 +954,19 @@ struct QuranView: View {
         } else {
             switch settings.quranSortMode {
             case .surah:
-                surahBrowseSections(context: context, showsRevelationOrder: false)
+                surahBrowseSection(context: context, showsRevelationOrder: false)
             case .juz:
                 juzSections(context: context)
             case .page:
                 pageSections(context: context)
             case .revelation:
-                surahBrowseSections(context: context, showsRevelationOrder: true)
+                surahBrowseSection(context: context, showsRevelationOrder: true)
             }
         }
     }
 
     @ViewBuilder
-    private func surahBrowseSections(context: SearchDisplayContext, showsRevelationOrder: Bool) -> some View {
+    private func surahBrowseSection(context: SearchDisplayContext, showsRevelationOrder: Bool) -> some View {
         let browsedSurahs = showsRevelationOrder
             ? quranData.quran.sorted {
                 let left = $0.revelationOrder ?? Int.max
@@ -965,29 +976,17 @@ struct QuranView: View {
             }
             : quranData.quran
 
-        ForEach(browsedSurahs, id: \.id) { surah in
-            Section(header: surahBrowseSectionHeader(surah: surah, showsRevelationOrder: showsRevelationOrder)) {
-                surahRow(surah: surah, context: context)
+        Section(header: EmptyView()) {
+            ForEach(browsedSurahs, id: \.id) { surah in
+                surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
             }
-        }
-    }
-
-    @ViewBuilder
-    private func surahBrowseSectionHeader(surah: Surah, showsRevelationOrder: Bool) -> some View {
-        if showsRevelationOrder, let order = surah.revelationOrder {
-            HStack(spacing: 10) {
-                revelationOrderBadge(order)
-                SurahSectionHeader(surah: surah, compact: true)
-            }
-        } else {
-            SurahSectionHeader(surah: surah, compact: true)
         }
     }
 
     private func surahSearchSection(context: SearchDisplayContext) -> some View {
         Section(header: surahSectionHeader(context: context)) {
             ForEach(context.filteredSurahs, id: \.id) { surah in
-                NavigationLink(destination: AyahsView(surah: surah)) {
+                NavigationLink(destination: ayahsDestination(surah: surah)) {
                     surahSearchRow(surah: surah, context: context)
                 }
                 .id("surah_\(surah.id)")
@@ -1090,17 +1089,17 @@ struct QuranView: View {
             let destination: AnyView = {
                 switch row.kind {
                 case .plain:
-                    return AnyView(AyahsView(surah: surah))
+                    return AnyView(ayahsDestination(surah: surah))
                 case .start(let ayah):
                     if ayah > 1 {
-                        return AnyView(AyahsView(surah: surah, ayah: ayah))
+                        return AnyView(ayahsDestination(surah: surah, ayah: ayah))
                     }
-                    return AnyView(AyahsView(surah: surah))
+                    return AnyView(ayahsDestination(surah: surah))
                 case .end(let ayah):
                     if ayah < surah.numberOfAyahs {
-                        return AnyView(AyahsView(surah: surah, ayah: ayah))
+                        return AnyView(ayahsDestination(surah: surah, ayah: ayah))
                     }
-                    return AnyView(AyahsView(surah: surah))
+                    return AnyView(ayahsDestination(surah: surah))
                 }
             }()
 
@@ -1154,7 +1153,7 @@ struct QuranView: View {
         Section(header: SurahsHeader(text: "REVELATION ORDER")) {
             ForEach(quranData.revelationOrderSurahIDs, id: \.self) { surahID in
                 if let surah = quranData.surah(surahID) {
-                    NavigationLink(destination: AyahsView(surah: surah)) {
+                    NavigationLink(destination: ayahsDestination(surah: surah)) {
                         HStack(spacing: 10) {
                             revelationOrderBadge(surah.revelationOrder ?? 0)
                             
@@ -1186,9 +1185,17 @@ struct QuranView: View {
     }
 
     @ViewBuilder
-    private func surahRow(surah: Surah, context: SearchDisplayContext) -> some View {
-        NavigationLink(destination: AyahsView(surah: surah)) {
-            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+    private func surahRow(surah: Surah, context: SearchDisplayContext, showsRevelationOrder: Bool = false) -> some View {
+        NavigationLink(destination: ayahsDestination(surah: surah)) {
+            if showsRevelationOrder {
+                HStack(spacing: 10) {
+                    revelationOrderBadge(surah.revelationOrder ?? 0)
+
+                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                }
+            } else {
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+            }
         }
         .id("surah_\(surah.id)")
         #if os(iOS)
@@ -1481,7 +1488,7 @@ struct QuranView: View {
         if let surah = quranData.surah(hit.surah),
            let ayah = quranData.ayah(surah: hit.surah, ayah: hit.ayah) {
             NavigationLink {
-                AyahsView(surah: surah, ayah: ayah.id)
+                ayahsDestination(surah: surah, ayah: ayah.id)
             } label: {
                 AyahSearchRow(
                     surahName: surah.nameTransliteration,
@@ -1664,14 +1671,14 @@ struct QuranView: View {
     @ViewBuilder
     var detailFallback: some View {
         if hasStoredLastReadAyah, let s = lastReadSurah, let a = lastReadAyah {
-            AyahsView(surah: s, ayah: a.id)
+            ayahsDestination(surah: s, ayah: a.id)
         } else if let b = resolvedFirstBookmark() {
-            AyahsView(surah: b.surah, ayah: b.ayah.id)
+            ayahsDestination(surah: b.surah, ayah: b.ayah.id)
         } else if let favID = settings.favoriteSurahs.sorted().first,
                   let s = quranData.surah(favID) {
-            AyahsView(surah: s)
+            ayahsDestination(surah: s)
         } else if let s = quranData.surah(1) {
-            AyahsView(surah: s)
+            ayahsDestination(surah: s)
         } else {
             Color.clear
         }

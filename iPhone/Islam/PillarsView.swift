@@ -2654,9 +2654,26 @@ struct CompileView: View {
 
 struct TajweedView: View {
     @EnvironmentObject var settings: Settings
+    @State private var showTajweedLegend = false
 
     var body: some View {
         List {
+            Section(header: Text("TAJWEED LEGEND")) {
+                #if os(iOS)
+                Button(action: { showTajweedLegend = true }) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Quick Reference Guide")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                        Text("Simple way to view basic Hafs An Assim Tajweed rules with colors")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                #endif
+            }
+
             Section(header: Text("DEFINITION")) {
                 Text("Tajweed (تَجوِيد) means “to beautify or improve.” In the context of the Quran, it refers to the set of rules for proper pronunciation during Quran recitation, ensuring each letter is articulated with precision.")
                     .font(.body)
@@ -2670,41 +2687,71 @@ struct TajweedView: View {
             }
 
             Section(header: Text("IMPORTANCE")) {
-                Text("Tajweed is an essential science in Islam. It preserves the authenticity of Allah's words as revealed to Prophet Muhammad (peace and blessings be upon him).")
+                Text("Tajweed ensures the Quran is recited in the most accurate and beautiful way possible, exactly as it was revealed to the Prophet ﷺ. Reciting with Tajweed is not just about making recitation sound pleasant—it is about preserving the integrity of the Quran itself.")
                     .font(.body)
 
-                Text("By learning Tajweed, Muslims can recite the Quran accurately, reflecting its divine beauty and following the Sunnah of the Prophet (peace and blessings be upon him).")
-                    .font(.body)
-            }
-
-            Section(header: Text("BENEFITS")) {
-                Text("• Ensures proper articulation and pronunciation of Arabic letters.")
+                Text("The Quran was revealed in Arabic, and every word, letter, and sound has a specific meaning and weight. A slight mispronunciation could change the meaning of a verse. Tajweed helps safeguard against these errors and honors the sacred text with the care and precision it deserves.")
                     .font(.body)
 
-                Text("• Enhances the spiritual experience of reciting the Quran.")
-                    .font(.body)
-
-                Text("• Avoids errors that might change the meaning of the text.")
-                    .font(.body)
-
-                Text("• Fulfills the prophetic tradition of reciting the Quran as it was revealed.")
+                Text("Many Muslims find that reciting the Quran with Tajweed enhances their spiritual experience. The attention to detail required for proper recitation encourages mindfulness and deeper reflection on the meaning of the verses, making the recitation feel more immersive and meaningful.")
                     .font(.body)
             }
 
-            Section(header: Text("USEFUL LINKS")) {
+            Section(header: Text("WHY LEARN TAJWEED?")) {
+                Text("Honoring the Quran: The Quran is the final revelation from Allah. Reciting it with care and precision is a form of respect and reverence for the sacred text.")
+                    .font(.body)
+
+                Text("Preventing Misunderstandings: By applying Tajweed rules, you avoid mistakes that may alter the meaning of verses. Even changing a single sound can result in an entirely different meaning.")
+                    .font(.body)
+
+                Text("Enhancing Spiritual Connection: Proper recitation encourages mindfulness and deeper reflection on the meaning of the verses, making your connection with the Quran more meaningful.")
+                    .font(.body)
+
+                Text("Following the Sunnah: The Prophet Muhammad ﷺ emphasized the importance of reciting the Quran correctly. By learning Tajweed, you follow his example and teachings.")
+                    .font(.body)
+            }
+
+            Section(header: Text("GETTING STARTED")) {
+                Text("Learning Tajweed might seem intimidating at first, but understanding its importance can make the journey more meaningful. The best way to start is with a qualified teacher who can guide you through the articulation points and characteristics of each letter. Today, there are also online platforms, videos, and books that provide step-by-step lessons.")
+                    .font(.body)
+
+                Text("Focus on mastering the basic rules first, then gradually build your skills over time. Practicing consistently and recording your recitation can help you catch mistakes and improve pronunciation.")
+                    .font(.body)
+            }
+
+            Section(header: Text("FOR MORE DETAILS")) {
+                NavigationLink(destination: TajweedFoundationsView()) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Tajweed Foundations")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                        Text("Comprehensive guide with rules, topics, and detailed explanations")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            Section(header: Text("RESOURCES")) {
                 Text("Watch Learn Arabic 101: https://www.youtube.com/@Arabic101")
                     .font(.caption)
+            }
 
-                #if os(iOS)
-                NavigationLink(destination: TajweedLegendView()) {
-                    Text("Tajweed Legend")
-                        .foregroundColor(settings.accentColor.color)
-                }
-                #endif
+            Section(header: Text("NOTE")) {
+                Text("This covers Tajweed rules for Hafs An Assim recitation, the most widely used qiraah. Other qiraat may apply these rules slightly differently.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .navigationTitle("Tajweed")
         .applyConditionalListStyle(defaultView: settings.defaultView)
+        #if os(iOS)
+        .sheet(isPresented: $showTajweedLegend) {
+            NavigationView {
+                TajweedLegendView()
+            }
+        }
+        #endif
     }
 }
 

@@ -29,7 +29,7 @@ struct SurahRow: View {
     }
 
     private var ayahAndRevelationLine: String {
-        "\(surah.numberOfAyahs) Ayahs • \(revelationName) \(revelationEmoji)"
+        "\(surah.numberOfAyahs) Ayahs • \(revelationEmoji)"
     }
 
     private var pageLine: String {
@@ -44,13 +44,20 @@ struct SurahRow: View {
         return "Starts at \(surah.id):\(ayah)"
     }
 
+    private var badgeWidth: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: .headline)
+        let text = "100" as NSString
+        let size = text.size(withAttributes: [.font: font])
+        return size.width + 8
+    }
+    
     @ViewBuilder
     private var surahNumberPill: some View {
         ZStack(alignment: .topTrailing) {
             Text("\(surah.id)")
-                .font(.subheadline.weight(.bold))
+                .font(.caption.weight(.bold))
                 .foregroundColor(settings.accentColor.color)
-                .frame(minWidth: 40)
+                .frame(width: badgeWidth)
                 .frame(maxHeight: .infinity)
                 .conditionalGlassEffect(
                     useColor: isFavorite ? 0.3 : nil,
@@ -94,12 +101,12 @@ struct SurahRow: View {
                         .font(.caption)
                 }
 
-                Text(ayahAndRevelationLine)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
                 Text(pageLine)
                     .font(.caption2)
+                    .foregroundColor(.secondary)
+                
+                Text(ayahAndRevelationLine)
+                    .font(.caption)
                     .foregroundColor(.secondary)
             }
 
@@ -697,6 +704,13 @@ struct AyahSearchRow: View, Equatable {
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
     }
+    
+    private var badgeWidth: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: .headline)
+        let text = "10:100" as NSString
+        let size = text.size(withAttributes: [.font: font])
+        return size.width + 8
+    }
 
     @ViewBuilder
     private var ayahReferenceBadge: some View {
@@ -705,7 +719,7 @@ struct AyahSearchRow: View, Equatable {
                 .font(.caption.weight(.semibold))
                 .foregroundColor(settings.accentColor.color)
                 .monospacedDigit()
-                .frame(minWidth: 52, alignment: .center)
+                .frame(width: badgeWidth, alignment: .center)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
                 .conditionalGlassEffect(

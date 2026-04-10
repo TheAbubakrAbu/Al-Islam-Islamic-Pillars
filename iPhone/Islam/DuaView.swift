@@ -7,8 +7,8 @@ struct DuaView: View {
     var body: some View {
         List {
             introductionSection
-            etymologySection
             duaRows
+            etymologySection
             virtuesSection
         }
         #if os(iOS)
@@ -62,10 +62,14 @@ struct DuaView: View {
     }
 
     private var introductionSection: some View {
-        Section(header: Text("SUPPLICATIONS TO ALLAH ﷻ‎")) {
-            Text("Duʿāʾ is the heart of worship and a direct line to Allah ﷻ. It lets a servant call upon Him in need, hope, fear, gratitude, and love. Allah ﷻ says, “Call upon Me; I will respond to you” (Quran 40:60). The Prophet ﷺ said, “Duʿāʾ is worship” (Tirmidhi 2969).")
+        Section(header: Text("SUPPLICATIONS TO ALLAH")) {
+            Text("Short, daily supplications that keep your heart connected to Allah in every situation.")
                 .font(.subheadline)
                 .foregroundColor(.primary)
+                 
+            Text("\"Call upon Me; I will respond to you.\" (Quran 40:60)")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
 
@@ -80,17 +84,17 @@ struct DuaView: View {
                     .font(.subheadline)
                     .foregroundColor(.primary)
 
-                Text("Duʿāʾ literally means calling out, especially calling upon Allah. In Islam it is not just asking for things; it is an act of worship, turning to Him with need, hope, fear, and love.")
+                Text("Dua literally means calling out, especially calling upon Allah. In Islam it is not just asking for things; it is an act of worship, turning to Him with need, hope, fear, and love.")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(10)
+            .padding()
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.secondary.opacity(0.1))
             )
-            .padding(.horizontal, -4)
+            .padding(-4)
         }
     }
 
@@ -120,7 +124,7 @@ struct DuaView: View {
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
 
-                Text("Duʿāʾ is an act of worship and a direct connection with Allah. No sincere call is lost: it is answered now, delayed for wisdom, or stored as reward.")
+                Text("Dua is an act of worship and a direct connection with Allah. No sincere call is lost: it is answered now, delayed for wisdom, or stored as reward.")
                     .font(.subheadline)
                     .foregroundColor(.primary)
             }
@@ -128,9 +132,9 @@ struct DuaView: View {
             DuaReflectionCard(
                 title: "Quranic Promise",
                 lines: [
-                    "Call upon Me; I will respond to you. (Quran 40:60)",
-                    "I am near and I respond to the caller when he calls upon Me. (Quran 2:186)",
-                    "Who responds to the desperate one when he calls? (Quran 27:62)"
+                    "And your Lord says, \"Call upon Me; I will respond to you.\" Indeed, those who disdain My worship will enter Hell rendered contemptible. (Quran 40:60)",
+                    "And when My servants ask you concerning Me, indeed I am near. I respond to the invocation of the supplicant when he calls upon Me. So let them respond to Me and believe in Me that they may be rightly guided. (Quran 2:186)",
+                    "Is He not best who responds to the desperate one when he calls upon Him and removes evil and makes you inheritors of the earth? Is there a deity with Allah? Little do you remember. (Quran 27:62)"
                 ],
                 accent: settings.accentColor.color
             )
@@ -138,14 +142,14 @@ struct DuaView: View {
             DuaReflectionCard(
                 title: "Prophetic Guidance",
                 lines: [
-                    "Duʿāʾ is worship.",
-                    "There is nothing more noble to Allah than duʿāʾ.",
-                    "A sincere duʿāʾ is never wasted: immediate answer, deferred reward, or harm removed."
+                    "Dua is worship.",
+                    "There is nothing more noble to Allah than dua.",
+                    "A sincere dua is never wasted: immediate answer, deferred reward, or harm removed."
                 ],
                 accent: settings.accentColor.color
             )
 
-            Text("Keep making duʿāʾ in ease and hardship, in private and public, with certainty and patience. The One you call is always near.")
+            Text("Keep making dua in ease and hardship, in private and public, with certainty and patience. The One you call is always near.")
                 .font(.subheadline)
                 .foregroundColor(.primary)
         }
@@ -171,12 +175,12 @@ private struct DuaReflectionCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
+        .padding()
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.secondary.opacity(0.1))
         )
-        .padding(.horizontal, -4)
+        .padding(-4)
     }
 }
 

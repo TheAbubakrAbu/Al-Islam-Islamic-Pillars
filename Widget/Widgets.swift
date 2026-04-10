@@ -9,11 +9,6 @@ struct Widgets: WidgetBundle {
         Prayers2Widget()
         PrayersWidget()
         
-        LastReadSurahWidget()
-        LastListenedSurahWidget()
-        RandomAyahWidget()
-        RandomBookmarkedAyahWidget()
-        
         #if os(iOS)
         if #available(iOS 16.1, *) {
             LockScreen1Widget()
@@ -22,5 +17,9 @@ struct Widgets: WidgetBundle {
             LockScreen4Widget()
         }
         #endif
+        
+        LastReadSurahWidget()
+        LastListenedSurahWidget()
+        RandomAyahWidget()
     }
 }

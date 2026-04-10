@@ -323,16 +323,18 @@ final class TajweedStore {
     /// Higher value wins when painting overlapping UTF-16 units.
     private enum PaintPriority {
         static let tafkhim = 1
-        static let sukoonJazm = 2
+        static let droppedLetter = 2
         static let lamShamsiyah = 3
         static let qalqalah = 4
-        static let idghamBiGhunnah = 5
-        static let ikhfaa = 6
-        static let iqlab = 7
-        static let idghamBilaGhunnah = 8
+        static let idghamBiGhunnahLight = 5
+        static let idghamBiGhunnahHeavy = 6
+        static let ikhfaa = 7
+        static let iqlaab = 8
+        static let idghamBilaGhunnah = 9
         static let maddNatural2 = 12
         /// Miniature madd scalars (U+06E5, U+06E6, U+0670) use same category as natural madd; slightly higher priority than letter-body natural madd.
         static let maddNatural2MiniatureScalars = 13
+        static let maddAaridLisSukoon = 17
         static let maddNecessary6 = 18
         static let maddSeparated = 19
         static let maddConnected = 20
@@ -363,27 +365,28 @@ final class TajweedStore {
     }
 
     private static let treeDrivenRuleMap: [String: TajweedLegendCategory] = [
-        "madd_2": .maddNatural2,
+        "madd_2": .maddNatural,
         "madd_munfasil": .maddSeparated,
         "madd_muttasil": .maddConnected,
-        "madd_6": .maddNecessary6,
-        "madd_246": .maddNecessary6,
+        "madd_6": .maddNecessary,
+        "madd_246": .maddSukoon,
         "qalqalah": .qalqalah,
         "silent": .hamzatWaslSilent,
-        "idghaam_ghunnah": .idghamBiGhunnah,
-        "idghaam_shafawi": .idghamBiGhunnah,
+        "idghaam_ghunnah": .idghamGhunnahLight,
+        "idghaam_shafawi": .idghamGhunnahHeavy,
         "idghaam_no_ghunnah": .idghamBilaGhunnah,
-        "idghaam_mutajanisayn": .idghamBiGhunnah,
-        "idghaam_mutaqaribayn": .idghamBiGhunnah,
+        "idghaam_mutajanisayn": .idghamGhunnahHeavy,
+        "idghaam_mutaqaribayn": .idghamGhunnahHeavy,
         "ikhfa": .ikhfaa,
         "ikhfa_shafawi": .ikhfaa,
-        "iqlab": .iqlab,
+        "iqlaab": .iqlaab,
     ]
 
     private static let specialTanweenCategories: Set<TajweedLegendCategory> = [
-        .idghamBiGhunnah,
+        .idghamGhunnahHeavy,
+        .idghamGhunnahLight,
         .ikhfaa,
-        .iqlab,
+        .iqlaab,
         .idghamBilaGhunnah,
     ]
 
@@ -478,13 +481,13 @@ final class TajweedStore {
             }
         }
 
-        if settings.isTajweedCategoryVisible(.sukoonJazm) {
+        if settings.isTajweedCategoryVisible(.droppedLetter) {
             for cluster in clusters where hasStandardSukoon(cluster) {
                 guard let base = cluster.primaryArabicLetter, isArabicLetterBase(base) else { continue }
                 if Self.qalqalahLetters.contains(base), settings.isTajweedCategoryVisible(.qalqalah) {
                     continue
                 }
-                ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.sukoonJazm, category: .sukoonJazm))
+                ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.droppedLetter, category: .droppedLetter))
             }
         }
 
@@ -597,19 +600,19 @@ final class TajweedStore {
     private func collectMaddAndWaslPaintOps(surah: Int, ayah: Int, text: String, clusters: [CharacterClusterInfo], into ops: inout [PaintOp]) {
         let words = wordClusterRanges(clusters: clusters)
 
-        if settings.isTajweedCategoryVisible(.maddNatural2) {
+        if settings.isTajweedCategoryVisible(.maddNatural) {
             appendScalarPaintOps(
                 text: text,
                 scalars: [Self.smallWaw.value, Self.smallYeh.value, Self.daggerAlif.value],
                 priority: PaintPriority.maddNatural2MiniatureScalars,
-                category: .maddNatural2,
+                category: .maddNatural,
                 into: &ops
             )
         }
 
-        if settings.isTajweedCategoryVisible(.maddNecessary6) {
+        if settings.isTajweedCategoryVisible(.maddNecessary) {
             for cluster in clusters where isLazimCombinedAlifCluster(cluster) {
-                ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.maddNecessary6, category: .maddNecessary6))
+                ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
             }
             // Alif + maddah (ٓ) after an istila letter, without ٓاْ on one cluster - e.g. ٱلضَّآلِّينَ (lazim-style coloring).
             for i in clusters.indices where i > 0 {
@@ -618,18 +621,18 @@ final class TajweedStore {
                 if isLazimCombinedAlifCluster(cur) { continue }
                 let prev = clusters[i - 1]
                 guard let pl = prev.primaryArabicLetter, Self.heavyBaseLetters.contains(pl) else { continue }
-                ops.append(PaintOp(range: nsRange(for: cur), priority: PaintPriority.maddNecessary6, category: .maddNecessary6))
+                ops.append(PaintOp(range: nsRange(for: cur), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
             }
             for i in clusters.indices where isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) {
-                ops.append(PaintOp(range: nsRange(for: clusters[i]), priority: PaintPriority.maddNecessary6, category: .maddNecessary6))
-                ops.append(PaintOp(range: nsRange(for: clusters[i + 1]), priority: PaintPriority.maddNecessary6, category: .maddNecessary6))
+                ops.append(PaintOp(range: nsRange(for: clusters[i]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
+                ops.append(PaintOp(range: nsRange(for: clusters[i + 1]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
             }
             if ayah == 1, Self.surahsOpeningMuqattaat.contains(surah) {
                 for i in clusters.indices {
                     guard hasMaddah(clusters[i]) else { continue }
                     if isLazimCombinedAlifCluster(clusters[i]) { continue }
                     if isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) { continue }
-                    ops.append(PaintOp(range: nsRange(for: clusters[i]), priority: PaintPriority.maddNecessary6, category: .maddNecessary6))
+                    ops.append(PaintOp(range: nsRange(for: clusters[i]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
                 }
             }
         }
@@ -686,20 +689,20 @@ final class TajweedStore {
 
         // Fallback: explicit maddah (ٓ) is not madd tabi'i.
         // If not already covered by connected/separated/necessary logic, color as necessary.
-        if settings.isTajweedCategoryVisible(.maddNecessary6) {
+        if settings.isTajweedCategoryVisible(.maddNecessary) {
             for i in clusters.indices where hasMaddah(clusters[i]) {
                 if strongerMaddRuleCoversCluster(index: i, ops: ops, clusters: clusters) { continue }
                 appendSpecialMaddPaintOps(
                     text: text,
                     range: nsRange(for: clusters[i]),
                     priority: PaintPriority.maddNecessary6,
-                    category: .maddNecessary6,
+                    category: .maddNecessary,
                     into: &ops
                 )
             }
         }
 
-        if settings.isTajweedCategoryVisible(.maddNatural2) {
+        if settings.isTajweedCategoryVisible(.maddNatural) {
             for w in words {
                 let lo = w.lowerBound, hi = w.upperBound
                 for i in lo..<hi {
@@ -709,7 +712,7 @@ final class TajweedStore {
                         clusters: clusters,
                         index: i,
                         priority: PaintPriority.maddNatural2,
-                        category: .maddNatural2,
+                        category: .maddNatural,
                         into: &ops
                     )
                 }
@@ -738,7 +741,7 @@ final class TajweedStore {
     /// Necessary / separated / connected madd already paint this cluster; skip natural madd.
     private func strongerMaddRuleCoversCluster(index: Int, ops: [PaintOp], clusters: [CharacterClusterInfo]) -> Bool {
         let r = nsRange(for: clusters[index])
-        let blocking: Set<TajweedLegendCategory> = [.maddNecessary6, .maddSeparated, .maddConnected]
+        let blocking: Set<TajweedLegendCategory> = [.maddNecessary, .maddSeparated, .maddConnected]
         for op in ops where blocking.contains(op.category) {
             let olo = op.range.location, ohi = olo + op.range.length
             if r.location < ohi && r.location + r.length > olo { return true }
@@ -1068,24 +1071,28 @@ final class TajweedStore {
             guard end > start else { continue }
             let priority: Int
             switch category {
-            case .maddNatural2:
+            case .maddNatural:
                 priority = PaintPriority.maddNatural2
+            case .maddSukoon:
+                priority = PaintPriority.maddAaridLisSukoon
             case .maddSeparated:
                 priority = PaintPriority.maddSeparated
             case .maddConnected:
                 priority = PaintPriority.maddConnected
-            case .maddNecessary6:
+            case .maddNecessary:
                 priority = PaintPriority.maddNecessary6
             case .qalqalah:
                 priority = PaintPriority.qalqalah
             case .hamzatWaslSilent:
                 priority = PaintPriority.hamzatWaslSilent
-            case .idghamBiGhunnah:
-                priority = PaintPriority.idghamBiGhunnah
+            case .idghamGhunnahLight:
+                priority = PaintPriority.idghamBiGhunnahLight
+            case .idghamGhunnahHeavy:
+                priority = PaintPriority.idghamBiGhunnahHeavy
             case .ikhfaa:
                 priority = PaintPriority.ikhfaa
-            case .iqlab:
-                priority = PaintPriority.iqlab
+            case .iqlaab:
+                priority = PaintPriority.iqlaab
             case .idghamBilaGhunnah:
                 priority = PaintPriority.idghamBilaGhunnah
             default:
@@ -1103,7 +1110,7 @@ final class TajweedStore {
                 continue
             }
 
-            if category == .maddNatural2 || category == .maddSeparated || category == .maddConnected || category == .maddNecessary6 {
+            if category == .maddNatural || category == .maddSukoon || category == .maddSeparated || category == .maddConnected || category == .maddNecessary {
                 appendSpecialMaddPaintOps(
                     text: text,
                     range: NSRange(location: start, length: end - start),
@@ -1208,9 +1215,9 @@ final class TajweedStore {
             guard let base = cluster.primaryArabicLetter else { continue }
             guard base == "ن" || base == "م" else { continue }
             guard hasShadda(cluster) else { continue }
-            let category: TajweedLegendCategory = .idghamBiGhunnah
+            let category: TajweedLegendCategory = .idghamGhunnahHeavy
             guard settings.isTajweedCategoryVisible(category) else { continue }
-            ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.idghamBiGhunnah, category: category, color: category.color))
+            ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.idghamBiGhunnahHeavy, category: category, color: category.color))
         }
     }
 

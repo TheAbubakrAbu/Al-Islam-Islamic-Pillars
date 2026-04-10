@@ -66,8 +66,8 @@ struct AdhkarView: View {
     var body: some View {
         List {
             introductionSection
-            etymologySection
             adhkarRows
+            etymologySection
             virtuesSection
         }
         #if os(iOS)
@@ -121,10 +121,14 @@ struct AdhkarView: View {
     }
 
     private var introductionSection: some View {
-        Section(header: Text("REMEMBRANCES OF ALLAH ﷻ‎")) {
-            Text("Adhkar are the short phrases of remembrance taught by Prophet Muhammad ﷺ. They revive the heart, polish the soul, and keep the tongue engaged in praise. Allah ﷻ says, “Unquestionably, by the remembrance of Allah hearts are assured” (Quran 13:28). The Prophet ﷺ said, “Keep your tongue moist with the remembrance of Allah” (Tirmidhi 3375).")
-                .font(.subheadline)
-                .foregroundColor(.primary)
+        Section(header: Text("REMEMBRANCES OF ALLAH")) {
+             Text("Short remembrances to keep your heart connected to Allah throughout the day.")
+                 .font(.subheadline)
+                 .foregroundColor(.primary)
+                  
+             Text("\"Unquestionably, by the remembrance of Allah hearts are assured.\" (Quran 13:28)")
+                 .font(.caption)
+                 .foregroundColor(.secondary)
         }
     }
 
@@ -139,17 +143,17 @@ struct AdhkarView: View {
                     .font(.subheadline)
                     .foregroundColor(.primary)
 
-                Text("Dhikr literally means remembrance or mentioning. It includes saying SubhanAllah, Alhamdulillah, Allāhu Akbar, reciting the Quran, and keeping Allah حاضر in the heart and tongue.")
+                Text("Dhikr literally means remembrance or mentioning. It includes saying SubhanAllah, Alhamdulillah, Allahu Akbar, reciting the Quran, and keeping Allah always present in the heart and tongue.")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(10)
+            .padding()
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.secondary.opacity(0.1))
             )
-            .padding(.horizontal, -4)
+            .padding(-4)
         }
     }
 
@@ -177,10 +181,10 @@ struct AdhkarView: View {
             ReflectionCard(
                 title: "Quranic Reminders",
                 lines: [
-                    "So remember Me; I will remember you. (Quran 2:152)",
-                    "By the remembrance of Allah hearts are assured. (Quran 13:28)",
-                    "Remember Allah with much remembrance. (Quran 33:41)",
-                    "The men who remember Allah often and the women who do so, for them Allah has prepared forgiveness and a great reward. (Quran 33:35)"
+                    "So remember Me; I will remember you. And be grateful to Me and do not deny Me. (Quran 2:152)",
+                    "Unquestionably, by the remembrance of Allah hearts are assured. (Quran 13:28)",
+                    "O you who have believed, remember Allah with much remembrance. (Quran 33:41)",
+                    "Indeed, the Muslim men and Muslim women, the believing men and believing women, the obedient men and obedient women, the truthful men and truthful women, the patient men and patient women, the humble men and humble women, the charitable men and charitable women, the fasting men and fasting women, the men who guard their private parts and the women who do so, and the men who remember Allah often and the women who do so - for them Allah has prepared forgiveness and a great reward. (Quran 33:35)"
                 ],
                 accent: settings.accentColor.color
             )
@@ -221,12 +225,12 @@ private struct ReflectionCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
+        .padding()
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.secondary.opacity(0.1))
         )
-        .padding(.horizontal, -4)
+        .padding(-4)
     }
 }
 

@@ -169,6 +169,7 @@ struct SplashScreen: View {
                         .foregroundColor(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+                    
                     LaunchLogoCard(
                         title: "Al-Islam",
                         accentColor: settings.accentColor.color,
@@ -180,7 +181,7 @@ struct SplashScreen: View {
                 }
             }
             .contentShape(Rectangle())
-            .scaleEffect((popCenter ? 1 : 0.2) * 0.88)
+            .scaleEffect(popCenter ? 1 : 0.2)
             .offset(y: popCenter ? 0 : jump * 1.05)
             .opacity(popCenter ? 1 : 0.4)
             .accessibilityLabel("Al-Islam on the App Store")

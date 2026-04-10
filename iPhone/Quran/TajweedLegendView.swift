@@ -32,7 +32,6 @@ struct TajweedLegendView: View {
         Text(text)
             .font(primary ? .caption.weight(.semibold) : .caption)
             .foregroundStyle(primary ? .primary : .secondary)
-            .lineLimit(2)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -44,6 +43,7 @@ struct TajweedLegendView: View {
                 .foregroundStyle(item.color)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .background(
                     Capsule(style: .continuous)
                         .fill(item.color.opacity(0.15))
@@ -54,21 +54,21 @@ struct TajweedLegendView: View {
     @ViewBuilder
     private func quickItemCard(_ item: TajweedLegendCategory) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 6) {
+            HStack(alignment: .center, spacing: 8) {
                 Circle()
                     .fill(item.color)
                     .frame(width: 10, height: 10)
-                    .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 3) {
                     legendLine(item.transliteration)
-                    legendLine(item.arabicTitle, primary: false)
+                    legendLine(item.exactEnglishTranslation, primary: false)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
             }
 
             countBadge(item)
-                .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(item.shortDescription)
                 .font(.caption)
@@ -103,15 +103,14 @@ struct TajweedLegendView: View {
     @ViewBuilder
     private func detailItemCard(_ item: TajweedLegendCategory) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
                 Circle()
                     .fill(item.color)
                     .frame(width: 12, height: 12)
-                    .padding(.top, 1)
 
                 VStack(alignment: .leading, spacing: 2) {
                     legendLine(item.transliteration)
-                    legendLine(item.exactEnglishTranslation)
+                    legendLine(item.arabicTitle, primary: false)
                 }
 
                 Spacer(minLength: 6)
@@ -124,9 +123,12 @@ struct TajweedLegendView: View {
             countBadge(item)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(item.arabicTitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let letters = item.applicableLettersDetail {
+                Text(letters)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(item.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Text(item.englishMeaning)
                 .font(.caption)
@@ -164,6 +166,10 @@ struct TajweedLegendView: View {
 
                     Text("Use the colors as a quick guide, then read the longer notes below for what each rule is doing in recitation.")
                         .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    
+                    Text("Tajweed is in beta. Some rules or colors may appear differently or be incomplete.")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
@@ -232,6 +238,12 @@ struct TajweedLegendView: View {
                 }
             }
         }
+    }
+}
+
+#Preview {
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        TajweedLegendView()
     }
 }
 #endif

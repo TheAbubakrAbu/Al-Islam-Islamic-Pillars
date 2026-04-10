@@ -189,15 +189,16 @@ extension Settings {
         case .tafkhim: return showTajweedTafkhim
         case .qalqalah: return showTajweedQalqalah
         case .lamShamsiyah: return showTajweedLamShamsiyah
-        case .sukoonJazm: return showTajweedSukoonJazm
-        case .idghamBiGhunnah: return showTajweedIdghamBiGhunnah
+        case .droppedLetter: return showTajweedDroppedLetter
+        case .idghamGhunnahHeavy: return showTajweedIdghamBiGhunnahHeavy
+        case .idghamGhunnahLight: return showTajweedIdghamBiGhunnahLight
         case .ikhfaa: return showTajweedIkhfaa
-        case .iqlab: return showTajweedIqlab
+        case .iqlaab: return showTajweedIqlab
         case .idghamBilaGhunnah: return showTajweedIdghamBilaGhunnah
         case .hamzatWaslSilent: return showTajweedHamzatWaslSilent
-        case .maddNatural2: return showTajweedMaddNatural2
-        case .madd246: return showTajweedMadd246
-        case .maddNecessary6: return showTajweedMaddNecessary6
+        case .maddNatural: return showTajweedMaddNatural2
+        case .maddSukoon: return showTajweedMaddAaridLisSukoon
+        case .maddNecessary: return showTajweedMaddNecessary6
         case .maddSeparated: return showTajweedMaddSeparated
         case .maddConnected: return showTajweedMaddConnected
         }
@@ -208,15 +209,16 @@ extension Settings {
         case .tafkhim: showTajweedTafkhim = visible
         case .qalqalah: showTajweedQalqalah = visible
         case .lamShamsiyah: showTajweedLamShamsiyah = visible
-        case .sukoonJazm: showTajweedSukoonJazm = visible
-        case .idghamBiGhunnah: showTajweedIdghamBiGhunnah = visible
+        case .droppedLetter: showTajweedDroppedLetter = visible
+        case .idghamGhunnahHeavy: showTajweedIdghamBiGhunnahHeavy = visible
+        case .idghamGhunnahLight: showTajweedIdghamBiGhunnahLight = visible
         case .ikhfaa: showTajweedIkhfaa = visible
-        case .iqlab: showTajweedIqlab = visible
+        case .iqlaab: showTajweedIqlab = visible
         case .idghamBilaGhunnah: showTajweedIdghamBilaGhunnah = visible
         case .hamzatWaslSilent: showTajweedHamzatWaslSilent = visible
-        case .maddNatural2: showTajweedMaddNatural2 = visible
-        case .madd246: showTajweedMadd246 = visible
-        case .maddNecessary6: showTajweedMaddNecessary6 = visible
+        case .maddNatural: showTajweedMaddNatural2 = visible
+        case .maddSukoon: showTajweedMaddAaridLisSukoon = visible
+        case .maddNecessary: showTajweedMaddNecessary6 = visible
         case .maddSeparated: showTajweedMaddSeparated = visible
         case .maddConnected: showTajweedMaddConnected = visible
         }

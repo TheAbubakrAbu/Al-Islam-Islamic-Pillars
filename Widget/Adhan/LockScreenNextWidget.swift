@@ -28,6 +28,7 @@ struct LockScreen1EntryView: View {
             }
         }
         .minimumScaleFactor(0.5)
+        .multilineTextAlignment(.center)
     }
 }
 
@@ -41,14 +42,14 @@ struct LockScreen1Widget: Widget {
                 LockScreen1EntryView(entry: entry)
             }
             .supportedFamilies([.accessoryCircular])
-            .configurationDisplayName("Next Prayer Times")
+            .configurationDisplayName("Next Prayer Time")
             .description("Shows the next upcoming prayer time")
         } else {
             return StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
                 LockScreen1EntryView(entry: entry)
             }
             .supportedFamilies([.systemSmall])
-            .configurationDisplayName("Next Prayer Times")
+            .configurationDisplayName("Next Prayer Time")
             .description("Shows the next upcoming prayer time")
         }
         #endif

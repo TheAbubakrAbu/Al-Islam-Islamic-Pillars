@@ -2,26 +2,23 @@ import SwiftUI
 import WidgetKit
 
 enum QuranWidgetKind {
-    case lastReadSurah
+    case lastReadAyah
     case lastListenedSurah
     case randomAyah
-    case randomBookmarkedAyah
 
     var title: String {
         switch self {
-        case .lastReadSurah: return "Last Read Surah"
+        case .lastReadAyah: return "Last Read Ayah"
         case .lastListenedSurah: return "Last Listened Surah"
         case .randomAyah: return "Random Ayah"
-        case .randomBookmarkedAyah: return "Random Bookmarked Ayah"
         }
     }
 
     var icon: String {
         switch self {
-        case .lastReadSurah: return "book.closed"
+        case .lastReadAyah: return "book.closed"
         case .lastListenedSurah: return "play.fill"
         case .randomAyah: return "sparkles"
-        case .randomBookmarkedAyah: return "bookmark.fill"
         }
     }
 }
@@ -57,31 +54,30 @@ struct QuranWidgetProvider: TimelineProvider {
         let quranData = QuranData.shared
 
         switch kind {
-        case .lastReadSurah:
+        case .lastReadAyah:
             return makeLastReadEntry(settings: settings, quranData: quranData)
         case .lastListenedSurah:
             return makeLastListenedEntry(settings: settings, quranData: quranData)
         case .randomAyah:
             return makeRandomAyahEntry(settings: settings, quranData: quranData)
-        case .randomBookmarkedAyah:
-            return makeRandomBookmarkedAyahEntry(settings: settings, quranData: quranData)
         }
     }
 
     private func makeLastReadEntry(settings: Settings, quranData: QuranData) -> QuranWidgetEntry {
-        guard let surah = quranData.surah(settings.lastReadSurah), settings.lastReadSurah > 0 else {
+        guard settings.lastReadSurah > 0, settings.lastReadAyah > 0,
+              let surah = quranData.surah(settings.lastReadSurah),
+              let ayah = quranData.ayah(surah: settings.lastReadSurah, ayah: settings.lastReadAyah) else {
             return fallbackEntry(settings: settings, message: "Open the app to set your last read verse.")
         }
 
-        let ayahText = settings.lastReadAyah > 0 ? "Ayah \(settings.lastReadAyah)" : "Last read surah"
         return QuranWidgetEntry(
             date: Date(),
-            kind: .lastReadSurah,
+            kind: .lastReadAyah,
             title: kind.title,
             icon: kind.icon,
-            primaryText: surah.nameTransliteration,
-            secondaryText: "Surah \(surah.id) • \(surah.nameEnglish)",
-            tertiaryText: ayahText,
+            primaryText: ayah.displayArabicText(surahId: surah.id, clean: true),
+            secondaryText: "Surah \(surah.id):\(ayah.id) • \(surah.nameTransliteration)",
+            tertiaryText: snippet(ayah.textEnglishSaheeh),
             accentColor: settings.accentColor,
             fallbackText: nil
         )
@@ -108,7 +104,7 @@ struct QuranWidgetProvider: TimelineProvider {
 
     private func makeRandomAyahEntry(settings: Settings, quranData: QuranData) -> QuranWidgetEntry {
         guard let target = randomSafeAyah(in: quranData) else {
-            return fallbackEntry(settings: settings, message: "No safe random ayah was available right now.")
+            return fallbackEntry(settings: settings, message: "Unable to find a random ayah. Please try again.")
         }
 
         return QuranWidgetEntry(
@@ -124,43 +120,22 @@ struct QuranWidgetProvider: TimelineProvider {
         )
     }
 
-    private func makeRandomBookmarkedAyahEntry(settings: Settings, quranData: QuranData) -> QuranWidgetEntry {
-        let bookmarked = settings.bookmarkedAyahs
-            .shuffled()
-            .compactMap { bookmark -> (Surah, Ayah)? in
-                guard let surah = quranData.surah(bookmark.surah),
-                      let ayah = quranData.ayah(surah: bookmark.surah, ayah: bookmark.ayah),
-                      isSafeWidgetAyah(ayah) else { return nil }
-                return (surah, ayah)
-            }
-            .first
-
-        guard let (surah, ayah) = bookmarked else {
-            return fallbackEntry(settings: settings, message: "Add a bookmark to show a random bookmarked ayah here.")
-        }
-
-        return QuranWidgetEntry(
-            date: Date(),
-            kind: .randomBookmarkedAyah,
-            title: kind.title,
-            icon: kind.icon,
-            primaryText: ayah.displayArabicText(surahId: surah.id, clean: true),
-            secondaryText: "Surah \(surah.id):\(ayah.id) • \(surah.nameTransliteration)",
-            tertiaryText: snippet(ayah.textEnglishSaheeh),
-            accentColor: settings.accentColor,
-            fallbackText: nil
-        )
-    }
-
     private func randomSafeAyah(in quranData: QuranData) -> (surah: Surah, ayah: Ayah)? {
-        var safeAyahs: [(surah: Surah, ayah: Ayah)] = []
-        for surah in quranData.filteredSurahs(query: "") {
-            for ayah in surah.ayahs where isSafeWidgetAyah(ayah) {
-                safeAyahs.append((surah: surah, ayah: ayah))
+        let allSurahs = quranData.filteredSurahs(query: "")
+        guard !allSurahs.isEmpty else { return nil }
+        
+        // Try up to 10 times to find a surah with safe ayahs
+        for _ in 0..<10 {
+            guard let randomSurah = allSurahs.randomElement() else { return nil }
+            
+            // Filter safe ayahs from that surah
+            let safeAyahs = randomSurah.ayahs.filter { isSafeWidgetAyah($0) }
+            if !safeAyahs.isEmpty, let randomAyah = safeAyahs.randomElement() {
+                return (surah: randomSurah, ayah: randomAyah)
             }
         }
-
-        return safeAyahs.randomElement()
+        
+        return nil
     }
 
     private func isSafeWidgetAyah(_ ayah: Ayah) -> Bool {

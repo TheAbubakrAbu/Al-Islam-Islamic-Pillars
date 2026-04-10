@@ -5,18 +5,18 @@ struct TajweedColors {
     static let laamShamsiyyah    = Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
     static let hamzatulWasl      = Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
     static let silentLetter      = Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
-    static let idghamBilaGhunnah = Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
+    static let idghamBilaGhunnah = Color(red: 0.2000, green: 0.5608, blue: 0.3294) // 338F54
 
     // Heavy / qalqalah family
     static let heavy             = Color(red: 0.2314, green: 0.5216, blue: 0.7608) // 3B85C2
     static let qalqalah          = Color(red: 0.4706, green: 0.8000, blue: 0.9765) // 78CCF9
 
     // Ghunnah family
-    static let idghamBiGhunnahLight = Color(red: 0.3412, green: 0.7373, blue: 0.4706) // 57BC78
-    static let idghamBiGhunnahHeavy = Color(red: 0.2549, green: 0.6941, blue: 0.4824) // 41B17B
-    static let ikhfaa               = Color(red: 0.2549, green: 0.6941, blue: 0.4824) // 41B17B
-    static let iqlab                = Color(red: 0.2118, green: 0.6431, blue: 0.5255) // 36A485
-    static let idghamBilaGhunnahHeavy = Color(red: 0.1961, green: 0.5922, blue: 0.6157) // 32979D
+    static let idghamBiGhunnahLight = Color(red: 0.2706, green: 0.7373, blue: 0.4510) // 45BC73
+    static let idghamBiGhunnahHeavy = Color(red: 0.1216, green: 0.6667, blue: 0.5804) // 1FAA94
+    static let ikhfaa               = Color(red: 0.4588, green: 0.6980, blue: 0.2000) // 75B233
+    static let iqlab                = Color(red: 0.1294, green: 0.6392, blue: 0.3529) // 21A35A
+    static let idghamBilaGhunnahHeavy = Color(red: 0.2000, green: 0.5608, blue: 0.3294) // 338F54
 
     // Madd family
     static let maddNatural2      = Color(red: 0.7255, green: 0.5490, blue: 0.1843) // B98C2F

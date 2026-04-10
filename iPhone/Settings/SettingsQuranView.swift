@@ -1417,11 +1417,10 @@ struct ReciterListView: View {
         )
 
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
                     .font(.body.weight(.semibold))
                     .foregroundColor(settings.accentColor.color)
-                    .padding(.top, 5)
                     .onTapGesture {
                         settings.hapticFeedback()
                         withAnimation {
