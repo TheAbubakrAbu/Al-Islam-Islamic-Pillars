@@ -778,6 +778,14 @@ struct QuranView: View {
             Text("BOOKMARKED AYAHS")
 
             Spacer()
+            
+            Text("\(settings.bookmarkedAyahs.count)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
 
             Image(systemName: settings.showBookmarks ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
@@ -855,6 +863,14 @@ struct QuranView: View {
             Text("FAVORITE SURAHS")
 
             Spacer()
+            
+            Text("\(settings.favoriteSurahs.count)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
 
             Image(systemName: settings.showFavorites ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)

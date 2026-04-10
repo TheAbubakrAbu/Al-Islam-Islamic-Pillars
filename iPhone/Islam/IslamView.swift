@@ -143,7 +143,7 @@ struct ProphetQuote: View {
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.vertical, 2)
             .scaleEffect(isCardVisible ? 1 : 0.97)
-            .opacity(isCardVisible ? 1 : 0.75)
+            .opacity(isCardVisible ? 1 : 0.9)
             .offset(y: isCardVisible ? 0 : 10)
             .animation(.spring(response: 0.5, dampingFraction: 0.85), value: isCardVisible)
             .onAppear {

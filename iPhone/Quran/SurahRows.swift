@@ -122,14 +122,17 @@ struct SurahRow: View {
         .minimumScaleFactor(0.75)
         #else
         VStack {
-            Text("\(surah.nameArabic) - \(surah.idArabic)")
-                .font(.headline)
-                .foregroundColor(settings.accentColor.color)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-            
-            Text("\(surah.id) - \(surah.nameTransliteration)")
-                .font(.subheadline)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack {
+                Text("\(surah.id) - \(surah.nameTransliteration)")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Text("\(surah.nameArabic) - \(surah.idArabic)")
+                    .font(.headline)
+                    .foregroundColor(settings.accentColor.color)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .minimumScaleFactor(0.9)
+            }
 
             Text("\(revelationEmoji) • \(surah.numberOfAyahs) Ayahs • \(pageLine)")
                 .font(.caption2)
@@ -202,8 +205,13 @@ struct SurahAyahRow: View {
                     Text("\(surah.id):\(ayah.id)")
                         .font(.headline)
                         .monospacedDigit()
+                        #if os(iOS)
                         .frame(width: badgeWidth, alignment: .center)
                         .padding(4)
+                        #else
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        #endif
                         .conditionalGlassEffect(
                             useColor: isBookmarked ? 0.3 : nil,
                             customTint: isBookmarked ? settings.accentColor.color : nil
@@ -223,14 +231,18 @@ struct SurahAyahRow: View {
                 }
                 
                 Text(surah.nameTransliteration)
+                    #if os(iOS)
                     .font(.caption)
+                    #else
+                    .font(.caption2)
+                    #endif
             }
             .lineLimit(1)
             .minimumScaleFactor(0.5)
             #if os(iOS)
             .frame(width: 65, alignment: .center)
             #else
-            .frame(width: 40, alignment: .center)
+            .frame(width: 50, alignment: .center)
             #endif
             .foregroundColor(settings.accentColor.color)
             .padding(.trailing, 8)
