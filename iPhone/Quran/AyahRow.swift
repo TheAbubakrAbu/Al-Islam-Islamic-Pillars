@@ -206,7 +206,8 @@ struct AyahRow: View {
                             .minimumScaleFactor(0.5)
                             .conditionalGlassEffect(
                                 useColor: isBookmarked ? 0.3 : nil,
-                                customTint: isBookmarked ? settings.accentColor.color : nil
+                                customTint: isBookmarked ? settings.accentColor.color : nil,
+                                interactive: false
                             )
                             .onTapGesture {
                                 settings.hapticFeedback()

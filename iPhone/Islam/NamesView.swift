@@ -167,8 +167,8 @@ struct NamesView: View {
         ScrollViewReader { proxy in
             List {
                 descriptionSection
-                namesHeaderSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
                 favoriteNamesSection(hasActiveSearch: hasActiveSearch, proxy: proxy)
+                namesHeaderSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
                 namesSections(filteredNames: filteredNames, hasActiveSearch: hasActiveSearch, proxy: proxy)
                 finalInvocationSection
             }
@@ -191,20 +191,18 @@ struct NamesView: View {
     private var descriptionSection: some View {
         Section(header: Text("DESCRIPTION")) {
             Text("Prophet Muhammad ﷺ said, “Allah has 99 names, and whoever believes in their meanings and acts accordingly, will enter Paradise” (Bukhari 6410).")
-                .font(.body)
+                .font(.caption)
+                .foregroundColor(.secondary)
 
             Toggle("Show All Descriptions", isOn: $settings.showDescription.animation(.easeInOut))
-                .font(.subheadline)
+                .font(.caption)
                 .tint(settings.accentColor.color)
         }
     }
 
     private func namesHeaderSection(resultCount: Int, hasActiveSearch: Bool) -> some View {
-        Section(header: namesHeader(resultCount: resultCount, hasActiveSearch: hasActiveSearch)) {
-            Text("Tap a name to expand the description, or search to jump straight to a matching Name of Allah.")
-                .font(.footnote)
-                .foregroundColor(.secondary)
-        }
+        Section(header: namesHeader(resultCount: resultCount, hasActiveSearch: hasActiveSearch)) { }
+        .padding(.bottom, -12)
     }
 
     private func namesHeader(resultCount: Int, hasActiveSearch: Bool) -> some View {

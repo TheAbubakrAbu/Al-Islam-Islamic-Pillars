@@ -9,6 +9,7 @@ struct ConditionalGlassEffect: ViewModifier {
     var useColor: Double? = nil
     /// When set, tints glass with this color (opacity from `useColor`, default 0.35) instead of the app accent.
     var customTint: Color? = nil
+    var interactive: Bool = true
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, watchOS 26.0, *) {
@@ -21,64 +22,28 @@ struct ConditionalGlassEffect: ViewModifier {
     @available(iOS 26.0, watchOS 26.0, *)
     private func modernGlass(content: Content) -> some View {
         Group {
-            if circle {
-                if clear {
-                    if let tintColor {
-                        content.glassEffect(
-                            .clear.tint(tintColor).interactive(),
-                            in: Circle()
-                        )
-                    } else {
-                        content.glassEffect(
-                            .clear.interactive(),
-                            in: Circle()
-                        )
-                    }
-                } else if let tintColor {
-                    content.glassEffect(
-                        .regular.tint(tintColor).interactive(),
-                        in: Circle()
-                    )
-                } else {
-                    content.glassEffect(
-                        .regular.interactive(),
-                        in: Circle()
-                    )
-                }
-            } else if rectangle {
-                if clear {
-                    if let tintColor {
-                        content.glassEffect(
-                            .clear.tint(tintColor).interactive(),
-                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        )
-                    } else {
-                        content.glassEffect(
-                            .clear.interactive(),
-                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        )
-                    }
-                } else if let tintColor {
-                    content.glassEffect(
-                        .regular.tint(tintColor).interactive(),
-                        in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    )
-                } else {
-                    content.glassEffect(
-                        .regular.interactive(),
-                        in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    )
-                }
-            } else if clear {
+            let regularStyle: Glass = {
                 if let tintColor {
-                    content.glassEffect(.clear.tint(tintColor).interactive())
-                } else {
-                    content.glassEffect(.clear.interactive())
+                    return interactive ? .regular.tint(tintColor).interactive() : .regular.tint(tintColor)
                 }
-            } else if let tintColor {
-                content.glassEffect(.regular.tint(tintColor).interactive())
+                return interactive ? .regular.interactive() : .regular
+            }()
+
+            let clearStyle: Glass = {
+                if let tintColor {
+                    return interactive ? .clear.tint(tintColor).interactive() : .clear.tint(tintColor)
+                }
+                return interactive ? .clear.interactive() : .clear
+            }()
+            
+            if circle {
+                content.glassEffect(clear ? clearStyle : regularStyle, in: Circle())
+            } else if rectangle {
+                content.glassEffect(clear ? clearStyle : regularStyle, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            } else if clear {
+                content.glassEffect(clearStyle)
             } else {
-                content.glassEffect(.regular.interactive())
+                content.glassEffect(regularStyle)
             }
         }
         .contentShape(Rectangle())
@@ -159,9 +124,10 @@ extension View {
         rectangle: Bool = false,
         circle: Bool = false,
         useColor: Double? = nil,
-        customTint: Color? = nil
+        customTint: Color? = nil,
+        interactive: Bool = true
     ) -> some View {
-        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, circle: circle, useColor: useColor, customTint: customTint))
+        modifier(ConditionalGlassEffect(clear: clear, rectangle: rectangle, circle: circle, useColor: useColor, customTint: customTint, interactive: interactive))
     }
 
     #if os(iOS)

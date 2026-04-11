@@ -450,6 +450,7 @@ struct QuranView: View {
                 searchResultSections(context: context)
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
+            .compactListSectionSpacing()
             .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
             .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
             #if os(watchOS)
@@ -956,46 +957,63 @@ struct QuranView: View {
             }
             : quranData.quran
 
-        Section(header: EmptyView()) {
-            ForEach(browsedSurahs, id: \.id) { surah in
+        Section(header: surahBrowseHeader(showsRevelationOrder: showsRevelationOrder)) { }
+            .padding(.bottom, -12)
+
+        ForEach(browsedSurahs, id: \.id) { surah in
+            Section {
                 surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
             }
         }
     }
 
+    @ViewBuilder
+    private func surahBrowseHeader(showsRevelationOrder: Bool) -> some View {
+        if showsRevelationOrder {
+            SurahsHeader(text: "REVELATION ORDER")
+        } else {
+            SurahsHeader()
+        }
+    }
+
     private func surahSearchSection(context: SearchDisplayContext) -> some View {
-        Section(header: surahSectionHeader(context: context)) {
+        Group {
+            Section(header: surahSectionHeader(context: context)) { }
+                .padding(.bottom, -12)
+            
             ForEach(context.filteredSurahs, id: \.id) { surah in
-                NavigationLink(destination: ayahsDestination(surah: surah)) {
-                    surahSearchRow(surah: surah, context: context)
-                }
-                .id("surah_\(surah.id)")
-                .onAppear {
-                    if surah.id == scrollToSurahID {
-                        withAnimation {
-                            scrollToSurahID = -1
+                Section {
+                    NavigationLink(destination: ayahsDestination(surah: surah)) {
+                        surahSearchRow(surah: surah, context: context)
+                    }
+                    .id("surah_\(surah.id)")
+                    .onAppear {
+                        if surah.id == scrollToSurahID {
+                            withAnimation {
+                                scrollToSurahID = -1
+                            }
                         }
                     }
-                }
-                .rightSwipeActions(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-                .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
-                #if os(iOS)
-                .contextMenu {
-                    SurahContextMenu(
+                    .rightSwipeActions(
                         surahID: surah.id,
                         surahName: surah.nameTransliteration,
-                        favoriteSurahs: context.favoriteSurahs,
                         searchText: $searchText,
                         scrollToSurahID: $scrollToSurahID
                     )
+                    .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
+                    #if os(iOS)
+                    .contextMenu {
+                        SurahContextMenu(
+                            surahID: surah.id,
+                            surahName: surah.nameTransliteration,
+                            favoriteSurahs: context.favoriteSurahs,
+                            searchText: $searchText,
+                            scrollToSurahID: $scrollToSurahID
+                        )
+                    }
+                    #endif
+                    .animation(.easeInOut, value: searchText)
                 }
-                #endif
-                .animation(.easeInOut, value: searchText)
             }
         }
     }

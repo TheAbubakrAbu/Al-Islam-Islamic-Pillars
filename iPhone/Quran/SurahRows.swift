@@ -81,7 +81,7 @@ struct SurahRow: View {
     
     var body: some View {
         #if os(iOS)
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .bottom, spacing: 12) {
             surahNumberPill
 
             VStack(alignment: .leading, spacing: 2) {
@@ -93,12 +93,11 @@ struct SurahRow: View {
                 
                 HStack {
                     Text(surah.nameTransliteration)
-                        .foregroundColor(.primary)
                         .font(.subheadline.weight(.semibold))
                     
                     Text(surah.nameEnglish)
                         .foregroundColor(.secondary)
-                        .font(.caption)
+                        .font(.caption2)
                 }
 
                 Text(pageLine)
@@ -106,7 +105,7 @@ struct SurahRow: View {
                     .foregroundColor(.secondary)
                 
                 Text(ayahAndRevelationLine)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
             }
 
@@ -115,14 +114,12 @@ struct SurahRow: View {
             HStack {
                 Text(surah.nameArabic)
                     .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
-                    .multilineTextAlignment(.trailing)
                     .foregroundColor(.primary)
-                
+
                 Text(surah.idArabic)
                     .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
                     .foregroundColor(settings.accentColor.color)
             }
-            .padding(.top, 1)
         }
         .padding(.vertical, 6)
         .lineLimit(1)
@@ -221,7 +218,8 @@ struct SurahAyahRow: View {
                         #endif
                         .conditionalGlassEffect(
                             useColor: isBookmarked ? 0.3 : nil,
-                            customTint: isBookmarked ? settings.accentColor.color : nil
+                            customTint: isBookmarked ? settings.accentColor.color : nil,
+                            interactive: false
                         )
                         .onTapGesture {
                             settings.hapticFeedback()
