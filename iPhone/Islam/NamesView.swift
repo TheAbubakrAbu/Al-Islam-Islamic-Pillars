@@ -177,10 +177,20 @@ struct NamesView: View {
         .searchable(text: $searchText)
         #else
         .adaptiveSafeArea(edge: .bottom) {
-            SearchBar(text: $searchText.animation(.easeInOut))
-                .padding(.horizontal, -8)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 8)
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
+                    Text("Quranic Font").tag(true)
+                    Text("Basic Font").tag(false)
+                }
+                .pickerStyle(.segmented)
+                .conditionalGlassEffect()
+                
+                SearchBar(text: $searchText.animation(.easeInOut))
+                    .padding([.horizontal, .top], -8)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+            .background(Color.white.opacity(0.00001))
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
@@ -293,9 +303,9 @@ struct NamesView: View {
     }
 
     private var finalInvocationSection: some View {
-        Section(header: Text("AFTER THE 99 NAMES")) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Call upon Allah or call upon Ar-Rahman. Whichever Name you call, to Him belong the Most Beautiful Names.")
+        Section(header: Text("MOST BEAUTIFUL NAMES")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Call upon Allah or call upon Ar-Rahman (The Entirely Merciful). Whichever Name you call, to Him belong the Most Beautiful Names.")
                     .font(.headline)
                     .foregroundStyle(.primary)
                 
@@ -350,12 +360,21 @@ private struct NameRow: View {
                 Divider()
                 copyMenu
             }
-            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            .swipeActions(edge: .leading) {
                 Button {
                     settings.hapticFeedback()
                     settings.toggleNameFavorite(number: name.number)
                 } label: {
-                    Label(isFavorite ? "Unfavorite" : "Favorite", systemImage: isFavorite ? "star.slash.fill" : "star.fill")
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                }
+                .tint(settings.accentColor.color)
+            }
+            .swipeActions(edge: .trailing) {
+                Button {
+                    settings.hapticFeedback()
+                    settings.toggleNameFavorite(number: name.number)
+                } label: {
+                    Image(systemName: isFavorite ? "star.fill" : "star")
                 }
                 .tint(settings.accentColor.color)
             }
@@ -391,7 +410,7 @@ private struct NameRow: View {
 
                     HStack {
                         Text(name.name.removeDiacriticsFromLastLetter())
-                            .font(.custom(settings.fontArabic, size: 24))
+                            .font(settings.useFontArabic ? .custom(settings.fontArabic, size: 24) : .title2)
                             .foregroundColor(.primary)
                             .lineLimit(1)
 
@@ -424,11 +443,11 @@ private struct NameRow: View {
 
     @ViewBuilder
     private var favoriteMenuItem: some View {
-        Button {
+        Button(role: isFavorite ? .destructive : nil) {
             settings.hapticFeedback()
             settings.toggleNameFavorite(number: name.number)
         } label: {
-            Label(isFavorite ? "Unfavorite" : "Favorite", systemImage: isFavorite ? "star.slash.fill" : "star.fill")
+            Label(isFavorite ? "Unfavorite" : "Favorite", systemImage: isFavorite ? "star.fill" : "star")
         }
     }
 

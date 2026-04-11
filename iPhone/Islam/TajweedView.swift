@@ -21,7 +21,10 @@ struct TajweedFoundationsView: View {
         List {
             Section("TAJWEED LEGEND") {
                 #if os(iOS)
-                Button(action: { showTajweedLegend = true }) {
+                Button {
+                    settings.hapticFeedback()
+                    showTajweedLegend = true
+                } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Quick Reference Guide")
                             .font(.subheadline.weight(.semibold))

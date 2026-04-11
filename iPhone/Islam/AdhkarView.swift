@@ -22,7 +22,7 @@ struct AdhkarRow: View {
                 .foregroundColor(settings.accentColor.color)
                 .multilineTextAlignment(alignArabicTrailing ? .trailing : .leading)
                 .frame(maxWidth: .infinity, alignment: alignArabicTrailing ? .trailing : .leading)
-                .padding(.vertical, -10)
+                .padding(.vertical, useQuranicFont ? -8 : 0)
 
             Text(transliteration)
                 .font(.subheadline)
@@ -73,7 +73,7 @@ struct AdhkarView: View {
         #if os(iOS)
         .adaptiveSafeArea(edge: .bottom) {
             VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                Picker("Arabic Font", selection: $settings.useQuranicArabicFontForAdhkarDua.animation(.easeInOut)) {
+                Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
                     Text("Quranic Font").tag(true)
                     Text("Basic Font").tag(false)
                 }
@@ -115,7 +115,7 @@ struct AdhkarView: View {
                 transliteration: transliteration,
                 translation: translation,
                 alignArabicTrailing: alignArabicTrailing,
-                useQuranicFont: settings.useQuranicArabicFontForAdhkarDua
+                useQuranicFont: settings.useFontArabic
             )
         }
     }

@@ -23,7 +23,22 @@ struct QuranView: View {
     @State private var hasMoreHits = true
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
+    @State private var selectedSurahID: Int? = nil
+    @State private var hasSetDefaultSelection = false
     private let hitPageSize = 5
+
+    /// Computed surah ID that should be selected/highlighted based on reading history, bookmarks, favorites, or default to 1.
+    private var defaultSurahIDForSelection: Int {
+        if hasStoredLastReadAyah {
+            return settings.lastReadSurah
+        } else if let b = resolvedFirstBookmark() {
+            return b.surah.id
+        } else if let favID = settings.favoriteSurahs.sorted().first {
+            return favID
+        } else {
+            return 1
+        }
+    }
 
     private static let arFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -389,10 +404,97 @@ struct QuranView: View {
     @available(iOS 16.0, *)
     private var splitNavigation: some View {
         NavigationSplitView {
-            content
+            contentForSplitView
+                .onAppear {
+                    if !hasSetDefaultSelection {
+                        setDefaultSelection()
+                        hasSetDefaultSelection = true
+                    }
+                }
         } detail: {
-            detailFallback
+            detailContent
+                .animation(.easeInOut(duration: 0.3), value: selectedSurahID)
         }
+    }
+
+    private var contentForSplitView: some View {
+        #if os(iOS)
+        ScrollViewReader { scrollProxy in
+            let context = searchDisplayContext
+
+            List(selection: $selectedSurahID) {
+                primaryHistorySections(context: context)
+                bookmarkSection(context: context)
+                favoriteSection(context: context)
+                if context.explicitPageOrJuzMode && context.isSearching {
+                    pageSearchSection(context: context)
+                    juzSearchSection(context: context)
+                }
+                surahContentSections(context: context)
+                searchResultSections(context: context)
+            }
+            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .compactListSectionSpacing()
+            .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
+            .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
+            .onChange(of: scrollToSurahID) { id in
+                guard id > 0 else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        scrollProxy.scrollTo("surah_\(id)", anchor: .top)
+                    }
+                }
+            }
+            .task {
+                if !hasSetDefaultSelection {
+                    selectedSurahID = defaultSurahIDForSelection
+                    hasSetDefaultSelection = true
+                }
+            }
+        }
+        .navigationTitle("Al-Quran")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                settingsButton
+            }
+        }
+        .sheet(isPresented: $showingSettingsSheet) {
+            NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
+        }
+        .sheet(isPresented: $showReciterPickerSheet) {
+            NavigationView {
+                ReciterListView(dismissAfterSelectingReciter: true, autoScrollToInitialSelection: false)
+                    .environmentObject(settings)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showReciterPickerSheet = false
+                            }
+                        }
+                    }
+            }
+            .navigationViewStyle(.stack)
+            .modifier(QuranReciterPickerSheetPresentationModifier())
+        }
+        .onDisappear {
+            withAnimation {
+                persistQuranSearchHistoryIfNeeded(searchText)
+            }
+        }
+        .onChange(of: settings.displayQiraah) { _ in
+            if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                handleAyahSearchChange(searchText)
+            }
+        }
+        .overlay(alignment: .top) {
+            searchHelpOverlay
+        }
+        .adaptiveSafeArea(edge: .bottom) {
+            bottomControls
+        }
+        #else
+        EmptyView()
+        #endif
     }
 
     private var legacyPadNavigation: some View {
@@ -623,7 +725,8 @@ struct QuranView: View {
                 .conditionalGlassEffect()
                 .padding(.bottom, 2)
         }
-        .padding([.leading, .top], -8)
+        .padding(.leading, -8)
+        .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 0 : -8)
         #else
         EmptyView()
         #endif
@@ -800,14 +903,6 @@ struct QuranView: View {
 
             Spacer()
             
-            Text("\(settings.bookmarkedAyahs.count)")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(settings.accentColor.color)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .conditionalGlassEffect()
-                .padding(.vertical, -16)
-
             Image(systemName: settings.showBookmarks ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
                 .padding(4)
@@ -830,6 +925,7 @@ struct QuranView: View {
                 NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
                     SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
                 }
+                .tag(surah.id)
             }
             .rightSwipeActions(
                 surahID: surah.id,
@@ -874,14 +970,6 @@ struct QuranView: View {
             Text("FAVORITE SURAHS")
 
             Spacer()
-            
-            Text("\(settings.favoriteSurahs.count)")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(settings.accentColor.color)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .conditionalGlassEffect()
-                .padding(.vertical, -16)
 
             Image(systemName: settings.showFavorites ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
@@ -901,6 +989,7 @@ struct QuranView: View {
                 NavigationLink(destination: ayahsDestination(surah: surah)) {
                     SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                 }
+                .tag(surah.id)
             }
             .rightSwipeActions(
                 surahID: surahID,
@@ -986,6 +1075,7 @@ struct QuranView: View {
                     NavigationLink(destination: ayahsDestination(surah: surah)) {
                         surahSearchRow(surah: surah, context: context)
                     }
+                    .tag(surah.id)
                     .id("surah_\(surah.id)")
                     .onAppear {
                         if surah.id == scrollToSurahID {
@@ -1111,6 +1201,7 @@ struct QuranView: View {
                     SurahRow(surah: surah, ayah: ayah, end: true, isFavorite: context.favoriteSurahs.contains(surah.id))
                 }
             }
+            .tag(surah.id)
             #if os(iOS)
             .rightSwipeActions(
                 surahID: surah.id,
@@ -1158,6 +1249,7 @@ struct QuranView: View {
                             SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
                         }
                     }
+                    .tag(surah.id)
                     .id("surah_\(surah.id)")
                     #if os(iOS)
                     .rightSwipeActions(
@@ -1195,6 +1287,7 @@ struct QuranView: View {
                 SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
             }
         }
+        .tag(surah.id)
         .id("surah_\(surah.id)")
         #if os(iOS)
         .rightSwipeActions(
@@ -1666,19 +1759,42 @@ struct QuranView: View {
         settings.lastReadSurah >= 1 && settings.lastReadAyah >= 1
     }
 
-    @ViewBuilder
-    var detailFallback: some View {
-        if hasStoredLastReadAyah, let s = lastReadSurah, let a = lastReadAyah {
-            ayahsDestination(surah: s, ayah: a.id)
-        } else if let b = resolvedFirstBookmark() {
-            ayahsDestination(surah: b.surah, ayah: b.ayah.id)
-        } else if let favID = settings.favoriteSurahs.sorted().first,
-                  let s = quranData.surah(favID) {
-            ayahsDestination(surah: s)
-        } else if let s = quranData.surah(1) {
-            ayahsDestination(surah: s)
-        } else {
-            Color.clear
+    private func setDefaultSelection() {
+        let id = defaultSurahIDForSelection
+        selectedSurahID = id
+        if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            scrollToSurahID = id
+        }
+    }
+
+    private var detailContent: some View {
+        Group {
+            if let surahID = selectedSurahID, let surah = quranData.surah(surahID) {
+                if hasStoredLastReadAyah, let lastRead = lastReadAyah, lastRead.id > 0, settings.lastReadSurah == surahID {
+                    ayahsDestination(surah: surah, ayah: lastRead.id)
+                } else {
+                    ayahsDestination(surah: surah)
+                }
+            } else {
+                detailFallback
+            }
+        }
+    }
+
+    private var detailFallback: some View {
+        Group {
+            if hasStoredLastReadAyah, let s = lastReadSurah, let a = lastReadAyah {
+                ayahsDestination(surah: s, ayah: a.id)
+            } else if let b = resolvedFirstBookmark() {
+                ayahsDestination(surah: b.surah, ayah: b.ayah.id)
+            } else if let favID = settings.favoriteSurahs.sorted().first,
+                      let s = quranData.surah(favID) {
+                ayahsDestination(surah: s)
+            } else if let s = quranData.surah(1) {
+                ayahsDestination(surah: s)
+            } else {
+                Color.clear
+            }
         }
     }
 

@@ -59,8 +59,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural: return "Madd (2 Counts)"
         case .maddSukoon: return "Madd (2, 4, 6)"
-        case .maddConnected: return "Madd in Same Word"
         case .maddSeparated: return "Madd Between Words"
+        case .maddConnected: return "Madd in Same Word"
         case .maddNecessary: return "Madd (6 Counts)"
             
         @unknown default: return rawValue
@@ -85,8 +85,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural: return "مَدٌّ طَبِيعِي"
         case .maddSukoon: return "مَدٌّ عَارِضٌ لِلسُّكُون"
-        case .maddConnected: return "مَدٌّ مُتَّصِل"
         case .maddSeparated: return "مَدٌّ مُنفَصِل"
+        case .maddConnected: return "مَدٌّ مُتَّصِل"
         case .maddNecessary: return "مَدٌّ لَازِم"
 
         @unknown default: return rawValue
@@ -112,8 +112,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural: return "Madd Tabee"
         case .maddSukoon: return "Madd Aarid lis-Sukoon"
-        case .maddConnected: return "Madd Muttasil"
         case .maddSeparated: return "Madd Munfasil"
+        case .maddConnected: return "Madd Muttasil"
         case .maddNecessary: return "Madd Laazim"
             
         @unknown default: return rawValue
@@ -137,8 +137,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural: return "Natural elongation"
         case .maddSukoon: return "Elongation due to end"
-        case .maddConnected: return "Connected elongation"
         case .maddSeparated: return "Separated elongation"
+        case .maddConnected: return "Connected elongation"
         case .maddNecessary: return "Necessary elongation"
             
         @unknown default: return rawValue
@@ -174,10 +174,10 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             return "Madd tabi'i is the baseline natural stretch of 2 counts on alif, waw, or ya after matching vowels."
         case .maddSukoon:
             return "Madd aarid lis-sukoon happens when stopping creates a temporary sukoon after a madd letter, read as 2, 4, or 6 counts."
-        case .maddConnected:
-            return "Madd muttasil is when a madd letter is followed by hamzah in the same word, so it is lengthened beyond natural madd."
         case .maddSeparated:
             return "Madd munfasil is when a word ends with madd and the next word begins with hamzah, so the stretch carries across words."
+        case .maddConnected:
+            return "Madd muttasil is when a madd letter is followed by hamzah in the same word, so it is lengthened beyond natural madd."
         case .maddNecessary:
             return "Madd lazim is an obligatory fixed stretch of 6 counts due to a shaddah after madd."
 
@@ -192,10 +192,10 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             return "2 counts"
         case .maddSukoon:
             return "2, 4, or 6 counts"
-        case .maddConnected:
-            return "4 or 5 counts"
         case .maddSeparated:
             return "2, 4, or 5 counts"
+        case .maddConnected:
+            return "4 or 5 counts"
         case .maddNecessary:
             return "6 counts"
         default:
@@ -226,10 +226,10 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             return "Occurs on madd letters: ا، و، ي (normal 2-count elongation)"
         case .maddSukoon:
             return "When stopping causes sukoon after madd letters: ا، و، ي"
-        case .maddConnected:
-            return "When madd letters (ا، و، ي) are followed by hamzah in the same word"
         case .maddSeparated:
             return "When madd letters (ا، و، ي) are followed by hamzah in the next word"
+        case .maddConnected:
+            return "When madd letters (ا، و، ي) are followed by hamzah in the same word"
         case .maddNecessary:
             return "When madd letters (ا، و، ي) are followed by a permanent sukoon or shaddah"
             
@@ -247,19 +247,19 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .droppedLetter: return Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
         case .idghamBilaGhunnah: return Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
             
+        case .idghamGhunnahLight: return Color(red: 0.2706, green: 0.7373, blue: 0.4510) // 45BC73 light green
+        case .idghamGhunnahHeavy: return Color(red: 0.1216, green: 0.6667, blue: 0.5804) // 1FAA94 teal-accent green
+        case .ikhfaa: return Color(red: 0.4588, green: 0.6980, blue: 0.2000) // 75B233 olive-green
+        case .iqlaab: return Color(red: 0.1294, green: 0.6392, blue: 0.3529) // 21A35A distinct green
+            
         case .tafkhim: return Color(red: 0.2314, green: 0.5216, blue: 0.7608) // 3B85C2
         case .qalqalah: return Color(red: 0.4706, green: 0.8000, blue: 0.9765) // 78CCF9
             
         case .maddNatural: return Color(red: 0.7255, green: 0.5490, blue: 0.1843) // B98C2F
         case .maddSukoon: return Color(red: 0.8902, green: 0.4745, blue: 0.2078) // E37935
-        case .maddConnected: return Color(red: 0.8510, green: 0.2706, blue: 0.2431) // D9453E
         case .maddSeparated: return Color(red: 0.9216, green: 0.3176, blue: 0.6667) // EB51AA
+        case .maddConnected: return Color(red: 0.8510, green: 0.2706, blue: 0.2431) // D9453E
         case .maddNecessary: return Color(red: 0.6824, green: 0.1451, blue: 0.0902) // AE2517
-            
-        case .idghamGhunnahHeavy: return Color(red: 0.1216, green: 0.6667, blue: 0.5804) // 1FAA94 teal-accent green
-        case .idghamGhunnahLight: return Color(red: 0.2706, green: 0.7373, blue: 0.4510) // 45BC73 light green
-        case .ikhfaa: return Color(red: 0.4588, green: 0.6980, blue: 0.2000) // 75B233 olive-green
-        case .iqlaab: return Color(red: 0.1294, green: 0.6392, blue: 0.3529) // 21A35A distinct green
             
         @unknown default: return Color.secondary
         }
@@ -281,20 +281,23 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
     var sortRank: Int {
         switch self {
         case .lamShamsiyah: return 0
-        case .hamzatWaslSilent: return 1
-        case .droppedLetter: return 2
-        case .tafkhim: return 3
-        case .qalqalah: return 4
-        case .maddNatural: return 5
-        case .maddSukoon: return 6
-        case .maddConnected: return 7
-        case .maddSeparated: return 8
-        case .maddNecessary: return 9
-        case .idghamGhunnahHeavy: return 10
-        case .idghamGhunnahLight: return 11
-        case .ikhfaa: return 12
-        case .iqlaab: return 13
-        case .idghamBilaGhunnah: return 14
+        case .droppedLetter: return 1
+        case .hamzatWaslSilent: return 2
+        case .idghamBilaGhunnah: return 3
+            
+        case .idghamGhunnahLight: return 4
+        case .idghamGhunnahHeavy: return 5
+        case .ikhfaa: return 6
+        case .iqlaab: return 7
+            
+        case .qalqalah: return 8
+        case .tafkhim: return 9
+            
+        case .maddNatural: return 10
+        case .maddSukoon: return 11
+        case .maddSeparated: return 12
+        case .maddConnected: return 13
+        case .maddNecessary: return 14
         }
     }
 
@@ -302,34 +305,38 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         switch self {
         case .lamShamsiyah:
             return "Lam of al- is silent before sun letters."
-        case .hamzatWaslSilent:
-            return "Start-only hamzah; dropped when connecting."
         case .droppedLetter:
             return "Letter written in the script but dropped in recitation."
-        case .tafkhim:
-            return "Heavy, full-mouth pronunciation."
-        case .qalqalah:
-            return "Qutb jad letters bounce on sukoon/stop."
-        case .maddNatural:
-            return "Normal 2-count madd elongation."
-        case .maddSukoon:
-            return "Stop-based madd with 2, 4, or 6 counts."
-        case .maddConnected:
-            return "Madd letter + hamzah in one word."
-        case .maddSeparated:
-            return "Madd at word end before next hamzah."
-        case .maddNecessary:
-            return "Fixed required madd due to shaddah after madd."
-        case .idghamGhunnahHeavy:
-            return "Merge into next with heavier nasal ghunnah."
+        case .hamzatWaslSilent:
+            return "Start-only hamzah; dropped when connecting."
+            
         case .idghamGhunnahLight:
             return "Merge into next with lighter nasal ghunnah."
+        case .idghamGhunnahHeavy:
+            return "Merge into next with heavier nasal ghunnah."
         case .ikhfaa:
             return "Hide noon/tanween with ghunnah."
         case .iqlaab:
             return "Noon/tanween turns to meem before baa."
         case .idghamBilaGhunnah:
             return "Silent-style merge into next without nasal sound."
+            
+        case .qalqalah:
+            return "Qutb jad letters bounce on sukoon/stop."
+        case .tafkhim:
+            return "Heavy, full-mouth pronunciation."
+            
+        case .maddNatural:
+            return "Normal 2-count madd elongation."
+        case .maddSukoon:
+            return "Stop-based madd with 2, 4, or 6 counts."
+        case .maddSeparated:
+            return "Madd at word end before next hamzah."
+        case .maddConnected:
+            return "Madd letter + hamzah in one word."
+        case .maddNecessary:
+            return "Fixed required madd due to shaddah after madd."
+            
         @unknown default:
             return "Tajweed rule"
         }
@@ -339,34 +346,38 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         switch self {
         case .lamShamsiyah:
             return "In connected recitation, this appears most clearly in words beginning with al- followed by sun letters (like ta, daal, seen, sheen). The lam remains in writing but is absorbed into the next consonant, which is heard with emphasis/doubling."
-        case .hamzatWaslSilent:
-            return "Its role is to allow smooth word-initial pronunciation when starting, but to avoid extra breaks mid-flow when linking words. In practice, students should test both states: start from the word (hear hamzah), then connect from before it (hamzah drops)."
         case .droppedLetter:
             return "This is a practical reading aid for orthographic letters preserved in the Uthmani script while the transmitted recitation does not fully sound them. Examples can include dropped alif, dropped yaa, or similar written forms that remain visible for script fidelity."
-        case .tafkhim:
-            return "A useful way to hear it is contrast: read the same syllable lightly, then with tafkhim, and notice the darker resonance. It is strongest on isti'la letters and should stay controlled so heaviness does not spread into nearby vowels or letters."
-        case .qalqalah:
-            return "The effect is a quick release, not an added harakah and not a long vowel. Strength can vary by position, but the principle stays the same: keep it crisp and brief so the consonant remains clear without over-bouncing."
-        case .maddNatural:
-            return "Because it is the reference madd length, mastering its steady two-count rhythm helps calibrate all longer madd forms. The stretch should sound even and relaxed, not clipped and not drifting longer than intended."
-        case .maddSukoon:
-            return "The key condition is pausing at the word ending; if you continue reading (wasl), this special stop-based extension is usually not applied the same way. Recitation schools permit 2, 4, or 6 counts here, so consistency within a reading style matters."
-        case .maddConnected:
-            return "Since both elements occur inside one word, this is treated as a stronger extension than natural madd. Keep the elongation measured and stable according to your riwayah so the hamzah after it remains clear and not swallowed."
-        case .maddSeparated:
-            return "Because the hamzah is in the following word, scholars classify this separately from muttasil. Allowed lengths vary by riwayah, so learners should follow one taught pattern and avoid switching counts randomly in the same recitation."
-        case .maddNecessary:
-            return "This category is fixed and not flexible like optional madd forms, so it should be given its full required length whenever encountered. Its consistency is one of the easiest ways to stabilize rhythm and accuracy in longer passages."
-        case .idghamGhunnahHeavy:
-            return "Compared with lighter nasal merges, this shade indicates a fuller ghunnah feel while still keeping articulation clean into the next letter. The goal is strength without muddiness: clear merge, clear timing, clear nasal resonance."
+        case .hamzatWaslSilent:
+            return "Its role is to allow smooth word-initial pronunciation when starting, but to avoid extra breaks mid-flow when linking words. In practice, students should test both states: start from the word (hear hamzah), then connect from before it (hamzah drops)."
+        
+        case .idghamBilaGhunnah:
+            return "Unlike ghunnah-based merges, no nasal hold is maintained here; the sound moves straight into the target letter. This makes timing cleaner and shorter, so avoid adding extra nasal color by habit."
         case .idghamGhunnahLight:
             return "This uses the same merge principle but with a gentler nasal profile than the heavy variant. It should remain audible enough to guide recitation, yet subtle enough to preserve smooth flow and letter clarity."
+        case .idghamGhunnahHeavy:
+            return "Compared with lighter nasal merges, this shade indicates a fuller ghunnah feel while still keeping articulation clean into the next letter. The goal is strength without muddiness: clear merge, clear timing, clear nasal resonance."
         case .ikhfaa:
             return "Think of it as a middle state between full clarity and full assimilation. The tongue position anticipates the next letter while the ghunnah carries the transition, so timing and balance are more important than force."
         case .iqlaab:
             return "The practical cue is the following baa: articulation shifts toward the lips with a meem-quality nasal sound before entering baa. Done correctly, the transition sounds natural and connected rather than abrupt."
-        case .idghamBilaGhunnah:
-            return "Unlike ghunnah-based merges, no nasal hold is maintained here; the sound moves straight into the target letter. This makes timing cleaner and shorter, so avoid adding extra nasal color by habit."
+            
+        case .qalqalah:
+            return "The effect is a quick release, not an added harakah and not a long vowel. Strength can vary by position, but the principle stays the same: keep it crisp and brief so the consonant remains clear without over-bouncing."
+        case .tafkhim:
+            return "A useful way to hear it is contrast: read the same syllable lightly, then with tafkhim, and notice the darker resonance. It is strongest on isti'la letters and should stay controlled so heaviness does not spread into nearby vowels or letters."
+        
+        case .maddNatural:
+            return "Because it is the reference madd length, mastering its steady two-count rhythm helps calibrate all longer madd forms. The stretch should sound even and relaxed, not clipped and not drifting longer than intended."
+        case .maddSukoon:
+            return "The key condition is pausing at the word ending; if you continue reading (wasl), this special stop-based extension is usually not applied the same way. Recitation schools permit 2, 4, or 6 counts here, so consistency within a reading style matters."
+        case .maddSeparated:
+            return "Because the hamzah is in the following word, scholars classify this separately from muttasil. Allowed lengths vary by riwayah, so learners should follow one taught pattern and avoid switching counts randomly in the same recitation."
+        case .maddConnected:
+            return "Since both elements occur inside one word, this is treated as a stronger extension than natural madd. Keep the elongation measured and stable according to your riwayah so the hamzah after it remains clear and not swallowed."
+        case .maddNecessary:
+            return "This category is fixed and not flexible like optional madd forms, so it should be given its full required length whenever encountered. Its consistency is one of the easiest ways to stabilize rhythm and accuracy in longer passages."
+            
         @unknown default:
             return "Tajweed rule"
         }

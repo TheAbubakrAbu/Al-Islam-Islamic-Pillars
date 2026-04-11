@@ -391,7 +391,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
 
     @AppStorage("beginnerMode") var beginnerMode: Bool = false
-    @AppStorage("useQuranicArabicFontForAdhkarDua") var useQuranicArabicFontForAdhkarDua: Bool = true
 
     enum QuranSortMode: String, CaseIterable, Identifiable {
         case surah
@@ -551,7 +550,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showTajweedMaddConnected") var showTajweedMaddConnected: Bool = true
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
     @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
-    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10
+    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .title1).pointSize)
 
     @AppStorage("useFontArabic") var useFontArabic = true
 

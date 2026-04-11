@@ -308,7 +308,7 @@ struct NowPlayingView: View {
 
         Divider()
 
-        Button {
+        Button(role: isFavorite ? .destructive : nil) {
             settings.hapticFeedback()
             settings.toggleSurahFavorite(surah: context.surah.id)
         } label: {
@@ -318,7 +318,7 @@ struct NowPlayingView: View {
             )
         }
 
-        Button {
+        Button(role: isBookmarked ? .destructive : nil) {
             settings.hapticFeedback()
             toggleBookmarkWithNoteGuard()
         } label: {

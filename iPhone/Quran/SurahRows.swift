@@ -29,7 +29,7 @@ struct SurahRow: View {
     }
 
     private var ayahAndRevelationLine: String {
-        "\(surah.numberOfAyahs) Ayahs • \(revelationEmoji)"
+        "\(surah.numberOfAyahs) Ayahs \(revelationEmoji)"
     }
 
     private var pageLine: String {
@@ -81,7 +81,7 @@ struct SurahRow: View {
     
     var body: some View {
         #if os(iOS)
-        HStack(alignment: .bottom, spacing: 12) {
+        HStack(alignment: .center) {
             surahNumberPill
 
             VStack(alignment: .leading, spacing: 2) {
@@ -94,6 +94,7 @@ struct SurahRow: View {
                 HStack {
                     Text(surah.nameTransliteration)
                         .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.primary)
                     
                     Text(surah.nameEnglish)
                         .foregroundColor(.secondary)
@@ -108,17 +109,20 @@ struct SurahRow: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer(minLength: 8)
-
-            HStack {
-                Text(surah.nameArabic)
-                    .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
-                    .foregroundColor(.primary)
-
-                Text(surah.idArabic)
-                    .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
-                    .foregroundColor(settings.accentColor.color)
+            if UIDevice.current.userInterfaceIdiom != .pad {
+                HStack {
+                    Text(surah.nameArabic)
+                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
+                        .foregroundColor(.primary)
+                    
+                    Text(surah.idArabic)
+                        .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
+                        .foregroundColor(settings.accentColor.color)
+                }
+                .minimumScaleFactor(1)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
         .padding(.vertical, 6)
@@ -464,7 +468,7 @@ struct LastListenedSurahRow: View {
                         settings.lastListenedSurah = nil
                     }
                 } label: {
-                    Label("Remove", systemImage: "trash")
+                    Label("Remove", systemImage: "minus.circle")
                 }
 
                 Divider()
@@ -564,6 +568,7 @@ struct LastReadAyahRow: View {
             NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
                 SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
             }
+            .tag(surah.id)
             .rightSwipeActions(
                 surahID: surah.id,
                 surahName: surah.nameTransliteration,
@@ -600,6 +605,7 @@ struct LastReadAyahRow: View {
                             )
                             .opacity(0.6)
                         }
+                        .tag(surah.id)
                         .rightSwipeActions(
                             surahID: surah.id,
                             surahName: surah.nameTransliteration,

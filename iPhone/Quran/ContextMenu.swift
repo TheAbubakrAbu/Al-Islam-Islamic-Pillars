@@ -533,7 +533,7 @@ struct AyahContextMenuModifier: ViewModifier {
                             settings.lastReadSurah = 0
                             settings.lastReadAyah = 0
                         }
-                    } label: { Label("Remove", systemImage: "trash") }
+                    } label: { Label("Remove", systemImage: "minus.circle") }
                     
                     Divider()
                 }
@@ -564,7 +564,7 @@ struct AyahContextMenuModifier: ViewModifier {
                         settings.hapticFeedback()
                         removeNote()
                     } label: {
-                        Label("Remove Note", systemImage: "trash")
+                        Label("Remove Note", systemImage: "minus.circle")
                     }
                 }
 

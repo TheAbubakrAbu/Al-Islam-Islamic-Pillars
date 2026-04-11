@@ -718,7 +718,7 @@ struct AyahRow: View {
                     settings.hapticFeedback()
                     removeNote()
                 } label: {
-                    Label("Remove Note", systemImage: "trash")
+                    Label("Remove Note", systemImage: "minus.circle")
                 }
             }
 

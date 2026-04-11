@@ -24,13 +24,13 @@ struct DateView: View {
         hijriCal.locale = Locale(identifier: "ar")
         fmt.calendar = hijriCal
         fmt.locale = Locale(identifier: "en")
-        fmt.dateFormat = "EEEE, d MMMM yyyy"
+        fmt.dateFormat = "d MMMM yyyy"
         return fmt
     }()
     private static let gregFormatter: DateFormatter = {
         let fmt = DateFormatter()
         fmt.calendar = Calendar(identifier: .gregorian)
-        fmt.dateFormat = "EEEE, d MMMM yyyy"
+        fmt.dateFormat = "d MMMM yyyy"
         return fmt
     }()
 

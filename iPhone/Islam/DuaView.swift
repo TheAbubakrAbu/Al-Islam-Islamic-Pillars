@@ -14,7 +14,7 @@ struct DuaView: View {
         #if os(iOS)
         .adaptiveSafeArea(edge: .bottom) {
             VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                Picker("Arabic Font", selection: $settings.useQuranicArabicFontForAdhkarDua.animation(.easeInOut)) {
+                Picker("Arabic Font", selection: $settings.useFontArabic.animation(.easeInOut)) {
                     Text("Quranic Font").tag(true)
                     Text("Basic Font").tag(false)
                 }
@@ -56,7 +56,7 @@ struct DuaView: View {
                 transliteration: transliteration,
                 translation: translation,
                 alignArabicTrailing: alignArabicTrailing,
-                useQuranicFont: settings.useQuranicArabicFontForAdhkarDua
+                useQuranicFont: settings.useFontArabic
             )
         }
     }
@@ -120,10 +120,6 @@ struct DuaView: View {
     private var virtuesSection: some View {
         Section(header: Text("VIRTUES OF DUA")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("The Virtues of Dua")
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-
                 Text("Dua is an act of worship and a direct connection with Allah. No sincere call is lost: it is answered now, delayed for wisdom, or stored as reward.")
                     .font(.subheadline)
                     .foregroundColor(.primary)

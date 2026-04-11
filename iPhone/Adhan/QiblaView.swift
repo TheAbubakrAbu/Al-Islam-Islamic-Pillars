@@ -132,9 +132,8 @@ struct QiblaView: View {
                     .minimumScaleFactor(0.75)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal)
         .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
         .conditionalGlassEffect()
         .shadow(color: .primary.opacity(0.08), radius: 8, y: 2)
     }

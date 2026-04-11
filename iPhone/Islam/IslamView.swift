@@ -3,6 +3,23 @@ import SwiftUI
 struct IslamView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var namesData: NamesViewModel
+    #if os(iOS)
+    @State private var selectedResource: IslamDestination? = .arabicAlphabet
+    @State private var hasSetDefaultSelection = false
+
+    private enum IslamDestination: Hashable {
+        case arabicAlphabet
+        case tajweedFoundations
+        case commonAdhkar
+        case commonDuas
+        case tasbihCounter
+        case namesOfAllah
+        case hijriCalendarConverter
+        case masjidLocator
+        case islamicWallpapers
+        case pillarsAndBasics
+    }
+    #endif
 
     var body: some View {
         navigationContainer
@@ -14,9 +31,16 @@ struct IslamView: View {
             if #available(iOS 16.0, *) {
                 if UIDevice.current.userInterfaceIdiom == .pad {
                     NavigationSplitView {
-                        islamList
+                        islamSplitList
+                            .onAppear {
+                                if !hasSetDefaultSelection {
+                                    selectedResource = .arabicAlphabet
+                                    hasSetDefaultSelection = true
+                                }
+                            }
                     } detail: {
-                        ArabicView()
+                        islamSplitDetail
+                            .animation(.easeInOut(duration: 0.25), value: selectedResource)
                     }
                 } else {
                     NavigationStack {
@@ -47,6 +71,45 @@ struct IslamView: View {
         .navigationTitle("Al-Islam")
         //.navigationTitle("Tools")
     }
+
+    #if os(iOS)
+    @available(iOS 16.0, *)
+    private var islamSplitList: some View {
+        List(selection: $selectedResource) {
+            resourcesSectionSplit
+            ProphetQuote()
+            AlIslamAppsSection()
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle("Al-Islam")
+    }
+
+    @ViewBuilder
+    private var islamSplitDetail: some View {
+        switch selectedResource ?? .arabicAlphabet {
+        case .arabicAlphabet:
+            ArabicView()
+        case .tajweedFoundations:
+            TajweedFoundationsView()
+        case .commonAdhkar:
+            AdhkarView()
+        case .commonDuas:
+            DuaView()
+        case .tasbihCounter:
+            TasbihView()
+        case .namesOfAllah:
+            NamesView()
+        case .hijriCalendarConverter:
+            DateView()
+        case .masjidLocator:
+            MasjidLocatorView()
+        case .islamicWallpapers:
+            WallpaperView()
+        case .pillarsAndBasics:
+            PillarsView()
+        }
+    }
+    #endif
 
     private var resourcesSection: some View {
         Section(header: Text("ISLAMIC RESOURCES")) {
@@ -94,6 +157,39 @@ struct IslamView: View {
         }
     }
 
+    #if os(iOS)
+    @available(iOS 16.0, *)
+    private var resourcesSectionSplit: some View {
+        Section(header: Text("ISLAMIC RESOURCES")) {
+            splitResourceLink(title: "Arabic Alphabet", systemImage: "textformat.size.ar", value: .arabicAlphabet)
+            splitResourceLink(title: "Tajweed Foundations", systemImage: "waveform", value: .tajweedFoundations)
+            splitResourceLink(title: "Common Adhkar", systemImage: "book.closed", value: .commonAdhkar)
+            splitResourceLink(title: "Common Duas", systemImage: "text.book.closed", value: .commonDuas)
+            splitResourceLink(title: "Tasbih Counter", systemImage: "circles.hexagonpath.fill", value: .tasbihCounter)
+            splitResourceLink(title: "99 Names of Allah", systemImage: "signature", value: .namesOfAllah)
+
+            #if os(iOS)
+            splitResourceLink(title: "Hijri Calendar Converter", systemImage: "calendar", value: .hijriCalendarConverter)
+            splitResourceLink(title: "Masjid Locator", systemImage: "mappin.and.ellipse", value: .masjidLocator)
+            #endif
+
+            splitResourceLink(title: "Islamic Wallpapers", systemImage: "photo.on.rectangle", value: .islamicWallpapers)
+            splitResourceLink(title: "Islamic Pillars and Basics", systemImage: "moon.stars", value: .pillarsAndBasics)
+        }
+    }
+
+    @available(iOS 16.0, *)
+    private func splitResourceLink(
+        title: String,
+        systemImage: String,
+        value: IslamDestination
+    ) -> some View {
+        NavigationLink(value: value) {
+            toolLabel(title, systemImage: systemImage)
+        }
+    }
+    #endif
+    
     private func resourceLink<Destination: View>(
         title: String,
         systemImage: String,
@@ -106,14 +202,16 @@ struct IslamView: View {
 
     private func toolLabel(_ title: String, systemImage: String) -> some View {
         Label(
-            title: { Text(title) },
+            title: {
+                Text(title)
+                    .foregroundColor(.primary)
+            },
             icon: {
                 Image(systemName: systemImage)
                     .foregroundColor(settings.accentColor.color)
             }
         )
         .padding(.vertical, 4)
-        .accentColor(settings.accentColor.color)
     }
 }
 

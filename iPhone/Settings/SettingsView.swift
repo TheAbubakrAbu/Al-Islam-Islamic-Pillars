@@ -5,6 +5,15 @@ struct SettingsView: View {
     @EnvironmentObject var quranData: QuranData
     
     @State private var showingCredits = false
+    @State private var selectedDestination: SettingsDestination? = .quranSettings
+    @State private var hasSetDefaultSelection = false
+
+    private enum SettingsDestination: Hashable {
+        case notification
+        case manualOffsets
+        case prayerSettings
+        case quranSettings
+    }
 
     var body: some View {
         navigationContainer
@@ -16,9 +25,16 @@ struct SettingsView: View {
             if #available(iOS 16.0, *) {
                 if UIDevice.current.userInterfaceIdiom == .pad {
                     NavigationSplitView {
-                        settingsList
+                        settingsSplitList
+                            .onAppear {
+                                if !hasSetDefaultSelection {
+                                    selectedDestination = .quranSettings
+                                    hasSetDefaultSelection = true
+                                }
+                            }
                     } detail: {
-                        SettingsQuranView(showEdits: true)
+                        settingsSplitDetail
+                            .animation(.easeInOut(duration: 0.25), value: selectedDestination)
                     }
                 } else {
                     NavigationStack {
@@ -55,6 +71,37 @@ struct SettingsView: View {
         .applyConditionalListStyle(defaultView: true)
     }
 
+    #if os(iOS)
+    @available(iOS 16.0, *)
+    private var settingsSplitList: some View {
+        List(selection: $selectedDestination) {
+            notificationSectionSplit
+            manualOffsetsSectionSplit
+            adhanSectionSplit
+            quranSectionSplit
+            appearanceSection
+            creditsSection
+            AlIslamAppsSection()
+        }
+        .navigationTitle("Settings")
+        .applyConditionalListStyle(defaultView: true)
+    }
+
+    @ViewBuilder
+    private var settingsSplitDetail: some View {
+        switch selectedDestination ?? .quranSettings {
+        case .notification:
+            NotificationView()
+        case .manualOffsets:
+            manualOffsetDestination
+        case .prayerSettings:
+            SettingsAdhanView(showNotifications: false)
+        case .quranSettings:
+            SettingsQuranView(showEdits: true)
+        }
+    }
+    #endif
+
     private func resourceLink<Destination: View>(
         title: String,
         systemImage: String,
@@ -68,14 +115,28 @@ struct SettingsView: View {
 
     private func toolLabel(_ title: String, systemImage: String) -> some View {
         Label(
-            title: { Text(title) },
+            title: {
+                Text(title)
+                    .foregroundColor(.primary)
+            },
             icon: {
                 Image(systemName: systemImage)
                     .foregroundColor(settings.accentColor.color)
             }
         )
         .padding(.vertical, 4)
-        .accentColor(settings.accentColor.color)
+    }
+
+    @available(iOS 16.0, *)
+    private func splitResourceLink(
+        title: String,
+        systemImage: String,
+        value: SettingsDestination
+    ) -> some View {
+        NavigationLink(value: value) {
+            toolLabel(title, systemImage: systemImage)
+        }
+        .tint(settings.accentColor.color)
     }
 
     @ViewBuilder
@@ -89,6 +150,14 @@ struct SettingsView: View {
         #endif
     }
 
+    @available(iOS 16.0, *)
+    @ViewBuilder
+    private var notificationSectionSplit: some View {
+        Section(header: Text("NOTIFICATIONS")) {
+            splitResourceLink(title: "Notification Settings", systemImage: "bell.badge", value: .notification)
+        }
+    }
+
     @ViewBuilder
     private var manualOffsetsSection: some View {
         #if os(iOS)
@@ -98,6 +167,14 @@ struct SettingsView: View {
             }
         }
         #endif
+    }
+
+    @available(iOS 16.0, *)
+    @ViewBuilder
+    private var manualOffsetsSectionSplit: some View {
+        Section(header: Text("MANUAL OFFSETS")) {
+            splitResourceLink(title: "Manual Offset Settings", systemImage: "slider.horizontal.3", value: .manualOffsets)
+        }
     }
 
     private var manualOffsetDestination: some View {
@@ -134,11 +211,25 @@ struct SettingsView: View {
         }
     }
 
+    @available(iOS 16.0, *)
+    private var adhanSectionSplit: some View {
+        Section(header: Text("AL-ADHAN")) {
+            splitResourceLink(title: "Prayer Settings", systemImage: "safari", value: .prayerSettings)
+        }
+    }
+
     private var quranSection: some View {
         Section(header: Text("AL-QURAN")) {
             resourceLink(title: "Quran Settings", systemImage: "character.book.closed.ar") {
                 SettingsQuranView(showEdits: true)
             }
+        }
+    }
+
+    @available(iOS 16.0, *)
+    private var quranSectionSplit: some View {
+        Section(header: Text("AL-QURAN")) {
+            splitResourceLink(title: "Quran Settings", systemImage: "character.book.closed.ar", value: .quranSettings)
         }
     }
 

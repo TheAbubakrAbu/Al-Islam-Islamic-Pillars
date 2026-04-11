@@ -200,7 +200,7 @@ struct SettingsQuranView: View {
 
             #if os(iOS)
             NavigationLink(destination: TajweedLegendView()) {
-                Text("Open Tajweed Legend")
+                Text("Customize Tajweed Colors")
                     .font(.subheadline)
                     .foregroundColor(settings.accentColor.color)
             }
@@ -482,19 +482,15 @@ private struct MurattalSectionHeader: View {
     let subtitle: String
 
     var body: some View {
-        HStack(spacing: 6) {
+        VStack(alignment: .leading) {
             Text(title)
-                .lineLimit(2)
-                .minimumScaleFactor(0.75)
 
-            Text("- \(subtitle)")
+            Text(subtitle)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.65)
-
-            Spacer(minLength: 0)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
     }
 }
 
@@ -813,7 +809,8 @@ struct ReciterListView: View {
                 "maher al-muaiqly",
                 "abdullah al-juhany",
                 "bandar baleela",
-                "yasser al-dosari"
+                "yasser al-dosari",
+                "badr al-turki"
             ]
         )
 
@@ -1080,7 +1077,7 @@ struct ReciterListView: View {
                         Section {
                             Button {
                                 settings.hapticFeedback()
-                                withAnimation(.easeInOut) {
+                                withAnimation {
                                     splitMurattalRecitersByGroup.toggle()
                                 }
                             } label: {
@@ -1389,18 +1386,24 @@ struct ReciterListView: View {
             }
             #endif
         } label: {
-            HStack {
-                Label(Settings.randomReciterName, systemImage: "shuffle")
-                    .foregroundColor(settings.reciter == Settings.randomReciterName ? settings.accentColor.color : .primary)
-
-                Spacer()
-
-                Image(systemName: "checkmark")
-                    .foregroundColor(settings.accentColor.color)
-                    .opacity(settings.reciter == Settings.randomReciterName ? 1 : 0)
+            VStack(alignment: .leading) {
+                HStack {
+                    Label(Settings.randomReciterName, systemImage: "shuffle")
+                        .foregroundColor(settings.reciter == Settings.randomReciterName ? settings.accentColor.color : .primary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "checkmark")
+                        .foregroundColor(settings.accentColor.color)
+                        .opacity(settings.reciter == Settings.randomReciterName ? 1 : 0)
+                }
+                .font(.subheadline)
+                .padding(.vertical, 4)
+                
+                Text("A new reciter is chosen at random for every session.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .font(.subheadline)
-            .padding(.vertical, 4)
         }
         .id(Settings.randomReciterName)
     }
@@ -1467,7 +1470,7 @@ struct ReciterListView: View {
                                     }
                                 }
                         } else if hasDownloads {
-                            Image(systemName: "trash")
+                            Image(systemName: "minus.circle")
                                 .foregroundColor(.red)
                                 .onTapGesture {
                                     settings.hapticFeedback()

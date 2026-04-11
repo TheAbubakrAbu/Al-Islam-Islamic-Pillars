@@ -234,6 +234,7 @@ struct TajweedLegendView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Done") {
+                    settings.hapticFeedback()
                     presentationMode.wrappedValue.dismiss()
                 }
             }
