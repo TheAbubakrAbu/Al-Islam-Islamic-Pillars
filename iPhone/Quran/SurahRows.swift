@@ -125,7 +125,6 @@ struct SurahRow: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
-        .padding(.vertical, 6)
         .lineLimit(1)
         .minimumScaleFactor(0.75)
         #else
