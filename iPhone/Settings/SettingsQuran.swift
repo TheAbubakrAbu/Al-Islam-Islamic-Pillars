@@ -1,6 +1,83 @@
 import SwiftUI
 
 extension Settings {
+    // MARK: - Quran types and constants
+
+    static let randomReciterName = "Random Reciter"
+
+    enum QuranSortMode: String, CaseIterable, Identifiable {
+        case surah
+        case juz
+        case page
+        case revelation
+
+        var id: String { rawValue }
+    }
+
+    enum Riwayah {
+        static let hafsTag = ""
+        static let hafsLabel = "Hafs an Asim (default)"
+
+        static let shubah = "Shubah an Asim"
+        static let khalaf = "Khalaf an Hamzah"
+        static let buzzi = "al-Bazzi an Ibn Kathir"
+        static let qunbul = "Qunbul an Ibn Kathir"
+        static let warsh = "Warsh an Nafi"
+        static let qaloon = "Qalun an Nafi"
+        static let duri = "ad-Duri an Abi Amr"
+        static let susi = "as-Susi an Abi Amr"
+
+        static let warshArabic = "ورش عن نافع"
+        static let qaloonArabic = "قالون عن نافع"
+        static let duriArabic = "الدوري عن أبي عمرو"
+        static let susiArabic = "السوسي عن أبي عمرو"
+        static let buzziArabic = "البزي عن ابن كثير"
+        static let qunbulArabic = "قنبل عن ابن كثير"
+        static let shubahArabic = "شعبة عن عاصم"
+        static let khalafArabic = "خلف عن حمزة"
+
+        static let menuOptions: [(label: String, tag: String)] = [
+            (hafsLabel, hafsTag),
+            (shubah, shubah),
+            (buzzi, buzzi),
+            (qunbul, qunbul),
+            (warsh, warsh),
+            (qaloon, qaloon),
+            (duri, duri),
+            (susi, susi),
+        ]
+
+        static let arabicCaptionByTag: [String: String] = [
+            hafsTag: "حفص عن عاصم",
+            warsh: warshArabic,
+            qaloon: qaloonArabic,
+            duri: duriArabic,
+            susi: susiArabic,
+            buzzi: buzziArabic,
+            qunbul: qunbulArabic,
+            shubah: shubahArabic,
+            khalaf: khalafArabic,
+        ]
+
+        static func canonicalTag(_ stored: String) -> String {
+            let raw = stored.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch raw {
+            case "", "Hafs", "Hafs an Asim", hafsLabel: return hafsTag
+            case warsh, "Warsh An Nafi": return warsh
+            case qaloon, "Qaloon an Nafi", "Qaloon An Nafi": return qaloon
+            case duri, "Ad-Duri an Abi Amr": return duri
+            case susi, "As-Susi an Abi Amr": return susi
+            case buzzi, "Al-Buzzi an Ibn Kathir": return buzzi
+            case qunbul, "Qumbul an Ibn Kathir": return qunbul
+            case shubah, "Shu'bah an Asim", "Shu'bah an Aasim", "Shouba an Asim": return shubah
+            case khalaf: return khalaf
+            default: return raw
+            }
+        }
+    }
+
+    // MARK: - Quran migrations and reciter selection
+
     /// Consolidated startup migrations for Quran sort mode and reciter persistence.
     func runQuranStartupMigrations() {
         let defaults = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName)
@@ -93,20 +170,6 @@ extension Settings {
 
     func isSurahFavorite(surah: Int) -> Bool {
         return favoriteSurahs.contains(surah)
-    }
-
-    func toggleNameFavorite(number: Int) {
-        withAnimation {
-            if isNameFavorite(number: number) {
-                favoriteNameNumbers.removeAll(where: { $0 == number })
-            } else {
-                favoriteNameNumbers.append(number)
-            }
-        }
-    }
-
-    func isNameFavorite(number: Int) -> Bool {
-        favoriteNameNumbers.contains(number)
     }
 
     func toggleBookmark(surah: Int, ayah: Int) {
@@ -237,5 +300,26 @@ extension Settings {
 
     func removeQuranSearchHistory(_ query: String) {
         quranSearchHistory.removeAll { $0.caseInsensitiveCompare(query) == .orderedSame }
+    }
+
+    // MARK: - Quran favorites
+
+    func toggleReciterFavorite(reciterID: String) {
+        let trimmed = reciterID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        withAnimation {
+            if isReciterFavorite(reciterID: trimmed) {
+                favoriteReciterIDs.removeAll(where: { $0 == trimmed })
+            } else {
+                favoriteReciterIDs.append(trimmed)
+            }
+        }
+    }
+
+    func isReciterFavorite(reciterID: String) -> Bool {
+        let trimmed = reciterID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        return favoriteReciterIDs.contains(trimmed)
     }
 }

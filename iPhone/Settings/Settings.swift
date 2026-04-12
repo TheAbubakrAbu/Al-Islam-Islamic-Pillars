@@ -22,7 +22,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }()
 
     private override init() {
-        self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green
+        self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green // .yellow
         
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
@@ -331,8 +331,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     // MARK: - Quran — @AppStorage
     
-    static let randomReciterName = "Random Reciter"
-    
     @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
 
     /// Disambiguates reciters that share the same display name (qiraah / surah base URL).
@@ -364,16 +362,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
-    @AppStorage("favoriteNameNumbersData") private var favoriteNameNumbersData = Data()
-    var favoriteNameNumbers: [Int] {
-        get {
-            (try? Self.decoder.decode([Int].self, from: favoriteNameNumbersData)) ?? []
-        }
-        set {
-            favoriteNameNumbersData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-
     @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
     var bookmarkedAyahs: [BookmarkedAyah] {
         get {
@@ -391,15 +379,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
 
     @AppStorage("beginnerMode") var beginnerMode: Bool = false
-
-    enum QuranSortMode: String, CaseIterable, Identifiable {
-        case surah
-        case juz
-        case page
-        case revelation
-
-        var id: String { rawValue }
-    }
 
     @AppStorage("quranSortMode") var quranSortModeRaw: String = QuranSortMode.surah.rawValue
 
@@ -438,67 +417,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
-    enum Riwayah {
-        static let hafsTag = ""
-        static let hafsLabel = "Hafs an Asim (default)"
-
-        static let shubah = "Shubah an Asim"
-        static let khalaf = "Khalaf an Hamzah"
-        static let buzzi = "al-Bazzi an Ibn Kathir"
-        static let qunbul = "Qunbul an Ibn Kathir"
-        static let warsh = "Warsh an Nafi"
-        static let qaloon = "Qalun an Nafi"
-        static let duri = "ad-Duri an Abi Amr"
-        static let susi = "as-Susi an Abi Amr"
-
-        static let warshArabic = "ورش عن نافع"
-        static let qaloonArabic = "قالون عن نافع"
-        static let duriArabic = "الدوري عن أبي عمرو"
-        static let susiArabic = "السوسي عن أبي عمرو"
-        static let buzziArabic = "البزي عن ابن كثير"
-        static let qunbulArabic = "قنبل عن ابن كثير"
-        static let shubahArabic = "شعبة عن عاصم"
-        static let khalafArabic = "خلف عن حمزة"
-
-        static let menuOptions: [(label: String, tag: String)] = [
-            (hafsLabel, hafsTag),
-            (shubah, shubah),
-            (buzzi, buzzi),
-            (qunbul, qunbul),
-            (warsh, warsh),
-            (qaloon, qaloon),
-            (duri, duri),
-            (susi, susi),
-        ]
-
-        static let arabicCaptionByTag: [String: String] = [
-            hafsTag: "حفص عن عاصم",
-            warsh: warshArabic,
-            qaloon: qaloonArabic,
-            duri: duriArabic,
-            susi: susiArabic,
-            buzzi: buzziArabic,
-            qunbul: qunbulArabic,
-            shubah: shubahArabic,
-            khalaf: khalafArabic,
-        ]
-
-        static func canonicalTag(_ stored: String) -> String {
-            let raw = stored.trimmingCharacters(in: .whitespacesAndNewlines)
-            switch raw {
-            case "", "Hafs", "Hafs an Asim", hafsLabel: return hafsTag
-            case warsh, "Warsh An Nafi": return warsh
-            case qaloon, "Qaloon an Nafi", "Qaloon An Nafi": return qaloon
-            case duri, "Ad-Duri an Abi Amr": return duri
-            case susi, "As-Susi an Abi Amr": return susi
-            case buzzi, "Al-Buzzi an Ibn Kathir": return buzzi
-            case qunbul, "Qumbul an Ibn Kathir": return qunbul
-            case shubah, "Shu'bah an Asim", "Shu'bah an Aasim", "Shouba an Asim": return shubah
-            case khalaf: return khalaf
-            default: return raw
-            }
-        }
-    }
 
     /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
     @AppStorage("displayQiraah") var displayQiraah: String = ""
@@ -549,10 +467,6 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showTajweedMaddSeparated") var showTajweedMaddSeparated: Bool = true
     @AppStorage("showTajweedMaddConnected") var showTajweedMaddConnected: Bool = true
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
-    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
-    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .title1).pointSize)
-
-    @AppStorage("useFontArabic") var useFontArabic = true
 
     @AppStorage("showTransliteration") var showTransliteration: Bool = false
     @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
@@ -573,6 +487,10 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
 
     // MARK: - Arabic letters & 99 Names
+    
+    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
+    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .title1).pointSize)
+    @AppStorage("useFontArabic") var useFontArabic = true
 
     @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
     var favoriteLetters: [LetterData] {
@@ -583,8 +501,46 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
             favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    func toggleLetterFavorite(letterData: LetterData) {
+        withAnimation {
+            if isLetterFavorite(letterData: letterData) {
+                favoriteLetters.removeAll(where: { $0.id == letterData.id })
+            } else {
+                favoriteLetters.append(letterData)
+            }
+        }
+    }
+
+    func isLetterFavorite(letterData: LetterData) -> Bool {
+        favoriteLetters.contains { $0.id == letterData.id }
+    }
+    
+    @AppStorage("favoriteNameNumbersData") private var favoriteNameNumbersData = Data()
+    var favoriteNameNumbers: [Int] {
+        get {
+            (try? Self.decoder.decode([Int].self, from: favoriteNameNumbersData)) ?? []
+        }
+        set {
+            favoriteNameNumbersData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
 
     @AppStorage("showDescription") var showDescription = false
+
+    func toggleNameFavorite(number: Int) {
+        withAnimation {
+            if isNameFavorite(number: number) {
+                favoriteNameNumbers.removeAll(where: { $0 == number })
+            } else {
+                favoriteNameNumbers.append(number)
+            }
+        }
+    }
+
+    func isNameFavorite(number: Int) -> Bool {
+        favoriteNameNumbers.contains(number)
+    }
     
     // MARK: - App-wide appearance & misc @AppStorage
 
@@ -636,38 +592,5 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
         default:
             return "system"
         }
-    }
-
-    func toggleLetterFavorite(letterData: LetterData) {
-        withAnimation {
-            if isLetterFavorite(letterData: letterData) {
-                favoriteLetters.removeAll(where: { $0.id == letterData.id })
-            } else {
-                favoriteLetters.append(letterData)
-            }
-        }
-    }
-
-    func toggleReciterFavorite(reciterID: String) {
-        let trimmed = reciterID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-
-        withAnimation {
-            if isReciterFavorite(reciterID: trimmed) {
-                favoriteReciterIDs.removeAll(where: { $0 == trimmed })
-            } else {
-                favoriteReciterIDs.append(trimmed)
-            }
-        }
-    }
-
-    func isReciterFavorite(reciterID: String) -> Bool {
-        let trimmed = reciterID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        return favoriteReciterIDs.contains(trimmed)
-    }
-
-    func isLetterFavorite(letterData: LetterData) -> Bool {
-        favoriteLetters.contains { $0.id == letterData.id }
     }
 }

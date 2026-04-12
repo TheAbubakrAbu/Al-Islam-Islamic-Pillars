@@ -82,6 +82,7 @@ struct IslamView: View {
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Al-Islam")
+        //.navigationTitle("Tools")
     }
 
     @ViewBuilder
