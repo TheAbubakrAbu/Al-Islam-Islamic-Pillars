@@ -428,7 +428,6 @@ private struct NameRow: View {
                     }
                 }
             }
-            .padding(.vertical, 6)
             
             if showDescription || isExpanded {
                 NameRowDetails(
