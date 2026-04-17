@@ -58,9 +58,7 @@ struct CreditsView: View {
                     }
             }
 
-            Divider()
-                .background(settings.accentColor.color)
-                .padding(.trailing, -100)
+            Divider().background(settings.accentColor.color)
         }
         .listRowSeparator(.hidden)
     }

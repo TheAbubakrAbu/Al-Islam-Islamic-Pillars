@@ -363,7 +363,13 @@ struct QuranView: View {
     private var navigationContainer: some View {
         Group {
             #if os(iOS)
-            if #available(iOS 16.0, *) {
+            if #available(iOS 16.0, *), UIDevice.current.userInterfaceIdiom == .pad {
+                NavigationSplitView {
+                    content
+                } detail: {
+                    detailContent
+                }
+            } else if #available(iOS 16.0, *) {
                 NavigationStack(path: $path) {
                     content
                         .navigationDestination(for: QuranRoute.self) { route in

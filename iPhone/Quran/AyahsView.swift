@@ -950,6 +950,7 @@ struct AyahsView: View {
                                     scrollDown: $scrollDown,
                                     searchText: $searchText
                                 )
+                                .equatable()
                             }
                             #else
                             AyahRow(
@@ -958,6 +959,7 @@ struct AyahsView: View {
                                 scrollDown: $scrollDown,
                                 searchText: $searchText
                             )
+                            .equatable()
                             #endif
                         }
                         .id(ayah.id)

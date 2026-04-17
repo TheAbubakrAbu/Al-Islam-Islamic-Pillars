@@ -28,9 +28,18 @@ struct IslamView: View {
     private var navigationContainer: some View {
         Group {
             #if os(iOS)
-            if #available(iOS 16.0, *) {
+            if #available(iOS 16.0, *), UIDevice.current.userInterfaceIdiom == .pad {
+                NavigationSplitView {
+                    islamSidebar
+                } detail: {
+                    islamDetail
+                }
+            } else if #available(iOS 16.0, *) {
                 NavigationStack {
                     islamList
+                        .navigationDestination(for: IslamDestination.self) { destination in
+                            destinationView(for: destination)
+                        }
                 }
             } else {
                 NavigationView {
@@ -55,6 +64,54 @@ struct IslamView: View {
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle(AppIdentifiers.toolsView)
     }
+
+    #if os(iOS)
+    @available(iOS 16.0, *)
+    private var islamSidebar: some View {
+        List {
+            resourcesSectionSplit
+            ProphetQuote()
+            AlIslamAppsSection()
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle(AppIdentifiers.toolsView)
+        .navigationDestination(for: IslamDestination.self) { destination in
+            destinationView(for: destination)
+        }
+    }
+
+    @available(iOS 16.0, *)
+    private var islamDetail: some View {
+        destinationView(for: selectedResource ?? .arabicAlphabet)
+    }
+
+    @available(iOS 16.0, *)
+    @ViewBuilder
+    private func destinationView(for destination: IslamDestination) -> some View {
+        switch destination {
+        case .arabicAlphabet:
+            ArabicView()
+        case .tajweedFoundations:
+            TajweedFoundationsView()
+        case .commonAdhkar:
+            AdhkarView()
+        case .commonDuas:
+            DuaView()
+        case .tasbihCounter:
+            TasbihView()
+        case .namesOfAllah:
+            NamesView()
+        case .hijriCalendarConverter:
+            DateView()
+        case .masjidLocator:
+            MasjidLocatorView()
+        case .islamicWallpapers:
+            WallpaperView()
+        case .pillarsAndBasics:
+            PillarsView()
+        }
+    }
+    #endif
 
     // Removed split navigation logic for unified navigation
 
