@@ -7,7 +7,13 @@ struct PrayerCountdown: View {
     @State private var progress: Double = 0
     @State private var updateTimer: Timer?
 
-    private let timerInterval: TimeInterval = 30
+    private let slowTimerInterval: TimeInterval = 60
+    private let mediumTimerInterval: TimeInterval = 15
+    private let fastTimerInterval: TimeInterval = 5
+    private let urgentTimerInterval: TimeInterval = 1
+    private let urgentThreshold: TimeInterval = 30
+    private let fastThreshold: TimeInterval = 120
+    private let mediumThreshold: TimeInterval = 600
 
     private var currentPrayer: Prayer? { settings.currentPrayer }
     private var nextPrayer: Prayer? { settings.nextPrayer }
@@ -32,12 +38,15 @@ struct PrayerCountdown: View {
             }
             .onChange(of: settings.prayers) { _ in
                 refreshProgressAndPrayerState()
+                startTimer()
             }
             .onChange(of: currentPrayer) { _ in
                 updateProgress()
+                startTimer()
             }
             .onChange(of: nextPrayer) { _ in
                 updateProgress()
+                startTimer()
             }
             .contentShape(Rectangle())
             .onTapGesture {
@@ -149,8 +158,8 @@ struct PrayerCountdown: View {
     }
 
     private func refreshProgressAndPrayerState() {
-        updateProgress()
         settings.updateCurrentAndNextPrayer()
+        updateProgress()
     }
 
     private func updateProgress() {
@@ -180,11 +189,30 @@ struct PrayerCountdown: View {
 
     private func startTimer() {
         stopTimer()
-        updateTimer = Timer.scheduledTimer(withTimeInterval: timerInterval, repeats: true) { _ in
+        let interval = nextRefreshInterval()
+        updateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { _ in
             DispatchQueue.main.async {
                 refreshProgressAndPrayerState()
+                startTimer()
             }
         }
+        updateTimer?.tolerance = min(interval * 0.2, 5)
+    }
+
+    private func nextRefreshInterval() -> TimeInterval {
+        guard let nextPrayer else { return slowTimerInterval }
+
+        let remaining = nextPrayer.time.timeIntervalSinceNow
+        if remaining <= urgentThreshold {
+            return urgentTimerInterval
+        }
+        if remaining <= fastThreshold {
+            return fastTimerInterval
+        }
+        if remaining <= mediumThreshold {
+            return mediumTimerInterval
+        }
+        return slowTimerInterval
     }
 
     private func stopTimer() {

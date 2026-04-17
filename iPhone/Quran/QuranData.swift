@@ -5,7 +5,7 @@ import UIKit
 import AppKit
 #endif
 
-struct Surah: Codable, Identifiable {
+struct Surah: Codable, Identifiable, Equatable {
     let id: Int
     let idArabic: String
 
@@ -145,7 +145,7 @@ struct Surah: Codable, Identifiable {
     }
 }
 
-struct Ayah: Codable, Identifiable {
+struct Ayah: Codable, Identifiable, Equatable {
     let id: Int
     let idArabic: String
 
@@ -372,20 +372,20 @@ final class TajweedStore {
         "madd_246": .maddSukoon,
         "qalqalah": .qalqalah,
         "silent": .hamzatWaslSilent,
-        "idghaam_ghunnah": .idghamGhunnahLight,
-        "idghaam_shafawi": .idghamGhunnahHeavy,
+        "idghaam_ghunnah": .idghamGhunnah,
+        "idghaam_shafawi": .idghamGhunnah,
         "idghaam_no_ghunnah": .idghamBilaGhunnah,
-        "idghaam_mutajanisayn": .idghamGhunnahHeavy,
-        "idghaam_mutaqaribayn": .idghamGhunnahHeavy,
-        "ikhfa": .ikhfaa,
-        "ikhfa_shafawi": .ikhfaa,
+        "idghaam_mutajanisayn": .idghamGhunnah,
+        "idghaam_mutaqaribayn": .idghamGhunnah,
+        "ikhfa": .ikhfaaLight,
+        "ikhfa_shafawi": .ikhfaaLight,
         "iqlaab": .iqlaab,
     ]
 
     private static let specialTanweenCategories: Set<TajweedLegendCategory> = [
-        .idghamGhunnahHeavy,
-        .idghamGhunnahLight,
-        .ikhfaa,
+        .idghamGhunnah,
+        .ikhfaaLight,
+        .ikhfaaHeavy,
         .iqlaab,
         .idghamBilaGhunnah,
     ]
@@ -1085,11 +1085,11 @@ final class TajweedStore {
                 priority = PaintPriority.qalqalah
             case .hamzatWaslSilent:
                 priority = PaintPriority.hamzatWaslSilent
-            case .idghamGhunnahLight:
+            case .idghamGhunnah:
                 priority = PaintPriority.idghamBiGhunnahLight
-            case .idghamGhunnahHeavy:
-                priority = PaintPriority.idghamBiGhunnahHeavy
-            case .ikhfaa:
+            case .ikhfaaLight:
+                priority = PaintPriority.ikhfaa
+            case .ikhfaaHeavy:
                 priority = PaintPriority.ikhfaa
             case .iqlaab:
                 priority = PaintPriority.iqlaab
@@ -1215,7 +1215,7 @@ final class TajweedStore {
             guard let base = cluster.primaryArabicLetter else { continue }
             guard base == "ن" || base == "م" else { continue }
             guard hasShadda(cluster) else { continue }
-            let category: TajweedLegendCategory = .idghamGhunnahHeavy
+            let category: TajweedLegendCategory = .idghamGhunnah
             guard settings.isTajweedCategoryVisible(category) else { continue }
             ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.idghamBiGhunnahHeavy, category: category, color: category.color))
         }
@@ -1348,7 +1348,7 @@ final class QuranData: ObservableObject {
     /// Surahs that should always display as less than one page in UI metadata.
     private static let forcedLessThanOnePageSurahIDs: Set<Int> = Set([82, 86, 87]).union(Set(90...114))
 
-    struct SurahSearchIndexEntry: Identifiable {
+    struct SurahSearchIndexEntry: Identifiable, Codable, Equatable {
         let surahID: Int
         let nameEnglishUpper: String
         let nameTransliterationUpper: String
@@ -1358,7 +1358,7 @@ final class QuranData: ObservableObject {
         var id: Int { surahID }
     }
 
-    struct JuzSearchIndexEntry: Identifiable {
+    struct JuzSearchIndexEntry: Identifiable, Codable, Equatable {
         let juzID: Int
         let searchableBlob: String
         let compactSearchableBlob: String
@@ -1379,16 +1379,16 @@ final class QuranData: ObservableObject {
         let value: Int
     }
 
-    struct PageSectionData: Identifiable {
+    struct PageSectionData: Identifiable, Codable, Equatable {
         let page: Int
         let surahIDs: [Int]
 
         var id: Int { page }
     }
 
-    struct JuzSectionData: Identifiable {
-        struct Row: Identifiable {
-            enum Kind {
+    struct JuzSectionData: Identifiable, Codable, Equatable {
+        struct Row: Identifiable, Codable, Equatable {
+            enum Kind: Codable, Equatable {
                 case plain
                 case start(ayah: Int)
                 case end(ayah: Int)
@@ -1414,6 +1414,44 @@ final class QuranData: ObservableObject {
         let rows: [Row]
 
         var id: Int { juz.id }
+    }
+
+    private struct CachedAyahLocation: Codable {
+        let surah: Int
+        let ayah: Int
+    }
+
+    private struct QuranStaticCache: Codable {
+        static let version = 1
+
+        let version: Int
+        let resourceSignature: String
+        let quran: [Surah]
+        let pageSections: [PageSectionData]
+        let juzSections: [JuzSectionData]
+        let revelationOrderSurahIDs: [Int]
+        let surahSearchIndex: [SurahSearchIndexEntry]
+        let surahIDsByAyahCount: [Int: [Int]]
+        let surahIDsByPageCount: [Int: [Int]]
+        let surahIDsByJuz: [Int: [Int]]
+        let juzSearchIndex: [JuzSearchIndexEntry]
+    }
+
+    private struct QuranDynamicCache: Codable {
+        static let version = 1
+
+        let version: Int
+        let resourceSignature: String
+        let qiraahKey: String
+        let verseIndex: [VerseIndexEntry]
+        let arabicTokenIndex: [String: [Int]]
+        let arabicPrefix2Index: [String: [Int]]
+        let englishTokenIndex: [String: [Int]]
+        let englishPrefix3Index: [String: [Int]]
+        let allVerseIndices: [Int]
+        let surahBoundaryModels: [Int: SurahBoundaryModel]
+        let firstAyahByPage: [Int: CachedAyahLocation]
+        let firstAyahByJuz: [Int: CachedAyahLocation]
     }
 
     static let shared: QuranData = {
@@ -1469,6 +1507,173 @@ final class QuranData: ObservableObject {
 
     private func arabicToEnglishNumber(_ arabicNumber: String) -> Int? {
         Self.arFormatter.number(from: arabicNumber)?.intValue
+    }
+
+    private func derivedCacheDirectoryURL() -> URL? {
+        let fileManager = FileManager.default
+        guard let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+
+        let directoryURL = baseURL
+            .appendingPathComponent(AppIdentifiers.bundleIdentifier, isDirectory: true)
+            .appendingPathComponent("QuranCache", isDirectory: true)
+
+        do {
+            try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        } catch {
+            logger.debug("Failed to create Quran cache directory: \(error)")
+            return nil
+        }
+
+        return directoryURL
+    }
+
+    private func staticCacheURL(resourceSignature: String) -> URL? {
+        guard let directoryURL = derivedCacheDirectoryURL() else { return nil }
+        let safeSignature = resourceSignature.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+        return directoryURL.appendingPathComponent("quran-static-v\(QuranStaticCache.version)-\(safeSignature).json")
+    }
+
+    private func dynamicCacheURL(resourceSignature: String, qiraahKey: String) -> URL? {
+        guard let directoryURL = derivedCacheDirectoryURL() else { return nil }
+        let safeSignature = resourceSignature.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+        let safeKey = qiraahKey.isEmpty
+            ? "hafs"
+            : qiraahKey.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+        return directoryURL.appendingPathComponent("quran-dynamic-v\(QuranDynamicCache.version)-\(safeSignature)-\(safeKey).json")
+    }
+
+    private func resourceSignature(for url: URL) -> String {
+        let fileManager = FileManager.default
+        let attributes = (try? fileManager.attributesOfItem(atPath: url.path)) ?? [:]
+        let size = (attributes[.size] as? NSNumber)?.int64Value ?? 0
+        let modificationDate = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        return "\(size)-\(Int64(modificationDate))"
+    }
+
+    private func resourceSignature(for urls: [URL]) -> String {
+        urls.map(resourceSignature(for:)).joined(separator: "|")
+    }
+
+    private func loadStaticCache(resourceSignature: String) -> QuranStaticCache? {
+        guard let url = staticCacheURL(resourceSignature: resourceSignature) else { return nil }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(QuranStaticCache.self, from: data)
+    }
+
+    private func loadDynamicCache(resourceSignature: String, qiraahKey: String) -> QuranDynamicCache? {
+        guard let url = dynamicCacheURL(resourceSignature: resourceSignature, qiraahKey: qiraahKey) else { return nil }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(QuranDynamicCache.self, from: data)
+    }
+
+    private func saveStaticCache(
+        resourceSignature: String,
+        quran: [Surah],
+        pageSections: [PageSectionData],
+        juzSections: [JuzSectionData],
+        revelationOrderSurahIDs: [Int],
+        surahSearchIndex: [SurahSearchIndexEntry],
+        surahIDsByAyahCount: [Int: [Int]],
+        surahIDsByPageCount: [Int: [Int]],
+        surahIDsByJuz: [Int: [Int]],
+        juzSearchIndex: [JuzSearchIndexEntry]
+    ) {
+        guard let url = staticCacheURL(resourceSignature: resourceSignature) else { return }
+
+        let cache = QuranStaticCache(
+            version: QuranStaticCache.version,
+            resourceSignature: resourceSignature,
+            quran: quran,
+            pageSections: pageSections,
+            juzSections: juzSections,
+            revelationOrderSurahIDs: revelationOrderSurahIDs,
+            surahSearchIndex: surahSearchIndex,
+            surahIDsByAyahCount: surahIDsByAyahCount,
+            surahIDsByPageCount: surahIDsByPageCount,
+            surahIDsByJuz: surahIDsByJuz,
+            juzSearchIndex: juzSearchIndex
+        )
+
+        do {
+            let data = try JSONEncoder().encode(cache)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            logger.debug("Failed to write Quran static cache: \(error)")
+        }
+    }
+
+    private func saveDynamicCache(
+        resourceSignature: String,
+        qiraahKey: String,
+        verseIndex: [VerseIndexEntry],
+        arabicTokenIndex: [String: [Int]],
+        arabicPrefix2Index: [String: [Int]],
+        englishTokenIndex: [String: [Int]],
+        englishPrefix3Index: [String: [Int]],
+        allVerseIndices: [Int],
+        surahBoundaryModels: [Int: SurahBoundaryModel],
+        firstAyahByPage: [Int: (surah: Int, ayah: Int)],
+        firstAyahByJuz: [Int: (surah: Int, ayah: Int)]
+    ) {
+        guard let url = dynamicCacheURL(resourceSignature: resourceSignature, qiraahKey: qiraahKey) else { return }
+
+        let cache = QuranDynamicCache(
+            version: QuranDynamicCache.version,
+            resourceSignature: resourceSignature,
+            qiraahKey: qiraahKey,
+            verseIndex: verseIndex,
+            arabicTokenIndex: arabicTokenIndex,
+            arabicPrefix2Index: arabicPrefix2Index,
+            englishTokenIndex: englishTokenIndex,
+            englishPrefix3Index: englishPrefix3Index,
+            allVerseIndices: allVerseIndices,
+            surahBoundaryModels: surahBoundaryModels,
+            firstAyahByPage: firstAyahByPage.mapValues { CachedAyahLocation(surah: $0.surah, ayah: $0.ayah) },
+            firstAyahByJuz: firstAyahByJuz.mapValues { CachedAyahLocation(surah: $0.surah, ayah: $0.ayah) }
+        )
+
+        do {
+            let data = try JSONEncoder().encode(cache)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            logger.debug("Failed to write Quran dynamic cache: \(error)")
+        }
+    }
+
+    @MainActor
+    private func applyStaticCache(_ cache: QuranStaticCache) {
+        self.quran = cache.quran
+        let (sIndex, aIndex) = buildIndexes(for: cache.quran)
+        self.surahIndex = sIndex
+        self.ayahIndex = aIndex
+        self.pageSections = cache.pageSections
+        self.juzSections = cache.juzSections
+        self.revelationOrderSurahIDs = cache.revelationOrderSurahIDs
+        self.surahSearchIndex = cache.surahSearchIndex
+        self.surahIDsByAyahCount = cache.surahIDsByAyahCount
+        self.surahIDsByPageCount = cache.surahIDsByPageCount
+        self.surahIDsByJuz = cache.surahIDsByJuz
+        self.juzSearchIndex = cache.juzSearchIndex
+        self.loadState = .buildingIndexes
+    }
+
+    @MainActor
+    private func applyDynamicCache(_ cache: QuranDynamicCache) {
+        self.verseIndex = cache.verseIndex
+        self.arabicTokenIndex = cache.arabicTokenIndex
+        self.arabicPrefix2Index = cache.arabicPrefix2Index
+        self.englishTokenIndex = cache.englishTokenIndex
+        self.englishPrefix3Index = cache.englishPrefix3Index
+        self.allVerseIndices = cache.allVerseIndices
+        self.surahBoundaryModels = cache.surahBoundaryModels
+        self.firstAyahByPage = cache.firstAyahByPage.mapValues { (value) in (surah: value.surah, ayah: value.ayah) }
+        self.firstAyahByJuz = cache.firstAyahByJuz.mapValues { (value) in (surah: value.surah, ayah: value.ayah) }
+        self.cachedVerseIndexQiraah = cache.qiraahKey
+        self.cachedBoundaryQiraah = cache.qiraahKey
+        self.cachedFirstAyahLookupQiraah = cache.qiraahKey
+        self.loadState = .ready
     }
 
     private func startLoading() {
@@ -1700,6 +1905,90 @@ final class QuranData: ObservableObject {
             throw NSError(domain: "QuranData", code: 1, userInfo: [NSLocalizedDescriptionKey: "Quran.json missing"])
         }
 
+        let qiraahKey = await MainActor.run { settings.displayQiraahForArabic ?? "" }
+        let qiraatURLs = Self.qiraatKeys.compactMap { filename, _ in
+            Bundle.main.url(forResource: filename, withExtension: "json", subdirectory: "JSONs/Qiraat")
+                ?? Bundle.main.url(forResource: filename, withExtension: "json")
+        }
+        let cacheSignature = resourceSignature(for: [url] + qiraatURLs)
+
+        if let staticCache = loadStaticCache(resourceSignature: cacheSignature) {
+            await MainActor.run {
+                applyStaticCache(staticCache)
+            }
+
+            if let cachedDynamic = loadDynamicCache(resourceSignature: cacheSignature, qiraahKey: qiraahKey) {
+                await MainActor.run {
+                    applyDynamicCache(cachedDynamic)
+                }
+                return
+            }
+
+            let currentQiraah = await MainActor.run { settings.displayQiraahForArabic }
+            let surahsToPublish = await MainActor.run { self.quran }
+
+            let displayQiraah = currentQiraah
+            var vIndex: [VerseIndexEntry] = []
+            let estimatedVerseCount = surahsToPublish.reduce(0) { $0 + $1.ayahs.count }
+            vIndex.reserveCapacity(estimatedVerseCount)
+            for surah in surahsToPublish {
+                for ayah in surah.ayahs {
+                    let raw = ayah.textArabic(for: displayQiraah)
+                    let clean = ayah.textCleanArabic(for: displayQiraah)
+                    vIndex.append(
+                        makeVerseIndexEntry(
+                            surahID: surah.id,
+                            ayahID: ayah.id,
+                            rawArabic: raw,
+                            cleanArabic: clean,
+                            englishSaheeh: ayah.textEnglishSaheeh,
+                            englishMustafa: ayah.textEnglishMustafa,
+                            transliteration: ayah.textTransliteration
+                        )
+                    )
+                }
+            }
+
+            let arabicIndexes = buildArabicSearchIndexes(for: vIndex)
+            let englishIndexes = buildEnglishSearchIndexes(for: vIndex)
+            let boundaryModels = buildBoundaryModels(for: surahsToPublish, displayQiraah: displayQiraah)
+            let firstAyahLookups = buildFirstAyahLookups(for: surahsToPublish, displayQiraah: displayQiraah)
+            let finalizedVerseIndex = vIndex
+            let finalizedAllVerseIndices = Array(finalizedVerseIndex.indices)
+            let finalizedQiraahKey = displayQiraah ?? ""
+
+            await MainActor.run {
+                self.verseIndex = finalizedVerseIndex
+                self.arabicTokenIndex = arabicIndexes.token
+                self.arabicPrefix2Index = arabicIndexes.prefix2
+                self.englishTokenIndex = englishIndexes.token
+                self.englishPrefix3Index = englishIndexes.prefix3
+                self.allVerseIndices = finalizedAllVerseIndices
+                self.cachedVerseIndexQiraah = finalizedQiraahKey
+                self.surahBoundaryModels = boundaryModels
+                self.cachedBoundaryQiraah = finalizedQiraahKey
+                self.firstAyahByPage = firstAyahLookups.page
+                self.firstAyahByJuz = firstAyahLookups.juz
+                self.cachedFirstAyahLookupQiraah = finalizedQiraahKey
+                self.loadState = .ready
+            }
+
+            saveDynamicCache(
+                resourceSignature: cacheSignature,
+                qiraahKey: finalizedQiraahKey,
+                verseIndex: finalizedVerseIndex,
+                arabicTokenIndex: arabicIndexes.token,
+                arabicPrefix2Index: arabicIndexes.prefix2,
+                englishTokenIndex: englishIndexes.token,
+                englishPrefix3Index: englishIndexes.prefix3,
+                allVerseIndices: finalizedAllVerseIndices,
+                surahBoundaryModels: boundaryModels,
+                firstAyahByPage: firstAyahLookups.page,
+                firstAyahByJuz: firstAyahLookups.juz
+            )
+            return
+        }
+
         let data = try Data(contentsOf: url)
         var surahs = try JSONDecoder().decode([Surah].self, from: data)
 
@@ -1771,9 +2060,12 @@ final class QuranData: ObservableObject {
         let juzSearchIndex = buildJuzSearchIndex()
 
         await MainActor.run {
+            self.quran = surahsToPublish
+        }
+
+        await MainActor.run {
             self.surahIndex = sIndex
             self.ayahIndex = aIndex
-            self.quran = surahsToPublish
             self.pageSections = preprocessedSections.pageSections
             self.juzSections = preprocessedSections.juzSections
             self.revelationOrderSurahIDs = preprocessedSections.revelationOrderSurahIDs
@@ -1783,20 +2075,6 @@ final class QuranData: ObservableObject {
             self.surahIDsByJuz = surahIDsByJuz
             self.juzSearchIndex = juzSearchIndex
             self.loadState = .buildingIndexes
-
-            // Expensive structures are built right after core publish.
-            self.verseIndex = []
-            self.arabicTokenIndex = [:]
-            self.arabicPrefix2Index = [:]
-            self.englishTokenIndex = [:]
-            self.englishPrefix3Index = [:]
-            self.allVerseIndices = []
-            self.cachedVerseIndexQiraah = nil
-            self.surahBoundaryModels = [:]
-            self.cachedBoundaryQiraah = nil
-            self.firstAyahByPage = [:]
-            self.firstAyahByJuz = [:]
-            self.cachedFirstAyahLookupQiraah = nil
         }
 
         let displayQiraah = await MainActor.run { settings.displayQiraahForArabic }
@@ -1843,7 +2121,35 @@ final class QuranData: ObservableObject {
             self.firstAyahByPage = firstAyahLookups.page
             self.firstAyahByJuz = firstAyahLookups.juz
             self.cachedFirstAyahLookupQiraah = finalizedQiraahKey
+            self.loadState = .ready
         }
+
+        saveStaticCache(
+            resourceSignature: cacheSignature,
+            quran: surahsToPublish,
+            pageSections: preprocessedSections.pageSections,
+            juzSections: preprocessedSections.juzSections,
+            revelationOrderSurahIDs: preprocessedSections.revelationOrderSurahIDs,
+            surahSearchIndex: surahSearchIndex,
+            surahIDsByAyahCount: countIndexes.ayah,
+            surahIDsByPageCount: countIndexes.page,
+            surahIDsByJuz: surahIDsByJuz,
+            juzSearchIndex: juzSearchIndex
+        )
+
+        saveDynamicCache(
+            resourceSignature: cacheSignature,
+            qiraahKey: finalizedQiraahKey,
+            verseIndex: finalizedVerseIndex,
+            arabicTokenIndex: arabicIndexes.token,
+            arabicPrefix2Index: arabicIndexes.prefix2,
+            englishTokenIndex: englishIndexes.token,
+            englishPrefix3Index: englishIndexes.prefix3,
+            allVerseIndices: finalizedAllVerseIndices,
+            surahBoundaryModels: boundaryModels,
+            firstAyahByPage: firstAyahLookups.page,
+            firstAyahByJuz: firstAyahLookups.juz
+        )
     }
 
     private func applyDerivedSurahMetadata(to surahs: [Surah], displayQiraah: String?) -> [Surah] {
@@ -2120,7 +2426,7 @@ final class QuranData: ObservableObject {
                 settings.cleanSearch(surah.nameArabic),
                 settings.cleanSearch(surah.nameTransliteration),
                 settings.cleanSearch(surah.nameEnglish),
-                surah.similarNames.map { settings.cleanSearch($0) }.joined(separator: " "),
+                surah.normalizedSearchNames.map { settings.cleanSearch($0) }.joined(separator: " "),
                 settings.cleanSearch(String(surah.id)),
                 settings.cleanSearch(surah.idArabic)
             ].joined(separator: " ")
@@ -2291,7 +2597,7 @@ final class QuranData: ObservableObject {
                 settings.cleanSearch(surah.nameArabic),
                 settings.cleanSearch(surah.nameTransliteration),
                 settings.cleanSearch(surah.nameEnglish)
-            ] + surah.similarNames.map { settings.cleanSearch($0) }
+            ] + surah.normalizedSearchNames.map { settings.cleanSearch($0) }
             let compactExactNames = exactNames.map { $0.replacingOccurrences(of: " ", with: "") }
             return exactNames.contains(cleaned) || compactExactNames.contains(compactCleaned)
         }) {

@@ -218,7 +218,7 @@ struct HeaderRow: View {
     @State private var ayahBeginnerMode = false
 
     var body: some View {
-        VStack(alignment: .center) {
+        VStack(alignment: .center, spacing: 2) {
             Text(displayArabicText)
                 .font(.custom(settings.fontArabic, size: settings.fontArabicSize))
                 .multilineTextAlignment(.center)
@@ -242,7 +242,7 @@ struct HeaderRow: View {
             }
         }
         .foregroundColor(settings.accentColor.color)
-        .padding(.top, -4)
+        .padding(.top, -8)
         #if os(iOS)
         .contextMenu {
             if !settings.beginnerMode {

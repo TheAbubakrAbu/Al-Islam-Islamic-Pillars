@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct SettingsQuranView: View {
     @EnvironmentObject var settings: Settings
@@ -118,6 +121,10 @@ struct SettingsQuranView: View {
     private var displaySection: some View {
         Section(header: Text("DISPLAY")) {
             pageAndJuzDividersGroup
+            
+            Toggle("Show Full Surah Details", isOn: $settings.showFullSurahRow.animation(.easeInOut))
+                .font(.subheadline)
+            
             systemFontSizeToggle
         }
     }
@@ -126,16 +133,16 @@ struct SettingsQuranView: View {
         VStack(alignment: .leading, spacing: 20) {
             Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
                 .font(.subheadline)
-
+            
             if settings.showPageJuzDividers {
-                Toggle("Show Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
+                Toggle("Show Floating Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
                     .font(.subheadline)
             }
         }
     }
 
     private var systemFontSizeToggle: some View {
-        Toggle("Use System Font Size", isOn: useSystemFontSizes)
+        Toggle("Use System Font Size", isOn: useSystemFontSizes.animation(.easeInOut))
             .font(.subheadline)
     }
 
@@ -393,7 +400,7 @@ struct SettingsQuranView: View {
 
         The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-        To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+        To learn more about the 7 Ahruf and the 10 Qiraat, see below and in \(AppIdentifiers.toolsView) View > Islamic Pillars and Basics.
         """)
             .font(.caption)
             .foregroundColor(.primary)
@@ -506,6 +513,7 @@ struct ReciterListView: View {
     @State private var searchText = ""
     @State private var pendingQiraahReciter: Reciter?
     @State private var pendingDisplayQiraahTag: String?
+    @State private var pendingScrollToReciterID: String? = nil
     @AppStorage("splitMurattalRecitersByGroup") private var splitMurattalRecitersByGroup = false
     #if os(iOS)
     @StateObject private var downloadManager = ReciterDownloadManager.shared
@@ -573,12 +581,6 @@ struct ReciterListView: View {
         func withReciters(_ reciters: [Reciter]) -> ReciterSectionGroup {
             ReciterSectionGroup(id: id, title: title, arabic: arabic, reciters: reciters, isQiraah: isQiraah)
         }
-    }
-
-    private enum ReciterSearchMode {
-        case reciterMatches
-        case qiraahSections
-        case hafsSections
     }
 
     private static let qiraahSearchKeywords = [
@@ -720,65 +722,56 @@ struct ReciterListView: View {
         ]
     }
 
-    private var searchMode: ReciterSearchMode {
-        guard isSearchingReciters else { return .reciterMatches }
-        if isGeneralHafsSearch(normalizedSearchText) {
-            return .hafsSections
-        }
-        if isGeneralQiraahSearch(normalizedSearchText) || !matchingQiraahSections.isEmpty {
-            return .qiraahSections
-        }
-        return .reciterMatches
-    }
-
-    private var searchBannerTitle: String {
-        switch searchMode {
-        case .qiraahSections:
-            return "QIRAAH SEARCH RESULTS"
-        case .hafsSections:
-            return "HAFS AN ASIM RESULTS"
-        case .reciterMatches:
-            return "SEARCH SHOW RESULTS"
-        }
-    }
-
     private var allReciterSections: [ReciterSectionGroup] {
-        primaryReciterSections + qiraahReciterSections
+        primaryReciterSections + murattalGroupedSections.map { section in
+            ReciterSectionGroup(id: section.id, title: section.title, arabic: nil, reciters: section.reciters, isQiraah: false)
+        } + qiraahReciterSections
     }
 
-    private var matchingQiraahSections: [ReciterSectionGroup] {
-        qiraahReciterSections.filter { matchesQiraahSection($0, query: normalizedSearchText) }
+    private var availableQiraahSections: [ReciterSectionGroup] {
+        settings.showQiraahDetails ? qiraahReciterSections : []
     }
 
-    private var hafsSearchSections: [ReciterSectionGroup] {
-        ["murattal", "mujawwad", "muallim"].compactMap { sectionID in
-            primaryReciterSections.first(where: { $0.id == sectionID })
+    private var searchResultTitle: String {
+        isSearchingReciters ? "SEARCH RESULTS" : ""
+    }
+
+    private var searchableReciterSections: [ReciterSectionGroup] {
+        var sections = primaryReciterSections.filter { $0.id != "murattal" }
+
+        sections += murattalGroupedSections.map { group in
+            ReciterSectionGroup(id: group.id, title: group.title, arabic: nil, reciters: group.reciters, isQiraah: false)
         }
-        .filter { !$0.reciters.isEmpty }
+
+        sections.append(primaryReciterSections.first { $0.id == "murattal" } ?? ReciterSectionGroup(id: "murattal", title: "NORMAL (MURATTAL)", arabic: nil, reciters: [], isQiraah: false))
+        sections += availableQiraahSections
+        return sections.filter { !$0.reciters.isEmpty }
     }
 
     private var searchResultSections: [ReciterSectionGroup] {
         guard isSearchingReciters else { return [] }
 
-        switch searchMode {
-        case .hafsSections:
-            return hafsSearchSections
-        case .qiraahSections:
-            if isGeneralQiraahSearch(normalizedSearchText) {
-                return qiraahReciterSections
-            }
-            return matchingQiraahSections
-        case .reciterMatches:
-            return allReciterSections.compactMap { section in
-                let matches = section.reciters.filter { reciterMatchesSearch($0, query: normalizedSearchText) }
-                guard !matches.isEmpty else { return nil }
-                return section.withReciters(matches)
-            }
+        return searchableReciterSections.compactMap { section in
+            let sectionMatchesTitle = matchesSectionTitle(section, query: normalizedSearchText)
+            let reciters = sectionMatchesTitle
+                ? section.reciters
+                : section.reciters.filter { reciterMatchesSearch($0, query: normalizedSearchText) }
+
+            guard !reciters.isEmpty else { return nil }
+            return section.withReciters(reciters)
         }
     }
 
     private var searchResultCount: Int {
         searchResultSections.reduce(0) { $0 + $1.reciters.count }
+    }
+
+    private func requestScrollToReciter(_ reciter: Reciter) {
+        withAnimation {
+            searchText = ""
+            pendingScrollToReciterID = reciter.id
+            endEditing()
+        }
     }
 
     private var murattalRecitersFiltered: [Reciter] {
@@ -878,9 +871,9 @@ struct ReciterListView: View {
         qiraahReciterSections.filter { !$0.reciters.isEmpty }
     }
 
-    private var searchResultsBanner: some View {
-        HStack {
-            Text(searchBannerTitle)
+    private func searchResultsBanner() -> some View {
+        HStack(spacing: 10) {
+            Text(searchResultTitle)
 
             Spacer()
 
@@ -926,7 +919,7 @@ struct ReciterListView: View {
         Self.hafsSearchKeywords.contains { query.contains($0) }
     }
 
-    private func matchesQiraahSection(_ section: ReciterSectionGroup, query: String) -> Bool {
+    private func matchesSectionTitle(_ section: ReciterSectionGroup, query: String) -> Bool {
         guard !query.isEmpty else { return false }
         return normalized(section.title).contains(query)
             || normalized(section.arabic ?? "").contains(query)
@@ -991,10 +984,10 @@ struct ReciterListView: View {
     }
 
     var body: some View {
-        ScrollViewReader { proxy in
+        ScrollViewReader { scrollProxy in
             List {
                 if isSearchingReciters {
-                    searchResultsBanner
+                    searchResultsBanner()
 
                     if searchResultSections.isEmpty {
                         noSearchResultsView
@@ -1132,7 +1125,7 @@ struct ReciterListView: View {
 
                                 The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                                To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                                To learn more about the 7 Ahruf and the 10 Qiraat, see below and in \(AppIdentifiers.toolsView) View > Islamic Pillars and Basics.
                                 """)
                                 .font(.subheadline)
                                 .foregroundColor(.primary)
@@ -1207,7 +1200,7 @@ struct ReciterListView: View {
 
                             The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                            To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
+                            To learn more about the 7 Ahruf and the 10 Qiraat, see below and in \(AppIdentifiers.toolsView) View > Islamic Pillars and Basics.
                             """)
                             .font(.subheadline)
                             .foregroundColor(.primary)
@@ -1291,6 +1284,15 @@ struct ReciterListView: View {
             } message: {
                 Text(qiraahChangeDialogMessage)
             }
+            .onChange(of: pendingScrollToReciterID) { id in
+                guard let id else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        scrollProxy.scrollTo(id, anchor: .top)
+                        pendingScrollToReciterID = nil
+                    }
+                }
+            }
             .onAppear {
                 settings.migrateLegacyReciterIdIfNeeded()
 
@@ -1312,7 +1314,7 @@ struct ReciterListView: View {
 
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         withAnimation {
-                            proxy.scrollTo(target, anchor: .top)
+                            scrollProxy.scrollTo(target, anchor: .top)
                         }
                     }
                 }
@@ -1365,6 +1367,7 @@ struct ReciterListView: View {
             Section(header: QiraahReciterSectionHeader(title: section.title, arabic: section.arabic ?? "")) {
                 reciterButtons(section.reciters, qiraah: true)
             }
+            .id("search-qiraah-\(section.id)")
         } else {
             Section(header: Text(section.title)) {
                 reciterButtons(section.reciters)
@@ -1411,19 +1414,77 @@ struct ReciterListView: View {
     @ViewBuilder
     private func reciterRow(_ reciter: Reciter, qiraah: Bool) -> some View {
         #if os(iOS)
-        let state = downloadManager.stateSnapshot(for: reciter)
-        let hasDownloads = state.completedSurahs > 0
-        let isDownloading = state.isDownloading
+        ReciterRow(
+            reciter: reciter,
+            qiraah: qiraah,
+            isFavorite: settings.isReciterFavorite(reciterID: reciter.id),
+            isSelected: isSelectedReciter(reciter),
+            downloadState: downloadManager.stateSnapshot(for: reciter),
+            accentColor: settings.accentColor,
+            onSelect: {
+                settings.hapticFeedback()
+                withAnimation {
+                    let selectedImmediately = selectReciter(reciter)
+                    if selectedImmediately {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            },
+            onScrollToReciter: {
+                settings.hapticFeedback()
+                requestScrollToReciter(reciter)
+            }
+        )
+        .id(reciter.id)
+        #else
+        WatchReciterRow(
+            reciter: reciter,
+            qiraah: qiraah,
+            isFavorite: settings.isReciterFavorite(reciterID: reciter.id),
+            isSelected: isSelectedReciter(reciter),
+            accentColor: settings.accentColor,
+            onSelect: {
+                settings.hapticFeedback()
+                withAnimation {
+                    let selectedImmediately = selectReciter(reciter)
+                    if selectedImmediately {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+        )
+        .id(reciter.id)
+        #endif
+    }
+}
+
+#if os(iOS)
+private struct ReciterRow: View {
+    @EnvironmentObject private var settings: Settings
+    @EnvironmentObject private var downloadManager: ReciterDownloadManager
+
+    let reciter: Reciter
+    let qiraah: Bool
+    let isFavorite: Bool
+    let isSelected: Bool
+    let downloadState: ReciterDownloadManager.DownloadState
+    let accentColor: AccentColor
+    let onSelect: () -> Void
+    let onScrollToReciter: () -> Void
+
+    var body: some View {
+        let hasDownloads = downloadState.completedSurahs > 0
+        let isDownloading = downloadState.isDownloading
         let overallProgress = min(
-            max((Double(state.completedSurahs) + state.currentSurahProgress) / Double(max(state.totalSurahs, 1)), 0),
+            max((Double(downloadState.completedSurahs) + downloadState.currentSurahProgress) / Double(max(downloadState.totalSurahs, 1)), 0),
             1
         )
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
+                Image(systemName: isFavorite ? "star.fill" : "star")
                     .font(.body.weight(.semibold))
-                    .foregroundColor(settings.accentColor.color)
+                    .foregroundColor(accentColor.color)
                     .onTapGesture {
                         settings.hapticFeedback()
                         withAnimation {
@@ -1434,7 +1495,7 @@ struct ReciterListView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(reciter.name)
                         .font(.subheadline)
-                        .foregroundColor(isSelectedReciter(reciter) ? settings.accentColor.color : .primary)
+                        .foregroundColor(isSelected ? accentColor.color : .primary)
                         .multilineTextAlignment(.leading)
 
                     if isDownloading {
@@ -1447,7 +1508,6 @@ struct ReciterListView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 4)
@@ -1456,8 +1516,8 @@ struct ReciterListView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark")
                             .font(.body.weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                            .opacity(isSelectedReciter(reciter) ? 1 : 0)
+                            .foregroundColor(accentColor.color)
+                            .opacity(isSelected ? 1 : 0)
 
                         if isDownloading {
                             Image(systemName: "xmark.circle.fill")
@@ -1494,30 +1554,44 @@ struct ReciterListView: View {
             }
             .contentShape(Rectangle())
             .onTapGesture {
-                settings.hapticFeedback()
-                withAnimation {
-                    _ = selectReciter(reciter)
+                onSelect()
+            }
+            .swipeActions(edge: .trailing) {
+                Button {
+                    onScrollToReciter()
+                } label: {
+                    Image(systemName: "arrow.down.circle")
                 }
-                if dismissAfterSelectingReciter {
-                    if pendingQiraahReciter == nil {
-                        presentationMode.wrappedValue.dismiss()
-                    }
+                .tint(.secondary)
+            }
+            .contextMenu {
+                Button {
+                    settings.hapticFeedback()
+                    UIPasteboard.general.string = reciter.displayNameWithEnglishQiraah
+                } label: {
+                    Label("Copy Name", systemImage: "doc.on.doc")
+                }
+
+                Button {
+                    onScrollToReciter()
+                } label: {
+                    Label("Scroll to Reciter", systemImage: "arrow.down.circle")
                 }
             }
 
             if isDownloading {
-                Text("Downloading surah \(state.currentSurahNumber ?? max(state.completedSurahs + 1, 1)) of \(state.totalSurahs) (\(Int(overallProgress * 100))%)")
+                Text("Downloading surah \(downloadState.currentSurahNumber ?? max(downloadState.completedSurahs + 1, 1)) of \(downloadState.totalSurahs) (\(Int(overallProgress * 100))%)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
             if hasDownloads {
-                Text("Storage used: \(downloadManager.storageText(bytes: state.totalBytes))")
+                Text("Storage used: \(downloadManager.storageText(bytes: downloadState.totalBytes))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
-            if let errorMessage = state.errorMessage, !errorMessage.isEmpty {
+            if let errorMessage = downloadState.errorMessage, !errorMessage.isEmpty {
                 Text("Download error: \(errorMessage)")
                     .font(.caption)
                     .foregroundColor(.red)
@@ -1526,32 +1600,39 @@ struct ReciterListView: View {
         .onAppear {
             downloadManager.ensureStateLoaded(for: reciter)
         }
-        .id(reciter.id)
-        #else
+    }
+
+}
+#else
+private struct WatchReciterRow: View {
+    @EnvironmentObject private var settings: Settings
+
+    let reciter: Reciter
+    let qiraah: Bool
+    let isFavorite: Bool
+    let isSelected: Bool
+    let accentColor: AccentColor
+    let onSelect: () -> Void
+
+    var body: some View {
         Button {
-            settings.hapticFeedback()
-            withAnimation {
-                let selectedImmediately = selectReciter(reciter)
-                if selectedImmediately {
-                    presentationMode.wrappedValue.dismiss()
-                }
-            }
+            onSelect()
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
-                        .foregroundColor(settings.accentColor.color)
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                        .foregroundColor(accentColor.color)
 
                     Text(reciter.name)
                         .font(.subheadline)
-                        .foregroundColor(isSelectedReciter(reciter) ? settings.accentColor.color : .primary)
+                        .foregroundColor(isSelected ? accentColor.color : .primary)
                         .multilineTextAlignment(.leading)
 
                     Spacer()
 
                     Image(systemName: "checkmark")
-                        .foregroundColor(settings.accentColor.color)
-                        .opacity(isSelectedReciter(reciter) ? 1 : 0)
+                        .foregroundColor(accentColor.color)
+                        .opacity(isSelected ? 1 : 0)
                 }
 
                 if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
@@ -1562,17 +1643,16 @@ struct ReciterListView: View {
             }
             .padding(.vertical, 4)
         }
-        .id(reciter.id)
-        #endif
+        .buttonStyle(.plain)
     }
+
 }
-
-
-#if os(iOS)
+#endif
 enum FavoriteType {
     case surah, ayah, letter
 }
 
+#if os(iOS)
 struct FavoritesView: View {
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var settings: Settings
@@ -1590,7 +1670,7 @@ struct FavoritesView: View {
                 } else {
                     ForEach(settings.favoriteSurahs.sorted(), id: \.self) { surahId in
                         if let surah = quranData.quran.first(where: { $0.id == surahId }) {
-                            SurahRow(surah: surah, isFavorite: true)
+                            SurahRow(surah: surah, isFavorite: true).equatable()
                         }
                     }
                     .onDelete(perform: removeSurahs)
@@ -1613,7 +1693,7 @@ struct FavoritesView: View {
                     Text("No favorite letters here, long tap a letter to favorite it.")
                 } else {
                     ForEach(settings.favoriteLetters.sorted(), id: \.id) { favorite in
-                        ArabicLetterRow(letterData: favorite)
+                        ArabicLetterRow(letterData: favorite).equatable()
                     }
                     .onDelete(perform: removeLetters)
                 }
@@ -1701,7 +1781,6 @@ struct FavoritesView: View {
         .accentColor(settings.accentColor.color)
     }
 
-    #if os(iOS)
     func leaveReview() {
         settings.hapticFeedback()
 
@@ -1721,7 +1800,6 @@ struct FavoritesView: View {
             }
         }
     }
-    #endif
 
     func columnWidth(for textStyle: UIFont.TextStyle, extra: CGFloat = 4, sample: String? = nil, fontName: String? = nil) -> CGFloat {
         let sampleString = (sample ?? "M") as NSString

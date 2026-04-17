@@ -1,7 +1,7 @@
 import SwiftUI
 import Foundation
 
-struct AyahRow: View {
+struct AyahRow: View, Equatable {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var quranPlayer: QuranPlayer
@@ -29,6 +29,14 @@ struct AyahRow: View {
     @Binding var searchText: String
     
     @State private var showRespectAlert = false
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.surah == rhs.surah &&
+        lhs.ayah == rhs.ayah &&
+        lhs.comparisonQiraahOverride == rhs.comparisonQiraahOverride &&
+        lhs.scrollDown == rhs.scrollDown &&
+        lhs.searchText == rhs.searchText
+    }
 
     private static let arabicDisplayCache: NSCache<NSString, NSString> = {
         let cache = NSCache<NSString, NSString>()
@@ -188,13 +196,13 @@ struct AyahRow: View {
                     .fill(
                         currentAyah == ayah.id
                         ? settings.accentColor.color.opacity(settings.defaultView ? 0.15 : 0.25)
-                        : .white.opacity(0.00001)
+                        : .clear
                     )
                     .padding(.horizontal, -12)
                     .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
             }
             
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     ZStack(alignment: .topTrailing) {
                         Text("\(surah.id):\(ayah.id)")
@@ -359,6 +367,7 @@ struct AyahRow: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .contentShape(Rectangle())
         .lineLimit(nil)
         #if os(iOS)
         .contextMenu {

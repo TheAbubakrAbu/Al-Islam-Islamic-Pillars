@@ -204,7 +204,7 @@ struct SplashScreen: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
             }
-            .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: .green)*/
+            .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: \(AppIdentifiers.mainColor.color))*/
             
             Button {
                 settings.hapticFeedback()
@@ -221,7 +221,7 @@ struct SplashScreen: View {
             .conditionalGlassEffect(
                 rectangle: true,
                 useColor: 0.38,
-                customTint: openedAppStoreFromHero ? .green : .red
+                customTint: openedAppStoreFromHero ? AppIdentifiers.mainColor.color : .red
             )
             .accessibilityLabel(openedAppStoreFromHero ? "Done" : "Skip for now")
         }

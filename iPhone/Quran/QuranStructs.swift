@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct Juz: Codable, Identifiable {
+struct Juz: Codable, Identifiable, Equatable {
     let id: Int
     let nameArabic: String
     let nameTransliteration: String
@@ -22,7 +22,7 @@ struct BookmarkedAyah: Codable, Identifiable, Equatable, Hashable {
     }
 }
 
-struct VerseIndexEntry: Identifiable, Hashable {
+struct VerseIndexEntry: Identifiable, Hashable, Codable {
     let id: String
     let surah: Int
     let ayah: Int
@@ -34,21 +34,21 @@ struct VerseIndexEntry: Identifiable, Hashable {
     let englishTokens: [String]
 }
 
-enum BoundaryDividerStyle {
+enum BoundaryDividerStyle: Codable, Equatable {
     case allGreen
     case allSecondary
     case pageAccentJuzSecondary
     case allAccent
 }
 
-struct BoundaryDividerModel {
+struct BoundaryDividerModel: Codable, Equatable {
     let text: String
     let pageSegment: String
     let juzSegment: String?
     let style: BoundaryDividerStyle
 }
 
-struct SurahBoundaryModel {
+struct SurahBoundaryModel: Codable, Equatable {
     let startDivider: BoundaryDividerModel?
     let startDividerHighlighted: Bool
     let dividerBeforeAyah: [Int: BoundaryDividerModel]
@@ -57,7 +57,99 @@ struct SurahBoundaryModel {
     let endDividerHighlighted: Bool
 }
 
+extension Surah {
+    var normalizedSearchNames: [String] {
+        let baseNames = [
+            nameTransliteration,
+            nameEnglish,
+            nameArabic.removingArabicMarks()
+        ].map { $0.normalizedForSurahQuery }
+
+        return Array(Set(baseNames + transliterationSearchAliases)).sorted()
+    }
+
+    var transliterationSearchAliases: [String] {
+        nameTransliteration.transliterationSearchAliases
+    }
+}
+
 extension String {
+    func removingArabicMarks() -> String {
+        let filtered = unicodeScalars.filter {
+            $0.value != 0x0640 &&
+            !(0x0610...0x061A).contains($0.value) &&
+            !(0x064B...0x065F).contains($0.value) &&
+            !(0x06D6...0x06ED).contains($0.value)
+        }
+        return String(String.UnicodeScalarView(filtered))
+    }
+
+    func arabicDigitsToWestern() -> String {
+        let digitMap: [Character: Character] = [
+            "٠":"0","١":"1","٢":"2","٣":"3","٤":"4",
+            "٥":"5","٦":"6","٧":"7","٨":"8","٩":"9",
+            "۰":"0","۱":"1","۲":"2","۳":"3","۴":"4",
+            "۵":"5","۶":"6","۷":"7","۸":"8","۹":"9"
+        ]
+        return String(map { digitMap[$0] ?? $0 })
+    }
+
+    var normalizedForSurahQuery: String {
+        trimmingCharacters(in: .whitespacesAndNewlines)
+            .removingArabicMarks()
+            .arabicDigitsToWestern()
+            .lowercased()
+    }
+
+    var transliterationSearchAliases: [String] {
+        let normalized = normalizedForSurahQuery
+        guard !normalized.isEmpty else { return [] }
+
+        var aliases = Set<String>()
+
+        func insert(_ value: String) {
+            let cleaned = value.normalizedForSurahQuery
+            if !cleaned.isEmpty {
+                aliases.insert(cleaned)
+            }
+        }
+
+        insert(normalized)
+        insert(normalized.replacingOccurrences(of: "-", with: " "))
+        insert(normalized.replacingOccurrences(of: "-", with: ""))
+        insert(normalized.replacingOccurrences(of: " ", with: ""))
+
+        let articlePrefixes = ["al", "ar", "an", "ad", "adh", "as", "at", "ath", "az", "ash"]
+        for prefix in articlePrefixes {
+            let hyphenPrefix = "\(prefix)-"
+            let spacePrefix = "\(prefix) "
+
+            if normalized.hasPrefix(hyphenPrefix) {
+                let stripped = String(normalized.dropFirst(hyphenPrefix.count))
+                insert(stripped)
+                insert(stripped.replacingOccurrences(of: "-", with: " "))
+                insert(stripped.replacingOccurrences(of: " ", with: ""))
+            }
+
+            if normalized.hasPrefix(spacePrefix) {
+                let stripped = String(normalized.dropFirst(spacePrefix.count))
+                insert(stripped)
+                insert(stripped.replacingOccurrences(of: "-", with: " "))
+                insert(stripped.replacingOccurrences(of: " ", with: ""))
+            }
+        }
+
+        return Array(aliases)
+    }
+
+    var normalizedSurahIntentQuery: String {
+        normalizedForSurahQuery.replacingOccurrences(
+            of: #"^\s*(surah|surat|sura|chapter|سورة|سوره)\s+"#,
+            with: "",
+            options: .regularExpression
+        )
+    }
+
     var containsArabicLetters: Bool {
         unicodeScalars.contains { scalar in
             switch scalar.value {

@@ -249,8 +249,8 @@ extension Settings {
         }
     }
     
-    private static let travelingNotificationId = "Al-Islam.TravelingMode"
-    private static let calculationNotificationId = "Al-Islam.CalculationMode"
+    private static let travelingNotificationId = "\(AppIdentifiers.appName).TravelingMode"
+    private static let calculationNotificationId = "\(AppIdentifiers.appName).CalculationMode"
 
     private static let countryCalculationMap: [String: String] = [
         // North America method (mainland + US territories commonly on ISNA-style defaults)
@@ -382,7 +382,7 @@ extension Settings {
 
         #if os(iOS)
         let content = UNMutableNotificationContent()
-        content.title = "Al-Islam"
+        content.title = AppIdentifiers.appName
         content.body = "Prayer calculation switched to \(detectedMethod) for \(currentLocation.city)."
         content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -412,7 +412,7 @@ extension Settings {
                 travelTurnOnAutomatic  = true
                 #if os(iOS)
                 let content = UNMutableNotificationContent()
-                content.title = "Al-Islam"
+                content.title = AppIdentifiers.appName
                 content.body  = "Traveling mode automatically turned on at \(currentLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -427,7 +427,7 @@ extension Settings {
                 travelTurnOffAutomatic = true
                 #if os(iOS)
                 let content = UNMutableNotificationContent()
-                content.title = "Al-Islam"
+                content.title = AppIdentifiers.appName
                 content.body  = "Traveling mode automatically turned off at \(currentLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -889,7 +889,7 @@ extension Settings {
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
 
         let content = UNMutableNotificationContent()
-        content.title = "Al-Islam"
+        content.title = AppIdentifiers.appName
         content.body  = "Please open the app to refresh today’s prayer times and notifications."
         content.sound = .default
         #if os(iOS)
@@ -1025,7 +1025,7 @@ extension Settings {
         guard triggerTime > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Al-Islam"
+        content.title = AppIdentifiers.appName
         content.body = buildBody(prayer: prayer, minutesBefore: minutes, city: city)
         content.sound = prayerNotificationSound(for: prayer, minutesBefore: minutes)
         #if os(iOS)
@@ -1062,7 +1062,7 @@ extension Settings {
             }
             
             let content = UNMutableNotificationContent()
-            content.title = "Al-Islam"
+            content.title = AppIdentifiers.appName
             content.body = "\(titleText) (\(eventSubTitle))"
             content.sound = .default
             #if os(iOS)
@@ -1187,14 +1187,14 @@ extension Settings {
 
     func automaticTravelMessage(turnOn: Bool) -> String {
         if turnOn {
-            return "Al-Islam has automatically detected that you are traveling, so your prayers will be shortened."
+            return "\(AppIdentifiers.appName) has automatically detected that you are traveling, so your prayers will be shortened."
         }
-        return "Al-Islam has automatically detected that you are no longer traveling, so your prayers will not be shortened."
+        return "\(AppIdentifiers.appName) has automatically detected that you are no longer traveling, so your prayers will not be shortened."
     }
 
     var automaticCalculationMessage: String {
         let country = calculationAutoDetectedCountryCode.isEmpty ? "unknown" : calculationAutoDetectedCountryCode
-        return "Al-Islam detected your region as \(country) and switched prayer calculation from \(calculationAutoPreviousMethod) to \(calculationAutoDetectedMethod)."
+        return "\(AppIdentifiers.appName) detected your region as \(country) and switched prayer calculation from \(calculationAutoPreviousMethod) to \(calculationAutoDetectedMethod)."
     }
 
     func resetTravelAutomaticFlags() {

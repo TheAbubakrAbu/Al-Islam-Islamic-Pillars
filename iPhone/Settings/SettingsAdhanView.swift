@@ -198,7 +198,7 @@ struct SettingsAdhanView: View {
             .font(.subheadline)
             .disabled(settings.calculationAutomatic)
 
-            Text("Fajr and Isha timings vary by calculation method, as they are based on twilight. If automatic mode is on, Al-Islam picks a method based on your location (for example, North America or Turkey). If your country is not mapped, it defaults to Muslim World League.")
+            Text("Fajr and Isha timings vary by calculation method, as they are based on twilight. If automatic mode is on, \(AppIdentifiers.appName) picks a method based on your location (for example, North America or Turkey). If your country is not mapped, it defaults to Muslim World League.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)

@@ -1,12 +1,36 @@
 import SwiftUI
 
-struct SurahRow: View {
+struct SurahRow: View, Equatable {
     @EnvironmentObject var settings: Settings
     
     let surah: Surah
     var ayah: Int?
     var end: Bool?
-    var isFavorite: Bool = false
+    let favoriteState: Bool
+    let showInfo: Bool
+    let accentColor: AccentColor
+    let useFontArabic: Bool
+    let fontArabic: String
+
+    init(
+        surah: Surah,
+        ayah: Int? = nil,
+        end: Bool? = nil,
+        isFavorite: Bool? = nil,
+        hideInfo: Bool? = nil,
+        accentColor: AccentColor = Settings.shared.accentColor,
+        useFontArabic: Bool = Settings.shared.useFontArabic,
+        fontArabic: String = Settings.shared.fontArabic
+    ) {
+        self.surah = surah
+        self.ayah = ayah
+        self.end = end
+        self.favoriteState = isFavorite ?? Settings.shared.isSurahFavorite(surah: surah.id)
+        self.showInfo = hideInfo.map { !$0 } ?? Settings.shared.showFullSurahRow
+        self.accentColor = accentColor
+        self.useFontArabic = useFontArabic
+        self.fontArabic = fontArabic
+    }
 
     private var revelationEmoji: String {
         surah.type == "makkan" ? "🕋" : "🕌"
@@ -56,12 +80,12 @@ struct SurahRow: View {
         ZStack(alignment: .topTrailing) {
             Text("\(surah.id)")
                 .font(.caption.weight(.bold))
-                .foregroundColor(settings.accentColor.color)
+                .foregroundColor(accentColor.color)
                 .frame(width: badgeWidth)
                 .frame(maxHeight: .infinity)
                 .conditionalGlassEffect(
-                    useColor: isFavorite ? 0.3 : nil,
-                    customTint: isFavorite ? settings.accentColor.color : nil
+                    useColor: favoriteState ? 0.3 : nil,
+                    customTint: favoriteState ? accentColor.color : nil
                 )
                 .onTapGesture {
                     settings.hapticFeedback()
@@ -69,7 +93,7 @@ struct SurahRow: View {
                 }
                 .accessibilityLabel("Surah \(surah.id)")
 
-            if isFavorite {
+            if favoriteState {
                 Image(systemName: "star.fill")
                     .font(.caption2)
                     .foregroundStyle(settings.accentColor.color)
@@ -83,6 +107,7 @@ struct SurahRow: View {
         #if os(iOS)
         HStack(alignment: .center) {
             surahNumberPill
+                .padding(.trailing, 2)
 
             VStack(alignment: .leading, spacing: 2) {
                 if let context = positionContextLine {
@@ -91,39 +116,37 @@ struct SurahRow: View {
                         .foregroundColor(.secondary)
                 }
                 
-                HStack {
-                    Text(surah.nameTransliteration)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
-                    
-                    Text(surah.nameEnglish)
-                        .foregroundColor(.secondary)
-                        .font(.caption2)
-                }
-
-                Text(pageLine)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Text(surah.nameTransliteration)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
                 
-                Text(ayahAndRevelationLine)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Text(surah.nameEnglish)
+                    .font(.caption)
+                    .foregroundColor(showInfo ? .primary : .secondary)
+
+                if showInfo {
+                    Text(pageLine)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
+                    Text(ayahAndRevelationLine)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if UIDevice.current.userInterfaceIdiom != .pad {
-                HStack {
-                    Text(surah.nameArabic)
-                        .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
-                        .foregroundColor(.primary)
-                    
-                    Text(surah.idArabic)
-                        .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
-                        .foregroundColor(settings.accentColor.color)
-                }
-                .minimumScaleFactor(1)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+            HStack {
+                Text(surah.nameArabic)
+                    .font(.custom(fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
+                    .foregroundColor(.primary)
+                
+                Text(surah.idArabic)
+                    .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
+                    .foregroundColor(accentColor.color)
             }
+            .minimumScaleFactor(1)
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .lineLimit(1)
         .minimumScaleFactor(0.75)
@@ -149,6 +172,17 @@ struct SurahRow: View {
         .lineLimit(1)
         .minimumScaleFactor(0.5)
         #endif
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.surah == rhs.surah &&
+        lhs.ayah == rhs.ayah &&
+        lhs.end == rhs.end &&
+        lhs.favoriteState == rhs.favoriteState &&
+        lhs.showInfo == rhs.showInfo &&
+        lhs.accentColor == rhs.accentColor &&
+        lhs.useFontArabic == rhs.useFontArabic &&
+        lhs.fontArabic == rhs.fontArabic
     }
 }
 

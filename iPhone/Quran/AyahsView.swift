@@ -30,10 +30,17 @@ struct AyahsView: View {
     @State private var isAyahSearchFocused = false
     @State private var selectedSurahNavigation: Int? = nil
     @State private var dividerInfo: DividerInfo? = nil
+    @State private var surahInfoDialog: SurahInfoDialog? = nil
     let surah: Surah
     var ayah: Int? = nil
 
     private struct DividerInfo: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+    }
+
+    private struct SurahInfoDialog: Identifiable {
         let id = UUID()
         let title: String
         let message: String
@@ -71,6 +78,22 @@ struct AyahsView: View {
         }
     }
 
+    @ViewBuilder
+    private func listBoundaryDivider(model: BoundaryDividerModel, nextAyahID: Int? = nil) -> some View {
+        if settings.defaultView {
+            boundaryDivider(model: model, nextAyahID: nextAyahID)
+        } else {
+            VStack {
+                boundaryDivider(model: model, nextAyahID: nextAyahID)
+                
+                Divider()
+                    .padding(.top, 7)
+            }
+            #if os(iOS)
+            .listRowSeparator(.hidden)
+            #endif
+        }
+    }
     private func boundaryDividerEquals(_ lhs: BoundaryDividerModel?, _ rhs: BoundaryDividerModel?) -> Bool {
         switch (lhs, rhs) {
         case (nil, nil):
@@ -117,6 +140,17 @@ struct AyahsView: View {
         }
 
         return DividerInfo(title: title, message: message)
+    }
+
+    private func surahInfoDialog(for surah: Surah) -> SurahInfoDialog {
+        let revelationOrderText = surah.revelationOrder.map(String.init) ?? "Unknown"
+        var message = "Revelation order: #\(revelationOrderText)"
+
+        if let exceptions = surah.revelationExceptions?.trimmingCharacters(in: .whitespacesAndNewlines), !exceptions.isEmpty {
+            message += "\n\nExceptions: \(exceptions)"
+        }
+
+        return SurahInfoDialog(title: "Surah Info", message: message)
     }
 
     /// Ayah row id to scroll to after clearing search (first ayah following this boundary).
@@ -494,8 +528,12 @@ struct AyahsView: View {
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { _ in saveLastRead() }
         #if os(iOS)
-        .navigationTitle(surah.nameEnglish)
+        //.navigationTitle(surah.nameEnglish)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                surahTitlePickerButton
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 navBarTitle
             }
@@ -517,7 +555,6 @@ struct AyahsView: View {
             .environmentObject(settings)
             .environmentObject(quranData)
         }
-        #if os(iOS)
         .sheet(isPresented: $showCustomRangeSheet) {
             PlayCustomRangeSheet(
                 surah: surah,
@@ -557,7 +594,6 @@ struct AyahsView: View {
             .navigationViewStyle(.stack)
             .modifier(ReciterPickerSheetPresentationModifier())
         }
-        #endif
         .confirmationDialog(
             dividerInfo?.title ?? "Boundary",
             isPresented: Binding(
@@ -568,6 +604,20 @@ struct AyahsView: View {
         ) { _ in
             Button("OK") {
                 dividerInfo = nil
+            }
+        } message: { info in
+            Text(info.message)
+        }
+        .confirmationDialog(
+            surahInfoDialog?.title ?? "Surah Info",
+            isPresented: Binding(
+                get: { surahInfoDialog != nil },
+                set: { if !$0 { surahInfoDialog = nil } }
+            ),
+            presenting: surahInfoDialog
+        ) { _ in
+            Button("OK") {
+                surahInfoDialog = nil
             }
         } message: { info in
             Text(info.message)
@@ -705,6 +755,10 @@ struct AyahsView: View {
             guard showBoundaryDividers, searchText.isEmpty else { return nil }
             return boundaryModel?.endOfSurahDivider
         }()
+        //let previousSurah = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? neighboringSurah(before: surah.id) : nil
+        let nextSurah = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? neighboringSurah(after: surah.id)
+            : nil
         let currentFloatingAyah = firstVisibleAyahID
             .flatMap { visibleID in ayahByID[visibleID] }
             ?? ayahsForQiraah.first
@@ -766,27 +820,15 @@ struct AyahsView: View {
             firstVisibleAyahID = nextVisibleAyahID
         }
 
-        return List {
+        return
+            List {
                 Section {
-                    VStack {
-                        let firstAyahClean = ayahsForQiraah.first?.textCleanArabic.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                        let showTaawwudh = (surah.id == 9) || (surah.id == 1 && firstAyahClean.hasPrefix("بسم"))
-                        if showTaawwudh {
-                            HeaderRow(
-                                arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيۡطَانِ ٱلرَّجِيمِ",
-                                englishTransliteration: "Audhu billahi minashaitanir rajeem",
-                                englishTranslation: "I seek refuge in Allah from the accursed Satan."
-                            )
-                            .padding(.vertical)
-                        } else {
-                            HeaderRow(
-                                arabicText: "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِِ",
-                                englishTransliteration: "Bismi Allahi alrrahmani alrraheemi",
-                                englishTranslation: "In the name of Allah, the Compassionate, the Merciful."
-                            )
-                            .padding(.vertical)
+                    SurahRow(surah: surah, hideInfo: true).equatable()
+                        .contentShape(Rectangle())
+                        .onLongPressGesture(minimumDuration: 0.45) {
+                            settings.hapticFeedback()
+                            surahInfoDialog = surahInfoDialog(for: surah)
                         }
-                    }
                 } header: {
                     ZStack {
                         if searchText.isEmpty {
@@ -819,12 +861,38 @@ struct AyahsView: View {
                     .animation(.easeInOut, value: searchText)
                     .transition(.opacity)
                 }
+                
+                /*if let previousSurah {
+                    Section {
+                        surahNavigationButton(title: "Go to Previous Surah", surah: previousSurah, systemImage: "chevron.up")
+                    }
+                }*/
+                 
+                Section {
+                    VStack {
+                        let firstAyahClean = ayahsForQiraah.first?.textCleanArabic.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                        let showTaawwudh = (surah.id == 9) || (surah.id == 1 && firstAyahClean.hasPrefix("بسم"))
+                        if showTaawwudh {
+                            HeaderRow(
+                                arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيۡطَانِ ٱلرَّجِيمِ",
+                                englishTransliteration: "Audhu billahi minashaitanir rajeem",
+                                englishTranslation: "I seek refuge in Allah from the accursed Satan."
+                            )
+                        } else {
+                            HeaderRow(
+                                arabicText: "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِِ",
+                                englishTransliteration: "Bismi Allahi alrrahmani alrraheemi",
+                                englishTranslation: "In the name of Allah, the Compassionate, the Merciful."
+                            )
+                        }
+                    }
+                }
 
                 if isDividerKeywordSearch {
                     ForEach(Array(keywordDividerModels.enumerated()), id: \.offset) { _, dividerModel in
                         Section {
                             if let bm = boundaryModel {
-                                boundaryDivider(
+                                listBoundaryDivider(
                                     model: dividerModel,
                                     nextAyahID: scrollTargetAyahID(
                                         forDivider: dividerModel,
@@ -833,14 +901,14 @@ struct AyahsView: View {
                                     )
                                 )
                             } else {
-                                boundaryDivider(model: dividerModel, nextAyahID: nil)
+                                listBoundaryDivider(model: dividerModel, nextAyahID: nil)
                             }
                         }
                     }
                 } else {
                     if let startOfSurahDivider {
                         Section {
-                            boundaryDivider(model: startOfSurahDivider, nextAyahID: ayahsForQiraah.first?.id)
+                            listBoundaryDivider(model: startOfSurahDivider, nextAyahID: ayahsForQiraah.first?.id)
                         }
                         .onAppear {
                             if let nextID = filteredAyahs.first?.id {
@@ -861,7 +929,7 @@ struct AyahsView: View {
 
                         if let dividerBefore {
                             Section {
-                                boundaryDivider(model: dividerBefore, nextAyahID: ayah.id)
+                                listBoundaryDivider(model: dividerBefore, nextAyahID: ayah.id)
                             }
                             .onAppear {
                                 visibleBoundaryAyahIDs.insert(ayah.id)
@@ -908,13 +976,19 @@ struct AyahsView: View {
 
                     if let endOfSurahDivider {
                         Section {
-                            boundaryDivider(model: endOfSurahDivider, nextAyahID: nil)
+                            listBoundaryDivider(model: endOfSurahDivider, nextAyahID: nil)
+                        }
+                    }
+
+                    if let nextSurah {
+                        Section {
+                            surahNavigationButton(title: "Go to Next Surah", surah: nextSurah, systemImage: "chevron.down")
                         }
                     }
 
                     if let trailingSearchBoundaryDivider {
                         Section {
-                            boundaryDivider(
+                            listBoundaryDivider(
                                 model: trailingSearchBoundaryDivider,
                                 nextAyahID: trailingSearchBoundaryScrollTarget
                             )
@@ -1007,6 +1081,17 @@ struct AyahsView: View {
                     )
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                    qiraatAndTajweedControls
+                    
+                    if quranPlayer.isPlaying || quranPlayer.isPaused {
+                        nowPlayingInset(proxy: proxy).padding(.horizontal, 24)
+                            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+                    }
+                }
+                .padding(.bottom, 8)
+            }
             .adaptiveSafeArea(edge: .bottom) {
                 bottomInsetContent(proxy: proxy)
             }
@@ -1020,7 +1105,7 @@ struct AyahsView: View {
         VStack(spacing: 6) {
             SurahSectionHeader(surah: surah)
                 .padding(.horizontal)
-                .padding(.vertical, 4)
+                .padding(.vertical, 8)
                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                 .conditionalGlassEffect()
 
@@ -1035,7 +1120,7 @@ struct AyahsView: View {
                     .animation(.easeInOut(duration: 0.18), value: floatingDividerAnimationKey)
             }
         }
-        .padding(.top, 6)
+        .padding(.top, 2)
         .padding(.horizontal, settings.defaultView ? 20 : 16)
         .background(Color.clear)
         .opacity(showFloatingHeader ? 1 : 0)
@@ -1048,7 +1133,6 @@ struct AyahsView: View {
     #if os(iOS)
     private func bottomInsetContent(proxy: ScrollViewProxy) -> some View {
         VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-            qiraatAndTajweedControls
             playbackAndSearchControls(proxy: proxy)
         }
     }
@@ -1078,8 +1162,7 @@ struct AyahsView: View {
     }
 
     private func playbackAndSearchControls(proxy: ScrollViewProxy) -> some View {
-        VStack(spacing: 6) {
-            nowPlayingInset(proxy: proxy)
+        VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             HStack(spacing: 0) {
                 SearchBar(
                     text: $searchText.animation(.easeInOut),
@@ -1107,31 +1190,29 @@ struct AyahsView: View {
 
     @ViewBuilder
     private func nowPlayingInset(proxy: ScrollViewProxy) -> some View {
-        if quranPlayer.isPlaying || quranPlayer.isPaused {
-            NowPlayingView(quranView: false)
-                .animation(.easeInOut, value: quranPlayer.isPlaying)
-                .onTapGesture {
-                    guard
-                        let curSurah = quranPlayer.currentSurahNumber,
-                        let curAyah = quranPlayer.currentAyahNumber,
-                        curSurah == surah.id
-                    else { return }
+        NowPlayingView(quranView: false)
+            .animation(.easeInOut, value: quranPlayer.isPlaying)
+            .onTapGesture {
+                guard
+                    let curSurah = quranPlayer.currentSurahNumber,
+                    let curAyah = quranPlayer.currentAyahNumber,
+                    curSurah == surah.id
+                else { return }
 
-                    settings.hapticFeedback()
+                settings.hapticFeedback()
 
-                    if !searchText.isEmpty {
-                        withAnimation {
-                            searchText = ""
-                            self.endEditing()
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                            withAnimation { proxy.scrollTo(curAyah, anchor: .top) }
-                        }
-                    } else {
+                if !searchText.isEmpty {
+                    withAnimation {
+                        searchText = ""
+                        self.endEditing()
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                         withAnimation { proxy.scrollTo(curAyah, anchor: .top) }
                     }
+                } else {
+                    withAnimation { proxy.scrollTo(curAyah, anchor: .top) }
                 }
-        }
+            }
     }
     
     #if os(iOS)
@@ -1285,12 +1366,13 @@ struct AyahsView: View {
             settings.hapticFeedback()
             showSurahPickerSheet = true
         } label: {
-            Text(surah.nameEnglish)
+            Text("\(surah.id) - \(surah.nameTransliteration)")
                 .font(.headline)
                 .lineLimit(1)
-                .minimumScaleFactor(0.5)
                 .foregroundColor(.primary)
-                .padding(6)
+                .contentShape(Rectangle())
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .conditionalGlassEffect()
         }
     }
@@ -1300,13 +1382,15 @@ struct AyahsView: View {
             settings.hapticFeedback()
             showingSettingsSheet = true
         } label: {
-            VStack(alignment: .trailing) {
+            Image(systemName: "gear")
+            
+            /*VStack(alignment: .trailing) {
                 Text("\(surah.nameArabic) - \(surah.idArabic)")
                 Text("\(surah.nameTransliteration) - \(surah.id)")
             }
             .font(.footnote)
             .foregroundColor(settings.accentColor.color)
-            .padding(6)
+            .padding(6)*/
         }
     }
 
@@ -1342,6 +1426,49 @@ struct AyahsView: View {
         withAnimation {
             settings.lastReadSurah = surah.id
             settings.lastReadAyah = targetAyah
+        }
+    }
+
+    private func neighboringSurah(before currentSurahID: Int) -> Surah? {
+        guard let index = quranData.quran.firstIndex(where: { $0.id == currentSurahID }), index > 0 else { return nil }
+        return quranData.quran[index - 1]
+    }
+
+    private func neighboringSurah(after currentSurahID: Int) -> Surah? {
+        guard let index = quranData.quran.firstIndex(where: { $0.id == currentSurahID }), index + 1 < quranData.quran.count else { return nil }
+        return quranData.quran[index + 1]
+    }
+
+    private func navigateToSurah(_ targetSurah: Surah) {
+        guard targetSurah.id != surah.id else { return }
+        settings.hapticFeedback()
+        selectedSurahNavigation = targetSurah.id
+    }
+
+    @ViewBuilder
+    private func surahNavigationButton(title: String, surah targetSurah: Surah, systemImage: String) -> some View {
+        Button {
+            navigateToSurah(targetSurah)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+                    .frame(width: 22)
+
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                Text("\(targetSurah.id) - \(targetSurah.nameTransliteration)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .contentShape(Rectangle())
         }
     }
 }
@@ -1385,7 +1512,6 @@ private struct SurahPickerSheet: View {
     @EnvironmentObject private var quranData: QuranData
 
     @State private var searchText = ""
-
     let currentSurahID: Int
     let onSelect: (Surah) -> Void
 
@@ -1404,35 +1530,96 @@ private struct SurahPickerSheet: View {
         }
     }
 
+    private func adjacentSurah(before surahID: Int) -> Surah? {
+        guard let index = quranData.quran.firstIndex(where: { $0.id == surahID }), index > 0 else { return nil }
+        return quranData.quran[index - 1]
+    }
+
+    private func adjacentSurah(after surahID: Int) -> Surah? {
+        guard let index = quranData.quran.firstIndex(where: { $0.id == surahID }), index + 1 < quranData.quran.count else { return nil }
+        return quranData.quran[index + 1]
+    }
+
+    private func select(_ surah: Surah) {
+        onSelect(surah)
+        dismiss()
+    }
+
+    private func scrollToCurrentSurah(_ proxy: ScrollViewProxy) {
+        guard searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard filteredSurahs.contains(where: { $0.id == currentSurahID }) else { return }
+
+        let requestScroll = {
+            withAnimation(.easeInOut) {
+                proxy.scrollTo(currentSurahID, anchor: .center)
+            }
+        }
+
+        DispatchQueue.main.async {
+            requestScroll()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                requestScroll()
+            }
+        }
+    }
+
+    private var ayahHighlightBackgroundVerticalPadding: CGFloat {
+        if #available(iOS 26.0, watchOS 26.0, *) {
+            return -11
+        }
+        return -2
+    }
+    
     var body: some View {
         NavigationView {
-            List {
-                ForEach(filteredSurahs, id: \.id) { surah in
-                    Button {
-                        onSelect(surah)
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 12) {
-                            SurahRow(surah: surah, isFavorite: settings.favoriteSurahs.contains(surah.id))
-
-                            if surah.id == currentSurahID {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(settings.accentColor.color)
+            ScrollViewReader { proxy in
+                List {
+                    ForEach(filteredSurahs, id: \.id) { surah in
+                        Section {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 24)
+                                    .fill(
+                                        surah.id == currentSurahID
+                                        ? settings.accentColor.color.opacity(0.15)
+                                        : .clear
+                                    )
+                                    .padding(.horizontal, -12)
+                                    .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
+                                
+                                Button {
+                                    settings.hapticFeedback()
+                                    withAnimation {
+                                        select(surah)
+                                    }
+                                } label: {
+                                    SurahRow(surah: surah, isFavorite: settings.favoriteSurahs.contains(surah.id), hideInfo: true).equatable()
+                                        .contentShape(Rectangle())
+                                }
+                                .id(surah.id)
                             }
                         }
-                        .contentShape(Rectangle())
                     }
                 }
-            }
-            .searchable(text: $searchText, prompt: "Search surah")
-            .navigationTitle("All Surahs")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                .applyConditionalListStyle(defaultView: true)
+                .compactListSectionSpacing()
+                .searchable(text: $searchText.animation(.easeInOut), prompt: "Search surah")
+                .navigationTitle("Choose Surah")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
+                .onAppear {
+                    scrollToCurrentSurah(proxy)
+                }
+                .onChange(of: searchText) { _ in
+                    guard searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+                    scrollToCurrentSurah(proxy)
+                }
+                .onChange(of: filteredSurahs.count) { _ in scrollToCurrentSurah(proxy) }
             }
         }
     }
@@ -1463,15 +1650,13 @@ struct ArabicTextRiwayahPicker: View {
                     Text(option.label).tag(option.tag)
                 }
             }
-            .onAppear {
-                let migrated = Settings.normalizeLegacyRiwayahTag(selection)
-                if migrated != selection { selection = migrated }
-            }
         } else {
             Menu {
                 ForEach(Array(Self.options.reversed()), id: \.tag) { option in
                     Button {
-                        selection = option.tag
+                        withAnimation {
+                            selection = option.tag
+                        }
                     } label: {
                         HStack {
                             if option.tag == Settings.normalizeLegacyRiwayahTag(selection) {
@@ -1499,20 +1684,12 @@ struct ArabicTextRiwayahPicker: View {
                 .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
                 .conditionalGlassEffect()
             }
-            .onAppear {
-                let migrated = Settings.normalizeLegacyRiwayahTag(selection)
-                if migrated != selection { selection = migrated }
-            }
         }
         #else
         Picker("Arabic Riwayah", selection: $selection) {
             ForEach(Self.options, id: \.tag) { option in
                 Text(option.label).tag(option.tag)
             }
-        }
-        .onAppear {
-            let migrated = Settings.normalizeLegacyRiwayahTag(selection)
-            if migrated != selection { selection = migrated }
         }
         #endif
     }

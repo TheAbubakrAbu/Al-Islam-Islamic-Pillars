@@ -28,11 +28,11 @@ struct PrayersProvider: TimelineProvider {
             settings.currentLocation = loc
         }
 
-        settings.accentColor            = AccentColor(rawValue: store?.string(forKey: "accentColor") ?? "") ?? .green // .yellow
-        settings.travelingMode          = store?.bool(forKey: "travelingMode") ?? false
-        settings.hanafiMadhab           = store?.bool(forKey: "hanafiMadhab") ?? false
-        settings.prayerCalculation      = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"
-        settings.hijriOffset            = store?.integer(forKey: "hijriOffset") ?? 0
+        settings.accentColor = AccentColor(rawValue: store?.string(forKey: "accentColor") ?? AppIdentifiers.mainColorString) ?? AppIdentifiers.mainColor
+        settings.travelingMode = store?.bool(forKey: "travelingMode") ?? false
+        settings.hanafiMadhab = store?.bool(forKey: "hanafiMadhab") ?? false
+        settings.prayerCalculation = store?.string(forKey: "prayerCalculation") ?? "Muslim World League"
+        settings.hijriOffset = store?.integer(forKey: "hijriOffset") ?? 0
         settings.switchHijriDateAtMaghrib = store?.bool(forKey: "switchHijriDateAtMaghrib") ?? false
 
         settings.fetchPrayerTimes()

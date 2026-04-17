@@ -77,7 +77,7 @@ struct QiblaView: View {
                 pointerStack
                     .rotationEffect(.degrees(compass.direction))
             }
-            .conditionalGlassEffect(useColor: 0.15)
+            .conditionalGlassEffect()
 
             if size >= 70 {
                 qiblaInfoCard

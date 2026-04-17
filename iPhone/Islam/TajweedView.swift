@@ -109,7 +109,7 @@ struct TajweedFoundationsView: View {
                 Text("Learn More About Qiraat, Riwayat, and Ahruf")
                     .font(.subheadline.weight(.semibold))
 
-                Text("See below and in Al-Islam View > Islamic Pillars and Basics.")
+                Text("See below and in \(AppIdentifiers.toolsView) View > Islamic Pillars and Basics.")
                     .font(.caption)
                     .foregroundColor(.secondary)
 

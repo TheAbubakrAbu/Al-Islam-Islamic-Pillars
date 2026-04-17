@@ -22,7 +22,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     }()
 
     private override init() {
-        self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? "green") ?? .green // .yellow
+        self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? AppIdentifiers.mainColorString) ?? AppIdentifiers.mainColor
         
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
@@ -473,6 +473,7 @@ final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
     @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
     @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = false
+    @AppStorage("showFullSurahRow") var showFullSurahRow: Bool = true
 
     @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()
     var quranSearchHistory: [String] {

@@ -1062,7 +1062,7 @@ final class QuranPlayer: ObservableObject {
         }
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = CMTimeGetSeconds(player?.currentTime() ?? .zero)
         info[MPNowPlayingInfoPropertyPlaybackRate] = player?.rate
-        if let img = UIImage(named: "Al-Islam") {
+        if let img = UIImage(named: AppIdentifiers.appName) {
             info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: img.size) { _ in img }
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
@@ -1304,7 +1304,7 @@ final class QuranPlayer: ObservableObject {
 final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
     static let shared = ReciterDownloadManager()
 
-    struct DownloadState {
+    struct DownloadState: Equatable {
         var isDownloading = false
         var completedSurahs = 0
         var totalSurahs = 114

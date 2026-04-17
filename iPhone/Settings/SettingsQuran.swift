@@ -253,9 +253,9 @@ extension Settings {
         case .qalqalah: return showTajweedQalqalah
         case .lamShamsiyah: return showTajweedLamShamsiyah
         case .droppedLetter: return showTajweedDroppedLetter
-        case .idghamGhunnahHeavy: return showTajweedIdghamBiGhunnahHeavy
-        case .idghamGhunnahLight: return showTajweedIdghamBiGhunnahLight
-        case .ikhfaa: return showTajweedIkhfaa
+        case .idghamGhunnah: return showTajweedIdghamBiGhunnahHeavy
+        case .ikhfaaLight: return showTajweedIdghamBiGhunnahLight
+        case .ikhfaaHeavy: return showTajweedIkhfaa
         case .iqlaab: return showTajweedIqlab
         case .idghamBilaGhunnah: return showTajweedIdghamBilaGhunnah
         case .hamzatWaslSilent: return showTajweedHamzatWaslSilent
@@ -273,9 +273,9 @@ extension Settings {
         case .qalqalah: showTajweedQalqalah = visible
         case .lamShamsiyah: showTajweedLamShamsiyah = visible
         case .droppedLetter: showTajweedDroppedLetter = visible
-        case .idghamGhunnahHeavy: showTajweedIdghamBiGhunnahHeavy = visible
-        case .idghamGhunnahLight: showTajweedIdghamBiGhunnahLight = visible
-        case .ikhfaa: showTajweedIkhfaa = visible
+        case .idghamGhunnah: showTajweedIdghamBiGhunnahHeavy = visible
+        case .ikhfaaLight: showTajweedIdghamBiGhunnahLight = visible
+        case .ikhfaaHeavy: showTajweedIkhfaa = visible
         case .iqlaab: showTajweedIqlab = visible
         case .idghamBilaGhunnah: showTajweedIdghamBilaGhunnah = visible
         case .hamzatWaslSilent: showTajweedHamzatWaslSilent = visible

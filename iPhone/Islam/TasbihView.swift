@@ -36,7 +36,7 @@ struct TasbihView: View {
     }
 
     private var dhikrSelectionSection: some View {
-        Section(header: Text("GLORIFICATIONS OF ALLAH ﷻ‎")) {
+        Section(header: Text("GLORIFICATIONS OF ALLAH‎")) {
             ForEach(tasbihData.indices, id: \.self) { index in
                 tasbihSelectionButton(for: index)
             }
@@ -46,7 +46,7 @@ struct TasbihView: View {
     private func tasbihSelectionButton(for index: Int) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 24)
-                .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .white.opacity(0.00001))
+                .fill(selectedDhikrIndex == index ? settings.accentColor.color.opacity(0.15) : .clear)
                 #if os(iOS)
                 .padding(.horizontal, -12)
                 .padding(.vertical, tasbihSelectionBackgroundVerticalPadding)

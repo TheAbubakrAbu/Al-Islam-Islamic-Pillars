@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct NameOfAllah: Decodable, Identifiable {
+struct NameOfAllah: Decodable, Identifiable, Equatable {
     let number: Int
     let id: String
     let name: String
@@ -243,10 +243,14 @@ struct NamesView: View {
                         firstFoundTarget: namesData.firstFoundTargetsByNameNumber[name.number],
                         showDescription: settings.showDescription,
                         isExpanded: expandedNameNumbers.contains(name.number),
-                        isFavorite: true
+                        isFavorite: true,
+                        accentColor: settings.accentColor,
+                        useFontArabic: settings.useFontArabic,
+                        fontArabic: settings.fontArabic
                     ) {
                         handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
                     }
+                    .equatable()
                     .id("favorite_name_\(name.number)")
                 }
             }
@@ -262,10 +266,14 @@ struct NamesView: View {
                     firstFoundTarget: namesData.firstFoundTargetsByNameNumber[name.number],
                     showDescription: settings.showDescription,
                     isExpanded: expandedNameNumbers.contains(name.number),
-                    isFavorite: favoriteNameNumberSet.contains(name.number)
+                    isFavorite: favoriteNameNumberSet.contains(name.number),
+                    accentColor: settings.accentColor,
+                    useFontArabic: settings.useFontArabic,
+                    fontArabic: settings.fontArabic
                 ) {
                     handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
                 }
+                .equatable()
             }
             .id("name_\(name.number)")
         }
@@ -337,20 +345,40 @@ struct NamesView: View {
     }
 }
 
-#Preview {
-    AlIslamPreviewContainer {
-        NamesView()
-    }
-}
-
-private struct NameRow: View {
+private struct NameRow: View, Equatable {
     @EnvironmentObject var settings: Settings
+    
     let name: NameOfAllah
     let firstFoundTarget: (surahID: Int, ayahID: Int)?
     let showDescription: Bool
     let isExpanded: Bool
     let isFavorite: Bool
+    let accentColor: AccentColor
+    let useFontArabic: Bool
+    let fontArabic: String
     let onTap: () -> Void
+
+    init(
+        name: NameOfAllah,
+        firstFoundTarget: (surahID: Int, ayahID: Int)? = nil,
+        showDescription: Bool,
+        isExpanded: Bool,
+        isFavorite: Bool,
+        accentColor: AccentColor = Settings.shared.accentColor,
+        useFontArabic: Bool = Settings.shared.useFontArabic,
+        fontArabic: String = Settings.shared.fontArabic,
+        onTap: @escaping () -> Void
+    ) {
+        self.name = name
+        self.firstFoundTarget = firstFoundTarget
+        self.showDescription = showDescription
+        self.isExpanded = isExpanded
+        self.isFavorite = isFavorite
+        self.accentColor = accentColor
+        self.useFontArabic = useFontArabic
+        self.fontArabic = fontArabic
+        self.onTap = onTap
+    }
 
     var body: some View {
         #if os(iOS)
@@ -410,13 +438,13 @@ private struct NameRow: View {
 
                     HStack {
                         Text(name.name.removeDiacriticsFromLastLetter())
-                            .font(settings.useFontArabic ? .custom(settings.fontArabic, size: 24) : .title2)
+                            .font(useFontArabic ? .custom(fontArabic, size: 24) : .title2)
                             .foregroundColor(.primary)
                             .lineLimit(1)
 
                         Text(name.numberArabic)
                             .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: 28))
-                            .foregroundColor(settings.accentColor.color)
+                            .foregroundColor(accentColor.color)
                             .lineLimit(1)
                     }
                 }
@@ -455,18 +483,18 @@ private struct NameRow: View {
         ZStack(alignment: .topTrailing) {
             Text("\(name.number)")
                 .font(.subheadline.weight(.bold))
-                .foregroundColor(settings.accentColor.color)
+                .foregroundColor(accentColor.color)
                 .frame(minWidth: 40)
                 .frame(maxHeight: .infinity)
                 .conditionalGlassEffect(
                     useColor: isFavorite ? 0.3 : nil,
-                    customTint: isFavorite ? settings.accentColor.color : nil
+                    customTint: isFavorite ? accentColor.color : nil
                 )
 
             if isFavorite {
                 Image(systemName: "star.fill")
                     .font(.caption2)
-                    .foregroundStyle(settings.accentColor.color)
+                    .foregroundStyle(accentColor.color)
                     .padding(4)
                     .offset(x: 8, y: -6)
             }
@@ -497,13 +525,25 @@ private struct NameRow: View {
 
     private func menuItem(_ label: String, text: String) -> some View {
         Button {
-            UIPasteboard.general.string = text
             settings.hapticFeedback()
+            UIPasteboard.general.string = text
         } label: {
             Label(label, systemImage: "doc.on.doc")
         }
     }
     #endif
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.name == rhs.name &&
+        lhs.firstFoundTarget?.surahID == rhs.firstFoundTarget?.surahID &&
+        lhs.firstFoundTarget?.ayahID == rhs.firstFoundTarget?.ayahID &&
+        lhs.showDescription == rhs.showDescription &&
+        lhs.isExpanded == rhs.isExpanded &&
+        lhs.isFavorite == rhs.isFavorite &&
+        lhs.accentColor == rhs.accentColor &&
+        lhs.useFontArabic == rhs.useFontArabic &&
+        lhs.fontArabic == rhs.fontArabic
+    }
 }
 
 private struct NameRowDetails: View {
@@ -590,5 +630,11 @@ private struct VerseReflectionCard: View {
                 .fill(Color.secondary.opacity(0.1))
         )
         .padding(-4)
+    }
+}
+
+#Preview {
+    AlIslamPreviewContainer {
+        NamesView()
     }
 }

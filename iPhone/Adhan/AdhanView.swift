@@ -469,20 +469,19 @@ private struct SummaryTile: View {
             Text(title.uppercased())
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
 
             if #available(iOS 16.0, *) {
                 Text(value)
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(2, reservesSpace: true)
-                    .minimumScaleFactor(0.75)
                     .multilineTextAlignment(.leading)
             } else {
                 Text(value)
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
-                    .minimumScaleFactor(0.75)
                     .multilineTextAlignment(.leading)
             }
         }

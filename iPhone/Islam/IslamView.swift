@@ -29,23 +29,8 @@ struct IslamView: View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *) {
-                if UIDevice.current.userInterfaceIdiom == .pad {
-                    NavigationSplitView {
-                        islamSplitList
-                            .onAppear {
-                                if !hasSetDefaultSelection {
-                                    selectedResource = .arabicAlphabet
-                                    hasSetDefaultSelection = true
-                                }
-                            }
-                    } detail: {
-                        islamSplitDetail
-                            .animation(.easeInOut(duration: 0.25), value: selectedResource)
-                    }
-                } else {
-                    NavigationStack {
-                        islamList
-                    }
+                NavigationStack {
+                    islamList
                 }
             } else {
                 NavigationView {
@@ -68,49 +53,10 @@ struct IslamView: View {
             AlIslamAppsSection()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Al-Islam")
-        //.navigationTitle("Tools")
+        .navigationTitle(AppIdentifiers.toolsView)
     }
 
-    #if os(iOS)
-    @available(iOS 16.0, *)
-    private var islamSplitList: some View {
-        List(selection: $selectedResource) {
-            resourcesSectionSplit
-            ProphetQuote()
-            AlIslamAppsSection()
-        }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Al-Islam")
-        //.navigationTitle("Tools")
-    }
-
-    @ViewBuilder
-    private var islamSplitDetail: some View {
-        switch selectedResource ?? .arabicAlphabet {
-        case .arabicAlphabet:
-            ArabicView()
-        case .tajweedFoundations:
-            TajweedFoundationsView()
-        case .commonAdhkar:
-            AdhkarView()
-        case .commonDuas:
-            DuaView()
-        case .tasbihCounter:
-            TasbihView()
-        case .namesOfAllah:
-            NamesView()
-        case .hijriCalendarConverter:
-            DateView()
-        case .masjidLocator:
-            MasjidLocatorView()
-        case .islamicWallpapers:
-            WallpaperView()
-        case .pillarsAndBasics:
-            PillarsView()
-        }
-    }
-    #endif
+    // Removed split navigation logic for unified navigation
 
     private var resourcesSection: some View {
         Section(header: Text("ISLAMIC RESOURCES")) {

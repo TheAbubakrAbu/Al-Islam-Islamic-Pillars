@@ -67,7 +67,7 @@ struct WhenIsPrayerIntent: AppIntent {
         let settings = Settings.shared
 
         guard let prayers = settings.todayFullPrayerList(), !prayers.isEmpty else {
-            let message = "Prayer times aren’t available yet. Open Al-Islam to refresh."
+            let message = "Prayer times aren’t available yet. Open \(AppIdentifiers.appName) to refresh."
             return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
@@ -107,7 +107,7 @@ struct CurrentPrayerIntent: AppIntent {
             return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        let message = "No current prayer determined yet. Open Al-Islam to refresh prayer times."
+        let message = "No current prayer determined yet. Open \(AppIdentifiers.appName) to refresh prayer times."
         return .result(value: message, dialog: IntentDialog(stringLiteral: message))
     }
 }
@@ -134,7 +134,7 @@ struct NextPrayerIntent: AppIntent {
             return .result(value: message, dialog: IntentDialog(stringLiteral: message))
         }
 
-        let message = "No upcoming prayer found. Open Al-Islam to refresh prayer times."
+        let message = "No upcoming prayer found. Open \(AppIdentifiers.appName) to refresh prayer times."
         return .result(value: message, dialog: IntentDialog(stringLiteral: message))
     }
 }
