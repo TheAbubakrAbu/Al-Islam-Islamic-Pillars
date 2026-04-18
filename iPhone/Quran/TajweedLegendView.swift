@@ -215,7 +215,7 @@ struct TajweedLegendView: View {
                     Text("Tip")
                         .font(.headline)
 
-                    Text("These colors help you notice recitation patterns quickly, but listening to a qualified reciter is still the best way to hear how each rule should sound.")
+                    Text("This covers Tajweed rules for Hafs an Asim recitation, the most widely used qiraah. Other qiraat may apply these rules slightly differently.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -232,11 +232,14 @@ struct TajweedLegendView: View {
         .navigationTitle("Legend")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
                     settings.hapticFeedback()
                     presentationMode.wrappedValue.dismiss()
+                } label: {
+                    Image(systemName: "xmark")
                 }
+                .tint(settings.accentColor.color)
             }
         }
     }

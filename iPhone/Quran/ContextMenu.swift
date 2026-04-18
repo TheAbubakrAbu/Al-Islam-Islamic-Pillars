@@ -473,49 +473,31 @@ struct AyahContextMenuModifier: ViewModifier {
     }
     
     private var bookmarkIndex: Int? {
-        settings.bookmarkedAyahs.firstIndex { $0.surah == surah && $0.ayah == ayah }
+        settings.bookmarkIndex(surah: surah, ayah: ayah)
     }
     
     private var bookmark: BookmarkedAyah? {
-        bookmarkIndex.flatMap { settings.bookmarkedAyahs[$0] }
+        settings.bookmarkedAyah(surah: surah, ayah: ayah)
     }
     
     private var isBookmarkedHere: Bool { bookmarkIndex != nil }
     private var currentNote: String {
-        (bookmark?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        settings.bookmarkNoteText(surah: surah, ayah: ayah)
     }
     
     private func setNote(_ text: String?) {
-        withAnimation {
-            let normalized = text?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let idx = bookmarkIndex {
-                var b = settings.bookmarkedAyahs[idx]
-                b.note = (normalized?.isEmpty == true) ? nil : normalized
-                settings.bookmarkedAyahs[idx] = b
-            } else {
-                let new = BookmarkedAyah(surah: surah, ayah: ayah, note: (normalized?.isEmpty == true ? nil : normalized))
-                settings.bookmarkedAyahs.append(new)
-            }
-        }
+        settings.setBookmarkNote(surah: surah, ayah: ayah, note: text)
     }
 
     private func removeNote() {
-        guard let idx = bookmarkIndex else { return }
-        withAnimation {
-            var b = settings.bookmarkedAyahs[idx]
-            b.note = nil
-            settings.bookmarkedAyahs[idx] = b
-        }
+        settings.removeBookmarkNote(surah: surah, ayah: ayah)
     }
     
     @State private var confirmRemoveNote = false
 
     private func toggleBookmarkWithNoteGuard() {
-        if isBookmarkedHere, !currentNote.isEmpty {
+        if !settings.toggleBookmarkIfNoNoteLoss(surah: surah, ayah: ayah) {
             confirmRemoveNote = true
-        } else {
-            settings.hapticFeedback()
-            settings.toggleBookmark(surah: surah, ayah: ayah)
         }
     }
 
@@ -551,7 +533,7 @@ struct AyahContextMenuModifier: ViewModifier {
                 Button {
                     settings.hapticFeedback()
                     if !isBookmarked {
-                        settings.toggleBookmark(surah: surah, ayah: ayah)
+                        settings.ensureBookmarkExists(surah: surah, ayah: ayah)
                     }
                     draftNote = currentNote
                     showingNoteSheet = true
@@ -681,7 +663,6 @@ struct AyahContextMenuModifier: ViewModifier {
                         onCancel: { showCustomRangeSheet = false }
                     )
                     .environmentObject(settings)
-                    .fullScreenSheetPresentation()
                 }
             }
             .sheet(isPresented: $showingNoteSheet) {
@@ -708,14 +689,14 @@ struct AyahContextMenuModifier: ViewModifier {
             } message: {
                 Text("Please keep notes Islamic and respectful.")
             }
-            .confirmationDialog("Remove bookmark and delete note?", isPresented: $confirmRemoveNote, titleVisibility: .visible) {
+            .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
                 Button("Remove", role: .destructive) {
                     settings.hapticFeedback()
                     settings.toggleBookmark(surah: surah, ayah: ayah)
                 }
                 Button("Cancel") {}
             } message: {
-                Text("This ayah has a note. Unbookmarking will delete the note.")
+                Text(Settings.bookmarkNoteRemovalDialogMessage)
             }
         #else
         content
@@ -769,27 +750,24 @@ struct LeftSwipeActions: ViewModifier {
         let surah = bookmarkedSurah ?? 1
         let ayah = bookmarkedAyah ?? 1
         
-        return settings.bookmarkedAyahs.firstIndex { $0.surah == surah && $0.ayah == ayah }
+        return settings.bookmarkIndex(surah: surah, ayah: ayah)
     }
     
     private var bookmark: BookmarkedAyah? {
-        bookmarkIndex.flatMap { settings.bookmarkedAyahs[$0] }
+        settings.bookmarkedAyah(surah: bookmarkedSurah ?? 1, ayah: bookmarkedAyah ?? 1)
     }
     
     private var isBookmarkedHere: Bool { bookmarkIndex != nil }
     
     private var currentNote: String {
-        (bookmark?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        settings.bookmarkNoteText(surah: bookmarkedSurah ?? 1, ayah: bookmarkedAyah ?? 1)
     }
     
     @State private var confirmRemoveNote = false
 
     private func toggleBookmarkWithNoteGuard(_ surah: Int, _ ayah: Int) {
-        if isBookmarkedHere, !currentNote.isEmpty {
+        if !settings.toggleBookmarkIfNoNoteLoss(surah: surah, ayah: ayah) {
             confirmRemoveNote = true
-        } else {
-            settings.hapticFeedback()
-            settings.toggleBookmark(surah: surah, ayah: ayah)
         }
     }
 
@@ -816,14 +794,14 @@ struct LeftSwipeActions: ViewModifier {
                 }
             }
             #endif
-            .confirmationDialog("Remove bookmark and delete note?", isPresented: $confirmRemoveNote, titleVisibility: .visible) {
+            .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
                 Button("Remove", role: .destructive) {
                     settings.hapticFeedback()
                     settings.toggleBookmark(surah: bookmarkedSurah ?? 1, ayah: bookmarkedAyah ?? 1)
                 }
                 Button("Cancel") {}
             } message: {
-                Text("This ayah has a note. Unbookmarking will delete the note.")
+                Text(Settings.bookmarkNoteRemovalDialogMessage)
             }
     }
 }
@@ -929,6 +907,8 @@ public extension View {
 import SwiftUI
 
 struct NoteEditorSheet: View {
+    @EnvironmentObject var settings: Settings
+    
     let title: String
     @Binding var text: String
     var onAttemptSave: (String) -> Bool
@@ -1021,18 +1001,26 @@ struct NoteEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(role: .cancel) {
+                        settings.hapticFeedback()
                         onCancel()
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
                     }
+                    .tint(settings.accentColor.color)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button {
+                        settings.hapticFeedback()
                         if onAttemptSave(text) {
                             dismiss()
                         }
+                    } label: {
+                        Image(systemName: "checkmark")
                     }
+                    .tint(settings.accentColor.color)
                     .disabled(isEmpty)
                 }
             }

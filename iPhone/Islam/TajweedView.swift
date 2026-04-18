@@ -29,7 +29,8 @@ struct TajweedFoundationsView: View {
                         Text("Quick Reference Guide")
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(settings.accentColor.color)
-                        Text("Simple way to view basic Hafs An Assim Tajweed rules with colors")
+                        
+                        Text("Simple way to view basic Hafs an Asim Tajweed rules with colors")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -143,22 +144,16 @@ struct TajweedFoundationsView: View {
                     .padding(.vertical, 4)
                 }
             }
-
-            Section("NOTE") {
-                Text("This guide teaches Tajweed rules for Hafs An Assim recitation, the most widely used qiraah. Other qiraat (such as Warsh, Khalaf, etc.) may apply these rules slightly differently.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle("Tajweed Foundations")
+        #if os(iOS)
+        .sheet(isPresented: $showTajweedLegend) {
+            NavigationView {
+                TajweedLegendView()
             }
         }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
-            .navigationTitle("Tajweed Foundations")
-            #if os(iOS)
-            .sheet(isPresented: $showTajweedLegend) {
-                NavigationView {
-                    TajweedLegendView()
-                }
-            }
-            #endif
+        #endif
     }
 
     @ViewBuilder
@@ -179,7 +174,7 @@ struct TajweedFoundationsView: View {
             TajweedMaddView()
         } else if topic == "Qalqalah (Echo)" {
             TajweedQalqalahView()
-        } else if topic == "Idgham / Ikhfaa" {
+        } else if topic == "Noon Sakina and Tanwin" {
             TajweedIdghamIkhfaView()
         } else if topic == "Waqf (Stopping)" {
             TajweedWaqfView()

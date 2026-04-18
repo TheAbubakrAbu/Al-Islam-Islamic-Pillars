@@ -93,23 +93,11 @@ struct ConditionalGlassEffect: ViewModifier {
 }
 
 #if os(iOS)
-struct SmallMediumSheetPresentationModifier: ViewModifier {
+struct SheetPresentationModifier: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 16.0, *) {
             content
                 .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        } else {
-            content
-        }
-    }
-}
-
-struct FullScreenSheetPresentationModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 16.0, *) {
-            content
-                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         } else {
             content
@@ -132,11 +120,7 @@ extension View {
 
     #if os(iOS)
     func smallMediumSheetPresentation() -> some View {
-        modifier(SmallMediumSheetPresentationModifier())
-    }
-
-    func fullScreenSheetPresentation() -> some View {
-        modifier(FullScreenSheetPresentationModifier())
+        modifier(SheetPresentationModifier())
     }
     #endif
 }

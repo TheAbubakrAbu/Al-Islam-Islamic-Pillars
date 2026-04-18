@@ -129,10 +129,17 @@ struct MapView: View {
                 }
                 .navigationTitle("Select Location")
                 .navigationBarTitleDisplayMode(.inline)
-                .navigationBarItems(trailing: Button("Done") {
-                    settings.hapticFeedback()
-                    dismiss()
-                })
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button {
+                            settings.hapticFeedback()
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .tint(settings.accentColor.color)
+                    }
+                }
                 .confirmationDialog("Location Access Denied", isPresented: $showAlert) {
                     Button("Open Settings") { openSettings() }
                     Button("Never Ask Again", role: .destructive) { settings.locationNeverAskAgain = true }

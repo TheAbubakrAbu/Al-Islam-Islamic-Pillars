@@ -67,11 +67,15 @@ struct SettingsQuranView: View {
         .navigationTitle("Al-Quran Settings")
         #if os(iOS)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .navigationBarLeading) {
                 if presentedAsSheet {
-                    Button("Done") {
+                    Button {
+                        settings.hapticFeedback()
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
                     }
+                    .tint(settings.accentColor.color)
                 }
             }
         }
@@ -1425,7 +1429,7 @@ struct ReciterListView: View {
                 settings.hapticFeedback()
                 withAnimation {
                     let selectedImmediately = selectReciter(reciter)
-                    if selectedImmediately {
+                    if selectedImmediately && dismissAfterSelectingReciter {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
@@ -1435,6 +1439,7 @@ struct ReciterListView: View {
                 requestScrollToReciter(reciter)
             }
         )
+        .environmentObject(downloadManager)
         .id(reciter.id)
         #else
         WatchReciterRow(

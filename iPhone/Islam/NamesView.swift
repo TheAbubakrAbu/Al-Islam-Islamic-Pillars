@@ -503,6 +503,9 @@ private struct NameRow: View, Equatable {
             settings.hapticFeedback()
             settings.toggleNameFavorite(number: name.number)
         }
+        .padding(.vertical, {
+            if #available(iOS 26, *) { 0 } else { 8 }
+        }())
     }
 
     #if os(iOS)

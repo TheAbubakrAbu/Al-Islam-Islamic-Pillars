@@ -208,11 +208,21 @@ struct PlayCustomRangeSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        settings.hapticFeedback()
-                        onCancel()
+                    if #available(iOS 26.0, *) {
+                        Button(role: .cancel) {
+                            settings.hapticFeedback()
+                            onCancel()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                    } else {
+                        Button {
+                            settings.hapticFeedback()
+                            onCancel()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
                     }
-                    .foregroundColor(settings.accentColor.color)
                 }
             }
             .adaptiveSafeArea(edge: .bottom) {

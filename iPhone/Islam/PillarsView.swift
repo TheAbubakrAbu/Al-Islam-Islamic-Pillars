@@ -2668,7 +2668,8 @@ struct TajweedView: View {
                         Text("Quick Reference Guide")
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(settings.accentColor.color)
-                        Text("Simple way to view basic Hafs An Assim Tajweed rules with colors")
+                        
+                        Text("Simple way to view basic Hafs an Asim Tajweed rules with colors")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -2738,12 +2739,6 @@ struct TajweedView: View {
             Section(header: Text("RESOURCES")) {
                 Text("Watch Learn Arabic 101: https://www.youtube.com/@Arabic101")
                     .font(.caption)
-            }
-
-            Section(header: Text("NOTE")) {
-                Text("This covers Tajweed rules for Hafs An Assim recitation, the most widely used qiraah. Other qiraat may apply these rules slightly differently.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
         }
         .navigationTitle("Tajweed")

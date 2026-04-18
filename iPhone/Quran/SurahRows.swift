@@ -101,6 +101,9 @@ struct SurahRow: View, Equatable {
                     .offset(x: 8, y: -6)
             }
         }
+        .padding(.vertical, {
+            if #available(iOS 26, *) { 0 } else { 8 }
+        }())
     }
     
     var body: some View {
@@ -188,6 +191,7 @@ struct SurahRow: View, Equatable {
 
 struct SurahAyahRow: View {
     @EnvironmentObject var settings: Settings
+    @State private var confirmRemoveNote = false
     
     var surah: Surah
     var ayah: Ayah
@@ -196,6 +200,12 @@ struct SurahAyahRow: View {
 
     private var isBookmarked: Bool {
         settings.bookmarkedAyahs.contains { $0.surah == surah.id && $0.ayah == ayah.id }
+    }
+
+    private func toggleBookmarkWithNoteGuard() {
+        if !settings.toggleBookmarkIfNoNoteLoss(surah: surah.id, ayah: ayah.id) {
+            confirmRemoveNote = true
+        }
     }
 
     private func arabicDisplayText() -> String {
@@ -260,7 +270,7 @@ struct SurahAyahRow: View {
                         )
                         .onTapGesture {
                             settings.hapticFeedback()
-                            settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                            toggleBookmarkWithNoteGuard()
                         }
 
                     if isBookmarked {
@@ -336,6 +346,15 @@ struct SurahAyahRow: View {
             }
         }
         .padding(.vertical, 2)
+        .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
+            Button("Remove", role: .destructive) {
+                settings.hapticFeedback()
+                settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+            }
+            Button("Cancel") {}
+        } message: {
+            Text(Settings.bookmarkNoteRemovalDialogMessage)
+        }
     }
 }
 
@@ -716,6 +735,7 @@ struct AyahSearchResultRow: View {
 
 struct AyahSearchRow: View, Equatable {
     @EnvironmentObject private var settings: Settings
+    @State private var confirmRemoveNote = false
     
     let surahName: String
     let surah: Int
@@ -749,6 +769,12 @@ struct AyahSearchRow: View, Equatable {
         return size.width + 8
     }
 
+    private func toggleBookmarkWithNoteGuard() {
+        if !settings.toggleBookmarkIfNoNoteLoss(surah: surah, ayah: ayah) {
+            confirmRemoveNote = true
+        }
+    }
+
     @ViewBuilder
     private var ayahReferenceBadge: some View {
         ZStack(alignment: .topTrailing) {
@@ -765,7 +791,7 @@ struct AyahSearchRow: View, Equatable {
                 )
                 .onTapGesture {
                     settings.hapticFeedback()
-                    settings.toggleBookmark(surah: surah, ayah: ayah)
+                    toggleBookmarkWithNoteGuard()
                 }
 
             if isBookmarked {
@@ -884,6 +910,15 @@ struct AyahSearchRow: View, Equatable {
                     fg: .secondary
                 )
             }
+        }
+        .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
+            Button("Remove", role: .destructive) {
+                settings.hapticFeedback()
+                settings.toggleBookmark(surah: surah, ayah: ayah)
+            }
+            Button("Cancel") {}
+        } message: {
+            Text(Settings.bookmarkNoteRemovalDialogMessage)
         }
     }
 

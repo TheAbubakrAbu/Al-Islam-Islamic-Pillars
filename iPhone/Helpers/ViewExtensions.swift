@@ -1,15 +1,5 @@
 import SwiftUI
 
-/// Vertical spacing between views inside `safeAreaInset` stacks: iOS 26+ uses tighter 8pt; older systems use 16pt.
-enum SafeAreaInsetVStackSpacing {
-    static var standard: CGFloat {
-        if #available(iOS 26.0, watchOS 26.0, *) {
-            return 8
-        }
-        return 12
-    }
-}
-
 extension View {
     @ViewBuilder
     func adaptiveSafeArea<InsetContent: View>(edge: VerticalEdge, @ViewBuilder content: () -> InsetContent) -> some View {
@@ -62,6 +52,16 @@ extension View {
     }
 }
 
+/// Vertical spacing between views inside `safeAreaInset` stacks: iOS 26+ uses tighter 8pt; older systems use 16pt.
+enum SafeAreaInsetVStackSpacing {
+    static var standard: CGFloat {
+        if #available(iOS 26.0, watchOS 26.0, *) {
+            return 8
+        }
+        return 12
+    }
+}
+
 struct ConditionalListStyle: ViewModifier {
     @EnvironmentObject private var settings: Settings
     @Environment(\.colorScheme) private var systemColorScheme
@@ -96,5 +96,31 @@ struct ConditionalListStyle: ViewModifier {
                 .listStyle(.plain)
                 .background(currentColorScheme == .dark ? Color.black : Color.white)
         }
+    }
+}
+
+struct DismissKeyboardOnScrollModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        Group {
+            #if os(iOS)
+            if #available(iOS 16.0, *) {
+                content.scrollDismissesKeyboard(.immediately)
+            } else {
+                content.gesture(
+                    DragGesture().onChanged { _ in
+                        dismissKeyboard()
+                    }
+                )
+            }
+            #else
+            content
+            #endif
+        }
+    }
+
+    private func dismissKeyboard() {
+        #if os(iOS)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
     }
 }

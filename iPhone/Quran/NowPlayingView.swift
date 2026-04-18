@@ -79,11 +79,11 @@ struct NowPlayingView: View {
     private var bookmarkIndex: Int? {
         let surah = quranPlayer.currentSurahNumber ?? 1
         let ayah = quranPlayer.currentAyahNumber ?? 1
-        return settings.bookmarkedAyahs.firstIndex { $0.surah == surah && $0.ayah == ayah }
+        return settings.bookmarkIndex(surah: surah, ayah: ayah)
     }
 
     private var bookmark: BookmarkedAyah? {
-        bookmarkIndex.map { settings.bookmarkedAyahs[$0] }
+        settings.bookmarkedAyah(surah: quranPlayer.currentSurahNumber ?? 1, ayah: quranPlayer.currentAyahNumber ?? 1)
     }
 
     private var isBookmarkedHere: Bool {
@@ -91,7 +91,7 @@ struct NowPlayingView: View {
     }
 
     private var currentNote: String {
-        (bookmark?.note ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        settings.bookmarkNoteText(surah: quranPlayer.currentSurahNumber ?? 1, ayah: quranPlayer.currentAyahNumber ?? 1)
     }
 
     @ViewBuilder
@@ -189,7 +189,7 @@ struct NowPlayingView: View {
         .padding(.horizontal, 12)
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
-        .confirmationDialog("Remove bookmark and delete note?", isPresented: $confirmRemoveNote, titleVisibility: .visible) {
+        .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 let surah = quranPlayer.currentSurahNumber ?? 1
                 let ayah = quranPlayer.currentAyahNumber ?? 1
@@ -199,7 +199,7 @@ struct NowPlayingView: View {
             }
             Button("Cancel") {}
         } message: {
-            Text("This ayah has a note. Unbookmarking will delete the note.")
+            Text(Settings.bookmarkNoteRemovalDialogMessage)
         }
         #else
         VStack(alignment: .center, spacing: 6) {
@@ -282,11 +282,8 @@ struct NowPlayingView: View {
         let surah = quranPlayer.currentSurahNumber ?? 1
         let ayah = quranPlayer.currentAyahNumber ?? 1
 
-        if isBookmarkedHere, !currentNote.isEmpty {
+        if !settings.toggleBookmarkIfNoNoteLoss(surah: surah, ayah: ayah) {
             confirmRemoveNote = true
-        } else {
-            settings.hapticFeedback()
-            settings.toggleBookmark(surah: surah, ayah: ayah)
         }
     }
 

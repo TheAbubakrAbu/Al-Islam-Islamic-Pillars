@@ -134,8 +134,7 @@
 		728E2F052E6E6E7E00F2C24C /* ContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728E2F032E6E6E7E00F2C24C /* ContextMenu.swift */; };
 		729115412AF817CF00A4EB2B /* IslamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115372AF817CF00A4EB2B /* IslamView.swift */; };
 		729115462AF817E400A4EB2B /* IslamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115372AF817CF00A4EB2B /* IslamView.swift */; };
-		7294023E2D66FF9800EEC56D /* ConditionalStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA12D42DF5700871A6A /* ConditionalStyle.swift */; };
-		7294023F2D66FF9C00EEC56D /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA02D42DF5700871A6A /* DismissKeyboard.swift */; };
+		7294023E2D66FF9800EEC56D /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA12D42DF5700871A6A /* ViewExtensions.swift */; };
 		72AC94182E3F4DA900F7B2DF /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE0B2E394375002DD82E /* NowPlayingView.swift */; };
 		72B531A52A22DCFE007FA002 /* Al-IslamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B531A42A22DCFE007FA002 /* Al-IslamApp.swift */; };
 		72C3FE552F6A039400136976 /* NamesOfAllah.json in Resources */ = {isa = PBXBuildFile; fileRef = 72C3FE542F6A039400136976 /* NamesOfAllah.json */; };
@@ -157,8 +156,7 @@
 		72C6FDF92F7880700035F675 /* abdulghaffar-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE42F7880700035F675 /* abdulghaffar-30.caf */; };
 		72C6FDFA2F7880700035F675 /* alaqsa-30.caf in Resources */ = {isa = PBXBuildFile; fileRef = 72C6FDE72F7880700035F675 /* alaqsa-30.caf */; };
 		72C7DD762D79A59B00FC6058 /* CountdownSimpleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C7DD752D79A59B00FC6058 /* CountdownSimpleWidget.swift */; };
-		72CCAEA42D42DF5700871A6A /* ConditionalStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA12D42DF5700871A6A /* ConditionalStyle.swift */; };
-		72CCAEA52D42DF5700871A6A /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA02D42DF5700871A6A /* DismissKeyboard.swift */; };
+		72CCAEA42D42DF5700871A6A /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA12D42DF5700871A6A /* ViewExtensions.swift */; };
 		72CCAEA62D42DF5700871A6A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAE9F2D42DF5700871A6A /* AppDelegate.swift */; };
 		72CCAEA72D42DF5700871A6A /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA22D42DF5700871A6A /* SearchBar.swift */; };
 		72CCAEA92D42DF9D00871A6A /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CCAEA82D42DF9D00871A6A /* MapView.swift */; };
@@ -351,8 +349,7 @@
 		72C7DD752D79A59B00FC6058 /* CountdownSimpleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownSimpleWidget.swift; sourceTree = "<group>"; };
 		72CCAE962D42DDF100871A6A /* WatchConnectivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivity.swift; sourceTree = "<group>"; };
 		72CCAE9F2D42DF5700871A6A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		72CCAEA02D42DF5700871A6A /* DismissKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissKeyboard.swift; sourceTree = "<group>"; };
-		72CCAEA12D42DF5700871A6A /* ConditionalStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalStyle.swift; sourceTree = "<group>"; };
+		72CCAEA12D42DF5700871A6A /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
 		72CCAEA22D42DF5700871A6A /* SearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBar.swift; sourceTree = "<group>"; };
 		72CCAEA82D42DF9D00871A6A /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		72CCAEB62D42E4ED00871A6A /* adhan-swift-main */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "adhan-swift-main"; sourceTree = "<group>"; };
@@ -647,9 +644,8 @@
 		72CCAEA32D42DF5700871A6A /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
-				72CCAEA02D42DF5700871A6A /* DismissKeyboard.swift */,
-				72CCAEA12D42DF5700871A6A /* ConditionalStyle.swift */,
 				72CCAEA22D42DF5700871A6A /* SearchBar.swift */,
+				72CCAEA12D42DF5700871A6A /* ViewExtensions.swift */,
 				72EF01C22F775A5600B273F7 /* PreviewSupport.swift */,
 				72E13AEF2E90DC8D000933B0 /* GlassEffect.swift */,
 			);
@@ -956,9 +952,8 @@
 				7260F9542A8715D600E8FF87 /* LaunchScreen.swift in Sources */,
 				7260F93C2A8715D600E8FF87 /* SettingsView.swift in Sources */,
 				7260F9532A8715D600E8FF87 /* Al-IslamApp.swift in Sources */,
-				72CCAEA42D42DF5700871A6A /* ConditionalStyle.swift in Sources */,
+				72CCAEA42D42DF5700871A6A /* ViewExtensions.swift in Sources */,
 				728E2EFB2E6E2B8700F2C24C /* ProfanityFilter.swift in Sources */,
-				72CCAEA52D42DF5700871A6A /* DismissKeyboard.swift in Sources */,
 				72CCAEA62D42DF5700871A6A /* AppDelegate.swift in Sources */,
 				72CCAEA72D42DF5700871A6A /* SearchBar.swift in Sources */,
 				72E832A62F6F52BA0013428B /* AdhkarView.swift in Sources */,
@@ -1015,10 +1010,9 @@
 				7260F9632A87164600E8FF87 /* PrayerList.swift in Sources */,
 				7260D5F42F7CB0D80066FBA9 /* TajweedLegendView.swift in Sources */,
 				728E2EE62E6E019700F2C24C /* SettingsQuran.swift in Sources */,
-				7294023E2D66FF9800EEC56D /* ConditionalStyle.swift in Sources */,
+				7294023E2D66FF9800EEC56D /* ViewExtensions.swift in Sources */,
 				72827EAD2E3C425B00EBA534 /* SettingsQuranView.swift in Sources */,
 				7256C3A42F6BE15800DBB66D /* GlassEffect.swift in Sources */,
-				7294023F2D66FF9C00EEC56D /* DismissKeyboard.swift in Sources */,
 				727DBDFE2AD2442100CD4383 /* LaunchScreen.swift in Sources */,
 				7260F96F2A87168300E8FF87 /* SettingsView.swift in Sources */,
 				7260F9612A87163F00E8FF87 /* QiblaView.swift in Sources */,

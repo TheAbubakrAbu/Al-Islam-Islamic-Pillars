@@ -554,6 +554,7 @@ struct AyahsView: View {
             }
             .environmentObject(settings)
             .environmentObject(quranData)
+            .smallMediumSheetPresentation()
         }
         .sheet(isPresented: $showCustomRangeSheet) {
             PlayCustomRangeSheet(
@@ -577,22 +578,25 @@ struct AyahsView: View {
                 onCancel: { showCustomRangeSheet = false }
             )
             .environmentObject(settings)
-            .fullScreenSheetPresentation()
         }
         .sheet(isPresented: $showReciterPickerSheet) {
             NavigationView {
                 ReciterListView(dismissAfterSelectingReciter: true, autoScrollToInitialSelection: false)
                     .environmentObject(settings)
                     .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                settings.hapticFeedback()
                                 showReciterPickerSheet = false
+                            } label: {
+                                Image(systemName: "xmark")
                             }
+                            .tint(settings.accentColor.color)
                         }
                     }
             }
             .navigationViewStyle(.stack)
-            .modifier(ReciterPickerSheetPresentationModifier())
+            .smallMediumSheetPresentation()
         }
         .confirmationDialog(
             dividerInfo?.title ?? "Boundary",
@@ -1122,7 +1126,9 @@ struct AyahsView: View {
                     .animation(.easeInOut(duration: 0.18), value: floatingDividerAnimationKey)
             }
         }
-        .padding(.top, 2)
+        .padding(.top, {
+            if #available(iOS 26, *) { 0 } else { 4 }
+        }())
         .padding(.horizontal, settings.defaultView ? 20 : 16)
         .background(Color.clear)
         .opacity(showFloatingHeader ? 1 : 0)
@@ -1496,18 +1502,6 @@ struct RotatingGearView: View {
 }
 
 #if os(iOS)
-private struct ReciterPickerSheetPresentationModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 16.0, *) {
-            content
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        } else {
-            content
-        }
-    }
-}
-
 private struct SurahPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var settings: Settings
@@ -1608,10 +1602,14 @@ private struct SurahPickerSheet: View {
                 .navigationTitle("Choose Surah")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button {
+                            settings.hapticFeedback()
                             dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
                         }
+                        .tint(settings.accentColor.color)
                     }
                 }
                 .onAppear {

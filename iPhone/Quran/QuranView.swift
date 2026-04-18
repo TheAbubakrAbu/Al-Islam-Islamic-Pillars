@@ -460,7 +460,12 @@ struct QuranView: View {
         #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                settingsButton
+                Button {
+                    settings.hapticFeedback()
+                    showingSettingsSheet = true
+                } label: {
+                    Image(systemName: "gear")
+                }
             }
         }
         .sheet(isPresented: $showingSettingsSheet) {
@@ -471,15 +476,19 @@ struct QuranView: View {
                 ReciterListView(dismissAfterSelectingReciter: true, autoScrollToInitialSelection: false)
                     .environmentObject(settings)
                     .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                settings.hapticFeedback()
                                 showReciterPickerSheet = false
+                            } label: {
+                                Image(systemName: "xmark")
                             }
+                            .tint(settings.accentColor.color)
                         }
                     }
             }
             .navigationViewStyle(.stack)
-            .modifier(QuranReciterPickerSheetPresentationModifier())
+            .smallMediumSheetPresentation()
         }
         .onDisappear {
             withAnimation {
@@ -503,15 +512,6 @@ struct QuranView: View {
             bottomControls
         }
         #endif
-    }
-
-    private var settingsButton: some View {
-        Button {
-            settings.hapticFeedback()
-            showingSettingsSheet = true
-        } label: {
-            Image(systemName: "gear")
-        }
     }
 
     private var bottomControls: some View {
@@ -1685,22 +1685,7 @@ struct QuranView: View {
             }
         }
     }
-
 }
-
-#if os(iOS)
-private struct QuranReciterPickerSheetPresentationModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 16.0, *) {
-            content
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        } else {
-            content
-        }
-    }
-}
-#endif
 
 // MARK: - iOS 26+ Section index for Juz fast-scroll
 private extension View {

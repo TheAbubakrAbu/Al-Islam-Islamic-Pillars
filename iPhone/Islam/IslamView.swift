@@ -231,7 +231,9 @@ struct ProphetQuote: View {
     var body: some View {
         Section(header: Text("PROPHET MUHAMMAD ﷺ QUOTE")) {
             ZStack {
-                quoteCardBackground
+                if #available(iOS 26.0, *) {
+                    quoteCardBackground
+                }
 
                 VStack(alignment: .center, spacing: 12) {
                     quoteBadge

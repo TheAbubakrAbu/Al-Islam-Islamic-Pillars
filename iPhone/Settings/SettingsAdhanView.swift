@@ -55,11 +55,15 @@ struct SettingsAdhanView: View {
         .navigationTitle("Al-Adhan Settings")
         #if os(iOS)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .navigationBarLeading) {
                 if presentedAsSheet {
-                    Button("Done") {
+                    Button {
+                        settings.hapticFeedback()
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
                     }
+                    .tint(settings.accentColor.color)
                 }
             }
         }

@@ -172,6 +172,27 @@ extension Settings {
         return favoriteSurahs.contains(surah)
     }
 
+    static let bookmarkNoteRemovalDialogTitle = "Remove bookmark and delete note?"
+    static let bookmarkNoteRemovalDialogMessage = "This ayah has a note. Unbookmarking will delete the note."
+
+    func bookmarkIndex(surah: Int, ayah: Int) -> Int? {
+        bookmarkedAyahs.firstIndex { $0.surah == surah && $0.ayah == ayah }
+    }
+
+    func bookmarkedAyah(surah: Int, ayah: Int) -> BookmarkedAyah? {
+        bookmarkIndex(surah: surah, ayah: ayah).map { bookmarkedAyahs[$0] }
+    }
+
+    func bookmarkHasNote(surah: Int, ayah: Int) -> Bool {
+        bookmarkedAyah(surah: surah, ayah: ayah)?.hasNote ?? false
+    }
+
+    func bookmarkNoteText(surah: Int, ayah: Int) -> String {
+        bookmarkedAyah(surah: surah, ayah: ayah)?
+            .note?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
     func toggleBookmark(surah: Int, ayah: Int) {
         withAnimation {
             let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
@@ -186,6 +207,46 @@ extension Settings {
     func isBookmarked(surah: Int, ayah: Int) -> Bool {
         let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
         return bookmarkedAyahs.contains(where: {$0.id == bookmark.id})
+    }
+
+    @discardableResult
+    func toggleBookmarkIfNoNoteLoss(surah: Int, ayah: Int) -> Bool {
+        guard !(isBookmarked(surah: surah, ayah: ayah) && bookmarkHasNote(surah: surah, ayah: ayah)) else {
+            return false
+        }
+
+        toggleBookmark(surah: surah, ayah: ayah)
+        return true
+    }
+
+    func ensureBookmarkExists(surah: Int, ayah: Int) {
+        guard !isBookmarked(surah: surah, ayah: ayah) else { return }
+        toggleBookmark(surah: surah, ayah: ayah)
+    }
+
+    func setBookmarkNote(surah: Int, ayah: Int, note: String?) {
+        withAnimation {
+            let normalized = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let storedNote = (normalized?.isEmpty == true) ? nil : normalized
+
+            if let index = bookmarkIndex(surah: surah, ayah: ayah) {
+                var bookmark = bookmarkedAyahs[index]
+                bookmark.note = storedNote
+                bookmarkedAyahs[index] = bookmark
+            } else {
+                bookmarkedAyahs.append(BookmarkedAyah(surah: surah, ayah: ayah, note: storedNote))
+            }
+        }
+    }
+
+    func removeBookmarkNote(surah: Int, ayah: Int) {
+        guard let index = bookmarkIndex(surah: surah, ayah: ayah) else { return }
+
+        withAnimation {
+            var bookmark = bookmarkedAyahs[index]
+            bookmark.note = nil
+            bookmarkedAyahs[index] = bookmark
+        }
     }
     
     private static let unwantedCharSet: CharacterSet = {
