@@ -490,14 +490,7 @@ struct QuranView: View {
             searchHelpOverlay
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                if quranPlayer.isPlaying || quranPlayer.isPaused {
-                    nowPlayingInset
-                }
-            }
-            .padding(.bottom, 8)
-            .padding(.horizontal, 24)
-            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+            nowPlayingInset
         }
         .adaptiveSafeArea(edge: .bottom) {
             bottomControls
@@ -522,10 +515,17 @@ struct QuranView: View {
     @ViewBuilder
     private func ayahsDestination(surah: Surah, ayah: Int? = nil) -> some View {
         if let ayah {
-            AyahsView(surah: surah, ayah: ayah)
+            AyahsView(
+                surah: surah,
+                ayah: ayah,
+                onSelectSurah: useSplitOnThisDevice ? { selectedSurahID = $0 } : nil
+            )
                 .id("ayahs-\(surah.id)-\(ayah)")
         } else {
-            AyahsView(surah: surah)
+            AyahsView(
+                surah: surah,
+                onSelectSurah: useSplitOnThisDevice ? { selectedSurahID = $0 } : nil
+            )
                 .id("ayahs-\(surah.id)")
         }
     }
