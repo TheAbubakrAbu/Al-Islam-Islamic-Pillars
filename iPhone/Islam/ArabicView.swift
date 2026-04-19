@@ -117,15 +117,14 @@ struct ArabicView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: filterMode.icon)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(settings.accentColor.color)
-                            .transition(.opacity)
+                        adaptiveMenuButtonLabel {
+                            Image(systemName: filterMode.icon)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .foregroundColor(settings.accentColor.color)
+                                .transition(.opacity)
+                        }
                     }
-                    .frame(width: 27, height: 27)
-                    .padding()
-                    .conditionalGlassEffect()
                     .padding(.bottom, 2)
                 }
                 .padding([.leading, .top], -8)
@@ -137,6 +136,17 @@ struct ArabicView: View {
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Arabic Alphabet")
+    }
+
+    private func adaptiveMenuButtonLabel<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .frame(width: 27, height: 27)
+            .padding()
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .conditionalGlassEffect()
     }
 
     @ViewBuilder

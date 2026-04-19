@@ -244,10 +244,10 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .droppedLetter: return Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
         case .idghamBilaGhunnah: return Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
             
-        case .idghamGhunnah: return Color(red: 0.4588, green: 0.6980, blue: 0.2000) // 75B233 olive-green
+        case .idghamGhunnah: return Color(red: 0.1294, green: 0.6392, blue: 0.3529) // 21A35A distinct green
         case .ikhfaaLight: return Color(red: 0.2706, green: 0.7373, blue: 0.4510) // 45BC73 light green
         case .ikhfaaHeavy: return Color(red: 0.1216, green: 0.6667, blue: 0.5804) // 1FAA94 teal-accent green
-        case .iqlaab: return Color(red: 0.1294, green: 0.6392, blue: 0.3529) // 21A35A distinct green
+        case .iqlaab: return Color(red: 0.4588, green: 0.6980, blue: 0.2000) // 75B233 olive-green
             
         case .tafkhim: return Color(red: 0.2314, green: 0.5216, blue: 0.7608) // 3B85C2
         case .qalqalah: return Color(red: 0.4706, green: 0.8000, blue: 0.9765) // 78CCF9

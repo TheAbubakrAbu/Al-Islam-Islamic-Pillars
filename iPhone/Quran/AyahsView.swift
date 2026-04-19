@@ -528,7 +528,6 @@ struct AyahsView: View {
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { _ in saveLastRead() }
         #if os(iOS)
-        //.navigationTitle(surah.nameEnglish)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 surahTitlePickerButton
@@ -1097,6 +1096,7 @@ struct AyahsView: View {
                     }
                 }
                 .padding(.bottom, 8)
+                .background(Color.white.opacity(0.00001))
             }
             .adaptiveSafeArea(edge: .bottom) {
                 bottomInsetContent(proxy: proxy)
@@ -1182,9 +1182,6 @@ struct AyahsView: View {
                 )
 
                 playButton(proxy: proxy)
-                    .frame(width: 27, height: 27)
-                    .padding()
-                    .conditionalGlassEffect()
                     .padding(.bottom, 2)
             }
             .padding([.leading, .top], -8)
@@ -1199,7 +1196,6 @@ struct AyahsView: View {
     @ViewBuilder
     private func nowPlayingInset(proxy: ScrollViewProxy) -> some View {
         NowPlayingView(quranView: false)
-            .animation(.easeInOut, value: quranPlayer.isPlaying)
             .onTapGesture {
                 guard
                     let curSurah = quranPlayer.currentSurahNumber,
@@ -1322,7 +1318,9 @@ struct AyahsView: View {
                     Label("Other Options", systemImage: "ellipsis.circle")
                 }
             } label: {
-                playIcon()
+                playbackMenuControlLabel {
+                    playIcon()
+                }
             }
         } else {
             Button {
@@ -1336,9 +1334,22 @@ struct AyahsView: View {
                     quranPlayer.stop()
                 }
             } label: {
-                playIcon()
+                playbackMenuControlLabel {
+                    playIcon()
+                }
             }
         }
+    }
+
+    private func playbackMenuControlLabel<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .frame(width: 27, height: 27)
+            .padding()
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .conditionalGlassEffect()
     }
 
     private func playRandomReciterForCurrentSurah() {

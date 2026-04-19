@@ -608,18 +608,26 @@ struct QuranView: View {
             searchHelpOverlay
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                if quranPlayer.isPlaying || quranPlayer.isPaused {
-                    nowPlayingInset
-                }
-            }
-            .padding(.bottom, 8)
-            .padding(.horizontal, 24)
-            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+            nowPlayingInset
         }
         .adaptiveSafeArea(edge: .bottom) {
             bottomControls
         }
+        #endif
+    }
+    
+    @ViewBuilder
+    private var nowPlayingInset: some View {
+        #if os(iOS)
+        VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+            if quranPlayer.isPlaying || quranPlayer.isPaused {
+                NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+        .background(Color.white.opacity(0.00001))
+        .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
         #endif
     }
 
@@ -633,7 +641,6 @@ struct QuranView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 8)
         .background(Color.white.opacity(0.00001))
-        .animation(.easeInOut, value: quranPlayer.isPlaying)
         #else
         EmptyView()
         #endif
@@ -685,13 +692,6 @@ struct QuranView: View {
         .conditionalGlassEffect(useColor: 0.25)
     }
 
-    @ViewBuilder
-    private var nowPlayingInset: some View {
-        #if os(iOS)
-        NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
-        #endif
-    }
-
     private var sortModePicker: some View {
         #if os(iOS)
         Picker("Sort Type", selection: Binding(
@@ -719,9 +719,6 @@ struct QuranView: View {
             quranSearchBar
 
             playbackMenuButton
-                .frame(width: 27, height: 27)
-                .padding()
-                .conditionalGlassEffect()
                 .padding(.bottom, 2)
         }
         .padding(.leading, -8)
@@ -770,31 +767,46 @@ struct QuranView: View {
                         quranPlayer.stop()
                     }
                 } label: {
-                    if quranPlayer.isLoading {
-                        RotatingGearView().transition(.opacity)
-                    } else {
-                        Image(systemName: "xmark.circle.fill")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(settings.accentColor.color)
-                            .transition(.opacity)
+                    playbackMenuControlLabel {
+                        if quranPlayer.isLoading {
+                            RotatingGearView().transition(.opacity)
+                        } else {
+                            Image(systemName: "xmark.circle.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .foregroundColor(settings.accentColor.color)
+                                .transition(.opacity)
+                        }
                     }
                 }
             } else {
                 Menu {
                     playbackMenuContent
                 } label: {
-                    Image(systemName: "play.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .foregroundColor(settings.accentColor.color)
-                        .transition(.opacity)
+                    playbackMenuControlLabel {
+                        Image(systemName: "play.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundColor(settings.accentColor.color)
+                            .transition(.opacity)
+                    }
                 }
             }
         }
         #else
         EmptyView()
         #endif
+    }
+
+    private func playbackMenuControlLabel<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .frame(width: 27, height: 27)
+            .padding()
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .conditionalGlassEffect()
     }
 
     @ViewBuilder

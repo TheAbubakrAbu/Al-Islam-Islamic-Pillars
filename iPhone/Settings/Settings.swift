@@ -5,7 +5,7 @@ import CoreLocation
 
 let logger = Logger(subsystem: AppIdentifiers.bundleIdentifier, category: "Settings")
 
-final class Settings: NSObject, ObservableObject, CLLocationManagerDelegate {
+final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     static let shared = Settings()
     private let appGroupUserDefaults = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName)
     @Published private(set) var isReadyForUI = false

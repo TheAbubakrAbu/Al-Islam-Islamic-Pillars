@@ -262,23 +262,27 @@ extension Settings {
         // Alif family
         "\u{0670}": "ا", // dagger alif
         "ٱ": "ا",
+        // Hamza family folds to plain carrier letters for forgiving search.
         "أ": "ا",
         "إ": "ا",
         "آ": "ا",
         "ٲ": "ا",
         "ٳ": "ا",
         "ٵ": "ا",
+        "ؤ": "و",
+        "ئ": "ي",
+        "ء": "",
+        "ٴ": "",
+        "ٶ": "و",
+        "ٷ": "و",
+        "ٸ": "ي",
         // Waw variants
         "ۥ": "و",
         // Ya variants
         "ۦ": "ي",
         "ى": "ي", // alif maqsurah -> ya
         // Teh marbuta equivalence (broad)
-        "ة": "ه",
-        // Hamza unification on carriers
-        "ؤ": "و",
-        "ئ": "ي",
-        "ء": ""
+        "ة": "ه"
     ]
 
     private func normalizedArabicForSearch(_ text: String) -> String {

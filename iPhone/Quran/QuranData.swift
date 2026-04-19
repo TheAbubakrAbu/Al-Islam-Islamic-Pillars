@@ -303,9 +303,13 @@ final class TajweedStore {
     private static let sukoon = UnicodeScalar(0x0652)!
     private static let sukoonUthmani = UnicodeScalar(0x06E1)!
     private static let shadda = UnicodeScalar(0x0651)!
+    private static let bareHamza = UnicodeScalar(0x0621)!
     private static let daggerAlif = UnicodeScalar(0x0670)!
+    private static let hamzaAbove = UnicodeScalar(0x0654)!
+    private static let hamzaBelow = UnicodeScalar(0x0655)!
     private static let maddah = UnicodeScalar(0x0653)!
     private static let hamzatWasl = UnicodeScalar(0x0671)!
+    private static let highHamza = UnicodeScalar(0x0674)!
     private static let smallWaw = UnicodeScalar(0x06E5)!
     private static let smallYeh = UnicodeScalar(0x06E6)!
 
@@ -921,9 +925,15 @@ final class TajweedStore {
 
     private func isHamzaCarrier(_ cluster: CharacterClusterInfo) -> Bool {
         if cluster.contains(Self.hamzatWasl) { return false }
+        if cluster.contains(Self.bareHamza)
+            || cluster.contains(Self.hamzaAbove)
+            || cluster.contains(Self.hamzaBelow)
+            || cluster.contains(Self.highHamza) {
+            return true
+        }
         guard let b = cluster.primaryArabicLetter else { return false }
         switch b {
-        case "ء", "أ", "إ", "ئ", "ؤ", "آ": return true
+        case "ء", "أ", "إ", "ئ", "ؤ", "آ", "ٴ", "ٶ", "ٷ", "ٸ": return true
         default: return false
         }
     }

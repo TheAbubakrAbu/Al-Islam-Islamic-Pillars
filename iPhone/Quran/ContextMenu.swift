@@ -124,11 +124,31 @@ private final class AyahTafsirViewModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
+    private let surah: Int
+    private let ayah: Int
     private var loadedKey: String?
+    private var loadTask: Task<Void, Never>?
+
+    init(surah: Int, ayah: Int) {
+        self.surah = surah
+        self.ayah = ayah
+        loadTask = Task { [weak self] in
+            await self?.loadIfNeeded()
+        }
+    }
+
+    deinit {
+        loadTask?.cancel()
+    }
+
+    func loadIfNeeded() async {
+        await load(surah: surah, ayah: ayah)
+    }
 
     func load(surah: Int, ayah: Int) async {
         let key = "\(surah)-\(ayah)"
         if loadedKey == key, !tafsirs.isEmpty { return }
+        if isLoading { return }
 
         isLoading = true
         errorMessage = nil
@@ -167,7 +187,7 @@ struct AyahTafsirSheet: View {
         self.surahName = surahName
         self.surahNumber = surahNumber
         self.ayahNumber = ayahNumber
-        _viewModel = StateObject(wrappedValue: AyahTafsirViewModel())
+        _viewModel = StateObject(wrappedValue: AyahTafsirViewModel(surah: surahNumber, ayah: ayahNumber))
     }
 
     private var selectedAuthor: TafsirAuthor {
@@ -236,9 +256,6 @@ struct AyahTafsirSheet: View {
             }
             .navigationTitle("\(surahName) \(surahNumber):\(ayahNumber)")
             .navigationBarTitleDisplayMode(.inline)
-        }
-        .task(id: "\(surahNumber)-\(ayahNumber)") {
-            await viewModel.load(surah: surahNumber, ayah: ayahNumber)
         }
         .modifier(TafsirSheetPresentationModifier())
     }

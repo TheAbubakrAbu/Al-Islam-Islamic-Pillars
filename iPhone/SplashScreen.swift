@@ -62,6 +62,8 @@ struct SplashScreen: View {
                         .padding(.bottom, 28)
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
+                .animation(.easeInOut, value: settings.firstLaunch)
+                .transition(.opacity)
             }
             .navigationTitle("Assalamu Alaikum")
             .navigationBarTitleDisplayMode(.inline)
@@ -204,7 +206,7 @@ struct SplashScreen: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
             }
-            .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: \(AppIdentifiers.mainColor.color))*/
+            .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: AppIdentifiers.mainColor.color)*/
             
             Button {
                 settings.hapticFeedback()

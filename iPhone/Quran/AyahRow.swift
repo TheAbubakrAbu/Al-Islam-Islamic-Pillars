@@ -218,15 +218,6 @@ struct AyahRow: View, Equatable {
                     Spacer()
                     
                     #if os(iOS)
-                    if isBookmarked {
-                        Image(systemName: "bookmark.fill")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 22, height: 22)
-                            .foregroundColor(settings.accentColor.color)
-                            .transition(.opacity)
-                    }
-
                     if settings.isHafsDisplay {
                         Menu {
                             playbackMenuBlock()
@@ -260,21 +251,12 @@ struct AyahRow: View, Equatable {
                         .smallMediumSheetPresentation()
                     }
                     .sheet(isPresented: $showTafsirSheet) {
-                        if #available(iOS 16.0, *) {
-                            AyahTafsirSheet(
-                                surahName: surah.nameTransliteration,
-                                surahNumber: surah.id,
-                                ayahNumber: ayah.id
-                            )
-                            .presentationDetents([.medium, .large])
-                            .presentationDragIndicator(.visible)
-                        } else {
-                            AyahTafsirSheet(
-                                surahName: surah.nameTransliteration,
-                                surahNumber: surah.id,
-                                ayahNumber: ayah.id
-                            )
-                        }
+                        AyahTafsirSheet(
+                            surahName: surah.nameTransliteration,
+                            surahNumber: surah.id,
+                            ayahNumber: ayah.id
+                        )
+                        .smallMediumSheetPresentation()
                     }
                     .sheet(isPresented: $showingNoteSheet) {
                         NoteEditorSheet(
@@ -318,44 +300,28 @@ struct AyahRow: View, Equatable {
                 .padding(.bottom, settings.showArabicText ? 8 : 2)
                 .padding(.trailing, 1)
                 
-                Group {
-                    #if os(iOS)
-                    Button {
-                        if !searchText.isEmpty {
-                            settings.hapticFeedback()
-                            withAnimation {
-                                scrollDown = ayah.id
-                            }
-                        }
-                    } label: {
-                        ayahTextBlock(
-                            showArabic: showArabic,
-                            showTranslit: showTranslit,
-                            showEnglishSaheeh: showEnglishSaheeh,
-                            showEnglishMustafa: showEnglishMustafa,
-                            fontSizeEN: fontSizeEN,
-                            highlightQuery: highlightQuery
-                        )
-                    }
-                    .disabled(searchText.isEmpty)
-                    .contentShape(Rectangle())
-                    #else
-                    ayahTextBlock(
-                        showArabic: showArabic,
-                        showTranslit: showTranslit,
-                        showEnglishSaheeh: showEnglishSaheeh,
-                        showEnglishMustafa: showEnglishMustafa,
-                        fontSizeEN: fontSizeEN,
-                        highlightQuery: highlightQuery
-                    )
-                    #endif
-                }
+                ayahTextBlock(
+                    showArabic: showArabic,
+                    showTranslit: showTranslit,
+                    showEnglishSaheeh: showEnglishSaheeh,
+                    showEnglishMustafa: showEnglishMustafa,
+                    fontSizeEN: fontSizeEN,
+                    highlightQuery: highlightQuery
+                )
                 .padding(.bottom, 2)
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .contentShape(Rectangle())
         .lineLimit(nil)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !searchText.isEmpty {
+                settings.hapticFeedback()
+                withAnimation {
+                    scrollDown = ayah.id
+                }
+            }
+        }
         #if os(iOS)
         .contextMenu {
             menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: true)
@@ -478,12 +444,13 @@ struct AyahRow: View, Equatable {
                 )
                 .conditionalGlassEffect(rectangle: true)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .contentShape(Rectangle())
                 #if os(iOS)
                 .onTapGesture {
                     settings.hapticFeedback()
-                    draftNote = currentNote
-                    showingNoteSheet = true
+                    withAnimation {
+                        draftNote = currentNote
+                        showingNoteSheet = true
+                    }
                 }
                 #endif
                 .padding(.top, 4)

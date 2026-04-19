@@ -65,6 +65,8 @@ struct LaunchScreen: View {
                 logoCard(layoutScale: layoutScale)
             }
             .frame(width: geo.size.width, height: geo.size.height)
+            .animation(.easeInOut, value: isLaunching)
+            .transition(.opacity)
         }
         .ignoresSafeArea()
         .onAppear {
