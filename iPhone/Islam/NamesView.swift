@@ -76,37 +76,91 @@ struct NameOfAllah: Decodable, Identifiable, Equatable {
 }
 
 final class NamesViewModel: ObservableObject {
-    static let shared = NamesViewModel()
+    enum LoadState: Equatable {
+        case idle
+        case loading
+        case ready
+        case failed
+    }
+
+    static let shared: NamesViewModel = {
+        let model = NamesViewModel()
+        model.startLoading()
+        return model
+    }()
+
+    private static let decoder = JSONDecoder()
 
     @Published var namesOfAllah: [NameOfAllah] = []
     @Published private(set) var firstFoundTargetsByNameNumber: [Int: (surahID: Int, ayahID: Int)] = [:]
+    @Published private(set) var loadState: LoadState = .idle
     private var filterCache = [String: [NameOfAllah]]()
+    private var loadTask: Task<Void, Never>?
 
-    private init() { loadJSON() }
+    private init() {}
 
-    private func loadJSON() {
-        guard let url = Bundle.main.url(forResource: "NamesOfAllah", withExtension: "json") else {
-            logger.debug("❌ 99 Names JSON not found."); return
+    private func startLoading() {
+        guard loadTask == nil else { return }
+        loadTask = Task(priority: .utility) { [weak self] in
+            await self?.loadJSON()
         }
-        DispatchQueue.global(qos: .utility).async {
-            do {
-                let data = try Data(contentsOf: url, options: .mappedIfSafe)
-                let decoder = JSONDecoder()
-                let names = (try? decoder.decode([NameOfAllah].self, from: data)) ?? []
-                var targets = [Int: (surahID: Int, ayahID: Int)]()
-                targets.reserveCapacity(names.count)
-                for name in names {
-                    guard let surah = name.firstFoundSurah,
-                          let ayah = name.firstFoundAyah else { continue }
-                    targets[name.number] = (surahID: surah, ayahID: ayah)
-                }
-                DispatchQueue.main.async {
-                    self.namesOfAllah = names
-                    self.firstFoundTargetsByNameNumber = targets
-                    self.filterCache.removeAll()
-                }
-            } catch {
-                logger.debug("❌ JSON decode error: \(error)")
+    }
+
+    var isReadyForUI: Bool {
+        loadState == .ready
+    }
+
+    func waitUntilLoaded() async {
+        while true {
+            let state = await MainActor.run { self.loadState }
+            if state == .ready || state == .failed {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 25_000_000)
+        }
+    }
+
+    private func loadJSON() async {
+        await MainActor.run {
+            loadState = .loading
+        }
+
+        defer {
+            Task { @MainActor in
+                self.loadTask = nil
+            }
+        }
+
+        guard let url = Bundle.main.url(forResource: "NamesOfAllah", withExtension: "json") else {
+            logger.debug("❌ 99 Names JSON not found.")
+            await MainActor.run {
+                self.loadState = .failed
+            }
+            return
+        }
+
+        do {
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            let names = try Self.decoder.decode([NameOfAllah].self, from: data)
+            var targets = [Int: (surahID: Int, ayahID: Int)]()
+            targets.reserveCapacity(names.count)
+            for name in names {
+                guard let surah = name.firstFoundSurah,
+                      let ayah = name.firstFoundAyah else { continue }
+                targets[name.number] = (surahID: surah, ayahID: ayah)
+            }
+            let finalizedTargets = targets
+
+            await MainActor.run {
+                self.namesOfAllah = names
+                self.firstFoundTargetsByNameNumber = finalizedTargets
+                self.filterCache.removeAll(keepingCapacity: true)
+                self.loadState = .ready
+            }
+        } catch {
+            logger.debug("❌ JSON decode error: \(error)")
+            await MainActor.run {
+                self.loadState = .failed
             }
         }
     }
@@ -250,7 +304,6 @@ struct NamesView: View {
                     ) {
                         handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
                     }
-                    .equatable()
                     .id("favorite_name_\(name.number)")
                 }
             }
@@ -273,7 +326,6 @@ struct NamesView: View {
                 ) {
                     handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
                 }
-                .equatable()
             }
             .id("name_\(name.number)")
         }

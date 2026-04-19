@@ -13,6 +13,7 @@ final class QuranPlayer: ObservableObject {
     @ObservedObject var quranData = QuranData.shared
     
     @Published var isLoading = false
+    @Published private(set) var isReadyForUI = false
     @Published private(set) var isPlaying = false
     @Published private(set) var isPaused = false
     
@@ -77,6 +78,15 @@ final class QuranPlayer: ObservableObject {
         )
         loadHistoryFromDefaults()
         setupRemoteTransportControls()
+        isReadyForUI = true
+    }
+
+    func waitUntilReady() async {
+        while true {
+            let isReady = await MainActor.run { self.isReadyForUI }
+            if isReady { return }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
     }
     
     deinit {

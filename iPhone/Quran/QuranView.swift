@@ -244,6 +244,15 @@ struct QuranView: View {
         return false
     }
 
+    var useSplitOnThisDevice: Bool {
+        #if os(iOS)
+        if #available(iOS 16.0, *) {
+            return UIDevice.current.userInterfaceIdiom == .pad
+        }
+        #endif
+        return false
+    }
+
     func push(surahID: Int, ayahID: Int? = nil) {
         #if os(iOS)
         if #available(iOS 16.0, *), useStackOnThisDevice {
@@ -363,12 +372,8 @@ struct QuranView: View {
     private var navigationContainer: some View {
         Group {
             #if os(iOS)
-            if #available(iOS 16.0, *), UIDevice.current.userInterfaceIdiom == .pad {
-                NavigationSplitView {
-                    content
-                } detail: {
-                    detailContent
-                }
+            if #available(iOS 16.0, *), useSplitOnThisDevice {
+                splitNavigation
             } else if #available(iOS 16.0, *) {
                 NavigationStack(path: $path) {
                     content
@@ -396,7 +401,111 @@ struct QuranView: View {
         }
     }
 
-    // Removed splitNavigation, contentForSplitView, legacyPadNavigation, legacyPhoneNavigation for unified navigation
+    @available(iOS 16.0, *)
+    private var splitNavigation: some View {
+        NavigationSplitView {
+            contentForSplitView
+                .onAppear {
+                    if !hasSetDefaultSelection {
+                        setDefaultSelection()
+                        hasSetDefaultSelection = true
+                    }
+                }
+        } detail: {
+            detailContent
+        }
+    }
+
+    private var contentForSplitView: some View {
+        #if os(iOS)
+        ScrollViewReader { scrollProxy in
+            let context = searchDisplayContext
+
+            List(selection: $selectedSurahID) {
+                primaryHistorySections(context: context)
+                bookmarkSection(context: context)
+                favoriteSection(context: context)
+                if context.explicitPageOrJuzMode && context.isSearching {
+                    pageSearchSection(context: context)
+                    juzSearchSection(context: context)
+                }
+                surahContentSections(context: context)
+                searchResultSections(context: context)
+            }
+            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .compactListSectionSpacing()
+            .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
+            .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
+            .onChange(of: searchText) { txt in
+                handleAyahSearchChange(txt)
+            }
+            .onChange(of: scrollToSurahID) { id in
+                guard id > 0 else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        scrollProxy.scrollTo("surah_\(id)", anchor: .top)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Al-Quran")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    settings.hapticFeedback()
+                    showingSettingsSheet = true
+                } label: {
+                    Image(systemName: "gear")
+                }
+            }
+        }
+        .sheet(isPresented: $showingSettingsSheet) {
+            NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
+        }
+        .sheet(isPresented: $showReciterPickerSheet) {
+            NavigationView {
+                ReciterListView(dismissAfterSelectingReciter: true, autoScrollToInitialSelection: false)
+                    .environmentObject(settings)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                settings.hapticFeedback()
+                                showReciterPickerSheet = false
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                            .tint(settings.accentColor.color)
+                        }
+                    }
+            }
+            .navigationViewStyle(.stack)
+            .smallMediumSheetPresentation()
+        }
+        .onDisappear {
+            withAnimation {
+                persistQuranSearchHistoryIfNeeded(searchText)
+            }
+        }
+        .overlay(alignment: .top) {
+            searchHelpOverlay
+        }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                if quranPlayer.isPlaying || quranPlayer.isPaused {
+                    nowPlayingInset
+                }
+            }
+            .padding(.bottom, 8)
+            .padding(.horizontal, 24)
+            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+        }
+        .adaptiveSafeArea(edge: .bottom) {
+            bottomControls
+        }
+        #else
+        EmptyView()
+        #endif
+    }
 
     @ViewBuilder
     private func routeDestination(_ route: QuranRoute) -> some View {
@@ -876,10 +985,22 @@ struct QuranView: View {
     private func favoriteRow(surahID: Int, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(surahID) {
             Group {
-                NavigationLink(destination: ayahsDestination(surah: surah)) {
-                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                if useSplitOnThisDevice {
+                    Button {
+                        settings.hapticFeedback()
+                        selectedSurahID = surah.id
+                    } label: {
+                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .tag(surah.id)
+                } else {
+                    NavigationLink(destination: ayahsDestination(surah: surah)) {
+                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                    }
                 }
-                .tag(surah.id)
             }
             .rightSwipeActions(
                 surahID: surahID,
@@ -962,10 +1083,24 @@ struct QuranView: View {
             
             ForEach(context.filteredSurahs, id: \.id) { surah in
                 Section {
-                    NavigationLink(destination: ayahsDestination(surah: surah)) {
-                        surahSearchRow(surah: surah, context: context)
+                    Group {
+                        if useSplitOnThisDevice {
+                            Button {
+                                settings.hapticFeedback()
+                                selectedSurahID = surah.id
+                            } label: {
+                                surahSearchRow(surah: surah, context: context)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .contentShape(Rectangle())
+                            .tag(surah.id)
+                        } else {
+                            NavigationLink(destination: ayahsDestination(surah: surah)) {
+                                surahSearchRow(surah: surah, context: context)
+                            }
+                        }
                     }
-                    .tag(surah.id)
                     .id("surah_\(surah.id)")
                     .onAppear {
                         if surah.id == scrollToSurahID {
@@ -1064,34 +1199,24 @@ struct QuranView: View {
     @ViewBuilder
     private func preprocessedJuzRow(row: QuranData.JuzSectionData.Row, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(row.surahID) {
-            let destination: AnyView = {
-                switch row.kind {
-                case .plain:
-                    return AnyView(ayahsDestination(surah: surah))
-                case .start(let ayah):
-                    if ayah > 1 {
-                        return AnyView(ayahsDestination(surah: surah, ayah: ayah))
+            Group {
+                if useSplitOnThisDevice {
+                    Button {
+                        settings.hapticFeedback()
+                        selectedSurahID = surah.id
+                    } label: {
+                        preprocessedJuzLabel(row: row, surah: surah, favoriteSurahs: context.favoriteSurahs)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    return AnyView(ayahsDestination(surah: surah))
-                case .end(let ayah):
-                    if ayah < surah.numberOfAyahs {
-                        return AnyView(ayahsDestination(surah: surah, ayah: ayah))
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .tag(surah.id)
+                } else {
+                    NavigationLink(destination: preprocessedJuzDestination(row: row, surah: surah)) {
+                        preprocessedJuzLabel(row: row, surah: surah, favoriteSurahs: context.favoriteSurahs)
                     }
-                    return AnyView(ayahsDestination(surah: surah))
-                }
-            }()
-
-            NavigationLink(destination: destination) {
-                switch row.kind {
-                case .plain:
-                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
-                case .start(let ayah):
-                    SurahRow(surah: surah, ayah: ayah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
-                case .end(let ayah):
-                    SurahRow(surah: surah, ayah: ayah, end: true, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
                 }
             }
-            .tag(surah.id)
             #if os(iOS)
             .rightSwipeActions(
                 surahID: surah.id,
@@ -1128,18 +1253,72 @@ struct QuranView: View {
     }
 
     @ViewBuilder
+    private func preprocessedJuzDestination(row: QuranData.JuzSectionData.Row, surah: Surah) -> some View {
+        switch row.kind {
+        case .plain:
+            ayahsDestination(surah: surah)
+        case .start(let ayah):
+            if ayah > 1 {
+                ayahsDestination(surah: surah, ayah: ayah)
+            } else {
+                ayahsDestination(surah: surah)
+            }
+        case .end(let ayah):
+            if ayah < surah.numberOfAyahs {
+                ayahsDestination(surah: surah, ayah: ayah)
+            } else {
+                ayahsDestination(surah: surah)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func preprocessedJuzLabel(
+        row: QuranData.JuzSectionData.Row,
+        surah: Surah,
+        favoriteSurahs: Set<Int>
+    ) -> some View {
+        switch row.kind {
+        case .plain:
+            SurahRow(surah: surah, isFavorite: favoriteSurahs.contains(surah.id)).equatable()
+        case .start(let ayah):
+            SurahRow(surah: surah, ayah: ayah, isFavorite: favoriteSurahs.contains(surah.id)).equatable()
+        case .end(let ayah):
+            SurahRow(surah: surah, ayah: ayah, end: true, isFavorite: favoriteSurahs.contains(surah.id)).equatable()
+        }
+    }
+
+    @ViewBuilder
     private func revelationSections(context: SearchDisplayContext) -> some View {
         Section(header: SurahsHeader(text: "REVELATION ORDER")) {
             ForEach(quranData.revelationOrderSurahIDs, id: \.self) { surahID in
                 if let surah = quranData.surah(surahID) {
-                    NavigationLink(destination: ayahsDestination(surah: surah)) {
-                        HStack(spacing: 10) {
-                            revelationOrderBadge(surah.revelationOrder ?? 0)
-                            
-                            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                    Group {
+                        if useSplitOnThisDevice {
+                            Button {
+                                settings.hapticFeedback()
+                                selectedSurahID = surah.id
+                            } label: {
+                                HStack(spacing: 10) {
+                                    revelationOrderBadge(surah.revelationOrder ?? 0)
+                                    
+                                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .contentShape(Rectangle())
+                            .tag(surah.id)
+                        } else {
+                            NavigationLink(destination: ayahsDestination(surah: surah)) {
+                                HStack(spacing: 10) {
+                                    revelationOrderBadge(surah.revelationOrder ?? 0)
+                                    
+                                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                                }
+                            }
                         }
                     }
-                    .tag(surah.id)
                     .id("surah_\(surah.id)")
                     #if os(iOS)
                     .rightSwipeActions(
@@ -1166,18 +1345,41 @@ struct QuranView: View {
 
     @ViewBuilder
     private func surahRow(surah: Surah, context: SearchDisplayContext, showsRevelationOrder: Bool = false) -> some View {
-        NavigationLink(destination: ayahsDestination(surah: surah)) {
-            if showsRevelationOrder {
-                HStack(spacing: 10) {
-                    revelationOrderBadge(surah.revelationOrder ?? 0)
+        Group {
+            if useSplitOnThisDevice {
+                Button {
+                    settings.hapticFeedback()
+                    selectedSurahID = surah.id
+                } label: {
+                    if showsRevelationOrder {
+                        HStack(spacing: 10) {
+                            revelationOrderBadge(surah.revelationOrder ?? 0)
 
-                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .tag(surah.id)
             } else {
-                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                NavigationLink(destination: ayahsDestination(surah: surah)) {
+                    if showsRevelationOrder {
+                        HStack(spacing: 10) {
+                            revelationOrderBadge(surah.revelationOrder ?? 0)
+
+                            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                        }
+                    } else {
+                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                    }
+                }
             }
         }
-        .tag(surah.id)
         .id("surah_\(surah.id)")
         #if os(iOS)
         .rightSwipeActions(

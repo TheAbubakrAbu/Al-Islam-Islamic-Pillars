@@ -126,8 +126,15 @@ struct SettingsQuranView: View {
         Section(header: Text("DISPLAY")) {
             pageAndJuzDividersGroup
             
-            Toggle("Show Full Surah Details", isOn: $settings.showFullSurahRow.animation(.easeInOut))
-                .font(.subheadline)
+            VStack(alignment: .leading) {
+                Toggle("Show Full Surah Details", isOn: $settings.showFullSurahRow.animation(.easeInOut))
+                    .font(.subheadline)
+                
+                Text("Shows each surah's extra information, such as revelation type, ayah count, page count, etc.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
             
             systemFontSizeToggle
         }

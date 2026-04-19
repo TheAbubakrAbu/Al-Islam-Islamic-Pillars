@@ -18,6 +18,9 @@ enum LaunchScreenLayout {
 
 struct LaunchScreen: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
+    @EnvironmentObject var quranPlayer: QuranPlayer
+    @EnvironmentObject var namesData: NamesViewModel
     @Environment(\.colorScheme) private var systemColorScheme
     @Environment(\.customColorScheme) private var customColorScheme
 
@@ -182,7 +185,17 @@ struct LaunchScreen: View {
             rightGlassOffset = 0
         }
 
-        await QuranData.shared.waitUntilLoaded()
+        async let settingsReady: Void = Settings.shared.waitUntilReady()
+        async let quranReady: Void = {
+            if QuranData.shared.shouldWaitForFullLaunchReadiness {
+                await QuranData.shared.waitUntilLoaded()
+            } else {
+                await QuranData.shared.waitUntilCoreLoaded()
+            }
+        }()
+        async let playerReady: Void = QuranPlayer.shared.waitUntilReady()
+        async let namesReady: Void = NamesViewModel.shared.waitUntilLoaded()
+        _ = await (settingsReady, quranReady, playerReady, namesReady)
 
         triggerHapticFeedback(.soft)
         withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {

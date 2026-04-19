@@ -13,7 +13,7 @@ struct TajweedFoundationsView: View {
         "Shams and Qamar - Al",
         "Madd (Elongation)",
         "Qalqalah (Echo)",
-        "Idgham / Ikhfaa",
+        "Noon Sakina and Tanwin",
         "Waqf (Stopping)"
     ]
 
@@ -1409,8 +1409,8 @@ private struct TajweedIdghamIkhfaView: View {
 
     var body: some View {
         List {
-            Section("IDGHAAM / IKHFAA") {
-                Text("Idgham / Ikhfaa and Related Noon/Tanween Rules")
+            Section("NOON SAKINA AND TANWIN") {
+                Text("Noon Sakina and Tanween Rules")
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
 

@@ -1532,7 +1532,7 @@ final class QuranData: ObservableObject {
     private func staticCacheURL(resourceSignature: String) -> URL? {
         guard let directoryURL = derivedCacheDirectoryURL() else { return nil }
         let safeSignature = resourceSignature.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
-        return directoryURL.appendingPathComponent("quran-static-v\(QuranStaticCache.version)-\(safeSignature).json")
+        return directoryURL.appendingPathComponent("quran-static-v\(QuranStaticCache.version)-\(safeSignature).cache")
     }
 
     private func dynamicCacheURL(resourceSignature: String, qiraahKey: String) -> URL? {
@@ -1541,8 +1541,34 @@ final class QuranData: ObservableObject {
         let safeKey = qiraahKey.isEmpty
             ? "hafs"
             : qiraahKey.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+        return directoryURL.appendingPathComponent("quran-dynamic-v\(QuranDynamicCache.version)-\(safeSignature)-\(safeKey).cache")
+    }
+
+    private func legacyStaticCacheURL(resourceSignature: String) -> URL? {
+        guard let directoryURL = derivedCacheDirectoryURL() else { return nil }
+        let safeSignature = resourceSignature.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+        return directoryURL.appendingPathComponent("quran-static-v\(QuranStaticCache.version)-\(safeSignature).json")
+    }
+
+    private func legacyDynamicCacheURL(resourceSignature: String, qiraahKey: String) -> URL? {
+        guard let directoryURL = derivedCacheDirectoryURL() else { return nil }
+        let safeSignature = resourceSignature.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+        let safeKey = qiraahKey.isEmpty
+            ? "hafs"
+            : qiraahKey.replacingOccurrences(of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
         return directoryURL.appendingPathComponent("quran-dynamic-v\(QuranDynamicCache.version)-\(safeSignature)-\(safeKey).json")
     }
+
+    private static let cacheDecoder: PropertyListDecoder = {
+        let decoder = PropertyListDecoder()
+        return decoder
+    }()
+
+    private static let cacheEncoder: PropertyListEncoder = {
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .binary
+        return encoder
+    }()
 
     private func resourceSignature(for url: URL) -> String {
         let fileManager = FileManager.default
@@ -1557,15 +1583,35 @@ final class QuranData: ObservableObject {
     }
 
     private func loadStaticCache(resourceSignature: String) -> QuranStaticCache? {
-        guard let url = staticCacheURL(resourceSignature: resourceSignature) else { return nil }
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return try? JSONDecoder().decode(QuranStaticCache.self, from: data)
+        if let url = staticCacheURL(resourceSignature: resourceSignature),
+           let data = try? Data(contentsOf: url, options: .mappedIfSafe),
+           let cache = try? Self.cacheDecoder.decode(QuranStaticCache.self, from: data) {
+            return cache
+        }
+
+        if let legacyURL = legacyStaticCacheURL(resourceSignature: resourceSignature),
+           let data = try? Data(contentsOf: legacyURL, options: .mappedIfSafe),
+           let cache = try? JSONDecoder().decode(QuranStaticCache.self, from: data) {
+            return cache
+        }
+
+        return nil
     }
 
     private func loadDynamicCache(resourceSignature: String, qiraahKey: String) -> QuranDynamicCache? {
-        guard let url = dynamicCacheURL(resourceSignature: resourceSignature, qiraahKey: qiraahKey) else { return nil }
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return try? JSONDecoder().decode(QuranDynamicCache.self, from: data)
+        if let url = dynamicCacheURL(resourceSignature: resourceSignature, qiraahKey: qiraahKey),
+           let data = try? Data(contentsOf: url, options: .mappedIfSafe),
+           let cache = try? Self.cacheDecoder.decode(QuranDynamicCache.self, from: data) {
+            return cache
+        }
+
+        if let legacyURL = legacyDynamicCacheURL(resourceSignature: resourceSignature, qiraahKey: qiraahKey),
+           let data = try? Data(contentsOf: legacyURL, options: .mappedIfSafe),
+           let cache = try? JSONDecoder().decode(QuranDynamicCache.self, from: data) {
+            return cache
+        }
+
+        return nil
     }
 
     private func saveStaticCache(
@@ -1597,7 +1643,7 @@ final class QuranData: ObservableObject {
         )
 
         do {
-            let data = try JSONEncoder().encode(cache)
+            let data = try Self.cacheEncoder.encode(cache)
             try data.write(to: url, options: .atomic)
         } catch {
             logger.debug("Failed to write Quran static cache: \(error)")
@@ -1635,11 +1681,34 @@ final class QuranData: ObservableObject {
         )
 
         do {
-            let data = try JSONEncoder().encode(cache)
+            let data = try Self.cacheEncoder.encode(cache)
             try data.write(to: url, options: .atomic)
         } catch {
             logger.debug("Failed to write Quran dynamic cache: \(error)")
         }
+    }
+
+    private func hasDynamicCacheAvailableForCurrentResources() -> Bool {
+        guard let url = Bundle.main.url(forResource: "Quran", withExtension: "json") else { return false }
+
+        let qiraahKey = settings.displayQiraahForArabic ?? ""
+        let qiraatURLs = Self.qiraatKeys.compactMap { filename, _ in
+            Bundle.main.url(forResource: filename, withExtension: "json", subdirectory: "JSONs/Qiraat")
+                ?? Bundle.main.url(forResource: filename, withExtension: "json")
+        }
+        let cacheSignature = resourceSignature(for: [url] + qiraatURLs)
+
+        if let cacheURL = dynamicCacheURL(resourceSignature: cacheSignature, qiraahKey: qiraahKey),
+           FileManager.default.fileExists(atPath: cacheURL.path) {
+            return true
+        }
+
+        if let legacyURL = legacyDynamicCacheURL(resourceSignature: cacheSignature, qiraahKey: qiraahKey),
+           FileManager.default.fileExists(atPath: legacyURL.path) {
+            return true
+        }
+
+        return false
     }
 
     @MainActor
@@ -1813,8 +1882,29 @@ final class QuranData: ObservableObject {
         }
     }
 
+    func waitUntilCoreLoaded() async {
+        while true {
+            let state = await MainActor.run { self.loadState }
+            if state == .buildingIndexes || state == .ready || state == .failed {
+                return
+            }
+            if loadTask == nil {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 25_000_000)
+        }
+    }
+
     var isReadyForUI: Bool {
         loadState == .ready
+    }
+
+    var isCoreReadyForUI: Bool {
+        loadState == .buildingIndexes || loadState == .ready
+    }
+
+    var shouldWaitForFullLaunchReadiness: Bool {
+        loadState == .ready || hasDynamicCacheAvailableForCurrentResources()
     }
 
     var hasLoadFailed: Bool {
@@ -1989,7 +2079,7 @@ final class QuranData: ObservableObject {
             return
         }
 
-        let data = try Data(contentsOf: url)
+        let data = try Data(contentsOf: url, options: .mappedIfSafe)
         var surahs = try JSONDecoder().decode([Surah].self, from: data)
 
         let overlay = loadQiraatOverlay()

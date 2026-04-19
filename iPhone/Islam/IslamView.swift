@@ -5,7 +5,6 @@ struct IslamView: View {
     @EnvironmentObject var namesData: NamesViewModel
     #if os(iOS)
     @State private var selectedResource: IslamDestination? = .arabicAlphabet
-    @State private var hasSetDefaultSelection = false
 
     private enum IslamDestination: Hashable {
         case arabicAlphabet
@@ -68,16 +67,13 @@ struct IslamView: View {
     #if os(iOS)
     @available(iOS 16.0, *)
     private var islamSidebar: some View {
-        List {
+        List(selection: $selectedResource) {
             resourcesSectionSplit
             ProphetQuote()
             AlIslamAppsSection()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle(AppIdentifiers.toolsView)
-        .navigationDestination(for: IslamDestination.self) { destination in
-            destinationView(for: destination)
-        }
     }
 
     @available(iOS 16.0, *)
@@ -112,8 +108,6 @@ struct IslamView: View {
         }
     }
     #endif
-
-    // Removed split navigation logic for unified navigation
 
     private var resourcesSection: some View {
         Section(header: Text("ISLAMIC RESOURCES")) {
@@ -188,9 +182,15 @@ struct IslamView: View {
         systemImage: String,
         value: IslamDestination
     ) -> some View {
-        NavigationLink(value: value) {
+        Button {
+            settings.hapticFeedback()
+            selectedResource = value
+        } label: {
             toolLabel(title, systemImage: systemImage)
         }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .tag(value)
     }
     #endif
     

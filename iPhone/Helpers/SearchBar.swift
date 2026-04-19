@@ -93,10 +93,6 @@ struct SearchBarUIKit: UIViewRepresentable {
         searchTextField.rightView = ClearButtonContainer.make(for: coordinator)
         searchTextField.rightViewMode = .always
         ClearButtonContainer.updateVisibility(in: searchTextField.rightView, isVisible: false)
-
-        let heightConstraint = searchTextField.heightAnchor.constraint(equalToConstant: 44)
-        heightConstraint.priority = .required
-        heightConstraint.isActive = true
     }
 
     final class Coordinator: NSObject, UISearchBarDelegate {

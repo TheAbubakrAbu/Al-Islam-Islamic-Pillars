@@ -180,17 +180,35 @@ struct SettingsView: View {
     private var manualOffsetDestination: some View {
         List {
             Section(header: Text("HIJRI OFFSET")) {
-                Stepper("Hijri Offset: \(settings.hijriOffset) days", value: $settings.hijriOffset, in: -3...3)
-                    .font(.subheadline)
+                Stepper(value: $settings.hijriOffset, in: -3...3) {
+                    HStack {
+                        Text("Hijri Offset:")
+                            .foregroundColor(.primary)
+                        
+                        Text("\(settings.hijriOffset) days")
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                }
+                .font(.subheadline)
 
                 if let hijriDate = settings.hijriDate {
-                    Text("English: \(hijriDate.english)")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.subheadline)
+                    HStack {
+                        Text("English:")
+                            .foregroundColor(.primary)
+                        
+                        Text(hijriDate.english)
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                    .font(.subheadline)
 
-                    Text("Arabic: \(hijriDate.arabic)")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.subheadline)
+                    HStack {
+                        Text("Arabic: ")
+                            .foregroundColor(.primary)
+                        
+                        Text(hijriDate.arabic)
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                    .font(.subheadline)
                 }
             }
             .onAppear {
