@@ -46,6 +46,9 @@ struct CreditsView: View {
                     .padding(.vertical, 4)
                     .padding(.bottom, 8)
                     .contextMenu {
+                        Text("Copy")
+                            .foregroundStyle(.secondary)
+
                         Button {
                             settings.hapticFeedback()
                             UIPasteboard.general.string = "https://abubakrelmallah.com/"
@@ -81,6 +84,9 @@ struct CreditsView: View {
                 .font(.body)
                 .foregroundColor(settings.accentColor.color)
                 .contextMenu {
+                    Text("Copy")
+                        .foregroundStyle(.secondary)
+
                     Button {
                         settings.hapticFeedback()
                         UIPasteboard.general.string = "https://github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars"
@@ -123,6 +129,8 @@ struct CreditsView: View {
                 
                 creditLink("Credit for the Ayah Quran Recitations goes to Al Quran", url: "https://alquran.cloud/cdn")
 
+                creditLink("Credit for the English Quran translation comparison API goes to Al Quran Cloud", url: "https://alquran.cloud/api")
+
                 creditLink("Credit for the Tafsir API goes to Quran API Pages", url: "https://quranapi.pages.dev/")
                 
                 creditLink("Credit for the 99 Names of Allah goes to MyIslam", url: "https://myislam.org/99-names-of-allah/")
@@ -153,9 +161,12 @@ struct CreditsView: View {
         if let destination = URL(string: url) {
             Link(title, destination: destination)
                 .contextMenu {
+                    Text("Copy")
+                        .foregroundStyle(.secondary)
+
                     Button {
                         settings.hapticFeedback()
-                        UIPasteboard.general.string = title
+                        UIPasteboard.general.string = url
                     } label: {
                         Label("Copy Link", systemImage: "doc.on.doc")
                     }
@@ -224,6 +235,9 @@ struct AppLinkRow: View {
             }
         }
         .contextMenu {
+            Text("Copy")
+                .foregroundStyle(.secondary)
+
             Button {
                 settings.hapticFeedback()
                 UIPasteboard.general.string = url

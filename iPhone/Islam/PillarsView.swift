@@ -1750,6 +1750,9 @@ struct HaramView: View {
                         .cornerRadius(24)
                         #if os(iOS)
                         .contextMenu {
+                            Text("Image Actions")
+                                .foregroundStyle(.secondary)
+
                             Button {
                                 settings.hapticFeedback()
                                 UIPasteboard.general.image = UIImage(named: "Al Haram")
@@ -1819,6 +1822,9 @@ struct NabawiView: View {
                     .cornerRadius(24)
                     #if os(iOS)
                     .contextMenu {
+                        Text("Image Actions")
+                            .foregroundStyle(.secondary)
+
                         Button {
                             settings.hapticFeedback()
                             UIPasteboard.general.image = UIImage(named: "An Nabawi")
@@ -1894,6 +1900,9 @@ struct AqsaView: View {
                     .cornerRadius(24)
                     #if os(iOS)
                     .contextMenu {
+                        Text("Image Actions")
+                            .foregroundStyle(.secondary)
+
                         Button {
                             settings.hapticFeedback()
                             UIPasteboard.general.image = UIImage(named: "Al Aqsa")

@@ -15,6 +15,8 @@ struct AyahRow: View, Equatable {
     @State private var showingNoteSheet = false
     @State private var draftNote: String = ""
     @State private var showCustomRangeSheet = false
+    @State private var showQiraahComparisonSheet = false
+    @State private var showEnglishComparisonSheet = false
     #endif
     #if os(watchOS)
     @State private var showWatchPlaybackDialog = false
@@ -65,6 +67,14 @@ struct AyahRow: View, Equatable {
     private var currentNote: String {
         settings.bookmarkNoteText(surah: surah.id, ayah: ayah.id)
     }
+
+    private var canCompareEnglishText: Bool {
+        settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa)
+    }
+
+    private var shouldShowKhatmCheckmark: Bool {
+        settings.quranSortMode == .khatm && settings.isKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
+    }
     
     private func setNote(_ text: String?) {
         settings.setBookmarkNote(surah: surah.id, ayah: ayah.id, note: text)
@@ -106,6 +116,8 @@ struct AyahRow: View, Equatable {
     }
 
     private var shouldShowTajweedColors: Bool {
+        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }
+
         let usingHafs: Bool = if let override = comparisonQiraahOverride {
             override.isEmpty || override == "Hafs"
         } else {
@@ -186,7 +198,7 @@ struct AyahRow: View, Equatable {
                     .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
             }
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 4) {
                     ZStack(alignment: .topTrailing) {
                         Text("\(surah.id):\(ayah.id)")
@@ -218,8 +230,21 @@ struct AyahRow: View, Equatable {
                     Spacer()
                     
                     #if os(iOS)
+                    if shouldShowKhatmCheckmark {
+                        Image(systemName: "checkmark.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 25, height: 25)
+                            .foregroundColor(settings.accentColor.color)
+                            .conditionalGlassEffect()
+                            .frame(width: 28, height: 28)
+                    }
+
                     if settings.isHafsDisplay {
                         Menu {
+                            Text("Ayah Playback")
+                                .foregroundStyle(.secondary)
+
                             playbackMenuBlock()
                         } label: {
                             Image(systemName: "play.circle")
@@ -233,6 +258,9 @@ struct AyahRow: View, Equatable {
                     }
                     
                     Menu {
+                        Text("Ayah Actions")
+                            .foregroundStyle(.secondary)
+
                         menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: false)
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -257,6 +285,16 @@ struct AyahRow: View, Equatable {
                             ayahNumber: ayah.id
                         )
                         .smallMediumSheetPresentation()
+                    }
+                    .sheet(isPresented: $showQiraahComparisonSheet) {
+                        AyahQiraahComparisonSheet(surahNumber: surah.id, ayahNumber: ayah.id)
+                            .environmentObject(settings)
+                            .environmentObject(quranData)
+                    }
+                    .sheet(isPresented: $showEnglishComparisonSheet) {
+                        AyahEnglishComparisonSheet(surahNumber: surah.id, ayahNumber: ayah.id)
+                            .environmentObject(settings)
+                            .environmentObject(quranData)
                     }
                     .sheet(isPresented: $showingNoteSheet) {
                         NoteEditorSheet(
@@ -324,6 +362,9 @@ struct AyahRow: View, Equatable {
         }
         #if os(iOS)
         .contextMenu {
+            Text("Ayah Actions")
+                .foregroundStyle(.secondary)
+
             menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: true)
         }
         #endif
@@ -548,6 +589,9 @@ struct AyahRow: View, Equatable {
 
         Group {
             Menu {
+                Text("Repeat Count")
+                    .foregroundStyle(.secondary)
+
                 ForEach(repeatOptions, id: \.self) { count in
                     Button {
                         settings.hapticFeedback()
@@ -595,6 +639,9 @@ struct AyahRow: View, Equatable {
         let repeatOptions = [2, 3, 5, 10, 15, 20]
 
         Menu {
+            Text("Repeat Count")
+                .foregroundStyle(.secondary)
+
             ForEach(repeatOptions, id: \.self) { count in
                 Button {
                     settings.hapticFeedback()
@@ -615,6 +662,9 @@ struct AyahRow: View, Equatable {
         }
 
         Menu {
+            Text("Ayah Playback")
+                .foregroundStyle(.secondary)
+
             Button {
                 settings.hapticFeedback()
                 showCustomRangeSheet = true
@@ -688,6 +738,24 @@ struct AyahRow: View, Equatable {
                     showTafsirSheet = true
                 } label: {
                     Label("See Tafsir", systemImage: "text.book.closed")
+                }
+            }
+
+            if settings.qiraatComparisonMode {
+                Button {
+                    settings.hapticFeedback()
+                    showQiraahComparisonSheet = true
+                } label: {
+                    Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+                }
+            }
+
+            if canCompareEnglishText {
+                Button {
+                    settings.hapticFeedback()
+                    showEnglishComparisonSheet = true
+                } label: {
+                    Label("Translation Comparison", systemImage: "text.bubble")
                 }
             }
             

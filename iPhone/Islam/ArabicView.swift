@@ -112,8 +112,13 @@ struct ArabicView: View {
 
                     Menu {
                         Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {
-                            ForEach(ArabicFilterMode.allCases.reversed(), id: \.rawValue) { mode in
-                                Label(mode.title, systemImage: mode.icon).tag(mode.rawValue)
+                            Section {
+                                ForEach(ArabicFilterMode.allCases.reversed(), id: \.rawValue) { mode in
+                                    Label(mode.title, systemImage: mode.icon).tag(mode.rawValue)
+                                }
+                            } header: {
+                                Text("Arabic Filter")
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     } label: {
@@ -187,7 +192,8 @@ struct ArabicView: View {
             isFavorite: settings.isLetterFavorite(letterData: letterData),
             accentColor: settings.accentColor,
             useFontArabic: settings.useFontArabic,
-            fontArabic: settings.fontArabic
+            fontArabic: settings.fontArabic,
+            searchQuery: searchText
         )
         .equatable()
     }
@@ -815,36 +821,46 @@ struct ArabicLetterRow: View, Equatable {
     let accentColor: AccentColor
     let useFontArabic: Bool
     let fontArabic: String
+    let searchQuery: String
 
     init(
         letterData: LetterData,
         isFavorite: Bool? = nil,
         accentColor: AccentColor = Settings.shared.accentColor,
         useFontArabic: Bool = Settings.shared.useFontArabic,
-        fontArabic: String = Settings.shared.fontArabic
+        fontArabic: String = Settings.shared.fontArabic,
+        searchQuery: String = ""
     ) {
         self.letterData = letterData
         self.isFavorite = isFavorite ?? Settings.shared.isLetterFavorite(letterData: letterData)
         self.accentColor = accentColor
         self.useFontArabic = useFontArabic
         self.fontArabic = fontArabic
+        self.searchQuery = searchQuery
     }
 
     var body: some View {
         NavigationLink(destination: ArabicLetterView(letterData: letterData)) {
             HStack {
-                Text(letterData.transliteration)
-                    .font(.subheadline)
+                HighlightedSnippet(
+                    source: letterData.transliteration,
+                    term: searchQuery,
+                    font: .subheadline,
+                    accent: accentColor.color,
+                    fg: .primary
+                )
 
                 Spacer()
 
-                Text(letterData.letter)
-                    .font(
-                        (useFontArabic && !letterData.isNonArabicScriptLetter)
-                            ? .custom(fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
-                            : .title2
-                    )
-                    .foregroundColor(accentColor.color)
+                HighlightedSnippet(
+                    source: letterData.letter,
+                    term: searchQuery,
+                    font: (useFontArabic && !letterData.isNonArabicScriptLetter)
+                        ? .custom(fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
+                        : .title2,
+                    accent: accentColor.color,
+                    fg: accentColor.color
+                )
             }
             .padding(.vertical, -2)
         }
@@ -869,6 +885,9 @@ struct ArabicLetterRow: View, Equatable {
     @ViewBuilder
     private func contextItems() -> some View {
         #if os(iOS)
+        Text("Letter Actions")
+            .foregroundStyle(.secondary)
+
         Button(role: isFavorite ? .destructive : nil) {
             settings.hapticFeedback()
             settings.toggleLetterFavorite(letterData: letterData)
@@ -898,7 +917,8 @@ struct ArabicLetterRow: View, Equatable {
         lhs.isFavorite == rhs.isFavorite &&
         lhs.accentColor == rhs.accentColor &&
         lhs.useFontArabic == rhs.useFontArabic &&
-        lhs.fontArabic == rhs.fontArabic
+        lhs.fontArabic == rhs.fontArabic &&
+        lhs.searchQuery == rhs.searchQuery
     }
 }
 
@@ -936,22 +956,39 @@ struct ArabicNumberRow: View {
     }
 }
 
+struct StopSignInfo: Identifiable {
+    let title: String
+    let symbol: String
+
+    var id: String { symbol + title }
+}
+
 struct StopInfoRow: View {
     let title: String
     let symbol: String
     let color: Color
 
     var body: some View {
-        HStack {
-            Text(title)
-                .font(.subheadline)
-
-            Spacer()
-
+        HStack(spacing: 10) {
             Text(symbol)
-                .font(.subheadline)
-                .foregroundColor(color)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(color)
+                .frame(width: 42, height: 42)
+                .background(color.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            Text(title)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+
+            Spacer(minLength: 0)
         }
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
+        .background(Color.secondary.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -959,23 +996,44 @@ struct QuranSignsSectionContent: View {
     let accentColor: Color
     var includeLearnMoreLink: Bool = true
 
+    private let signs: [StopSignInfo] = [
+        StopSignInfo(title: "Make Sujood", symbol: "۩"),
+        StopSignInfo(title: "Hizb Marker", symbol: "۞"),
+        StopSignInfo(title: "Mandatory Stop", symbol: "مـ"),
+        StopSignInfo(title: "Preferred Stop", symbol: "قلى"),
+        StopSignInfo(title: "Permissible Stop", symbol: "ج"),
+        StopSignInfo(title: "Short Pause", symbol: "س"),
+        StopSignInfo(title: "Stop at One", symbol: "∴ ∴"),
+        StopSignInfo(title: "Prefer Continue", symbol: "صلى"),
+        StopSignInfo(title: "Must Continue", symbol: "لا")
+    ]
+
+    private var columns: [GridItem] {
+        [
+            GridItem(.flexible(), spacing: 8, alignment: .top),
+            GridItem(.flexible(), spacing: 8, alignment: .top)
+        ]
+    }
+
     var body: some View {
-        Group {
-            StopInfoRow(title: "Make Sujood (Prostration)", symbol: "۩", color: accentColor)
-            StopInfoRow(title: "Hizb (Quarter-Hizb Marker)", symbol: "۞", color: accentColor)
-            StopInfoRow(title: "The Mandatory Stop", symbol: "مـ", color: accentColor)
-            StopInfoRow(title: "The Preferred Stop", symbol: "قلى", color: accentColor)
-            StopInfoRow(title: "The Permissible Stop", symbol: "ج", color: accentColor)
-            StopInfoRow(title: "The Short Pause", symbol: "س", color: accentColor)
-            StopInfoRow(title: "Stop at One", symbol: "∴ ∴", color: accentColor)
-            StopInfoRow(title: "The Preferred Continuation", symbol: "صلى", color: accentColor)
-            StopInfoRow(title: "The Mandatory Continuation", symbol: "لا", color: accentColor)
+        VStack(alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+                ForEach(signs) { sign in
+                    StopInfoRow(title: sign.title, symbol: sign.symbol, color: accentColor)
+                }
+            }
 
             if includeLearnMoreLink,
                let url = URL(string: "https://studioarabiya.com/blog/tajweed-rules-stopping-pausing-signs/") {
-                Link("View More: Tajweed Rules & Stopping/Pausing Signs", destination: url)
-                    .font(.subheadline)
+                Link(destination: url) {
+                    HStack(spacing: 8) {
+                        Text("View More")
+                        Image(systemName: "arrow.up.right")
+                    }
+                    .font(.subheadline.weight(.semibold))
                     .foregroundColor(accentColor)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
         }
     }

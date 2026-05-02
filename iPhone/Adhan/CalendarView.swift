@@ -25,7 +25,7 @@ struct HijriCalendarView: View {
             List {
                 Section(header: Text("IMPORTANT ISLAMIC DATES")) {
                     ForEach(eventRows, id: \.id) { row in
-                        HijriEventRow(row: row)
+                        HijriEventRow(row: row, isPast: isPastEvent(row))
                             .id(row.id)
                     }
                 }
@@ -74,6 +74,10 @@ struct HijriCalendarView: View {
         }
     }
 
+    private func isPastEvent(_ row: HijriEventRowModel) -> Bool {
+        row.date < Calendar.current.startOfDay(for: Date())
+    }
+
     @ViewBuilder
     private var dateOverlayHeader: some View {
         if let hijriDate = settings.hijriDate {
@@ -118,17 +122,18 @@ private struct HijriEventRow: View {
     @EnvironmentObject private var settings: Settings
 
     let row: HijriEventRowModel
+    let isPast: Bool
 
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
                 Text(row.title)
                     .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
+                    .foregroundColor(isPast ? .secondary : settings.accentColor.color)
 
                 Text(row.subtitle)
                     .font(.subheadline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(isPast ? .secondary : .primary)
 
                 Text(row.description)
                     .font(.caption)
@@ -148,7 +153,11 @@ private struct HijriEventRow: View {
             }
         }
         .padding(.vertical, 4)
+        .opacity(isPast ? 0.55 : 1)
         .contextMenu {
+            Text("Event Actions")
+                .foregroundStyle(.secondary)
+
             copyButton("Copy Event Name", value: row.title)
             copyButton("Copy Event Subtitle", value: row.subtitle)
             copyButton("Copy Event Description", value: row.description)

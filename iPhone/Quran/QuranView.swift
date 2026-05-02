@@ -18,6 +18,7 @@ struct QuranView: View {
     @State private var isListMoving = false
     @State private var listMotionIdleTask: Task<Void, Never>?
     @State private var showAyahSearchLearnMore = false
+    @State private var khatmEditMode = false
 
     @State private var verseHits: [VerseIndexEntry] = []
     @State private var hasMoreHits = true
@@ -450,6 +451,20 @@ struct QuranView: View {
         }
         .navigationTitle("Al-Quran")
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if settings.quranSortMode == .khatm {
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            khatmEditMode.toggle()
+                        }
+                    } label: {
+                        Image(systemName: khatmEditMode ? "checkmark" : "square.and.pencil")
+                    }
+                    .accessibilityLabel(khatmEditMode ? "Done" : "Edit")
+                }
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     settings.hapticFeedback()
@@ -515,14 +530,14 @@ struct QuranView: View {
     @ViewBuilder
     private func ayahsDestination(surah: Surah, ayah: Int? = nil) -> some View {
         if let ayah {
-            AyahsView(
+            SurahView(
                 surah: surah,
                 ayah: ayah,
                 onSelectSurah: useSplitOnThisDevice ? { selectedSurahID = $0 } : nil
             )
                 .id("ayahs-\(surah.id)-\(ayah)")
         } else {
-            AyahsView(
+            SurahView(
                 surah: surah,
                 onSelectSurah: useSplitOnThisDevice ? { selectedSurahID = $0 } : nil
             )
@@ -568,6 +583,20 @@ struct QuranView: View {
         .navigationTitle("Al-Quran")
         #if os(iOS)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if settings.quranSortMode == .khatm {
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            khatmEditMode.toggle()
+                        }
+                    } label: {
+                        Image(systemName: khatmEditMode ? "checkmark" : "square.and.pencil")
+                    }
+                    .accessibilityLabel(khatmEditMode ? "Done" : "Edit")
+                }
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     settings.hapticFeedback()
@@ -705,6 +734,7 @@ struct QuranView: View {
             Text("Surah").tag(Settings.QuranSortMode.surah)
             Text("Juz").tag(Settings.QuranSortMode.juz)
             Text("Revelation").tag(Settings.QuranSortMode.revelation)
+            Text("Khatm").tag(Settings.QuranSortMode.khatm)
         }
         .pickerStyle(SegmentedPickerStyle())
         .conditionalGlassEffect()
@@ -781,6 +811,9 @@ struct QuranView: View {
                 }
             } else {
                 Menu {
+                    Text("Quran Playback")
+                        .foregroundColor(.secondary)
+
                     playbackMenuContent
                 } label: {
                     playbackMenuControlLabel {
@@ -1030,7 +1063,9 @@ struct QuranView: View {
                     searchText: $searchText,
                     scrollToSurahID: $scrollToSurahID
                 )
-            }
+            } /*preview: {
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id), hideInfo: false)
+            }*/
             #endif
         }
     }
@@ -1054,7 +1089,59 @@ struct QuranView: View {
                 pageSections(context: context)
             case .revelation:
                 surahBrowseSection(context: context, showsRevelationOrder: true)
+            case .khatm:
+                khatmProgressSection()
+                surahBrowseSection(context: context, showsRevelationOrder: false)
             }
+        }
+    }
+
+    private var khatmTotalAyahs: Int {
+        quranData.quran.reduce(0) { $0 + $1.numberOfAyahs }
+    }
+
+    private var khatmCompletedAyahs: Int {
+        settings.khatmTotalCompleted(in: quranData.quran)
+    }
+
+    private var khatmPercent: Int {
+        guard khatmTotalAyahs > 0 else { return 0 }
+        return Int((Double(khatmCompletedAyahs) / Double(khatmTotalAyahs) * 100).rounded())
+    }
+
+    @ViewBuilder
+    private func khatmProgressSection() -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(khatmPercent)% completed")
+                        .font(.headline)
+                        .foregroundStyle(settings.accentColor.color)
+
+                    Spacer()
+
+                    Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs)")
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+
+                ProgressView(value: Double(khatmCompletedAyahs), total: Double(max(khatmTotalAyahs, 1)))
+                    .tint(settings.accentColor.color)
+
+                if khatmEditMode {
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            settings.resetAllKhatmProgress()
+                        }
+                    } label: {
+                        Label("Reset Khatm Progress", systemImage: "arrow.counterclockwise")
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Text("KHATM PROGRESS")
         }
     }
 
@@ -1073,9 +1160,13 @@ struct QuranView: View {
             .padding(.bottom, -12)
 
         ForEach(browsedSurahs, id: \.id) { surah in
+            #if os(iOS)
             Section {
                 surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
             }
+            #else
+            surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
+            #endif
         }
     }
 
@@ -1151,10 +1242,10 @@ struct QuranView: View {
             HStack(spacing: 10) {
                 revelationOrderBadge(surah.revelationOrder ?? 0)
 
-                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id), searchQuery: searchText).equatable()
             }
         } else {
-            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id), searchQuery: searchText).equatable()
         }
     }
     
@@ -1357,6 +1448,9 @@ struct QuranView: View {
 
     @ViewBuilder
     private func surahRow(surah: Surah, context: SearchDisplayContext, showsRevelationOrder: Bool = false) -> some View {
+        let khatmCompleted = settings.quranSortMode == .khatm ? settings.khatmCompletedCount(for: surah) : nil
+        let khatmTotal = settings.quranSortMode == .khatm ? surah.numberOfAyahs : nil
+
         Group {
             if useSplitOnThisDevice {
                 Button {
@@ -1367,12 +1461,11 @@ struct QuranView: View {
                         HStack(spacing: 10) {
                             revelationOrderBadge(surah.revelationOrder ?? 0)
 
-                            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                            khatmSurahRowLabel(surah: surah, context: context, completed: khatmCompleted, total: khatmTotal)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
-                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        khatmSurahRowLabel(surah: surah, context: context, completed: khatmCompleted, total: khatmTotal)
                     }
                 }
                 .buttonStyle(.plain)
@@ -1384,10 +1477,10 @@ struct QuranView: View {
                         HStack(spacing: 10) {
                             revelationOrderBadge(surah.revelationOrder ?? 0)
 
-                            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                            khatmSurahRowLabel(surah: surah, context: context, completed: khatmCompleted, total: khatmTotal)
                         }
                     } else {
-                        SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
+                        khatmSurahRowLabel(surah: surah, context: context, completed: khatmCompleted, total: khatmTotal)
                     }
                 }
             }
@@ -1411,6 +1504,39 @@ struct QuranView: View {
             )
         }
         #endif
+    }
+
+    private func khatmSurahRowLabel(
+        surah: Surah,
+        context: SearchDisplayContext,
+        completed: Int?,
+        total: Int?
+    ) -> some View {
+        HStack(spacing: 8) {
+            SurahRow(
+                surah: surah,
+                isFavorite: context.favoriteSurahs.contains(surah.id),
+                khatmCompletedAyahs: completed,
+                khatmTotalAyahs: total,
+                searchQuery: context.isSearching ? searchText : ""
+            )
+            .equatable()
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if khatmEditMode, settings.quranSortMode == .khatm, (completed ?? 0) > 0 {
+                Button(role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.resetKhatmProgress(for: surah)
+                    }
+                } label: {
+                    Image(systemName: "arrow.counterclockwise.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     @ViewBuilder
@@ -1511,6 +1637,7 @@ struct QuranView: View {
                 surahSearchSectionHeader(surahId: group.surahId)
             }
         }
+        
         Section {
             ayahLoadMoreControls(context: context)
         }
@@ -1709,7 +1836,10 @@ struct QuranView: View {
     private func ayahLoadMoreControls(context: SearchDisplayContext) -> some View {
         if context.canShowMoreAyahHits {
             #if os(iOS)
-            Menu("Load more ayah matches") {
+            Menu {
+                Text("Load More")
+                    .foregroundStyle(.secondary)
+
                 ForEach([5, 10, 20], id: \.self) { amount in
                     Button {
                         settings.hapticFeedback()
@@ -1726,9 +1856,12 @@ struct QuranView: View {
                         Label("Load \(amount)", systemImage: "\(amount).circle")
                     }
                 }
+            } label: {
+                Text("Load more ayah matches")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(8)
+                    .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(8)
             .conditionalGlassEffect()
             .lineLimit(1)
             .minimumScaleFactor(0.5)

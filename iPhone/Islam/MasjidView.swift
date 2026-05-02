@@ -314,14 +314,22 @@ struct MasjidLocatorView: View {
                                         .foregroundColor(settings.accentColor.color)
 
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(item.name ?? "Masjid")
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundColor(.primary)
+                                        HighlightedSnippet(
+                                            source: item.name ?? "Masjid",
+                                            term: searchText,
+                                            font: .subheadline.weight(.semibold),
+                                            accent: settings.accentColor.color,
+                                            fg: .primary
+                                        )
                                             .multilineTextAlignment(.leading)
 
-                                        Text(formattedAddress(for: item))
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                        HighlightedSnippet(
+                                            source: formattedAddress(for: item),
+                                            term: searchText,
+                                            font: .caption,
+                                            accent: settings.accentColor.color,
+                                            fg: .secondary
+                                        )
                                             .multilineTextAlignment(.leading)
 
                                         if let distance = distanceFromCurrentLocation(to: item) {
@@ -350,6 +358,9 @@ struct MasjidLocatorView: View {
                             }
                             .padding()
                             .contextMenu {
+                                Text("Masjid Info")
+                                    .foregroundStyle(.secondary)
+
                                 Button {
                                     settings.hapticFeedback()
                                     UIPasteboard.general.string = item.name ?? "Masjid"

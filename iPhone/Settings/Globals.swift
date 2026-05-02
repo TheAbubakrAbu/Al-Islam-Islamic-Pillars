@@ -129,6 +129,21 @@ extension String {
         }
         return String(out)
     }
+
+    var removingArabicSukoon: String {
+        String(unicodeScalars.filter { $0.value != 0x0652 })
+    }
+
+    var removingArabicDots: String {
+        let dotlessMap: [Character: Character] = [
+            "أ": "ء", "إ": "ء", "ؤ": "ء", "ئ": "ء",
+            "آ": "ا", "ٱ": "ا", "ى": "ى",
+            "ب": "ٮ", "ت": "ٮ", "ث": "ٮ", "ن": "ٮ", "ي": "ى",
+            "ج": "ح", "خ": "ح", "ذ": "د", "ز": "ر", "ش": "س", "ض": "ص",
+            "ظ": "ط", "غ": "ع", "ف": "ڡ", "ق": "ٯ", "ة": "ه"
+        ]
+        return String(map { dotlessMap[$0] ?? $0 })
+    }
     
     func removeDiacriticsFromLastLetter() -> String {
         guard !isEmpty else { return self }

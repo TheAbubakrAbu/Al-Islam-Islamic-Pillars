@@ -5,6 +5,8 @@ struct TajweedLegendView: View {
     @EnvironmentObject var settings: Settings
     @Environment(\.presentationMode) private var presentationMode
 
+    var showsDismissButton = true
+
     private struct LegendSection: Identifiable {
         let section: TajweedLegendCategory.Section
         let items: [TajweedLegendCategory]
@@ -223,6 +225,13 @@ struct TajweedLegendView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .conditionalGlassEffect(rectangle: true, useColor: 0.1)
                 }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Stopping Signs")
+                        .font(.headline)
+
+                    QuranSignsSectionContent(accentColor: settings.accentColor.color)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -233,13 +242,15 @@ struct TajweedLegendView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    settings.hapticFeedback()
-                    presentationMode.wrappedValue.dismiss()
-                } label: {
-                    Image(systemName: "xmark")
+                if showsDismissButton {
+                    Button {
+                        settings.hapticFeedback()
+                        presentationMode.wrappedValue.dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .tint(settings.accentColor.color)
                 }
-                .tint(settings.accentColor.color)
             }
         }
     }

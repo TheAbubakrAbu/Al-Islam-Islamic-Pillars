@@ -71,6 +71,9 @@ struct DateView: View {
             }
             #if os(iOS)
             .contextMenu {
+                Text("Date Actions")
+                    .foregroundStyle(.secondary)
+
                 Button {
                     settings.hapticFeedback()
                     UIPasteboard.general.string = hijriDateText
@@ -90,6 +93,9 @@ struct DateView: View {
             }
             #if os(iOS)
             .contextMenu {
+                Text("Date Actions")
+                    .foregroundStyle(.secondary)
+
                 Button {
                     settings.hapticFeedback()
                     UIPasteboard.general.string = gregorianDateText

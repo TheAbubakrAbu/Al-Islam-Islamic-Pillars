@@ -48,40 +48,30 @@ struct PrayerCountdown: View {
                 updateProgress()
                 startTimer()
             }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                settings.hapticFeedback()
-                withAnimation { settings.showPrayerInfo.toggle() }
-            }
     }
 
     private func countdownSection(current: Prayer, next: Prayer) -> some View {
         Section(header: sectionHeader) {
             countdownBody(current: current, next: next)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    withAnimation { settings.showPrayerInfo.toggle() }
+                }
         }
     }
 
     private func countdownBody(current: Prayer, next: Prayer) -> some View {
-        Group {
-            if #available(iOS 26, *) {
-                VStack {
-                    prayerSummary(current: current, next: next)
-                    countdownProgress(next: next)
-                    timeLeftRow(next: next)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.25)
-            } else {
-                VStack {
-                    prayerSummary(current: current, next: next)
-                    countdownProgress(next: next)
-                    timeLeftRow(next: next)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.25)
-                .padding(.vertical, 8)
-            }
+        VStack {
+            prayerSummary(current: current, next: next)
+            countdownProgress(next: next)
+            timeLeftRow(next: next)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.25)
+        .padding(.vertical, {
+        if #available(iOS 26, *) { 0 } else { 8 }
+        }())
     }
 
     private var sectionHeader: some View {
@@ -243,7 +233,13 @@ private struct CurrentPrayerCell: View {
 
     private var title: some View {
         HStack {
+            #if os(iOS)
             Image(systemName: prayer.image)
+            #else
+            if !prayer.nameTransliteration.contains("/") {
+                Image(systemName: prayer.image)
+            }
+            #endif
             Text(prayer.nameTransliteration)
         }
         .modifier(PrayerTitleStyle(prayer: prayer))
@@ -277,7 +273,14 @@ private struct UpcomingPrayerCell: View {
     private var title: some View {
         HStack {
             Text(prayer.nameTransliteration)
+            
+            #if os(iOS)
             Image(systemName: prayer.image)
+            #else
+            if !prayer.nameTransliteration.contains("/") {
+                Image(systemName: prayer.image)
+            }
+            #endif
         }
         .modifier(PrayerTitleStyle(prayer: prayer))
     }

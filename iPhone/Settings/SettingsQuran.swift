@@ -10,6 +10,7 @@ extension Settings {
         case juz
         case page
         case revelation
+        case khatm
 
         var id: String { rawValue }
     }
@@ -170,6 +171,88 @@ extension Settings {
 
     func isSurahFavorite(surah: Int) -> Bool {
         return favoriteSurahs.contains(surah)
+    }
+
+    private func khatmKey(surah: Int, ayah: Int) -> String {
+        "\(surah):\(ayah)"
+    }
+
+    func loadKhatmProgressCacheFromStorage() {
+        let savedKeys = (try? Self.decoder.decode([String].self, from: khatmCompletedAyahsData)) ?? []
+        applyKhatmCompletedAyahKeys(savedKeys, persistImmediately: false)
+    }
+
+    func applyKhatmCompletedAyahKeys(_ keys: [String], persistImmediately: Bool) {
+        khatmProgressSaveTask?.cancel()
+        khatmCompletedAyahSetCache = Set(keys)
+        khatmCompletedSurahCountsCache = Self.khatmSurahCounts(from: khatmCompletedAyahSetCache)
+
+        if persistImmediately {
+            persistKhatmProgressNow()
+            objectWillChange.send()
+        }
+    }
+
+    private static func khatmSurahCounts(from keys: Set<String>) -> [Int: Int] {
+        var counts: [Int: Int] = [:]
+        counts.reserveCapacity(114)
+
+        for key in keys {
+            guard let separator = key.firstIndex(of: ":"),
+                  let surah = Int(key[..<separator]) else { continue }
+            counts[surah, default: 0] += 1
+        }
+
+        return counts
+    }
+
+    private func persistKhatmProgressNow() {
+        let keys = Array(khatmCompletedAyahSetCache)
+        khatmCompletedAyahsData = (try? Self.encoder.encode(keys)) ?? Data()
+    }
+
+    private func scheduleKhatmProgressSaveAndRefresh() {
+        khatmProgressSaveTask?.cancel()
+        khatmProgressSaveTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard let self, !Task.isCancelled else { return }
+            self.persistKhatmProgressNow()
+            self.objectWillChange.send()
+        }
+    }
+
+    func isKhatmAyahComplete(surah: Int, ayah: Int) -> Bool {
+        khatmCompletedAyahSetCache.contains(khatmKey(surah: surah, ayah: ayah))
+    }
+
+    func markKhatmAyahComplete(surah: Int, ayah: Int) {
+        let key = khatmKey(surah: surah, ayah: ayah)
+        guard khatmCompletedAyahSetCache.insert(key).inserted else { return }
+        khatmCompletedSurahCountsCache[surah, default: 0] += 1
+        scheduleKhatmProgressSaveAndRefresh()
+    }
+
+    func khatmCompletedCount(for surah: Surah) -> Int {
+        min(khatmCompletedSurahCountsCache[surah.id, default: 0], surah.numberOfAyahs)
+    }
+
+    func resetKhatmProgress(for surah: Surah) {
+        let keys = Set(surah.ayahs.map { khatmKey(surah: surah.id, ayah: $0.id) })
+        khatmCompletedAyahSetCache.subtract(keys)
+        khatmCompletedSurahCountsCache[surah.id] = nil
+        persistKhatmProgressNow()
+        objectWillChange.send()
+    }
+
+    func resetAllKhatmProgress() {
+        khatmCompletedAyahSetCache.removeAll(keepingCapacity: true)
+        khatmCompletedSurahCountsCache.removeAll(keepingCapacity: true)
+        persistKhatmProgressNow()
+        objectWillChange.send()
+    }
+
+    func khatmTotalCompleted(in surahs: [Surah]) -> Int {
+        khatmCompletedAyahSetCache.count
     }
 
     static let bookmarkNoteRemovalDialogTitle = "Remove bookmark and delete note?"

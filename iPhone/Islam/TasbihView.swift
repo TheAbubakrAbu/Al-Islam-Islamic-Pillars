@@ -6,12 +6,7 @@ struct TasbihView: View {
     @State private var counters: [Int: Int] = [:]
     @State private var selectedDhikrIndex: Int = 0
 
-    let tasbihData: [(arabic: String, english: String, translation: String)] = [
-        (arabic: "سُبحَانَ اللّٰه", english: "Subhanallah", translation: "Glory be to Allah"),
-        (arabic: "الحَمدُ لِلّٰه", english: "Alhamdullilah", translation: "Praise be to Allah"),
-        (arabic: "اللّٰهُ أَكبَر", english: "Allahu Akbar", translation: "Allah is the Greatest"),
-        (arabic: "أَستَغفِرُ اللّٰه", english: "Astaghfirullah", translation: "I seek Allah's forgiveness")
-    ]
+    private let tasbihData = commonDhikrItems
 
     private func binding(for index: Int) -> Binding<Int> {
         Binding(
@@ -23,20 +18,32 @@ struct TasbihView: View {
     var body: some View {
         List {
             dhikrSelectionSection
+            #if os(watchOS)
             activeTasbihSection
+            #endif
         }
         .onAppear {
             for index in tasbihData.indices {
                 counters[index] = counters[index] ?? 0
             }
         }
+        #if os(iOS)
+        .adaptiveSafeArea(edge: .bottom) {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                activeTasbihCard
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(Color(UIColor.systemGroupedBackground))
+        }
+        #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .compactListSectionSpacing()
         .navigationTitle("Tasbih Counter")
     }
 
     private var dhikrSelectionSection: some View {
-        Section(header: Text("GLORIFICATIONS OF ALLAH‎")) {
+        Section(header: Text("DHIKR & REMEMBRANCES")) {
             ForEach(tasbihData.indices, id: \.self) { index in
                 tasbihSelectionButton(for: index)
             }
@@ -81,32 +88,41 @@ struct TasbihView: View {
     #endif
 
     private var activeTasbihSection: some View {
+        return Section {
+            activeTasbihCard
+        }
+    }
+
+    private var activeTasbihCard: some View {
         let selectedDhikr = tasbihData[selectedDhikrIndex]
         let counterBinding = binding(for: selectedDhikrIndex)
 
-        return Section {
-            ZStack {
-                ProgressCircleView(progress: counterBinding.wrappedValue)
-                    .scaledToFit()
-                    .frame(maxWidth: 185, maxHeight: 185)
+        return ZStack {
+            ProgressCircleView(progress: counterBinding.wrappedValue)
+                .scaledToFit()
+                .frame(maxWidth: 185, maxHeight: 185)
 
-                VStack(alignment: .center, spacing: 5) {
-                    Text(selectedDhikr.arabic)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(settings.accentColor.color)
+            VStack(alignment: .center, spacing: 5) {
+                Text(selectedDhikr.arabicText)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(settings.accentColor.color)
+                    .multilineTextAlignment(.center)
 
-                    Text(selectedDhikr.english)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
+                Text(selectedDhikr.transliteration)
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
 
-                    CounterView(counter: counterBinding)
-                }
+                CounterView(counter: counterBinding)
             }
-            .padding()
-            .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
-            .contentShape(Rectangle())
         }
+        .padding()
+        .frame(maxWidth: .infinity, minHeight: 220, alignment: .center)
+        .contentShape(Rectangle())
+        #if os(iOS)
+        .conditionalGlassEffect(rectangle: true, useColor: 0.12)
+        #endif
         .onTapGesture {
             settings.hapticFeedback()
             withAnimation {
@@ -162,7 +178,7 @@ struct CounterView: View {
 struct TasbihRow: View {
     @EnvironmentObject var settings: Settings
 
-    let tasbih: (arabic: String, english: String, translation: String)
+    let tasbih: CommonDhikr
     @Binding var counter: Int
 
     var body: some View {
@@ -176,16 +192,19 @@ struct TasbihRow: View {
         .contentShape(Rectangle())
         #if os(iOS)
         .contextMenu {
+            Text("Copy")
+                .foregroundStyle(.secondary)
+
             Button {
                 settings.hapticFeedback()
-                UIPasteboard.general.string = tasbih.arabic
+                UIPasteboard.general.string = tasbih.arabicText
             } label: {
                 Label("Copy Arabic", systemImage: "doc.on.doc")
             }
 
             Button {
                 settings.hapticFeedback()
-                UIPasteboard.general.string = tasbih.english
+                UIPasteboard.general.string = tasbih.transliteration
             } label: {
                 Label("Copy Transliteration", systemImage: "doc.on.doc")
             }
@@ -202,11 +221,11 @@ struct TasbihRow: View {
 
     private var textColumn: some View {
         VStack(alignment: .leading) {
-            Text(tasbih.arabic)
+            Text(tasbih.arabicText)
                 .font(.headline)
                 .foregroundColor(settings.accentColor.color)
 
-            Text(tasbih.english)
+            Text(tasbih.transliteration)
                 .font(.subheadline)
                 .foregroundColor(.primary)
 

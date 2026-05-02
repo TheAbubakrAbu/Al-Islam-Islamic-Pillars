@@ -119,11 +119,11 @@ struct IslamView: View {
                 TajweedFoundationsView()
             }
 
-            resourceLink(title: "Common Adhkar", systemImage: "book.closed") {
+            resourceLink(title: "Dhikr & Remembrances", systemImage: "book.closed") {
                 AdhkarView()
             }
 
-            resourceLink(title: "Common Duas", systemImage: "text.book.closed") {
+            resourceLink(title: "Dua & Supplications", systemImage: "text.book.closed") {
                 DuaView()
             }
 
@@ -161,8 +161,8 @@ struct IslamView: View {
         Section(header: Text("ISLAMIC RESOURCES")) {
             splitResourceLink(title: "Arabic Alphabet", systemImage: "textformat.size.ar", value: .arabicAlphabet)
             splitResourceLink(title: "Tajweed Foundations", systemImage: "waveform", value: .tajweedFoundations)
-            splitResourceLink(title: "Common Adhkar", systemImage: "book.closed", value: .commonAdhkar)
-            splitResourceLink(title: "Common Duas", systemImage: "text.book.closed", value: .commonDuas)
+            splitResourceLink(title: "Dhikr & Remembrances", systemImage: "book.closed", value: .commonAdhkar)
+            splitResourceLink(title: "Dua & Supplications", systemImage: "text.book.closed", value: .commonDuas)
             splitResourceLink(title: "Tasbih Counter", systemImage: "circles.hexagonpath.fill", value: .tasbihCounter)
             splitResourceLink(title: "99 Names of Allah", systemImage: "signature", value: .namesOfAllah)
 
@@ -265,6 +265,9 @@ struct ProphetQuote: View {
         }
         #if os(iOS)
         .contextMenu {
+            Text("Copy")
+                .foregroundStyle(.secondary)
+
             Button {
                 UIPasteboard.general.string = "O people, your Lord is one and your father Adam is one. There is no superiority of an Arab over a non-Arab, nor a non-Arab over an Arab, and neither a white over a black, nor a black over a white, except by righteousness.\n\n– Farewell Sermon\nMusnad Ahmad 22978\n\nJumuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE"
             } label: {

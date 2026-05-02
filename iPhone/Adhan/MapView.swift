@@ -400,6 +400,7 @@ private struct SearchOverlay: View {
                                 primaryTitle: primaryLocationName(item),
                                 secondaryTitle: secondaryLocationName(item),
                                 iconName: cityIconName(item),
+                                searchQuery: searchText,
                                 onSelect: { onSelect(item) }
                             )
                         }
@@ -418,6 +419,7 @@ private struct SearchResultRow: View {
     let primaryTitle: String
     let secondaryTitle: String
     let iconName: String
+    let searchQuery: String
     let onSelect: () -> Void
 
     var body: some View {
@@ -427,14 +429,22 @@ private struct SearchResultRow: View {
                     .foregroundColor(settings.accentColor.color)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(primaryTitle)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
+                    HighlightedSnippet(
+                        source: primaryTitle,
+                        term: searchQuery,
+                        font: .subheadline.weight(.semibold),
+                        accent: settings.accentColor.color,
+                        fg: .primary
+                    )
                         .multilineTextAlignment(.leading)
 
-                    Text(secondaryTitle)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HighlightedSnippet(
+                        source: secondaryTitle,
+                        term: searchQuery,
+                        font: .caption,
+                        accent: settings.accentColor.color,
+                        fg: .secondary
+                    )
                         .multilineTextAlignment(.leading)
                 }
             }

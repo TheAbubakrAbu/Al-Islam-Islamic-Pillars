@@ -50,6 +50,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
 
         super.init()
+        loadKhatmProgressCacheFromStorage()
         Self.locationManager.delegate = self
         requestLocationAuthorization()
 
@@ -372,6 +373,20 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
     }
 
+    @AppStorage("khatmCompletedAyahsData") var khatmCompletedAyahsData = Data()
+    var khatmCompletedAyahSetCache: Set<String> = []
+    var khatmCompletedSurahCountsCache: [Int: Int] = [:]
+    var khatmProgressSaveTask: Task<Void, Never>?
+
+    var khatmCompletedAyahs: [String] {
+        get {
+            Array(khatmCompletedAyahSetCache)
+        }
+        set {
+            applyKhatmCompletedAyahKeys(newValue, persistImmediately: true)
+        }
+    }
+
     @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
     var bookmarkedAyahs: [BookmarkedAyah] {
         get {
@@ -431,7 +446,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
     @AppStorage("displayQiraah") var displayQiraah: String = ""
 
-    /// When on, AyahsView shows a qiraat picker above the search bar to compare riwayat in that view.
+    /// When on, SurahView shows a qiraat picker above the search bar to compare riwayat in that view.
     @AppStorage("qiraatComparisonMode") var qiraatComparisonMode: Bool = false
 
     /// When on, ReciterListView reveals non-Hafs qiraat reciters.
@@ -477,6 +492,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     @AppStorage("showTajweedMaddSeparated") var showTajweedMaddSeparated: Bool = true
     @AppStorage("showTajweedMaddConnected") var showTajweedMaddConnected: Bool = true
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
+    @AppStorage("removeArabicDots") var removeArabicDots: Bool = false
 
     @AppStorage("showTransliteration") var showTransliteration: Bool = false
     @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true

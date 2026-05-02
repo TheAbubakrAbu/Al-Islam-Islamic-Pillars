@@ -75,6 +75,18 @@ struct PlayCustomRangeSheet: View {
         max(0, endAyah - startAyah + 1)
     }
 
+    private var availableAyahReciters: [Reciter] {
+        reciters.filter { $0.qiraah == nil && !$0.ayahIdentifier.isEmpty }
+    }
+
+    private var selectedRangeReciter: Reciter? {
+        settings.resolvedSelectedReciterIgnoringRandom() ?? availableAyahReciters.first
+    }
+
+    private var selectedRangeReciterName: String {
+        selectedRangeReciter?.displayNameWithEnglishQiraah ?? settings.reciter
+    }
+
     @ViewBuilder
     private var ayahCountLabel: some View {
         let label = Text("\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") in range")
@@ -197,6 +209,7 @@ struct PlayCustomRangeSheet: View {
             ScrollView {
                 VStack(spacing: 24) {
                     surahHeaderCard
+                    reciterCard
                     rangeCard
                     repeatsCard
                     arabicVersesCard
@@ -255,6 +268,58 @@ struct PlayCustomRangeSheet: View {
         .background(Color(UIColor.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contentShape(Rectangle())
+    }
+
+    private var reciterCard: some View {
+        Menu {
+            Section {
+                ForEach(availableAyahReciters) { reciter in
+                    Button {
+                        settings.hapticFeedback()
+                        settings.setSelectedReciter(reciter)
+                    } label: {
+                        if reciter.id == selectedRangeReciter?.id {
+                            Label(reciter.displayNameWithEnglishQiraah, systemImage: "checkmark")
+                        } else {
+                            Text(reciter.displayNameWithEnglishQiraah)
+                        }
+                    }
+                }
+            } header: {
+                Text("Reciter")
+                    .foregroundStyle(.secondary)
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "person.wave.2.fill")
+                    .font(.title3)
+                    .foregroundStyle(settings.accentColor.color)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Reciter")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text(selectedRangeReciterName)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color(.tertiaryLabel))
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var rangeCard: some View {

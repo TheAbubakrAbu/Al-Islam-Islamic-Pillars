@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AyahsView: View {
+struct SurahView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var quranPlayer: QuranPlayer
@@ -16,7 +16,6 @@ struct AyahsView: View {
     @State private var cachedSearchBlobByAyahID: [Int: String] = [:]
     @State private var overlayDividerByAyahID: [Int: BoundaryDividerModel] = [:]
     @State private var cacheQiraahKey: String = ""
-    /// Busts qiraah caches when navigating to a different surah (e.g. iPad `NavigationSplitView` reusing one `AyahsView`).
     @State private var qiraahCacheSurahID: Int? = nil
     @State private var scrollDown: Int? = nil
     @State private var pendingScrollAfterSearchClear: Int? = nil
@@ -54,7 +53,25 @@ struct AyahsView: View {
     }()
 
     private func arabicToEnglishNumber(_ arabicNumber: String) -> Int? {
-        AyahsView.arFormatter.number(from: arabicNumber)?.intValue
+        SurahView.arFormatter.number(from: arabicNumber)?.intValue
+    }
+
+    private func markKhatmViewedIfNeeded(_ ayahID: Int) {
+        guard settings.quranSortMode == .khatm, searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        settings.markKhatmAyahComplete(surah: surah.id, ayah: ayahID)
+    }
+
+    private var shouldShowKhatmProgress: Bool {
+        settings.quranSortMode == .khatm && searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var khatmCompletedAyahCount: Int {
+        settings.khatmCompletedCount(for: surah)
+    }
+
+    private var khatmCompletionPercent: Int {
+        guard surah.numberOfAyahs > 0 else { return 0 }
+        return Int((Double(khatmCompletedAyahCount) / Double(surah.numberOfAyahs) * 100).rounded())
     }
 
     private struct PageJuzQuery {
@@ -348,26 +365,31 @@ struct AyahsView: View {
 
         var overlayMap: [Int: BoundaryDividerModel] = [:]
         var searchBlobMap: [Int: String] = [:]
-        overlayMap.reserveCapacity(ayahs.count)
+        let shouldBuildFullOverlayMap = surah.pageOrJuzChangesWithinSurah
+        if shouldBuildFullOverlayMap {
+            overlayMap.reserveCapacity(ayahs.count)
+        }
         searchBlobMap.reserveCapacity(ayahs.count)
 
-        for ayah in ayahs {
-            let pageSegment: String
-            if let page = ayah.page {
-                pageSegment = "Page \(page)"
-            } else if let juz = ayah.juz {
-                pageSegment = "Juz \(juz)"
-            } else {
-                continue
-            }
+        for (index, ayah) in ayahs.enumerated() {
+            if shouldBuildFullOverlayMap || index == 0 {
+                let pageSegment: String
+                if let page = ayah.page {
+                    pageSegment = "Page \(page)"
+                } else if let juz = ayah.juz {
+                    pageSegment = "Juz \(juz)"
+                } else {
+                    continue
+                }
 
-            let juzSegment = (ayah.page != nil) ? ayah.juz.map { "Juz \($0)" } : nil
-            overlayMap[ayah.id] = BoundaryDividerModel(
-                text: boundaryText(for: ayah) ?? pageSegment,
-                pageSegment: pageSegment,
-                juzSegment: juzSegment,
-                style: .allAccent
-            )
+                let juzSegment = (ayah.page != nil) ? ayah.juz.map { "Juz \($0)" } : nil
+                overlayMap[ayah.id] = BoundaryDividerModel(
+                    text: boundaryText(for: ayah) ?? pageSegment,
+                    pageSegment: pageSegment,
+                    juzSegment: juzSegment,
+                    style: .allAccent
+                )
+            }
 
             let searchBlob = [
                 ayah.textArabic(for: displayQiraah),
@@ -532,6 +554,10 @@ struct AyahsView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 surahTitlePickerButton
+                    .onLongPressGesture(minimumDuration: 0.45) {
+                        settings.hapticFeedback()
+                        surahInfoDialog = surahInfoDialog(for: surah)
+                    }
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -761,13 +787,18 @@ struct AyahsView: View {
         }()
         let previousSurah = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? neighboringSurah(before: surah.id) : nil
         let nextSurah = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? neighboringSurah(after: surah.id) : nil
-        let currentFloatingAyah = firstVisibleAyahID
-            .flatMap { visibleID in ayahByID[visibleID] }
-            ?? ayahsForQiraah.first
+        let shouldShowFloatingPageJuzOverlay = showBoundaryDividers && settings.showPageJuzOverlay && searchText.isEmpty
+        let shouldUpdateFloatingPageJuzOverlay = shouldShowFloatingPageJuzOverlay && surah.pageOrJuzChangesWithinSurah
+        let currentFloatingAyah = shouldUpdateFloatingPageJuzOverlay
+            ? (firstVisibleAyahID
+                .flatMap { visibleID in ayahByID[visibleID] }
+                ?? ayahsForQiraah.first)
+            : ayahsForQiraah.first
         let floatingDividerModel: BoundaryDividerModel? = {
-            guard showBoundaryDividers, settings.showPageJuzOverlay, searchText.isEmpty else { return nil }
+            guard shouldShowFloatingPageJuzOverlay else { return nil }
             guard let currentFloatingAyah else { return nil }
             return overlayDividerByAyahID[currentFloatingAyah.id]
+                ?? ayahsForQiraah.first.flatMap { overlayDividerByAyahID[$0.id] }
         }()
         let floatingDividerAnimationKey = floatingDividerModel.map(boundaryDividerID) ?? "none"
         let keywordDividerModels: [BoundaryDividerModel] = {
@@ -809,6 +840,8 @@ struct AyahsView: View {
         }()
         let searchCount = isDividerKeywordSearch ? keywordDividerModels.count : filteredAyahs.count
         let syncVisibleAyahAnchor: () -> Void = {
+            guard shouldUpdateFloatingPageJuzOverlay else { return }
+
             let nextVisibleAyahID: Int?
             if let topVisibleAyahID = (visibleAyahIDs.union(visibleBoundaryAyahIDs)).min() {
                 nextVisibleAyahID = topVisibleAyahID
@@ -824,6 +857,8 @@ struct AyahsView: View {
 
         return
             List {
+                khatmProgressSection()
+
                 Section {
                     /*SurahRow(surah: surah, hideInfo: true).equatable()
                         .contentShape(Rectangle())
@@ -968,6 +1003,7 @@ struct AyahsView: View {
                         .id(ayah.id)
                         .onAppear {
                             visibleAyahIDs.insert(ayah.id)
+                            markKhatmViewedIfNeeded(ayah.id)
                             syncVisibleAyahAnchor()
                         }
                         .onDisappear {
@@ -1104,6 +1140,33 @@ struct AyahsView: View {
             #endif
     }
 
+    @ViewBuilder
+    private func khatmProgressSection() -> some View {
+        if shouldShowKhatmProgress {
+            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Label("\(khatmCompletedAyahCount)/\(surah.numberOfAyahs) ayahs", systemImage: khatmCompletedAyahCount >= surah.numberOfAyahs ? "checkmark.circle.fill" : "circle.dashed")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(settings.accentColor.color.opacity(khatmCompletedAyahCount > 0 ? 1 : 0.65))
+
+                        Spacer()
+
+                        Text("\(khatmCompletionPercent)%")
+                            .font(.caption.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    ProgressView(value: Double(khatmCompletedAyahCount), total: Double(max(surah.numberOfAyahs, 1)))
+                        .tint(settings.accentColor.color)
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Text("KHATM PROGRESS")
+            }
+        }
+    }
+
     private func floatingHeaderOverlay(
         floatingDividerModel: BoundaryDividerModel?,
         floatingDividerAnimationKey: String
@@ -1226,6 +1289,9 @@ struct AyahsView: View {
 
         if playerIdle {
             Menu {
+                Text("Surah Playback")
+                    .foregroundStyle(.secondary)
+
                 if canResumeLast, let last = settings.lastListenedSurah {
                     Button {
                         settings.hapticFeedback()
@@ -1257,6 +1323,9 @@ struct AyahsView: View {
                 }
 
                 Menu {
+                    Text("More Playback")
+                        .foregroundStyle(.secondary)
+
                     Button {
                         settings.hapticFeedback()
                         showCustomRangeSheet = true
@@ -1297,6 +1366,9 @@ struct AyahsView: View {
                     }
                     
                     Menu {
+                        Text("Repeat Count")
+                            .foregroundStyle(.secondary)
+
                         ForEach(repeatCounts, id: \.self) { n in
                             Button {
                                 settings.hapticFeedback()
@@ -1440,7 +1512,7 @@ struct AyahsView: View {
     private var selectedSurahNavigationDestination: some View {
         if let targetID = selectedSurahNavigation,
            let targetSurah = quranData.surah(targetID) {
-            AyahsView(surah: targetSurah)
+            SurahView(surah: targetSurah)
                 .id("ayahs-selected-\(targetSurah.id)")
         } else {
             EmptyView()
@@ -1690,12 +1762,20 @@ struct ArabicTextRiwayahPicker: View {
         #if os(iOS)
         if useSimpleIOSPicker {
             Picker("Arabic Riwayah", selection: $selection) {
-                ForEach(Self.options, id: \.tag) { option in
-                    Text(option.label).tag(option.tag)
+                Section {
+                    ForEach(Self.options, id: \.tag) { option in
+                        Text(option.label).tag(option.tag)
+                    }
+                } header: {
+                    Text("Arabic Riwayah")
+                        .foregroundStyle(.secondary)
                 }
             }
         } else {
             Menu {
+                Text("Arabic Riwayah")
+                    .foregroundStyle(.secondary)
+
                 ForEach(Array(Self.options.reversed()), id: \.tag) { option in
                     Button {
                         withAnimation {
@@ -1731,8 +1811,13 @@ struct ArabicTextRiwayahPicker: View {
         }
         #else
         Picker("Arabic Riwayah", selection: $selection) {
-            ForEach(Self.options, id: \.tag) { option in
-                Text(option.label).tag(option.tag)
+            Section {
+                ForEach(Self.options, id: \.tag) { option in
+                    Text(option.label).tag(option.tag)
+                }
+            } header: {
+                Text("Arabic Riwayah")
+                    .foregroundStyle(.secondary)
             }
         }
         #endif
@@ -1791,6 +1876,6 @@ private struct TajweedLegendMenu: View {
 
 #Preview {
     AlIslamPreviewContainer {
-        AyahsView(surah: AlIslamPreviewData.surah)
+        SurahView(surah: AlIslamPreviewData.surah)
     }
 }

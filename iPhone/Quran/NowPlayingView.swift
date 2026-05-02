@@ -97,9 +97,9 @@ struct NowPlayingView: View {
     @ViewBuilder
     private func destinationView(for context: PlaybackContext) -> some View {
         if quranPlayer.isPlayingSurah {
-            AyahsView(surah: context.surah)
+            SurahView(surah: context.surah)
         } else {
-            AyahsView(surah: context.surah, ayah: context.ayahNumber)
+            SurahView(surah: context.surah, ayah: context.ayahNumber)
         }
     }
 
@@ -291,6 +291,9 @@ struct NowPlayingView: View {
     private func contextMenu(for context: PlaybackContext) -> some View {
         let isFavorite = settings.isSurahFavorite(surah: context.surah.id)
         let isBookmarked = settings.isBookmarked(surah: context.surah.id, ayah: context.ayahNumber)
+
+        Text("Playback")
+            .foregroundStyle(.secondary)
 
         Button(role: .destructive) {
             settings.hapticFeedback()

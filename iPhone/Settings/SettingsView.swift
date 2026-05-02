@@ -304,6 +304,9 @@ struct SettingsView: View {
                 .foregroundColor(settings.accentColor.color)
         }
         .contextMenu {
+            Text("Review")
+                .foregroundStyle(.secondary)
+
             Button {
                 settings.hapticFeedback()
                 UIPasteboard.general.string = "itms-apps://itunes.apple.com/app/id6449729655?action=write-review"
@@ -348,6 +351,9 @@ struct SettingsView: View {
         }
         #if os(iOS)
         .contextMenu {
+            Text("Website")
+                .foregroundStyle(.secondary)
+
             Button {
                 settings.hapticFeedback()
                 UIPasteboard.general.string = "abubakrelmallah.com"
@@ -376,6 +382,9 @@ struct SettingsView: View {
         }
         #if os(iOS)
         .contextMenu {
+            Text("Email")
+                .foregroundStyle(.secondary)
+
             Button {
                 settings.hapticFeedback()
                 UIPasteboard.general.string = "ammelmallah@icloud.com"

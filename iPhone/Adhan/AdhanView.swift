@@ -290,6 +290,9 @@ private struct HijriDateRow: View {
             .font(.footnote)
             .foregroundColor(settings.accentColor.color)
             .contextMenu {
+                Text("Date Actions")
+                    .foregroundStyle(.secondary)
+
                 Button {
                     settings.hapticFeedback()
                     UIPasteboard.general.string = hijriDate.english
@@ -349,7 +352,7 @@ private struct CurrentLocationRow: View {
         if let currentLoc = settings.currentLocation {
             let currentCity = currentLoc.city
 
-            HStack(spacing: 0) {
+            HStack(spacing: 4) {
                 Image(systemName: "location.fill")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -361,6 +364,9 @@ private struct CurrentLocationRow: View {
                     .font(.subheadline)
                     .lineLimit(nil)
                     .contextMenu {
+                        Text("City Actions")
+                            .foregroundStyle(.secondary)
+
                         Button {
                             settings.hapticFeedback()
                             UIPasteboard.general.string = currentCity

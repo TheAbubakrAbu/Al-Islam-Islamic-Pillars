@@ -33,7 +33,7 @@ struct SurahsHeader: View {
         NavigationLink {
             Group {
                 if let randomSurah {
-                    AyahsView(surah: randomSurah)
+                    SurahView(surah: randomSurah)
                 } else {
                     Text("No surah found!")
                 }
@@ -93,7 +93,7 @@ struct JuzHeader: View {
         NavigationLink {
             Group {
                 if let randomSurah {
-                    AyahsView(surah: randomSurah)
+                    SurahView(surah: randomSurah)
                 } else {
                     Text("No surah found in Juz \(juz.id).")
                 }
@@ -245,6 +245,9 @@ struct HeaderRow: View {
         .padding(.top, -8)
         #if os(iOS)
         .contextMenu {
+            Text("Ayah Actions")
+                .foregroundStyle(.secondary)
+
             if !settings.beginnerMode {
                 Button {
                     settings.hapticFeedback()

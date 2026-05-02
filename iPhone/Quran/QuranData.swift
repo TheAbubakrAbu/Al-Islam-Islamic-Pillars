@@ -28,6 +28,7 @@ struct Surah: Codable, Identifiable, Equatable {
     let firstJuz: Int?
     let lastJuz: Int?
     let juzs: [Int]?
+    let juzChangesWithinSurah: Bool
 
     let ayahs: [Ayah]
 
@@ -35,7 +36,7 @@ struct Surah: Codable, Identifiable, Equatable {
         case id, nameArabic, nameTransliteration, nameEnglish, similarNames, type, numberOfAyahs
         case revelationOrder, revelationExceptions
         case pageStart, pageEnd, numberOfPages, isLessThanOnePage
-        case firstJuz, lastJuz, juzs
+        case firstJuz, lastJuz, juzs, juzChangesWithinSurah
         case ayahs
     }
 
@@ -62,6 +63,8 @@ struct Surah: Codable, Identifiable, Equatable {
         firstJuz = try c.decodeIfPresent(Int.self, forKey: .firstJuz)
         lastJuz = try c.decodeIfPresent(Int.self, forKey: .lastJuz)
         juzs = try c.decodeIfPresent([Int].self, forKey: .juzs)
+        juzChangesWithinSurah = try c.decodeIfPresent(Bool.self, forKey: .juzChangesWithinSurah)
+            ?? ((juzs?.count ?? 0) > 1 || (firstJuz != nil && lastJuz != nil && firstJuz != lastJuz))
 
         idArabic = arabicNumberString(from: id)
     }
@@ -84,6 +87,7 @@ struct Surah: Codable, Identifiable, Equatable {
         firstJuz: Int? = nil,
         lastJuz: Int? = nil,
         juzs: [Int]? = nil,
+        juzChangesWithinSurah: Bool = false,
         ayahs: [Ayah]
     ) {
         self.id = id
@@ -105,6 +109,7 @@ struct Surah: Codable, Identifiable, Equatable {
         self.firstJuz = firstJuz
         self.lastJuz = lastJuz
         self.juzs = juzs
+        self.juzChangesWithinSurah = juzChangesWithinSurah
 
         self.ayahs = ayahs
     }
@@ -115,6 +120,14 @@ struct Surah: Codable, Identifiable, Equatable {
             return (end - start) + 1
         }
         return 1
+    }
+
+    var pageChangesWithinSurah: Bool {
+        pageCount > 1 || Set(ayahs.compactMap(\.page)).count > 1
+    }
+
+    var pageOrJuzChangesWithinSurah: Bool {
+        pageChangesWithinSurah || juzChangesWithinSurah
     }
 
     var pageCountLabel: String {
@@ -197,7 +210,8 @@ struct Ayah: Codable, Identifiable, Equatable {
 
     /// Clean (no diacritics) Arabic for the given display qiraah.
     func textCleanArabic(for displayQiraah: String?) -> String {
-        textArabic(for: displayQiraah).removingArabicDiacriticsAndSigns
+        let cleaned = textArabic(for: displayQiraah).removingArabicDiacriticsAndSigns
+        return Settings.shared.removeArabicDots ? cleaned.removingArabicDots : cleaned
     }
 
     /// True if this ayah exists as its own verse in the given qiraah. In Hafs every ayah exists; in Warsh/Qaloon/etc. some Hafs ayahs are merged, so we only show ayahs that have qiraah-specific text (e.g. Baqarah has 286 in Hafs but 285 in Warsh).
@@ -234,7 +248,11 @@ struct Ayah: Codable, Identifiable, Equatable {
         } else {
             Settings.shared.displayQiraahForArabic
         }
-        let text = clean ? textCleanArabic(for: qiraah) : textArabic(for: qiraah)
+        let text = if qiraah == nil {
+            clean ? textCleanArabic(for: qiraah) : textArabic(for: qiraah)
+        } else {
+            textArabic(for: qiraah).removingArabicSukoon
+        }
         if surahId == 1 && id == 1 && clean {
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.hasPrefix("بسم") {
@@ -2144,6 +2162,7 @@ final class QuranData: ObservableObject {
                     firstJuz: surah.firstJuz,
                     lastJuz: surah.lastJuz,
                     juzs: surah.juzs,
+                    juzChangesWithinSurah: surah.juzChangesWithinSurah,
                     ayahs: ayahs
                 )
             }
@@ -2294,6 +2313,7 @@ final class QuranData: ObservableObject {
                 firstJuz: surah.firstJuz,
                 lastJuz: surah.lastJuz,
                 juzs: surah.juzs,
+                juzChangesWithinSurah: surah.juzChangesWithinSurah,
                 ayahs: surah.ayahs
             )
         }

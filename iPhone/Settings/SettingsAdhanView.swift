@@ -194,9 +194,14 @@ struct SettingsAdhanView: View {
     private var calculationPickerGroup: some View {
         VStack(alignment: .leading) {
             Picker("Calculation", selection: calculationSelection.animation(.easeInOut)) {
-                ForEach(calculationOptions, id: \.self) { option in
-                    Text(option).tag(option)
-                        .font(.subheadline)
+                Section {
+                    ForEach(calculationOptions, id: \.self) { option in
+                        Text(option).tag(option)
+                            .font(.subheadline)
+                    }
+                } header: {
+                    Text("Calculation")
+                        .foregroundStyle(.secondary)
                 }
             }
             .font(.subheadline)
@@ -446,8 +451,13 @@ struct NotificationView: View {
 
             Section(header: Text("ADHAN SOUND")) {
                 Picker("Adhan Sound", selection: $settings.adhanNotificationSound.animation(.easeInOut)) {
-                    ForEach(Settings.supportedAdhanSounds) { option in
-                        Text(option.title).tag(option.id)
+                    Section {
+                        ForEach(Settings.supportedAdhanSounds) { option in
+                            Text(option.title).tag(option.id)
+                        }
+                    } header: {
+                        Text("Adhan Sound")
+                            .foregroundStyle(.secondary)
                     }
                 }
 

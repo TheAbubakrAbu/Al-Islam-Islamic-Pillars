@@ -75,22 +75,26 @@ struct HighlightedSnippet: View {
         let normalizedSource = normalizeForSearch(source, trimWhitespace: false)
         let normalizedTerm = normalizeForSearch(term, trimWhitespace: true)
 
-        guard
-            !normalizedTerm.isEmpty,
-            let matchRange = normalizedSource.range(of: normalizedTerm),
-            let originalRange = originalRange(
+        guard !normalizedTerm.isEmpty else {
+            return attributed
+        }
+
+        var searchStart = normalizedSource.startIndex
+        while searchStart < normalizedSource.endIndex,
+              let matchRange = normalizedSource.range(of: normalizedTerm, range: searchStart..<normalizedSource.endIndex) {
+            if let originalRange = originalRange(
                 in: source,
                 normalizedSource: normalizedSource,
                 normalizedTerm: normalizedTerm,
                 matchRange: matchRange
             ),
-            let start = AttributedString.Index(originalRange.lowerBound, within: attributed),
-            let end = AttributedString.Index(originalRange.upperBound, within: attributed)
-        else {
-            return attributed
-        }
+               let start = AttributedString.Index(originalRange.lowerBound, within: attributed),
+               let end = AttributedString.Index(originalRange.upperBound, within: attributed) {
+                attributed[start..<end].foregroundColor = accent
+            }
 
-        attributed[start..<end].foregroundColor = accent
+            searchStart = matchRange.upperBound
+        }
 
         return attributed
     }

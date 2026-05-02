@@ -8,6 +8,7 @@ struct PrayerList: View {
     @State private var animatingBellPrayerName: String?
     @State private var bellAnimationActive = false
     @State private var selectedDate = Date()
+    @State private var compareToday = true
 
     @AppStorage("prayerDisplayMode") private var prayerDisplayModeRawValue: String = PrayerDisplayMode.list.rawValue
 
@@ -40,6 +41,11 @@ struct PrayerList: View {
         return fullPrayers ? prayers.fullPrayers : prayers.prayers
     }
 
+    private var todayPrayers: [Prayer] {
+        guard let prayers = settings.prayers else { return [] }
+        return fullPrayers ? prayers.fullPrayers : prayers.prayers
+    }
+
     var body: some View {
         if settings.prayers != nil {
             prayerListSection
@@ -54,9 +60,31 @@ struct PrayerList: View {
 
     @ViewBuilder
     private var prayerContentStack: some View {
+        if settings.changedDate && compareToday {
+            prayerGroupHeader("TODAY")
+            prayerModeContent(prayers: todayPrayers, isComparisonBaseline: true)
+                .opacity(0.45)
+
+            prayerGroupHeader(selectedDateHeaderText)
+        }
+
         prayerModeContent(prayers: displayedPrayers)
         travelModeFooter
         dateSelectionFooter
+    }
+
+    private var selectedDateHeaderText: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: selectedDate).uppercased()
+    }
+
+    private func prayerGroupHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var sectionHeader: some View {
@@ -67,8 +95,12 @@ struct PrayerList: View {
             Spacer()
 
             Picker("", selection: $prayerDisplayModeRawValue.animation(.easeInOut)) {
-                ForEach(PrayerDisplayMode.allCases) { mode in
-                    Text(mode.displayName).tag(mode.rawValue)
+                Section {
+                    ForEach(PrayerDisplayMode.allCases) { mode in
+                        Text(mode.displayName).tag(mode.rawValue)
+                    }
+                } header: {
+                    Text("Prayer Display")
                 }
             }
             .font(.caption2)
@@ -79,21 +111,21 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func prayerModeContent(prayers: [Prayer]) -> some View {
+    private func prayerModeContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
         switch prayerDisplayMode {
         case .list:
-            listContent(prayers: prayers)
+            listContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
         case .grid:
-            gridContent(prayers: prayers)
+            gridContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
         case .split:
-            splitContent(prayers: prayers)
+            splitContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
         }
     }
 
     @ViewBuilder
-    private func listContent(prayers: [Prayer]) -> some View {
+    private func listContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
         ForEach(prayers) { prayer in
-            listRow(for: prayer, in: prayers)
+            listRow(for: prayer, in: prayers, isComparisonBaseline: isComparisonBaseline)
         }
         .onChange(of: settings.travelingMode) { _ in
             withAnimation {
@@ -102,9 +134,9 @@ struct PrayerList: View {
         }
     }
 
-    private func listRow(for prayer: Prayer, in prayers: [Prayer]) -> some View {
+    private func listRow(for prayer: Prayer, in prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
         let isExpanded = expandedPrayer == prayer
-        let isCurrent = isCurrentPrayer(prayer)
+        let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
         let listIconColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : settings.accentColor.color
         let bellRowColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : .primary
 
@@ -115,7 +147,9 @@ struct PrayerList: View {
                 iconColor: listIconColor,
                 trailingContent: {
                     #if os(iOS)
-                    prayerBell(for: prayer, rowColor: bellRowColor)
+                    if !isComparisonBaseline {
+                        prayerBell(for: prayer, rowColor: bellRowColor)
+                    }
                     #endif
                 }
             )
@@ -134,7 +168,7 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func gridContent(prayers: [Prayer]) -> some View {
+    private func gridContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
         let columns = Array(
             repeating: GridItem(.flexible(), spacing: 12),
             count: prayers.count == 4 ? 2 : 3
@@ -144,7 +178,7 @@ struct PrayerList: View {
             ForEach(prayers) { prayer in
                 PrayerGridTile(
                     prayer: prayer,
-                    color: legacyGridPrayerColor(for: prayer, in: prayers)
+                    color: isComparisonBaseline ? .secondary : legacyGridPrayerColor(for: prayer, in: prayers)
                 )
             }
         }
@@ -154,7 +188,7 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func splitContent(prayers: [Prayer]) -> some View {
+    private func splitContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
         let midpoint = Int(floor(Double(prayers.count) / 2.0))
         let firstHalf = Array(prayers.prefix(midpoint))
         let secondHalf = Array(prayers.suffix(prayers.count - midpoint))
@@ -162,7 +196,7 @@ struct PrayerList: View {
         HStack(spacing: 0) {
             VStack(spacing: 4) {
                 ForEach(firstHalf) { prayer in
-                    SplitPrayerRow(prayer: prayer, color: prayerColor(for: prayer, in: prayers))
+                    SplitPrayerRow(prayer: prayer, color: isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers))
                 }
             }
 
@@ -172,7 +206,7 @@ struct PrayerList: View {
 
             VStack(spacing: 4) {
                 ForEach(secondHalf) { prayer in
-                    SplitPrayerRow(prayer: prayer, color: prayerColor(for: prayer, in: prayers))
+                    SplitPrayerRow(prayer: prayer, color: isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers))
                 }
             }
         }
@@ -208,6 +242,10 @@ struct PrayerList: View {
                 .padding(4)
 
             if !Calendar.current.isDate(selectedDate, inSameDayAs: Date()) {
+                footerActionButton(compareToday ? "Hide Today Comparison" : "Compare With Today") {
+                    compareToday.toggle()
+                }
+
                 footerActionButton("Show prayers for today") {
                     selectedDate = Date()
                 }
@@ -251,6 +289,9 @@ struct PrayerList: View {
         }
 
         settings.changedDate = !Calendar.current.isDate(value, inSameDayAs: Date())
+        if settings.changedDate {
+            compareToday = true
+        }
     }
 
     private func isCurrentPrayer(_ prayer: Prayer) -> Bool {
@@ -363,6 +404,9 @@ struct PrayerList: View {
             .padding(.leading, 6)
             #if os(iOS)
             .contextMenu {
+                Text("Notifications")
+                    .foregroundStyle(.secondary)
+
                 Button {
                     settings.hapticFeedback()
                     settings.setNotificationMode(.preNotification, for: prayer)

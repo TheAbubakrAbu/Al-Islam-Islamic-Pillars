@@ -398,6 +398,9 @@ struct ShareAyahSheet: View {
     
     private func copyMenu(image: UIImage?) -> some View {
         Group {
+            Text("Copy")
+                .foregroundStyle(.secondary)
+
             Button { UIPasteboard.general.string = shareText }  label: { Label("Copy Text", systemImage: "doc.on.doc") }
             if let image {
                 Button {

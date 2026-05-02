@@ -51,6 +51,9 @@ private struct WallpaperCell: View {
             .cornerRadius(24)
             #if os(iOS)
             .contextMenu {
+                Text("Image Actions")
+                    .foregroundStyle(.secondary)
+
                 Button {
                     if let uiImage = UIImage(named: wallpaper.imageName) {
                         UIPasteboard.general.image = uiImage
