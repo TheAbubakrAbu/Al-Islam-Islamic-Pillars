@@ -54,13 +54,6 @@ struct PillarsView: View {
                         .font(.headline)
                 }
                 .padding(.vertical, 4)
-
-                NavigationLink(destination: HijriCalendarView()) {
-                    Text("What is Islamic Hijri Calendar?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
             }
 
             IslamicPillarsView()
@@ -1965,7 +1958,7 @@ struct PillarsOtherView: View {
             }
             .padding(.vertical, 4)
             
-            NavigationLink(destination: CalendarView()) {
+            NavigationLink(destination: HijriCalendarView()) {
                 Text("Hijri Calendar")
                     .font(.subheadline)
             }
@@ -2456,7 +2449,7 @@ struct TakbiratView: View {
     }
 }
 
-struct CalendarView: View {
+struct HijriCalendarView: View {
     @EnvironmentObject var settings: Settings
     
     var body: some View {

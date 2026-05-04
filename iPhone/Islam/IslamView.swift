@@ -13,7 +13,6 @@ struct IslamView: View {
         case commonDuas
         case tasbihCounter
         case namesOfAllah
-        case whatIsHijriCalendar
         case hijriCalendarConverter
         case masjidLocator
         case islamicWallpapers
@@ -105,8 +104,6 @@ struct IslamView: View {
             TasbihView()
         case .namesOfAllah:
             NamesView()
-        case .whatIsHijriCalendar:
-            HijriCalendarView()
         case .hijriCalendarConverter:
             DateView()
         case .masjidLocator:
@@ -146,10 +143,6 @@ struct IslamView: View {
             }
 
             #if os(iOS)
-            resourceLink(title: "What is Islamic Hijri Calendar?", systemImage: "calendar.badge.questionmark") {
-                HijriCalendarView()
-            }
-
             resourceLink(title: "Hijri Calendar Converter", systemImage: "calendar") {
                 DateView()
             }
@@ -181,7 +174,6 @@ struct IslamView: View {
             splitResourceLink(title: "99 Names of Allah", systemImage: "signature", value: .namesOfAllah)
 
             #if os(iOS)
-            splitResourceLink(title: "What is Islamic Hijri Calendar?", systemImage: "calendar.badge.questionmark", value: .whatIsHijriCalendar)
             splitResourceLink(title: "Hijri Calendar Converter", systemImage: "calendar", value: .hijriCalendarConverter)
             splitResourceLink(title: "Masjid Locator", systemImage: "mappin.and.ellipse", value: .masjidLocator)
             #endif

@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 
-struct HijriCalendarView: View {
+struct CalendarView: View {
     @EnvironmentObject private var settings: Settings
 
     @State private var nearestEventId = ""
@@ -28,16 +28,25 @@ struct HijriCalendarView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("The Hijri calendar is the Islamic lunar calendar. It tracks months by moon cycles, so dates shift through the solar year and are primarily used for Islamic worship and sacred days.")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.primary)
 
                         Text("This view uses the Umm al-Qura Hijri calculation in app settings.")
                             .font(.caption)
                             .foregroundColor(.secondary)
 
                         NavigationLink {
+                            HijriCalendarView()
+                        } label: {
+                            Label("What is the Hijri Calendar", systemImage: "book.pages")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                        .padding([.vertical, .top], 4)
+                        
+                        NavigationLink {
                             DateView()
                         } label: {
-                            Label("Learn More in Hijri Converter", systemImage: "calendar.badge.clock")
+                            Label("View the Hijri Converter", systemImage: "calendar.badge.clock")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(settings.accentColor.color)
                         }
@@ -205,7 +214,7 @@ private struct HijriEventRow: View {
 
 #Preview {
     AlIslamPreviewContainer(embedInNavigation: false) {
-        HijriCalendarView()
+        CalendarView()
     }
 }
 #endif

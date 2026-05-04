@@ -278,7 +278,7 @@ private struct HijriDateRow: View {
 
     var body: some View {
         #if os(iOS)
-        NavigationLink(destination: HijriCalendarView()) {
+        NavigationLink(destination: CalendarView()) {
             HStack {
                 Text(hijriDate.english)
                     .multilineTextAlignment(.center)

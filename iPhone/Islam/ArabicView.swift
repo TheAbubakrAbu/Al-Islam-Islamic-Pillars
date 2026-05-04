@@ -1016,11 +1016,9 @@ struct QuranSignsSectionContent: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-                ForEach(signs) { sign in
-                    StopInfoRow(title: sign.title, symbol: sign.symbol, color: accentColor)
-                }
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+            ForEach(signs) { sign in
+                StopInfoRow(title: sign.title, symbol: sign.symbol, color: accentColor)
             }
 
             if includeLearnMoreLink,
@@ -1032,7 +1030,9 @@ struct QuranSignsSectionContent: View {
                     }
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(accentColor)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(maxWidth: .infinity, minHeight: 72, alignment: .center)
+                    .offset(y: -1)
+                    .contentShape(Rectangle())
                 }
             }
         }
