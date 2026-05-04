@@ -258,10 +258,25 @@ struct NamesView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
 
-            Toggle("Show All Descriptions", isOn: $settings.showDescription.animation(.easeInOut))
+            Toggle("Show All Descriptions", isOn: showAllDescriptionsBinding)
                 .font(.caption)
                 .tint(settings.accentColor.color)
         }
+    }
+
+    private var showAllDescriptionsBinding: Binding<Bool> {
+        Binding(
+            get: { settings.showDescription },
+            set: { newValue in
+                withAnimation(.easeInOut) {
+                    settings.showDescription = newValue
+                    if !newValue {
+                        // User requested global OFF to force every manual expansion closed.
+                        expandedNameNumbers.removeAll()
+                    }
+                }
+            }
+        )
     }
 
     private func namesHeaderSection(resultCount: Int, hasActiveSearch: Bool) -> some View {

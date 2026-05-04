@@ -227,7 +227,7 @@ struct TajweedLegendView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Stopping Signs")
+                    Text("Mushaf Signs and Stops")
                         .font(.headline)
 
                     QuranSignsSectionContent(accentColor: settings.accentColor.color)

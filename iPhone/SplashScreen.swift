@@ -97,12 +97,15 @@ struct SplashScreen: View {
         let inset = 10 * s
         let titleFont: Font = s > 1.15 ? .callout.weight(.semibold) : .caption.weight(.semibold)
         let jump: CGFloat = 88 * s
-        let oxLeft: CGFloat = -108 * s
-        let oxRight: CGFloat = 114 * s
-        let oy: CGFloat = -6 * s
+        let oxLeft: CGFloat = -132 * s
+        let oxRight: CGFloat = 136 * s
+        let oy: CGFloat = -2 * s
         let stackHeight = (275 * s) + (s > 1 ? 24 * s : 0)
 
         return ZStack {
+            // Borrow the launch-style glow language for the splash hero only.
+            bottomHeroAura(scale: s)
+
             Button {
                 openAppStoreFromHero(Self.alAdhanAppURL)
             } label: {
@@ -131,6 +134,7 @@ struct SplashScreen: View {
             .opacity(popLeft ? 1 : 0.35)
             .rotationEffect(.degrees(-5.6))
             .offset(x: oxLeft, y: oy)
+            .zIndex(2)
             .accessibilityLabel("Al-Adhan on the App Store")
 
             Button {
@@ -160,6 +164,7 @@ struct SplashScreen: View {
             .opacity(popRight ? 1 : 0.35)
             .rotationEffect(.degrees(7))
             .offset(x: oxRight, y: oy)
+            .zIndex(2)
             .accessibilityLabel("Al-Quran on the App Store")
 
             Button {
@@ -186,9 +191,52 @@ struct SplashScreen: View {
             .scaleEffect(popCenter ? 1 : 0.2)
             .offset(y: popCenter ? 0 : jump * 1.05)
             .opacity(popCenter ? 1 : 0.4)
+            .zIndex(1)
             .accessibilityLabel("Al-Islam on the App Store")
         }
         .frame(height: stackHeight)
+    }
+
+    private func bottomHeroAura(scale s: CGFloat) -> some View {
+        let disk = 350 * s
+        let ring = 250 * s
+        return ZStack {
+            RadialGradient(
+                colors: [
+                    settings.accentColor.color.opacity(isDarkMode ? 0.45 : 0.34),
+                    settings.accentColor.color.opacity(isDarkMode ? 0.14 : 0.10),
+                    .clear
+                ],
+                center: .center,
+                startRadius: 12 * s,
+                endRadius: 200 * s
+            )
+            .frame(width: disk, height: disk)
+            .blur(radius: 8 * s)
+
+            LinearGradient(
+                colors: [
+                    settings.accentColor.color.opacity(isDarkMode ? 0.24 : 0.17),
+                    Color.cyan.opacity(isDarkMode ? 0.18 : 0.12),
+                    .clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .clipShape(Circle())
+            .frame(width: disk * 0.88, height: disk * 0.88)
+
+            Circle()
+                .stroke(settings.accentColor.color.opacity(0.2), lineWidth: max(1, 1.2 * s))
+                .frame(width: ring, height: ring)
+
+            Circle()
+                .stroke(Color.white.opacity(isDarkMode ? 0.14 : 0.2), lineWidth: max(0.8, 1 * s))
+                .frame(width: ring * 1.2, height: ring * 1.2)
+        }
+        .offset(y: 10 * s)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private var actionButtons: some View {

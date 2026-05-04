@@ -7,6 +7,7 @@ struct HijriCalendarView: View {
     @State private var nearestEventId = ""
     @State private var hijriYear = 1445
     @State private var hijriMonth = 1
+    @State private var didAutoScrollToNearest = false
 
     private static let monthSymbols = [
         "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
@@ -23,6 +24,27 @@ struct HijriCalendarView: View {
     var body: some View {
         ScrollViewReader { proxy in
             List {
+                Section(header: Text("WHAT IS HIJRI?")) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("The Hijri calendar is the Islamic lunar calendar. It tracks months by moon cycles, so dates shift through the solar year and are primarily used for Islamic worship and sacred days.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        Text("This view uses the Umm al-Qura Hijri calculation in app settings.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        NavigationLink {
+                            DateView()
+                        } label: {
+                            Label("Learn More in Hijri Converter", systemImage: "calendar.badge.clock")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 Section(header: Text("IMPORTANT ISLAMIC DATES")) {
                     ForEach(eventRows, id: \.id) { row in
                         HijriEventRow(row: row, isPast: isPastEvent(row))
@@ -32,11 +54,15 @@ struct HijriCalendarView: View {
             }
             .onAppear {
                 updateInformation()
+                guard !didAutoScrollToNearest else { return }
                 nearestEventId = nearestEventRow?.id ?? ""
+                didAutoScrollToNearest = true
 
-                DispatchQueue.main.async {
-                    withAnimation {
-                        proxy.scrollTo(nearestEventId, anchor: .top)
+                if !nearestEventId.isEmpty {
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            proxy.scrollTo(nearestEventId, anchor: .top)
+                        }
                     }
                 }
             }
@@ -126,24 +152,26 @@ private struct HijriEventRow: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(row.title)
                     .font(.headline)
-                    .foregroundColor(isPast ? .secondary : settings.accentColor.color)
+                    .foregroundColor(isPast ? settings.accentColor.color.opacity(0.55) : settings.accentColor.color)
 
                 Text(row.subtitle)
-                    .font(.subheadline)
-                    .foregroundColor(isPast ? .secondary : .primary)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(isPast ? .primary.opacity(0.75) : .primary)
 
                 Text(row.description)
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            VStack(alignment: .trailing) {
+            VStack(alignment: .trailing, spacing: 3) {
                 Text(row.hijriDateText)
-                    .font(.caption)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(isPast ? .secondary : .primary)
                     .padding(.vertical, 2)
 
                 Text(row.gregorianDateText)

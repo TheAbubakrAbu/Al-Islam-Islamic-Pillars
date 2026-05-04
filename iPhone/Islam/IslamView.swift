@@ -13,6 +13,7 @@ struct IslamView: View {
         case commonDuas
         case tasbihCounter
         case namesOfAllah
+        case whatIsHijriCalendar
         case hijriCalendarConverter
         case masjidLocator
         case islamicWallpapers
@@ -28,10 +29,17 @@ struct IslamView: View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *), UIDevice.current.userInterfaceIdiom == .pad {
-                NavigationSplitView {
+                /*NavigationSplitView {
                     islamSidebar
                 } detail: {
                     islamDetail
+                }*/
+                
+                NavigationStack {
+                    islamList
+                        .navigationDestination(for: IslamDestination.self) { destination in
+                            destinationView(for: destination)
+                        }
                 }
             } else if #available(iOS 16.0, *) {
                 NavigationStack {
@@ -92,11 +100,13 @@ struct IslamView: View {
         case .commonAdhkar:
             AdhkarView()
         case .commonDuas:
-            DuaView()
+            DuaIntroView()
         case .tasbihCounter:
             TasbihView()
         case .namesOfAllah:
             NamesView()
+        case .whatIsHijriCalendar:
+            HijriCalendarView()
         case .hijriCalendarConverter:
             DateView()
         case .masjidLocator:
@@ -124,7 +134,7 @@ struct IslamView: View {
             }
 
             resourceLink(title: "Dua & Supplications", systemImage: "text.book.closed") {
-                DuaView()
+                DuaIntroView()
             }
 
             resourceLink(title: "Tasbih Counter", systemImage: "circles.hexagonpath.fill") {
@@ -136,6 +146,10 @@ struct IslamView: View {
             }
 
             #if os(iOS)
+            resourceLink(title: "What is Islamic Hijri Calendar?", systemImage: "calendar.badge.questionmark") {
+                HijriCalendarView()
+            }
+
             resourceLink(title: "Hijri Calendar Converter", systemImage: "calendar") {
                 DateView()
             }
@@ -167,6 +181,7 @@ struct IslamView: View {
             splitResourceLink(title: "99 Names of Allah", systemImage: "signature", value: .namesOfAllah)
 
             #if os(iOS)
+            splitResourceLink(title: "What is Islamic Hijri Calendar?", systemImage: "calendar.badge.questionmark", value: .whatIsHijriCalendar)
             splitResourceLink(title: "Hijri Calendar Converter", systemImage: "calendar", value: .hijriCalendarConverter)
             splitResourceLink(title: "Masjid Locator", systemImage: "mappin.and.ellipse", value: .masjidLocator)
             #endif

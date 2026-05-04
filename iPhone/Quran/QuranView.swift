@@ -374,7 +374,14 @@ struct QuranView: View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *), useSplitOnThisDevice {
-                splitNavigation
+                //splitNavigation
+                
+                NavigationStack(path: $path) {
+                    content
+                        .navigationDestination(for: QuranRoute.self) { route in
+                            routeDestination(route)
+                        }
+                }
             } else if #available(iOS 16.0, *) {
                 NavigationStack(path: $path) {
                     content

@@ -402,6 +402,7 @@ extension Settings {
         case .lamShamsiyah: return showTajweedLamShamsiyah
         case .droppedLetter: return showTajweedDroppedLetter
         case .idghamGhunnah: return showTajweedIdghamBiGhunnahHeavy
+        case .generalGhunnah: return showTajweedIdghamBiGhunnahHeavy
         case .ikhfaaLight: return showTajweedIdghamBiGhunnahLight
         case .ikhfaaHeavy: return showTajweedIkhfaa
         case .iqlaab: return showTajweedIqlab
@@ -422,6 +423,7 @@ extension Settings {
         case .lamShamsiyah: showTajweedLamShamsiyah = visible
         case .droppedLetter: showTajweedDroppedLetter = visible
         case .idghamGhunnah: showTajweedIdghamBiGhunnahHeavy = visible
+        case .generalGhunnah: showTajweedIdghamBiGhunnahHeavy = visible
         case .ikhfaaLight: showTajweedIdghamBiGhunnahLight = visible
         case .ikhfaaHeavy: showTajweedIkhfaa = visible
         case .iqlaab: showTajweedIqlab = visible

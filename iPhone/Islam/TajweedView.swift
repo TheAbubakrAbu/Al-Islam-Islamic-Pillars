@@ -6,14 +6,17 @@ struct TajweedFoundationsView: View {
 
     private let topics: [String] = [
         "Improving Your Recitation",
-        "Foundations",
-        "Tajweed in the Mushaf",
-        "Makharij (Articulation)",
+        "Lip Movement",
+        "Tajweed Hints in the Mushaf",
+        "Makhaarij (Articulation)",
         "Heavy and Light",
         "Shams and Qamar - Al",
         "Madd (Elongation)",
-        "Qalqalah (Echo)",
-        "Noon Sakina and Tanwin",
+        "Qalqalah",
+        "Noon Sakinah and Tanween",
+        "Meem Sakinah",
+        "4 Sukoon",
+        "Hamzatul Wasl",
         "Waqf (Stopping)"
     ]
 
@@ -160,11 +163,11 @@ struct TajweedFoundationsView: View {
     private func destinationView(for topic: String) -> some View {
         if topic == "Improving Your Recitation" {
             TajweedImprovingRecitationView()
-        } else if topic == "Foundations" {
+        } else if topic == "Lip Movement" {
             TajweedFoundationsTopicView()
-        } else if topic == "Tajweed in the Mushaf" {
+        } else if topic == "Tajweed Hints in the Mushaf" {
             TajweedInMushafView()
-        } else if topic == "Makharij (Articulation)" {
+        } else if topic == "Makhaarij (Articulation)" {
             TajweedMakharijView()
         } else if topic == "Heavy and Light" {
             TajweedHeavyLightView()
@@ -172,10 +175,16 @@ struct TajweedFoundationsView: View {
             TajweedShamsQamarView()
         } else if topic == "Madd (Elongation)" {
             TajweedMaddView()
-        } else if topic == "Qalqalah (Echo)" {
+        } else if topic == "Qalqalah" {
             TajweedQalqalahView()
-        } else if topic == "Noon Sakina and Tanwin" {
+        } else if topic == "Noon Sakinah and Tanween" {
             TajweedIdghamIkhfaView()
+        } else if topic == "Meem Sakinah" {
+            TajweedMeemSakinahView()
+        } else if topic == "4 Sukoon" {
+            TajweedAaridLisSukoonView()
+        } else if topic == "Hamzatul Wasl" {
+            TajweedHamzatulWaslView()
         } else if topic == "Waqf (Stopping)" {
             TajweedWaqfView()
         } else {
@@ -189,6 +198,13 @@ private struct TajweedImprovingRecitationView: View {
 
     var body: some View {
         List {
+            Section("VIDEO REFERENCES") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Link("How to Improve Your Recitation 1", destination: URL(string: "https://www.youtube.com/watch?v=_acpVGn0ys0")!)
+                    Link("How to Improve Your Recitation 2", destination: URL(string: "https://www.youtube.com/watch?v=86qiFqqZSG0")!)
+                }
+            }
+
             Section("IMPROVING YOUR RECITATION") {
                 Text("This guide on its own is not enough to fully develop strong tajweed and pronunciation. While it can introduce the rules and concepts, real improvement in Quranic recitation requires consistent practice, listening, and guidance from knowledgeable teachers.")
                     .font(.body)
@@ -363,7 +379,7 @@ private struct TajweedFoundationsTopicView: View {
             }
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Foundations")
+        .navigationTitle("Lip Movement")
     }
 }
 
@@ -527,7 +543,7 @@ private struct TajweedInMushafView: View {
             }
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Tajweed in the Mushaf")
+        .navigationTitle("Tajweed Hints in the Mushaf")
     }
 }
 
@@ -544,8 +560,18 @@ private struct TajweedMakharijView: View {
 
     var body: some View {
         List {
-            Section("MAKHARIJ") {
-                Text("Makharij al-Huruf (Articulation of Letters)")
+            Section("VIDEO REFERENCES") {
+                VStack(alignment: .leading, spacing: 6) {
+                    if let url = URL(string: "https://www.youtube.com/watch?v=-YrfRpwFMe8&list=PL6TlMIZ5ylgpmlnN3EpkOec0tJ8OJZ5re") {
+                        Link("Open Makhaarij Playlist", destination: url)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                    }
+                }
+            }
+
+            Section("MAKHAARIJ") {
+                Text("Makhaarij al-Huruf (Articulation of Letters)")
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
 
@@ -585,11 +611,6 @@ private struct TajweedMakharijView: View {
                 Text("Listen -> imitate -> repeat aloud. Silent learning does not work for makharij.")
                     .font(.body)
 
-                if let url = URL(string: "https://www.youtube.com/watch?v=-YrfRpwFMe8&list=PL6TlMIZ5ylgpmlnN3EpkOec0tJ8OJZ5re") {
-                    Link("Open Makharij Playlist", destination: url)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(settings.accentColor.color)
-                }
             }
 
             Section("PRIMARY AREAS OF ARTICULATION") {
@@ -759,7 +780,7 @@ private struct TajweedMakharijView: View {
             }
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Makharij")
+        .navigationTitle("Makhaarij")
     }
 }
 
@@ -1409,8 +1430,8 @@ private struct TajweedIdghamIkhfaView: View {
 
     var body: some View {
         List {
-            Section("NOON SAKINA AND TANWIN") {
-                Text("Noon Sakina and Tanween Rules")
+            Section("NOON SAKINAH AND TANWEEN") {
+                Text("Noon Sakinah and Tanween Rules")
                     .font(.headline)
                     .foregroundColor(settings.accentColor.color)
 
@@ -1600,7 +1621,422 @@ private struct TajweedIdghamIkhfaView: View {
             }
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle("Idgham / Ikhfaa")
+        .navigationTitle("Noon Sakinah and Tanween")
+    }
+}
+
+private struct TajweedMeemSakinahView: View {
+    @EnvironmentObject var settings: Settings
+
+    var body: some View {
+        List {
+            Section("VIDEO REFERENCES") {
+                Link("Meem Sakinah Rules", destination: URL(string: "https://www.youtube.com/watch?v=MAvDrZgWRTs")!)
+            }
+
+            Section("MEEM SAKINAH") {
+                Text("Meem Sakinah means a meem with sukoon: مْ. In tajweed, Meem Sakinah has three rules, and all three are called Shafawi because they are pronounced from the lips. The word Shafawi comes from shafah, meaning \"lip.\"")
+                    .font(.body)
+
+                Text("The three rules are:")
+                    .font(.body)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ikhfaa Shafawi")
+                    Text("Idgham Shafawi")
+                    Text("Idhaar Shafawi")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("These rules depend on the letter that comes after the Meem Sakinah.")
+                    .font(.body)
+            }
+
+            Section("1. IKHFAA SHAFAWI") {
+                Text("Ikhfaa Shafawi occurs when Meem Sakinah (مْ) is followed by the letter Ba (ب).")
+                    .font(.body)
+
+                Text("When this happens, the meem is hidden lightly while keeping ghunnah for two counts. The lips come close together, but the meem is not pronounced with full clarity like normal Idhaar.")
+                    .font(.body)
+
+                Text("Rule")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("مْ + ب = Ikhfaa Shafawi")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Example")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("أَم بِهِۦ جِنَّةٌۢ")
+                    .font(.custom(settings.fontArabic, size: 24))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("In this example, the Meem Sakinah in أَم is followed by ب in بِهِۦ, so it is read with Ikhfaa Shafawi.")
+                    .font(.body)
+
+                Text("How to read it: am bihi, with ghunnah for two counts.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("2. IDGHAM SHAFAWI") {
+                Text("Idgham Shafawi occurs when Meem Sakinah (مْ) is followed by another Meem (م).")
+                    .font(.body)
+
+                Text("When this happens, the first meem merges into the second meem, and the result is read as a doubled meem with ghunnah for two counts.")
+                    .font(.body)
+
+                Text("Rule")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("مْ + م = Idgham Shafawi")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Example")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("وَلَهُم مَّا يَشْتَهُونَ")
+                    .font(.custom(settings.fontArabic, size: 24))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("In this example, the Meem Sakinah at the end of لَهُم is followed by another meem in مَّا, so the two meems merge.")
+                    .font(.body)
+
+                Text("How to read it: lahum maa, with ghunnah for two counts.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("3. IDHAAR SHAFAWI") {
+                Text("Idhaar Shafawi occurs when Meem Sakinah (مْ) is followed by any letter other than Ba (ب) or Meem (م).")
+                    .font(.body)
+
+                Text("When this happens, the meem is pronounced clearly with no extra ghunnah beyond its normal sound.")
+                    .font(.body)
+
+                Text("Rule")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("مْ + any letter except ب or م = Idhaar Shafawi")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Example")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("وَمَا بَلَغُوا۟ مِعْشَارَ مَآ ءَاتَيْنَٰهُمْ فَكَذَّبُوا۟ رُسُلِى")
+                    .font(.custom(settings.fontArabic, size: 24))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("In this example, the Meem Sakinah in ءَاتَيْنَٰهُمْ is followed by ف, so it is read with Idhaar Shafawi.")
+                    .font(.body)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("لَكُمْ فِيهَا")
+                    Text("عَلَيْكُمْ سَلَامٌ")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Section("MEEM MUSHADDADAH") {
+                Text("A related rule is Meem Mushaddadah, which is a meem with shaddah: مّ.")
+                    .font(.body)
+
+                Text("Whenever you see مّ, it must be pronounced with a strong ghunnah for two counts.")
+                    .font(.body)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ثُمَّ")
+                    Text("لَمَّا")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("This is not one of the three Meem Sakinah rules, but it is closely related because it also involves ghunnah on meem.")
+                    .font(.body)
+            }
+
+            Section("QUICK SUMMARY") {
+                Text("Meem Sakinah = مْ")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("1. Ikhfaa Shafawi: مْ + ب, hide the meem with ghunnah. Example: أَم بِهِۦ")
+                    Text("2. Idgham Shafawi: مْ + م, merge the two meems with ghunnah. Example: لَهُم مَّا")
+                    Text("3. Idhaar Shafawi: مْ + any letter except ب or م, pronounce the meem clearly. Example: لَكُمْ فِيهَا")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+            }
+
+            Section("SHORT SUMMARY") {
+                Text("Meem Sakinah has three rules. If it is followed by Ba, it is read with Ikhfaa Shafawi, meaning the meem is hidden with ghunnah. If it is followed by another Meem, it is read with Idgham Shafawi, meaning the two meems merge with ghunnah. If it is followed by any other letter, it is read with Idhaar Shafawi, meaning the meem is pronounced clearly.")
+                    .font(.body)
+            }
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle("Meem Sakinah")
+    }
+}
+
+private struct TajweedAaridLisSukoonView: View {
+    @EnvironmentObject var settings: Settings
+
+    var body: some View {
+        List {
+            Section("VIDEO REFERENCES") {
+                Link("Tajweed Hints: 4 Types of Sukoon", destination: URL(string: "https://www.youtube.com/watch?v=MAvDrZgWRTs")!)
+            }
+
+            Section("The 4 Types of Sukoon Marks in the Qur’an") {
+                Text("In the Uthmani script of the Qur’an, letters may carry different kinds of sukoon-style markings. These marks tell the reciter whether a letter is pronounced, skipped, pronounced only when stopping, or affected by a special tajweed rule.")
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section("1. Normal Sukoon: Pronounce the Letter Without a Vowel") {
+                Text("This is the common Qur’anic sukoon mark written like ـۡ above a consonant. It means the letter has no vowel, but the letter itself is still pronounced clearly.")
+                    .font(.body)
+
+                Text("Example:")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("رَزَقۡنَٰهُمۡ بِٱلۡغَيۡبِ")
+                    .font(.custom(settings.fontArabic, size: 24))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("Simple rule: Pronounce the letter, but do not add a vowel after it.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("2. Permanent Silent Letter: Always Skip It") {
+                Text("This mark shows that the letter is written in the Qur’an’s script but is not pronounced. You skip it whether you continue reciting or stop.")
+                    .font(.body)
+
+                Text("Example:")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("بِأَيۡيْدٖ")
+                    .font(.custom(settings.fontArabic, size: 22))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("Simple rule: The letter is written, but never pronounced.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("3. Stop-Only Letter: Pronounce It Only If You Stop") {
+                Text("This mark means the letter is ignored when continuing, but pronounced if you stop on the word.")
+                    .font(.body)
+
+                Text("Examples:")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("قَوَارِيرَا۠  — stop: قَوَارِيرَا")
+                    .font(.body)
+
+                Text("أَنَا۠ — in context: قُلۡ إِنَّمَآ أَنَا۠ بَشَرٞ مِّثۡلُكُمۡ")
+                    .font(.body)
+
+                Text("Simple rule: Pronounce it when stopping, skip it when continuing.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("4. No Sukoon Mark: Madd Letter or Special Tajweed Rule") {
+                Text("Sometimes a letter has no sukoon mark and no vowel mark. This usually means one of two things: either it is a madd letter (stretched for two counts), or a consonant affected by a special tajweed rule.")
+                    .font(.body)
+
+                Text("Examples:")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("يُقِيمُونَ  — madd letter example")
+                    .font(.body)
+
+                Text("يُنفِقُونَ  — special tajweed (ikhfāʾ) example")
+                    .font(.body)
+
+                Text("Simple rule: No mark usually means either natural madd or a special recitation rule is happening.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+
+                Text("Note about the example رَزَقۡنَٰهُمۡ بِٱلۡغَيۡبِ: there is a qalqalah effect in the consonant, but there is no special visual marking for qalqalah in the Uthmani script — you must know it by rule or consult the tajweed colors in the app to see it highlighted.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section("Super Simple Summary") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("1. ـۡ Normal sukoon — Pronounce the consonant with no vowel. Example: رَزَقۡنَٰهُمۡ بِٱلۡغَيۡبِ")
+                    Text("2. Silent written letter — Skip it always. Example: كَانُواْ")
+                    Text("3. Stop-only letter — Pronounce it only when stopping. Example: أَنَا۠ / قَوَارِيرَا۠")
+                    Text("4. No mark — Either a madd letter or a special tajweed rule. Example: يُقِيمُونَ / يُنفِقُونَ")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+            }
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle("4 Sukoon")
+    }
+}
+
+private struct TajweedHamzatulWaslView: View {
+    @EnvironmentObject var settings: Settings
+
+    var body: some View {
+        List {
+            Section("VIDEO REFERENCES") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Link("Hamzatul-Wasl short 1", destination: URL(string: "https://www.youtube.com/shorts/SpA7EtX3jMA")!)
+                    Link("Hamzatul-Wasl short 2", destination: URL(string: "https://www.youtube.com/shorts/xNn-pR4eoHM")!)
+                    Link("Hamzatul-Wasl short 3", destination: URL(string: "https://www.youtube.com/shorts/79Ku0wSKf9Q")!)
+                }
+            }
+
+            Section("Hamzatul-Wasl: The Connecting Hamzah") {
+                Text("Hamzatul-Wasl means “the hamzah of connection.” It is only pronounced when beginning recitation from that word; if you connect from the previous word, the Hamzatul-Wasl is dropped and not pronounced.")
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("In the Uthmani Qur’an script, Hamzatul-Wasl is usually written as an alif with a small ṣād-like sign above it: ٱ")
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Common examples:")
+                    .font(.subheadline.weight(.semibold))
+
+                VStack(spacing: 6) {
+                    Text("ٱبۡنُوا")
+                    Text("ٱمۡشُوا")
+                    Text("ٱقۡضُوا")
+                    Text("ٱئۡتُوا")
+                    Text("ٱتُونِي")
+                }
+                .font(.custom(settings.fontArabic, size: 22))
+                .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("Key rule: If you start from the word, pronounce Hamzatul-Wasl. If you connect from the previous word, drop it.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("1. Hamzatul-Wasl Is Dropped When Connecting") {
+                Text("When reciting continuously, Hamzatul-Wasl is not pronounced. The previous word connects directly into the next word.")
+                    .font(.body)
+
+                Text("Example:")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("ذَٰلِكَ ٱلۡكِتَٰبُ لَا رَيۡبَۛ فِيهِ")
+                    .font(.custom(settings.fontArabic, size: 20))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("When continuing: dhālika l-kitāb (you do not say al- as a separate hamzah). If you stop and then begin from the word, pronounce the Hamzatul-Wasl: al-kitāb.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("2. Hamzatul-Wasl With “Al” Takes Fatḥah") {
+                Text("When a word begins with the definite article ٱل, Hamzatul-Wasl is pronounced with fatḥah if you begin from that word (al-kitāb → al-kitāb; al-rahmān → ar-raḥmān).")
+                    .font(.body)
+
+                VStack(spacing:6) {
+                    Text("ٱلۡكِتَٰبُ → al-kitāb")
+                    Text("ٱلرَّحۡمَٰنُ → ar-raḥmān")
+                    Text("ٱلصَّمَدُ → aṣ-ṣamad")
+                    Text("ٱللَّهُ → Allāh")
+                }
+                .font(.custom(settings.fontArabic, size: 20))
+                .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("Note: alif itself is treated as a vowel/madd letter; the opening sound of ٱل is the Hamzatul-Wasl, realized as an initial “a”.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("3. Hamzatul-Wasl in Nouns Usually Takes Kasrah") {
+                Text("In nouns that begin with Hamzatul-Wasl and do not begin with ٱل, the Hamzatul-Wasl is pronounced with kasrah when starting (e.g. ٱسۡمُهُۥ → ismuhu).")
+                    .font(.body)
+
+                VStack(spacing:6) {
+                    Text("ٱسۡم → ism")
+                    Text("ٱبۡن → ibn")
+                    Text("ٱبۡنَيۡ → ibnay")
+                }
+                .font(.custom(settings.fontArabic, size: 20))
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            Section("4. Hamzatul-Wasl in Verbs Depends on the Third Letter") {
+                Text("For verbs, examine the third letter: if it has ḍammah, begin with “u”; if it has fatḥah or kasrah, begin with “i”.")
+                    .font(.body)
+
+                Text("Example (third letter ḍammah → start with 'u'):")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("ٱتۡلُ → utlu (when starting); when connected: watlu")
+                    .font(.custom(settings.fontArabic, size: 20))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Text("Simple rule: Third letter ḍammah → start with 'u'; otherwise start with 'i'.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("5. Special Verb Exceptions") {
+                Text("Some verbs are special cases (e.g. ٱئۡتُوا / ٱئۡتُونِي) and are learned individually; they may behave differently than the third-letter rule.")
+                    .font(.body)
+
+                Text("Example: ٱئۡتُونِي → iʾtūnī when starting.")
+                    .font(.custom(settings.fontArabic, size: 20))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            Section("6. Hamzatul-Wasl After Tanwīn: Add a Connecting Nūn") {
+                Text("When a word ending in tanwīn is followed by a word beginning with Hamzatul-Wasl, a connecting 'nِ' (kasrah nūn) is commonly inserted when continuing (e.g. بِغُلَٰمٍ ٱسۡمُهُۥ → bighulāmin ismuhu).")
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Example:")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("بِغُلَٰمٍ ٱسۡمُهُۥ → بِغُلَٰمِنِ سۡمُهُۥ")
+                    .font(.custom(settings.fontArabic, size: 20))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            Section("Summary: How to Start Hamzatul-Wasl") {
+                Text("1. If the word begins with ٱل → start with 'a' (fatḥah). 2. If a noun without ٱل → start with 'i' (kasrah). 3. If a verb → check the third letter (ḍammah→'u', otherwise 'i'). 4. Some words are exceptions and must be learned individually.")
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section("What Happens When Continuing") {
+                Text("Hamzatul-Wasl is dropped when continuing from the previous word (e.g. ذَٰلِكَ ٱلۡكِتَٰبُ → dhālika l-kitāb; وَٱتۡلُ → watlu).")
+                    .font(.body)
+            }
+
+            Section("SHORT SUMMARY") {
+                Text("Hamzatul-Wasl is the connecting hamzah — pronounced only when starting from the word. Nouns usually take 'i', words with ٱل start with 'a', verbs depend on the third letter, and tanwīn before Hamzatul-Wasl connects with an 'nِ' sound.")
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle("Hamzatul-Wasl")
     }
 }
 

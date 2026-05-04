@@ -54,6 +54,13 @@ struct PillarsView: View {
                         .font(.headline)
                 }
                 .padding(.vertical, 4)
+
+                NavigationLink(destination: HijriCalendarView()) {
+                    Text("What is Islamic Hijri Calendar?")
+                        .foregroundColor(settings.accentColor.color)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
             }
 
             IslamicPillarsView()

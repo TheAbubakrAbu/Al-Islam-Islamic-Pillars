@@ -307,11 +307,6 @@ struct Ayah: Codable, Identifiable, Equatable {
 
 final class TajweedStore {
     static let shared = TajweedStore()
-
-    private static let heavyBaseLetters: Set<Character> = ["خ", "ص", "ض", "ط", "ظ", "غ", "ق"]
-    private static let qalqalahLetters: Set<Character> = ["ق", "ط", "ب", "ج", "د"]
-    private static let sunLetters: Set<Character> = ["ت", "ث", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ل", "ن"]
-    private static let alifFollowerLetters: Set<Character> = ["ا", "ى"]
     private static let fatha = UnicodeScalar(0x064E)!
     private static let damma = UnicodeScalar(0x064F)!
     private static let fathatayn = UnicodeScalar(0x064B)!
@@ -330,17 +325,7 @@ final class TajweedStore {
     private static let highHamza = UnicodeScalar(0x0674)!
     private static let smallWaw = UnicodeScalar(0x06E5)!
     private static let smallYeh = UnicodeScalar(0x06E6)!
-
-    /// Surahs whose first ayah opens with disconnected letters (حروف مقطعة); maddah on those letters uses madd lazim coloring.
-    private static let surahsOpeningMuqattaat: Set<Int> = [
-        2, 3, 7, 10, 11, 12, 13, 14, 15, 19, 26, 27, 28, 29, 30, 31, 32,
-        36, 38, 40, 41, 42, 43, 44, 45, 46, 50, 68,
-    ]
-
-    /// Quranic pause / ornamental marks (U+06D6...U+06ED) - never tajweed-colored. Keep Uthmani sukun and miniature madd letters paintable.
-    private static let waqfScalarSkipColorLower: UInt32 = 0x06D6
-    private static let waqfScalarSkipColorUpper: UInt32 = 0x06ED
-    private static let waqfScalarExceptions: Set<UInt32> = [0x06E1, 0x06E5, 0x06E6]
+    private static let smallHighMeem = UnicodeScalar(0x06E2)!
 
     /// Higher value wins when painting overlapping UTF-16 units.
     private enum PaintPriority {
@@ -353,6 +338,7 @@ final class TajweedStore {
         static let ikhfaa = 7
         static let iqlaab = 8
         static let idghamBilaGhunnah = 9
+        static let generalGhunnah = 10
         static let maddNatural2 = 12
         /// Miniature madd scalars (U+06E5, U+06E6, U+0670) use same category as natural madd; slightly higher priority than letter-body natural madd.
         static let maddNatural2MiniatureScalars = 13
@@ -386,31 +372,6 @@ final class TajweedStore {
         let annotations: [TajweedRuleAnnotation]
     }
 
-    private static let treeDrivenRuleMap: [String: TajweedLegendCategory] = [
-        "madd_2": .maddNatural,
-        "madd_munfasil": .maddSeparated,
-        "madd_muttasil": .maddConnected,
-        "madd_6": .maddNecessary,
-        "madd_246": .maddSukoon,
-        "qalqalah": .qalqalah,
-        "silent": .hamzatWaslSilent,
-        "idghaam_ghunnah": .idghamGhunnah,
-        "idghaam_shafawi": .idghamGhunnah,
-        "idghaam_no_ghunnah": .idghamBilaGhunnah,
-        "idghaam_mutajanisayn": .idghamGhunnah,
-        "idghaam_mutaqaribayn": .idghamGhunnah,
-        "ikhfa": .ikhfaaLight,
-        "ikhfa_shafawi": .ikhfaaLight,
-        "iqlaab": .iqlaab,
-    ]
-
-    private static let specialTanweenCategories: Set<TajweedLegendCategory> = [
-        .idghamGhunnah,
-        .ikhfaaLight,
-        .ikhfaaHeavy,
-        .iqlaab,
-        .idghamBilaGhunnah,
-    ]
 
     private static let tajweedRuleTreesByAyah: [TajweedAyahKey: [TajweedRuleAnnotation]] = {
         guard let url = tajweedRulesResourceURL() else { return [:] }
@@ -506,7 +467,7 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.droppedLetter) {
             for cluster in clusters where hasStandardSukoon(cluster) {
                 guard let base = cluster.primaryArabicLetter, isArabicLetterBase(base) else { continue }
-                if Self.qalqalahLetters.contains(base), settings.isTajweedCategoryVisible(.qalqalah) {
+                if TajweedRules.qalqalahLetters.contains(base), settings.isTajweedCategoryVisible(.qalqalah) {
                     continue
                 }
                 ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.droppedLetter, category: .droppedLetter))
@@ -523,7 +484,7 @@ final class TajweedStore {
             let verseFinalQalqalahIndex = indexOfVerseFinalQalqalahCluster(clusters: clusters)
             for idx in clusters.indices {
                 let cluster = clusters[idx]
-                guard let base = cluster.primaryArabicLetter, Self.qalqalahLetters.contains(base) else { continue }
+                guard let base = cluster.primaryArabicLetter, TajweedRules.qalqalahLetters.contains(base) else { continue }
                 // If the qalqalah letter itself carries maddah, treat it as madd-driven instead of qalqalah.
                 guard !hasMaddah(cluster) else { continue }
                 let uthmaniHere = hasUthmaniSukoon(cluster)
@@ -603,11 +564,7 @@ final class TajweedStore {
             let s = String(ch)
             var scalarOffset = offset
             for sc in s.unicodeScalars {
-                let hit = {
-                let v = sc.value
-                guard v >= waqfScalarSkipColorLower, v <= waqfScalarSkipColorUpper else { return false }
-                return !waqfScalarExceptions.contains(v)
-                }()
+                let hit = TajweedRules.shouldSkipWaqfColoring(sc)
                 if hit {
                     let len = sc.utf16.count
                     for j in 0..<len { out.insert(scalarOffset + j) }
@@ -642,14 +599,14 @@ final class TajweedStore {
                 guard isBareAlifForMadd(cur), hasMaddah(cur) else { continue }
                 if isLazimCombinedAlifCluster(cur) { continue }
                 let prev = clusters[i - 1]
-                guard let pl = prev.primaryArabicLetter, Self.heavyBaseLetters.contains(pl) else { continue }
+                guard let pl = prev.primaryArabicLetter, TajweedRules.heavyBaseLetters.contains(pl) else { continue }
                 ops.append(PaintOp(range: nsRange(for: cur), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
             }
             for i in clusters.indices where isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) {
                 ops.append(PaintOp(range: nsRange(for: clusters[i]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
                 ops.append(PaintOp(range: nsRange(for: clusters[i + 1]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
             }
-            if ayah == 1, Self.surahsOpeningMuqattaat.contains(surah) {
+            if ayah == 1, TajweedRules.surahsOpeningMuqattaat.contains(surah) {
                 for i in clusters.indices {
                     guard hasMaddah(clusters[i]) else { continue }
                     if isLazimCombinedAlifCluster(clusters[i]) { continue }
@@ -662,14 +619,13 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.maddConnected) {
             for w in words {
                 let lo = w.lowerBound, hi = w.upperBound
-                guard hi - lo >= 3 else { continue }
+                guard hi - lo >= 2 else { continue }
                 for i in lo..<(hi - 1) {
                     if isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) { continue }
                     if isLazimCombinedAlifCluster(clusters[i]) { continue }
                     guard isNaturalMaddCarrier(clusters: clusters, index: i, wordStart: lo) else { continue }
-                    guard i + 1 < hi, hasStandardSukoon(clusters[i + 1]) else { continue }
                     var foundHamza = false
-                    var k = i + 2
+                    var k = i + 1
                     while k < hi {
                         if isHamzaCarrier(clusters[k]) { foundHamza = true; break }
                         k += 1
@@ -690,18 +646,23 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.maddSeparated) {
             for wi in words.indices.dropLast() {
                 let w1 = words[wi], w2 = words[wi + 1]
-                guard w1.upperBound - w1.lowerBound >= 2 else { continue }
-                let pen = w1.upperBound - 2
-                let last = w1.upperBound - 1
-                if isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: pen) { continue }
-                if isLazimCombinedAlifCluster(clusters[last]) { continue }
-                guard isNaturalMaddCarrier(clusters: clusters, index: pen, wordStart: w1.lowerBound) else { continue }
-                guard hasStandardSukoon(clusters[last]) else { continue }
                 let firstNext = w2.lowerBound
                 guard firstNext < clusters.count, isHamzaCarrier(clusters[firstNext]) else { continue }
+
+                var pickedIndex: Int?
+                for i in stride(from: w1.upperBound - 1, through: w1.lowerBound, by: -1) {
+                    if isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) { continue }
+                    if isLazimCombinedAlifCluster(clusters[i]) { continue }
+                    if isNaturalMaddCarrier(clusters: clusters, index: i, wordStart: w1.lowerBound) {
+                        pickedIndex = i
+                        break
+                    }
+                }
+                guard let carrier = pickedIndex else { continue }
+
                 appendNaturalMaddPaintOps(
                     clusters: clusters,
-                    index: pen,
+                    index: carrier,
                     priority: PaintPriority.maddSeparated,
                     category: .maddSeparated,
                     into: &ops
@@ -756,6 +717,17 @@ final class TajweedStore {
                 let silentCarrier = base == "و" || isYaBase(cl) || (base == "ا" && isBareAlifForMadd(cl))
                 guard silentCarrier else { continue }
                 ops.append(PaintOp(range: nsRange(for: cl), priority: PaintPriority.hamzatWaslSilent, category: .hamzatWaslSilent))
+            }
+
+            // Waw carrying a dagger-alif can be either pronounced or silent depending on attached voweling.
+            // Keep pronounced cases (e.g. صَلَوَٰتِهِمۡ) untouched; only gray the silent-form waw.
+            for cl in clusters {
+                guard cl.primaryArabicLetter == "و", cl.contains(Self.daggerAlif) else { continue }
+                guard !hasArabicVowelOnCluster(cl), !hasShadda(cl), !hasStandardSukoon(cl), !hasUthmaniSukoon(cl) else {
+                    continue
+                }
+                guard let wawLetterRange = primaryArabicLetterScalarRange(in: cl) else { continue }
+                ops.append(PaintOp(range: wawLetterRange, priority: PaintPriority.hamzatWaslSilent, category: .hamzatWaslSilent))
             }
         }
     }
@@ -877,7 +849,7 @@ final class TajweedStore {
                 i -= 1
                 continue
             }
-            if Self.qalqalahLetters.contains(p) {
+            if TajweedRules.qalqalahLetters.contains(p) {
                 return i
             }
             if isArabicLetterBase(p) {
@@ -965,6 +937,110 @@ final class TajweedStore {
             nextIndex += 1
         }
         return nil
+    }
+
+    private func nextArabicLetterClusterIndex(
+        clusters: [CharacterClusterInfo],
+        after index: Int,
+        skipFathataynCarrier: Bool = false
+    ) -> Int? {
+        var nextIndex = index + 1
+        var skippedFollower = false
+        while nextIndex < clusters.count {
+            if isWhitespaceOnly(clusters[nextIndex]) {
+                nextIndex += 1
+                continue
+            }
+            if let letter = clusters[nextIndex].primaryArabicLetter {
+                if skipFathataynCarrier,
+                   !skippedFollower,
+                   TajweedRules.fathataynFollowerSkipLetters.contains(letter) {
+                    skippedFollower = true
+                    nextIndex += 1
+                    continue
+                }
+                return nextIndex
+            }
+            nextIndex += 1
+        }
+        return nil
+    }
+
+    private func hasAnyTashkeel(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.text.unicodeScalars.contains { TajweedRules.tashkeelScalars.contains($0.value) }
+    }
+
+    private func containsAnySpecialNextLetterTrigger(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.text.unicodeScalars.contains { TajweedRules.specialNextLetterTriggerScalars.contains($0.value) }
+    }
+
+    private func appendPaintOpIfVisible(
+        range: NSRange,
+        priority: Int,
+        category: TajweedLegendCategory,
+        into ops: inout [PaintOp]
+    ) {
+        guard settings.isTajweedCategoryVisible(category) else { return }
+        ops.append(PaintOp(range: range, priority: priority, category: category, color: category.color))
+    }
+
+    /// Noon/tanween behavior where next-letter coloring is allowed only for idgham variants.
+    private func appendNoonSoundPaintOps(
+        sourceRange: NSRange,
+        targetRange: NSRange,
+        nextLetter: Character,
+        into ops: inout [PaintOp]
+    ) {
+        if TajweedRules.noonTanweenTargetOnlyIdghamLetters.contains(nextLetter) {
+            // Noon/tanween before noon: leave source normal, color the target as ghunnah.
+            appendPaintOpIfVisible(range: targetRange, priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+            return
+        }
+
+        if TajweedRules.noonTanweenSplitIdghamLetters.contains(nextLetter) {
+            // Noon/tanween before meem/yaa/waw: source is bilaa ghunnah, target gets ghunnah color.
+            appendPaintOpIfVisible(range: sourceRange, priority: PaintPriority.idghamBilaGhunnah, category: .idghamBilaGhunnah, into: &ops)
+            appendPaintOpIfVisible(range: targetRange, priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+            return
+        }
+
+        if TajweedRules.noonTanweenSourceOnlyIdghamLetters.contains(nextLetter) {
+            // Noon/tanween before laam/raa: color source only.
+            appendPaintOpIfVisible(range: sourceRange, priority: PaintPriority.idghamBilaGhunnah, category: .idghamBilaGhunnah, into: &ops)
+            return
+        }
+
+        // Non-idgham cases keep color on source only.
+        guard let category = TajweedRules.categoryForNoTashkeelNoonOrProxy(nextLetter: nextLetter) else { return }
+        let priority: Int
+        switch category {
+        case .ikhfaaLight, .ikhfaaHeavy:
+            priority = PaintPriority.ikhfaa
+        case .iqlaab:
+            priority = PaintPriority.iqlaab
+        case .idghamBilaGhunnah:
+            priority = PaintPriority.idghamBilaGhunnah
+        case .idghamGhunnah, .generalGhunnah:
+            priority = PaintPriority.generalGhunnah
+        default:
+            priority = PaintPriority.idghamBiGhunnahHeavy
+        }
+        appendPaintOpIfVisible(range: sourceRange, priority: priority, category: category, into: &ops)
+    }
+
+    private func appendMeemNoTashkeelPaintOps(
+        sourceRange: NSRange,
+        targetRange: NSRange,
+        nextLetter: Character,
+        into ops: inout [PaintOp]
+    ) {
+        guard let category = TajweedRules.categoryForNoTashkeelMeem(nextLetter: nextLetter) else { return }
+        if category == .idghamGhunnah {
+            appendPaintOpIfVisible(range: sourceRange, priority: PaintPriority.idghamBiGhunnahHeavy, category: .idghamGhunnah, into: &ops)
+            appendPaintOpIfVisible(range: targetRange, priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+            return
+        }
+        appendPaintOpIfVisible(range: sourceRange, priority: PaintPriority.ikhfaa, category: category, into: &ops)
     }
 
     /// Madd before ٱ merges (e.g. بِٱلله); not a stand-alone two-count madd.
@@ -1092,8 +1168,9 @@ final class TajweedStore {
         guard let annotations = Self.tajweedRuleTreesByAyah[key], !annotations.isEmpty else { return }
 
         for annotation in annotations {
-            guard let category = Self.treeDrivenRuleMap[annotation.rule] else { continue }
+            guard let category = TajweedRules.treeDrivenRuleMap[annotation.rule] else { continue }
             guard settings.isTajweedCategoryVisible(category) else { continue }
+            guard TajweedRules.shouldPaintCategory(category) else { continue }
             let start = max(0, min(annotation.start, utf16Count))
             let end = max(start, min(annotation.end, utf16Count))
             guard end > start else { continue }
@@ -1102,7 +1179,7 @@ final class TajweedStore {
             case .maddNatural:
                 priority = PaintPriority.maddNatural2
             case .maddSukoon:
-                priority = PaintPriority.maddAaridLisSukoon
+                continue
             case .maddSeparated:
                 priority = PaintPriority.maddSeparated
             case .maddConnected:
@@ -1115,6 +1192,8 @@ final class TajweedStore {
                 priority = PaintPriority.hamzatWaslSilent
             case .idghamGhunnah:
                 priority = PaintPriority.idghamBiGhunnahLight
+            case .generalGhunnah:
+                priority = PaintPriority.generalGhunnah
             case .ikhfaaLight:
                 priority = PaintPriority.ikhfaa
             case .ikhfaaHeavy:
@@ -1127,7 +1206,7 @@ final class TajweedStore {
                 continue
             }
 
-            if Self.specialTanweenCategories.contains(category) {
+            if TajweedRules.specialTanweenCategories.contains(category) {
                 appendSpecialTanweenPaintOps(
                     text: text,
                     range: NSRange(location: start, length: end - start),
@@ -1138,7 +1217,7 @@ final class TajweedStore {
                 continue
             }
 
-            if category == .maddNatural || category == .maddSukoon || category == .maddSeparated || category == .maddConnected || category == .maddNecessary {
+            if category == .maddNatural || category == .maddSeparated || category == .maddConnected || category == .maddNecessary {
                 appendSpecialMaddPaintOps(
                     text: text,
                     range: NSRange(location: start, length: end - start),
@@ -1193,6 +1272,51 @@ final class TajweedStore {
         return nil
     }
 
+    private func sourceRangeForNoonSound(in cluster: CharacterClusterInfo) -> NSRange {
+        if let tanweenRange = tanweenScalarRange(in: cluster) {
+            return tanweenRange
+        }
+        return nsRange(for: cluster)
+    }
+
+    private func hasFathatayn(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.fathatayn)
+    }
+
+    private func sourceRangeForSpecialNoonProxyMark(in cluster: CharacterClusterInfo) -> NSRange {
+        for scalar in [UnicodeScalar(0x0657)!, UnicodeScalar(0x065E)!, UnicodeScalar(0x0656)!] {
+            if let hit = scalarRange(in: cluster, scalar: scalar) {
+                return hit
+            }
+        }
+        return nsRange(for: cluster)
+    }
+
+    private func scalarRange(in cluster: CharacterClusterInfo, scalar wanted: UnicodeScalar) -> NSRange? {
+        var offset = cluster.utf16Range.lowerBound
+        for scalar in cluster.text.unicodeScalars {
+            let length = utf16Length(of: scalar)
+            if scalar == wanted {
+                return NSRange(location: offset, length: length)
+            }
+            offset += length
+        }
+        return nil
+    }
+
+    private func primaryArabicLetterScalarRange(in cluster: CharacterClusterInfo) -> NSRange? {
+        var offset = cluster.utf16Range.lowerBound
+        for scalar in cluster.text.unicodeScalars {
+            let length = utf16Length(of: scalar)
+            let v = scalar.value
+            if (0x0621...0x063A).contains(v) || (0x0641...0x064A).contains(v) || v == 0x0671 {
+                return NSRange(location: offset, length: length)
+            }
+            offset += length
+        }
+        return nil
+    }
+
     private func appendSpecialMaddPaintOps(
         text: String,
         range: NSRange,
@@ -1239,13 +1363,91 @@ final class TajweedStore {
 
     private func appendNuunMeemGhunnahHeuristicPaintOps(text: String, into ops: inout [PaintOp]) {
         let clusters = characterClusters(in: text)
-        for cluster in clusters {
-            guard let base = cluster.primaryArabicLetter else { continue }
-            guard base == "ن" || base == "م" else { continue }
-            guard hasShadda(cluster) else { continue }
-            let category: TajweedLegendCategory = .idghamGhunnah
-            guard settings.isTajweedCategoryVisible(category) else { continue }
-            ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.idghamBiGhunnahHeavy, category: category, color: category.color))
+        for idx in clusters.indices {
+            let cluster = clusters[idx]
+
+            // Tiny high meem (e.g. ۢ): color the tiny mark only as light ikhfaa.
+            if let tinyMeemRange = scalarRange(in: cluster, scalar: Self.smallHighMeem) {
+                appendPaintOpIfVisible(range: tinyMeemRange, priority: PaintPriority.ikhfaa, category: .ikhfaaLight, into: &ops)
+            }
+
+            let base = cluster.primaryArabicLetter
+
+            if let base,
+               (base == "ن" || base == "م") && hasShadda(cluster) {
+                // Global ghunnah: any noon or meem with shaddah.
+                appendPaintOpIfVisible(range: nsRange(for: cluster), priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+                continue
+            }
+
+            // Tanween follows noon-sound rules; color source as tanween mark only.
+            if tanweenScalarRange(in: cluster) != nil {
+                let skipFollower = hasFathatayn(cluster)
+                guard let nextIndex = nextArabicLetterClusterIndex(
+                    clusters: clusters,
+                    after: idx,
+                    skipFathataynCarrier: skipFollower
+                ),
+                let nextBase = clusters[nextIndex].primaryArabicLetter else {
+                    continue
+                }
+                appendNoonSoundPaintOps(
+                    sourceRange: sourceRangeForNoonSound(in: cluster),
+                    targetRange: nsRange(for: clusters[nextIndex]),
+                    nextLetter: nextBase,
+                    into: &ops
+                )
+                continue
+            }
+
+            // Meem with no tashkeel: classify from the next Arabic letter (ignoring spaces).
+            if base == "م" && !hasAnyTashkeel(cluster) {
+                guard let nextIndex = nextArabicLetterClusterIndex(clusters: clusters, after: idx),
+                      let nextBase = clusters[nextIndex].primaryArabicLetter else {
+                    continue
+                }
+                appendMeemNoTashkeelPaintOps(
+                    sourceRange: nsRange(for: cluster),
+                    targetRange: nsRange(for: clusters[nextIndex]),
+                    nextLetter: nextBase,
+                    into: &ops
+                )
+                continue
+            }
+
+            // Noon with no tashkeel: classify from the next Arabic letter (ignoring spaces).
+            if base == "ن" && !hasAnyTashkeel(cluster) {
+                guard let nextIndex = nextArabicLetterClusterIndex(clusters: clusters, after: idx),
+                      let nextBase = clusters[nextIndex].primaryArabicLetter else {
+                    continue
+                }
+                appendNoonSoundPaintOps(
+                    sourceRange: nsRange(for: cluster),
+                    targetRange: nsRange(for: clusters[nextIndex]),
+                    nextLetter: nextBase,
+                    into: &ops
+                )
+                continue
+            }
+
+            // Special Uthmani marks requested by rule: دٗ / مٞ / تٖ style clusters.
+            // Apply noon-sound mapping with idgham-only target coloring.
+            if containsAnySpecialNextLetterTrigger(cluster) {
+                guard let nextIndex = nextArabicLetterClusterIndex(
+                    clusters: clusters,
+                    after: idx,
+                    skipFathataynCarrier: true
+                ),
+                      let nextBase = clusters[nextIndex].primaryArabicLetter else {
+                    continue
+                }
+                appendNoonSoundPaintOps(
+                    sourceRange: sourceRangeForSpecialNoonProxyMark(in: cluster),
+                    targetRange: nsRange(for: clusters[nextIndex]),
+                    nextLetter: nextBase,
+                    into: &ops
+                )
+            }
         }
     }
 
@@ -1276,7 +1478,7 @@ final class TajweedStore {
         if hasShadda(clusters[index]) { return false }
         if isLamInAllahWord(clusters: clusters, index: index) { return false }
         guard index >= 1, isAlifLike(clusters[index - 1].primaryArabicLetter) else { return false }
-        guard index + 1 < clusters.count, let next = clusters[index + 1].primaryArabicLetter, Self.sunLetters.contains(next) else {
+        guard index + 1 < clusters.count, let next = clusters[index + 1].primaryArabicLetter, TajweedRules.sunLetters.contains(next) else {
             return false
         }
         return true
@@ -1310,7 +1512,7 @@ final class TajweedStore {
         guard let base = clusters[index].primaryArabicLetter else { return false }
 
         // Seven istila letters: always tafkhim in coloring; vowels on the letter are ignored (sukun still gets its own higher-priority color).
-        if Self.heavyBaseLetters.contains(base) {
+        if TajweedRules.heavyBaseLetters.contains(base) {
             return true
         }
 
@@ -1318,7 +1520,7 @@ final class TajweedStore {
             return isHeavyRaa(clusters: clusters, index: index)
         }
 
-        if Self.alifFollowerLetters.contains(base), index > 0 {
+        if TajweedRules.alifFollowerLetters.contains(base), index > 0 {
             return isHeavyCarrier(clusters: clusters, index: index - 1)
         }
 
@@ -1327,7 +1529,7 @@ final class TajweedStore {
 
     private func isHeavyCarrier(clusters: [CharacterClusterInfo], index: Int) -> Bool {
         guard let base = clusters[index].primaryArabicLetter else { return false }
-        if Self.heavyBaseLetters.contains(base) {
+        if TajweedRules.heavyBaseLetters.contains(base) {
             return true
         }
         if base == "ر" {
