@@ -491,7 +491,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     /// When false, only Arabic is shown (no transliteration or English), since those are for Hafs an Asim only.
     var isHafsDisplay: Bool {
-        displayQiraah.isEmpty || displayQiraah == "Hafs"
+        Self.normalizeLegacyRiwayahTag(displayQiraah).isEmpty
     }
 
     /// Arabic riwayah line for settings section headers (matches on-screen Arabic text riwayah).

@@ -235,8 +235,6 @@ struct SettingsQuranView: View {
         VStack(alignment: .leading, spacing: 12) {
             let tajweedCanRenderNow = settings.showArabicText
                 && settings.isHafsDisplay
-                && !settings.beginnerMode
-                && !settings.cleanArabicText
             let tajweedToggleBinding = Binding<Bool>(
                 get: { settings.showTajweedColors && tajweedCanRenderNow },
                 set: { settings.showTajweedColors = $0 }
@@ -255,12 +253,12 @@ struct SettingsQuranView: View {
             .disabled(!settings.showTajweedColors)
             #endif
 
-            Text(settings.isHafsDisplay
-                ? "Available for Hafs an Asim. If Clean Arabic or Beginner Mode is enabled, tajweed is temporarily inactive."
-                : "Tajweed colors are currently available only for Hafs an Asim.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.vertical, 2)
+            if settings.showQiraahDetails {
+                Text("Tajweed colors are currently available only for Hafs an Asim, not the other qiraat or riwayat.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
         }
     }
 
@@ -405,7 +403,6 @@ struct SettingsQuranView: View {
                 qiraahExplanation
                 qiraahLinks
                 qiraahHighlight
-                comparisonModeGroup
             } else {
                 Button {
                     settings.hapticFeedback()
@@ -477,18 +474,6 @@ struct SettingsQuranView: View {
             .font(.caption)
             .foregroundColor(.primary)
             .padding(.top, 4)
-    }
-
-    private var comparisonModeGroup: some View {
-        VStack(alignment: .leading) {
-            Toggle("Comparison mode", isOn: $settings.qiraatComparisonMode.animation(.easeInOut))
-                .font(.subheadline)
-
-            Text("When on, the ayah view shows a riwayah picker above the search bar so you can switch and compare qiraat in that screen.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.vertical, 2)
-        }
     }
 
     @ViewBuilder

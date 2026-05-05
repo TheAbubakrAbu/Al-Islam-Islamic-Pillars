@@ -56,9 +56,7 @@ struct ShareAyahSheet: View {
         actionMode == .image &&
         shareSettings.arabic &&
         settings.showTajweedColors &&
-        settings.isHafsDisplay &&
-        !shareSettings.cleanArabic &&
-        !settings.beginnerMode
+        settings.isHafsDisplay
     }
 
     private func updatedShareSettings(
@@ -183,19 +181,8 @@ struct ShareAyahSheet: View {
 
     /// Returns (English, Arabic) display names for the given displayQiraah tag.
     private static func qiraahLabels(displayQiraah: String) -> (english: String, arabic: String) {
-        let key = Settings.normalizeLegacyRiwayahTag(displayQiraah.isEmpty ? "" : displayQiraah)
-        let map: [(tag: String, en: String, ar: String)] = [
-            (Settings.Riwayah.hafsTag, Settings.Riwayah.hafsLabel, "حَفص عَن عَاصِم"),
-            (Settings.Riwayah.warsh, Settings.Riwayah.warsh, "وَرش عَن نَافِع"),
-            (Settings.Riwayah.qaloon, Settings.Riwayah.qaloon, "قَالُون عَن نَافِع"),
-            (Settings.Riwayah.duri, Settings.Riwayah.duri, "الدُّورِي عَن أَبِي عَمرٍو"),
-            (Settings.Riwayah.buzzi, Settings.Riwayah.buzzi, "البَزِّي عَن ابنِ كَثِيرٍ"),
-            (Settings.Riwayah.qunbul, Settings.Riwayah.qunbul, "قُنبُل عَن ابنِ كَثِيرٍ"),
-            (Settings.Riwayah.shubah, Settings.Riwayah.shubah, "شُعبَة عَن عَاصِم"),
-            (Settings.Riwayah.susi, Settings.Riwayah.susi, "السُّوسِي عَن أَبِي عَمرٍو")
-        ]
-
-        return map.first(where: { $0.tag == key }).map { ($0.en, $0.ar) } ?? (map[0].en, map[0].ar)
+        let option = Settings.Riwayah.option(for: displayQiraah)
+        return (option.label, option.arabic)
     }
 
     var body: some View {
@@ -288,7 +275,7 @@ struct ShareAyahSheet: View {
                                 .padding(.horizontal, -24)
                                 .padding(.vertical, 2)
 
-                            if settings.showTajweedColors && settings.isHafsDisplay && !settings.beginnerMode {
+                            if settings.showTajweedColors && settings.isHafsDisplay {
                                 Toggle("Share With Tajweed Colors", isOn: Binding(
                                     get: { canShareTajweed && shareSettings.shareTajweed },
                                     set: { shareSettings = updatedShareSettings(shareTajweed: $0 && canShareTajweed) }
@@ -375,7 +362,7 @@ struct ShareAyahSheet: View {
                     englishSaheeh: settings.isHafsDisplay ? settings.showEnglishSaheeh : false,
                     englishMustafa: settings.isHafsDisplay ? settings.showEnglishMustafa : false,
                     includeQiraah: settings.showQiraahDetails ? shareIncludeRiwayah : false,
-                    shareTajweed: settings.showTajweedColors && settings.isHafsDisplay && !settings.cleanArabicText && !settings.beginnerMode,
+                    shareTajweed: settings.showTajweedColors && settings.isHafsDisplay,
                     shareArabicFont: font,
                     cleanArabic: settings.cleanArabicText
                 )
@@ -822,13 +809,23 @@ extension ShareAyahSheet {
         func sepIfNeeded() { if text.length > 0 { append("\n\n", bodyAttr) } }
         if shareSettings.arabic {
             var arabicText = ayah.displayArabicText(surahId: surah.id, clean: shareSettings.cleanArabic)
+            var rawArabicText = ayah.displayArabicText(surahId: surah.id, clean: false)
             if settings.showAyahInformation {
-                append("[\(surah.nameArabic) ", arAccent)
-                append("\(surah.idArabic):\(ayah.idArabic)]", accentAttr)
-                append("\n", bodyAttr)
-            } else { arabicText += " \(ayah.idArabic)" }
+                let prefix = "[\(surah.nameArabic) \(surah.idArabic):\(ayah.idArabic)]\n"
+                arabicText = prefix + arabicText
+                rawArabicText = prefix + rawArabicText
+            } else {
+                arabicText += " \(ayah.idArabic)"
+                rawArabicText += " \(ayah.idArabic)"
+            }
             if shareSettings.shareTajweed,
-               let tajweedText = TajweedStore.shared.attributedText(surah: surah.id, ayah: ayah.id, text: arabicText) {
+               let tajweedText = TajweedStore.shared.attributedText(
+                surah: surah.id,
+                ayah: ayah.id,
+                text: rawArabicText,
+                displayText: arabicText,
+                cleanDisplayText: shareSettings.cleanArabic
+               ) {
                 let attributed = NSMutableAttributedString(attributedString: NSAttributedString(tajweedText))
                 let fullRange = NSRange(location: 0, length: attributed.length)
                 attributed.addAttributes([

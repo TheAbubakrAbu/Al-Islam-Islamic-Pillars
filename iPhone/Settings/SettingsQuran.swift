@@ -16,6 +16,25 @@ extension Settings {
     }
 
     enum Riwayah {
+        struct Option: Identifiable, Hashable {
+            let label: String
+            let tag: String
+            let arabic: String
+            let teacher: String
+            let teacherArabic: String
+            let order: Int
+
+            var id: String { tag.isEmpty ? "Hafs" : tag }
+        }
+
+        struct Group: Identifiable, Hashable {
+            let teacher: String
+            let teacherArabic: String
+            let options: [Option]
+
+            var id: String { teacher }
+        }
+
         static let hafsTag = ""
         static let hafsLabel = "Hafs an Asim (default)"
 
@@ -28,28 +47,59 @@ extension Settings {
         static let duri = "ad-Duri an Abi Amr"
         static let susi = "as-Susi an Abi Amr"
 
-        static let warshArabic = "ورش عن نافع"
-        static let qaloonArabic = "قالون عن نافع"
-        static let duriArabic = "الدوري عن أبي عمرو"
-        static let susiArabic = "السوسي عن أبي عمرو"
-        static let buzziArabic = "البزي عن ابن كثير"
-        static let qunbulArabic = "قنبل عن ابن كثير"
-        static let shubahArabic = "شعبة عن عاصم"
-        static let khalafArabic = "خلف عن حمزة"
+        static let asimTeacher = "Asim"
+        static let nafiTeacher = "Nafi"
+        static let ibnKathirTeacher = "Ibn Kathir"
+        static let abiAmrTeacher = "Abu Amr"
+        static let hamzahTeacher = "Hamzah"
+
+        static let asimTeacherArabic = "عَاصِم"
+        static let nafiTeacherArabic = "نَافِع"
+        static let ibnKathirTeacherArabic = "ابنِ كَثِير"
+        static let abiAmrTeacherArabic = "أَبِي عَمرٍو"
+        static let hamzahTeacherArabic = "حَمزَة"
+
+        static let hafsArabic = "حَفص عَن عَاصِم"
+        static let warshArabic = "وَرش عَن نَافِع"
+        static let qaloonArabic = "قَالُون عَن نَافِع"
+        static let duriArabic = "الدُّورِي عَن أَبِي عَمرٍو"
+        static let susiArabic = "السُّوسِي عَن أَبِي عَمرٍو"
+        static let buzziArabic = "البَزِّي عَن ابنِ كَثِير"
+        static let qunbulArabic = "قُنبُل عَن ابنِ كَثِير"
+        static let shubahArabic = "شُعبَة عَن عَاصِم"
+        static let khalafArabic = "خَلَف عَن حَمزَة"
+
+        static let options: [Option] = [
+            Option(label: hafsLabel, tag: hafsTag, arabic: hafsArabic, teacher: asimTeacher, teacherArabic: asimTeacherArabic, order: 0),
+            Option(label: shubah, tag: shubah, arabic: shubahArabic, teacher: asimTeacher, teacherArabic: asimTeacherArabic, order: 1),
+            Option(label: warsh, tag: warsh, arabic: warshArabic, teacher: nafiTeacher, teacherArabic: nafiTeacherArabic, order: 2),
+            Option(label: qaloon, tag: qaloon, arabic: qaloonArabic, teacher: nafiTeacher, teacherArabic: nafiTeacherArabic, order: 3),
+            Option(label: buzzi, tag: buzzi, arabic: buzziArabic, teacher: ibnKathirTeacher, teacherArabic: ibnKathirTeacherArabic, order: 4),
+            Option(label: qunbul, tag: qunbul, arabic: qunbulArabic, teacher: ibnKathirTeacher, teacherArabic: ibnKathirTeacherArabic, order: 5),
+            Option(label: duri, tag: duri, arabic: duriArabic, teacher: abiAmrTeacher, teacherArabic: abiAmrTeacherArabic, order: 6),
+            Option(label: susi, tag: susi, arabic: susiArabic, teacher: abiAmrTeacher, teacherArabic: abiAmrTeacherArabic, order: 7),
+        ]
+
+        static let groups: [Group] = [
+            Group(teacher: asimTeacher, teacherArabic: asimTeacherArabic, options: options.filter { $0.teacher == asimTeacher }),
+            Group(teacher: nafiTeacher, teacherArabic: nafiTeacherArabic, options: options.filter { $0.teacher == nafiTeacher }),
+            Group(teacher: ibnKathirTeacher, teacherArabic: ibnKathirTeacherArabic, options: options.filter { $0.teacher == ibnKathirTeacher }),
+            Group(teacher: abiAmrTeacher, teacherArabic: abiAmrTeacherArabic, options: options.filter { $0.teacher == abiAmrTeacher }),
+        ]
 
         static let menuOptions: [(label: String, tag: String)] = [
-            (hafsLabel, hafsTag),
-            (shubah, shubah),
-            (buzzi, buzzi),
-            (qunbul, qunbul),
-            (warsh, warsh),
-            (qaloon, qaloon),
-            (duri, duri),
-            (susi, susi),
+            (options[0].label, options[0].tag),
+            (options[1].label, options[1].tag),
+            (options[2].label, options[2].tag),
+            (options[3].label, options[3].tag),
+            (options[4].label, options[4].tag),
+            (options[5].label, options[5].tag),
+            (options[6].label, options[6].tag),
+            (options[7].label, options[7].tag),
         ]
 
         static let arabicCaptionByTag: [String: String] = [
-            hafsTag: "حفص عن عاصم",
+            hafsTag: hafsArabic,
             warsh: warshArabic,
             qaloon: qaloonArabic,
             duri: duriArabic,
@@ -59,6 +109,13 @@ extension Settings {
             shubah: shubahArabic,
             khalaf: khalafArabic,
         ]
+
+        static let optionByTag: [String: Option] = Dictionary(uniqueKeysWithValues: options.map { ($0.tag, $0) })
+
+        static func option(for tag: String) -> Option {
+            let key = canonicalTag(tag)
+            return optionByTag[key] ?? options[0]
+        }
 
         static func canonicalTag(_ stored: String) -> String {
             let raw = stored.trimmingCharacters(in: .whitespacesAndNewlines)

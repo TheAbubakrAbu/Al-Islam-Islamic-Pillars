@@ -262,7 +262,7 @@ struct SurahAyahRow: View {
     }
 
     private func arabicDisplayText() -> String {
-        let clean = settings.cleanArabicText && !shouldShowTajweedColors
+        let clean = settings.cleanArabicText
         let text = ayah.displayArabicText(surahId: surah.id, clean: clean)
         return settings.beginnerMode ? text.map { "\($0) " }.joined() : text
     }
@@ -272,14 +272,21 @@ struct SurahAyahRow: View {
         return settings.showTajweedColors
             && settings.showArabicText
             && settings.isHafsDisplay
-            && !settings.cleanArabicText
-            && !settings.beginnerMode
     }
 
     private func arabicTajweedText() -> AttributedString? {
         guard shouldShowTajweedColors else { return nil }
         let text = ayah.displayArabicText(surahId: surah.id, clean: false)
-        return TajweedStore.shared.attributedText(surah: surah.id, ayah: ayah.id, text: text)
+        let displayText = settings.cleanArabicText ? ayah.displayArabicText(surahId: surah.id, clean: true) : text
+        let renderedDisplayText = settings.beginnerMode ? displayText.map { "\($0) " }.joined() : displayText
+        return TajweedStore.shared.attributedText(
+            surah: surah.id,
+            ayah: ayah.id,
+            text: text,
+            displayText: renderedDisplayText,
+            cleanDisplayText: settings.cleanArabicText,
+            beginnerSpacing: settings.beginnerMode
+        )
     }
 
     private var tajweedAnimationKey: String {
@@ -915,13 +922,18 @@ struct AyahSearchRow: View, Equatable {
         return settings.showTajweedColors
             && settings.showArabicText
             && settings.isHafsDisplay
-            && !settings.cleanArabicText
-            && !settings.beginnerMode
     }
 
     private func arabicTajweedText() -> AttributedString? {
         guard shouldShowTajweedColors else { return nil }
-        return TajweedStore.shared.attributedText(surah: surah, ayah: ayah, text: arabic)
+        return TajweedStore.shared.attributedText(
+            surah: surah,
+            ayah: ayah,
+            text: arabic,
+            displayText: arabic,
+            cleanDisplayText: settings.cleanArabicText,
+            beginnerSpacing: settings.beginnerMode
+        )
     }
 
     private var tajweedAnimationKey: String {

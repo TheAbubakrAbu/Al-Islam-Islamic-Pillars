@@ -69,7 +69,7 @@ struct AyahRow: View, Equatable {
     }
 
     private var canCompareEnglishText: Bool {
-        settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa)
+        settings.isHafsDisplay
     }
 
     private var shouldShowKhatmCheckmark: Bool {
@@ -97,8 +97,7 @@ struct AyahRow: View, Equatable {
     }
 
     private func arabicDisplayText() -> String {
-        // Tajweed needs full diacritics; when colors are on, show unclean Arabic even if "clean" is enabled elsewhere.
-        let clean = settings.cleanArabicText && !shouldShowTajweedColors
+        let clean = settings.cleanArabicText
         let qiraahKey = comparisonQiraahOverride ?? (settings.displayQiraahForArabic ?? "Hafs")
         let key = "\(surah.id):\(ayah.id)|\(clean ? 1 : 0)|\((settings.beginnerMode || ayahBeginnerMode) ? 1 : 0)|\(qiraahKey)"
 
@@ -135,14 +134,24 @@ struct AyahRow: View, Equatable {
         return settings.showTajweedColors
             && settings.showArabicText
             && usingHafs
-            && !settings.cleanArabicText
-            && !(settings.beginnerMode || ayahBeginnerMode)
     }
 
     private func arabicTajweedText() -> AttributedString? {
         guard shouldShowTajweedColors else { return nil }
+        let beginner = settings.beginnerMode || ayahBeginnerMode
         let text = ayah.displayArabicText(surahId: surah.id, clean: false, qiraahOverride: comparisonQiraahOverride)
-        return TajweedStore.shared.attributedText(surah: surah.id, ayah: ayah.id, text: text)
+        let displayText = settings.cleanArabicText
+            ? ayah.displayArabicText(surahId: surah.id, clean: true, qiraahOverride: comparisonQiraahOverride)
+            : text
+        let renderedDisplayText = beginner ? spacedArabic(displayText) : displayText
+        return TajweedStore.shared.attributedText(
+            surah: surah.id,
+            ayah: ayah.id,
+            text: text,
+            displayText: renderedDisplayText,
+            cleanDisplayText: settings.cleanArabicText,
+            beginnerSpacing: beginner
+        )
     }
 
     private var tajweedAnimationKey: String {
@@ -795,7 +804,7 @@ struct AyahRow: View, Equatable {
             }
 
             comparisonMenuBlock(
-                canShowQiraah: settings.qiraatComparisonMode,
+                canShowQiraah: settings.showQiraahDetails,
                 canShowTranslation: canCompareEnglishText
             )
             

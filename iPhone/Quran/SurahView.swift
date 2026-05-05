@@ -1217,10 +1217,8 @@ struct SurahView: View {
         let tajweedCanRenderNow = settings.showTajweedColors
             && settings.showArabicText
             && settings.isHafsDisplay
-            && !settings.beginnerMode
-            && !settings.cleanArabicText
 
-        if settings.qiraatComparisonMode || tajweedCanRenderNow {
+        if settings.showQiraahDetails || tajweedCanRenderNow {
             HStack(alignment: .bottom, spacing: 8) {
                 if tajweedCanRenderNow {
                     TajweedLegendMenu()
@@ -1228,7 +1226,7 @@ struct SurahView: View {
 
                 Spacer()
 
-                if settings.qiraatComparisonMode {
+                if settings.showQiraahDetails {
                     ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
                 }
             }
@@ -1757,14 +1755,18 @@ struct ArabicTextRiwayahPicker: View {
     @Binding var selection: String
     var useSimpleIOSPicker: Bool = false
 
-    private static let options: [(label: String, tag: String)] = Settings.Riwayah.menuOptions
+    private static let options: [Settings.Riwayah.Option] = Settings.Riwayah.options
 
-    private var favoriteOptions: [(label: String, tag: String)] {
+    private var favoriteOptions: [Settings.Riwayah.Option] {
         Self.options.filter { settings.isQiraahFavorite(tag: $0.tag) }
     }
 
-    private var otherOptions: [(label: String, tag: String)] {
-        Self.options.filter { !settings.isQiraahFavorite(tag: $0.tag) }
+    private var otherGroups: [Settings.Riwayah.Group] {
+        Settings.Riwayah.groups.compactMap { group in
+            let options = group.options.filter { !settings.isQiraahFavorite(tag: $0.tag) }
+            guard !options.isEmpty else { return nil }
+            return Settings.Riwayah.Group(teacher: group.teacher, teacherArabic: group.teacherArabic, options: options)
+        }
     }
 
     private var currentLabel: String {
@@ -1787,13 +1789,15 @@ struct ArabicTextRiwayahPicker: View {
                     }
                 }
 
-                Section {
-                    ForEach(otherOptions, id: \.tag) { option in
-                        Text(option.label).tag(option.tag)
+                ForEach(otherGroups) { group in
+                    Section {
+                        ForEach(group.options, id: \.tag) { option in
+                            Text(option.label).tag(option.tag)
+                        }
+                    } header: {
+                        Text("\(group.teacher) - \(group.teacherArabic)")
+                            .foregroundStyle(.secondary)
                     }
-                } header: {
-                    Text("Arabic Riwayah")
-                        .foregroundStyle(.secondary)
                 }
             }
         } else {
@@ -1809,8 +1813,17 @@ struct ArabicTextRiwayahPicker: View {
                     Divider()
                 }
 
-                ForEach(Array(otherOptions.reversed()), id: \.tag) { option in
-                    qiraahButton(option)
+                ForEach(otherGroups) { group in
+                    Text("\(group.teacher) - \(group.teacherArabic)")
+                        .foregroundStyle(.secondary)
+
+                    ForEach(group.options, id: \.tag) { option in
+                        qiraahButton(option)
+                    }
+
+                    if group.id != otherGroups.last?.id {
+                        Divider()
+                    }
                 }
             } label: {
                 HStack(spacing: 4) {
@@ -1842,20 +1855,22 @@ struct ArabicTextRiwayahPicker: View {
                 }
             }
 
-            Section {
-                ForEach(otherOptions, id: \.tag) { option in
-                    Text(option.label).tag(option.tag)
+            ForEach(otherGroups) { group in
+                Section {
+                    ForEach(group.options, id: \.tag) { option in
+                        Text(option.label).tag(option.tag)
+                    }
+                } header: {
+                    Text("\(group.teacher) - \(group.teacherArabic)")
+                        .foregroundStyle(.secondary)
                 }
-            } header: {
-                Text("Arabic Riwayah")
-                    .foregroundStyle(.secondary)
             }
         }
         #endif
     }
 
     @ViewBuilder
-    private func qiraahButton(_ option: (label: String, tag: String)) -> some View {
+    private func qiraahButton(_ option: Settings.Riwayah.Option) -> some View {
         Button {
             withAnimation {
                 selection = option.tag

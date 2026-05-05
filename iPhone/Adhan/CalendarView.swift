@@ -25,33 +25,29 @@ struct CalendarView: View {
         ScrollViewReader { proxy in
             List {
                 Section(header: Text("WHAT IS HIJRI?")) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("The Hijri calendar is the Islamic lunar calendar. It tracks months by moon cycles, so dates shift through the solar year and are primarily used for Islamic worship and sacred days.")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
+                    Text("The Hijri calendar is the Islamic lunar calendar. It tracks months by moon cycles, so dates shift through the solar year and are primarily used for Islamic worship and sacred days.")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
 
-                        Text("This view uses the Umm al-Qura Hijri calculation in app settings.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    Text("Islamic events are calculated using the Umm al-Qura Hijri method selected in app settings.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
 
-                        NavigationLink {
-                            HijriCalendarView()
-                        } label: {
-                            Label("What is the Hijri Calendar", systemImage: "book.pages")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                        .padding([.vertical, .top], 4)
-                        
-                        NavigationLink {
-                            DateView()
-                        } label: {
-                            Label("View the Hijri Converter", systemImage: "calendar.badge.clock")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(settings.accentColor.color)
-                        }
+                    NavigationLink {
+                        HijriCalendarView()
+                    } label: {
+                        Label("Learn About the Hijri Calendar", systemImage: "book.pages")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    NavigationLink {
+                        DateView()
+                    } label: {
+                        Label("Open Date Converter", systemImage: "calendar.badge.clock")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                    }
                 }
 
                 Section(header: Text("IMPORTANT ISLAMIC DATES")) {

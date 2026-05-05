@@ -358,6 +358,7 @@ final class TajweedStore {
         let surah: Int
         let ayah: Int
         let textDigest: UInt64
+        let displayTextDigest: UInt64
     }
 
     private struct TajweedAyahKey: Hashable {
@@ -434,14 +435,35 @@ final class TajweedStore {
         return hash
     }
 
-    func attributedText(surah: Int, ayah: Int, text: String) -> AttributedString? {
+    func attributedText(
+        surah: Int,
+        ayah: Int,
+        text: String,
+        displayText requestedDisplayText: String? = nil,
+        cleanDisplayText: Bool = false,
+        beginnerSpacing: Bool = false
+    ) -> AttributedString? {
         let visibilitySignature = tajweedVisibilitySignature()
         if visibilitySignature != lastVisibilitySignature {
             attributedCache.removeAll()
             lastVisibilitySignature = visibilitySignature
         }
 
-        let cacheKey = AttributedCacheKey(surah: surah, ayah: ayah, textDigest: Self.stableTextDigest(text))
+        let projection = (requestedDisplayText != nil || cleanDisplayText || beginnerSpacing)
+            ? tajweedProjection(
+                from: text,
+                requestedDisplayText: requestedDisplayText,
+                cleanDisplayText: cleanDisplayText,
+                beginnerSpacing: beginnerSpacing
+            )
+            : nil
+        let displayText = projection?.displayText ?? text
+        let cacheKey = AttributedCacheKey(
+            surah: surah,
+            ayah: ayah,
+            textDigest: Self.stableTextDigest(text),
+            displayTextDigest: Self.stableTextDigest(displayText)
+        )
         if let cached = attributedCache[cacheKey] {
             return cached
         }
@@ -453,11 +475,12 @@ final class TajweedStore {
 
         // Use NSAttributedString for UTF-16 painting. Per-code-unit Swift `Range(NSRange,in: String)` often
         // fails inside Arabic grapheme clusters, so `AttributedString.Index(..., within:)` skipped all colors.
-        let attributed = NSMutableAttributedString(string: text)
+        let attributed = NSMutableAttributedString(string: displayText)
         let fullRange = NSRange(location: 0, length: attributed.length)
         attributed.addAttribute(.foregroundColor, value: platformLabelColor(), range: fullRange)
 
         let utf16Count = attributed.length
+        let rawUTF16Count = text.utf16.count
         var priorityPerUTF16 = [Int](repeating: 0, count: utf16Count)
 
         var ops: [PaintOp] = []
@@ -508,22 +531,22 @@ final class TajweedStore {
 
         let _ = wordClusterRanges(clusters: clusters)
 
-        appendTreeDrivenPaintOps(surah: surah, ayah: ayah, text: text, utf16Count: utf16Count, into: &ops)
+        appendTreeDrivenPaintOps(surah: surah, ayah: ayah, text: text, utf16Count: rawUTF16Count, into: &ops)
         appendNuunMeemGhunnahHeuristicPaintOps(text: text, into: &ops)
 
         collectMaddAndWaslPaintOps(surah: surah, ayah: ayah, text: text, clusters: clusters, into: &ops)
         appendBareConsonantSilentPaintOps(clusters: clusters, into: &ops)
 
-        let waqfUTF16Skip = Self.utf16IndicesOfWaqfOrnaments(in: text)
+        let rawWaqfUTF16Skip = Self.utf16IndicesOfWaqfOrnaments(in: text)
+        let waqfUTF16Skip = Self.utf16IndicesOfWaqfOrnaments(in: displayText)
         let orderedOps = ops.enumerated().sorted {
             if $0.element.priority == $1.element.priority { return $0.offset < $1.offset }
             return $0.element.priority < $1.element.priority
         }
         for (_, op) in orderedOps {
-            let lo = op.range.location
-            let hi = lo + op.range.length
-            guard lo >= 0, hi <= utf16Count, hi >= lo else { continue }
-            for i in lo..<hi {
+            let targetIndices = projectedPaintIndices(for: op.range, projection: projection, rawWaqfUTF16Skip: rawWaqfUTF16Skip)
+            for i in targetIndices {
+                guard i >= 0, i < utf16Count else { continue }
                 if waqfUTF16Skip.contains(i) { continue }
                 guard op.priority >= priorityPerUTF16[i] else { continue }
                 priorityPerUTF16[i] = op.priority
@@ -541,6 +564,178 @@ final class TajweedStore {
         let result = AttributedString(attributed)
         attributedCache[cacheKey] = result
         return result
+    }
+
+    private struct TajweedProjection {
+        let displayText: String
+        let rawUTF16ToDisplayRange: [Range<Int>?]
+        let fallbackDisplayRangeByRawUTF16: [NSRange?]
+    }
+
+    private func tajweedProjection(
+        from rawText: String,
+        requestedDisplayText: String?,
+        cleanDisplayText: Bool,
+        beginnerSpacing: Bool
+    ) -> TajweedProjection {
+        var projectedScalars = String.UnicodeScalarView()
+        projectedScalars.reserveCapacity(rawText.unicodeScalars.count * (beginnerSpacing ? 2 : 1))
+
+        let rawUTF16Count = rawText.utf16.count
+        var rawUTF16ToDisplayRange = [Range<Int>?](repeating: nil, count: rawUTF16Count)
+        var fallbackDisplayRangeByRawUTF16 = [NSRange?](repeating: nil, count: rawUTF16Count)
+
+        var rawUTF16Offset = 0
+        var displayUTF16Offset = 0
+
+        for character in rawText {
+            let clusterRawStart = rawUTF16Offset
+            let clusterDisplayStart = displayUTF16Offset
+            var primaryRange: NSRange?
+            var emittedVisibleClusterContent = false
+
+            for scalar in String(character).unicodeScalars {
+                let rawLength = utf16Length(of: scalar)
+                let outScalars = displayScalars(for: scalar, cleanDisplayText: cleanDisplayText)
+                let outStart = displayUTF16Offset
+
+                for outScalar in outScalars {
+                    projectedScalars.append(outScalar)
+                    displayUTF16Offset += utf16Length(of: outScalar)
+                }
+
+                if displayUTF16Offset > outStart {
+                    emittedVisibleClusterContent = true
+                    let displayRange = outStart..<displayUTF16Offset
+                    for rawUnit in rawUTF16Offset..<(rawUTF16Offset + rawLength) where rawUnit < rawUTF16ToDisplayRange.count {
+                        rawUTF16ToDisplayRange[rawUnit] = displayRange
+                    }
+                    if primaryRange == nil, isArabicLetterScalar(scalar) {
+                        primaryRange = NSRange(location: outStart, length: displayUTF16Offset - outStart)
+                    }
+                }
+
+                rawUTF16Offset += rawLength
+            }
+
+            if beginnerSpacing, emittedVisibleClusterContent {
+                projectedScalars.append(" ")
+                displayUTF16Offset += 1
+            }
+
+            let fallback: NSRange?
+            if let primaryRange {
+                fallback = primaryRange
+            } else if displayUTF16Offset > clusterDisplayStart {
+                fallback = NSRange(location: clusterDisplayStart, length: displayUTF16Offset - clusterDisplayStart)
+            } else {
+                fallback = nil
+            }
+
+            for rawUnit in clusterRawStart..<rawUTF16Offset where rawUnit < fallbackDisplayRangeByRawUTF16.count {
+                fallbackDisplayRangeByRawUTF16[rawUnit] = fallback
+            }
+        }
+
+        let projectedText = String(projectedScalars)
+        return TajweedProjection(
+            displayText: projectedText == requestedDisplayText ? (requestedDisplayText ?? projectedText) : projectedText,
+            rawUTF16ToDisplayRange: rawUTF16ToDisplayRange,
+            fallbackDisplayRangeByRawUTF16: fallbackDisplayRangeByRawUTF16
+        )
+    }
+
+    private func projectedPaintIndices(
+        for rawRange: NSRange,
+        projection: TajweedProjection?,
+        rawWaqfUTF16Skip: Set<Int>
+    ) -> [Int] {
+        guard let projection else {
+            let lo = rawRange.location
+            let hi = rawRange.location + rawRange.length
+            guard hi >= lo else { return [] }
+            return Array(lo..<hi)
+        }
+
+        var indices = Set<Int>()
+        let lo = max(0, rawRange.location)
+        let hi = min(projection.rawUTF16ToDisplayRange.count, rawRange.location + rawRange.length)
+        guard hi > lo else { return [] }
+
+        for rawIndex in lo..<hi where !rawWaqfUTF16Skip.contains(rawIndex) {
+            if let displayRange = projection.rawUTF16ToDisplayRange[rawIndex] {
+                for displayIndex in displayRange { indices.insert(displayIndex) }
+            }
+        }
+
+        if indices.isEmpty {
+            for rawIndex in lo..<hi where !rawWaqfUTF16Skip.contains(rawIndex) {
+                guard let fallback = projection.fallbackDisplayRangeByRawUTF16[rawIndex] else { continue }
+                let end = fallback.location + fallback.length
+                for displayIndex in fallback.location..<end { indices.insert(displayIndex) }
+            }
+        }
+
+        return indices.sorted()
+    }
+
+    private func displayScalars(for scalar: UnicodeScalar, cleanDisplayText: Bool) -> [UnicodeScalar] {
+        let visibleScalar: UnicodeScalar?
+        if cleanDisplayText {
+            switch scalar.value {
+            case 0x0671:
+                visibleScalar = UnicodeScalar(0x0627)!
+            default:
+                visibleScalar = shouldStripForCleanArabic(scalar) ? nil : scalar
+            }
+        } else {
+            visibleScalar = scalar
+        }
+
+        guard var out = visibleScalar else { return [] }
+        if cleanDisplayText && settings.removeArabicDots {
+            out = dotlessArabicScalar(out)
+        }
+        return [out]
+    }
+
+    private func shouldStripForCleanArabic(_ scalar: UnicodeScalar) -> Bool {
+        switch scalar.value {
+        case 0x064B...0x065F:
+            return true
+        case 0x06D6...0x06ED:
+            return true
+        case 0x0670, 0x0674:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func isArabicLetterScalar(_ scalar: UnicodeScalar) -> Bool {
+        let v = scalar.value
+        return (0x0621...0x063A).contains(v) || (0x0641...0x064A).contains(v) || v == 0x0671
+    }
+
+    private func dotlessArabicScalar(_ scalar: UnicodeScalar) -> UnicodeScalar {
+        switch scalar.value {
+        case 0x0623, 0x0625, 0x0624, 0x0626: return UnicodeScalar(0x0621)!
+        case 0x0622: return UnicodeScalar(0x0627)!
+        case 0x0671: return UnicodeScalar(0x0627)!
+        case 0x0628, 0x062A, 0x062B, 0x0646: return UnicodeScalar(0x066E)!
+        case 0x064A: return UnicodeScalar(0x0649)!
+        case 0x062C, 0x062E: return UnicodeScalar(0x062D)!
+        case 0x0630: return UnicodeScalar(0x062F)!
+        case 0x0632: return UnicodeScalar(0x0631)!
+        case 0x0634: return UnicodeScalar(0x0633)!
+        case 0x0636: return UnicodeScalar(0x0635)!
+        case 0x0638: return UnicodeScalar(0x0637)!
+        case 0x063A: return UnicodeScalar(0x0639)!
+        case 0x0641: return UnicodeScalar(0x06A1)!
+        case 0x0642: return UnicodeScalar(0x066F)!
+        case 0x0629: return UnicodeScalar(0x0647)!
+        default: return scalar
+        }
     }
 
     private func platformLabelColor() -> AnyObject {

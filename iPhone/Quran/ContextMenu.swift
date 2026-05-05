@@ -560,26 +560,38 @@ struct AyahQiraahComparisonSheet: View {
         let label: String
         let tag: String
         let arabicCaption: String
+        let teacher: String
+        let teacherArabic: String
+        let order: Int
 
         var id: String { tag.isEmpty ? "Hafs" : tag }
     }
 
     private var options: [QiraahDisplay] {
-        Settings.Riwayah.menuOptions.map {
+        Settings.Riwayah.options.map {
             QiraahDisplay(
                 label: $0.label,
                 tag: $0.tag,
-                arabicCaption: Settings.Riwayah.arabicCaptionByTag[$0.tag] ?? $0.label
+                arabicCaption: $0.arabic,
+                teacher: $0.teacher,
+                teacherArabic: $0.teacherArabic,
+                order: $0.order
             )
         }
     }
 
-    private var sortedOptions: [QiraahDisplay] {
-        options.sorted { lhs, rhs in
-            let lhsFavorite = settings.isQiraahFavorite(tag: lhs.tag)
-            let rhsFavorite = settings.isQiraahFavorite(tag: rhs.tag)
-            if lhsFavorite != rhsFavorite { return lhsFavorite }
-            return lhs.label.localizedCaseInsensitiveCompare(rhs.label) == .orderedAscending
+    private var favoriteOptions: [QiraahDisplay] {
+        options.filter { settings.isQiraahFavorite(tag: $0.tag) }
+            .sorted { $0.order < $1.order }
+    }
+
+    private var groupedOptions: [(teacher: String, teacherArabic: String, options: [QiraahDisplay])] {
+        Settings.Riwayah.groups.compactMap { group in
+            let rows = options
+                .filter { $0.teacher == group.teacher && !settings.isQiraahFavorite(tag: $0.tag) }
+                .sorted { $0.order < $1.order }
+            guard !rows.isEmpty else { return nil }
+            return (group.teacher, group.teacherArabic, rows)
         }
     }
 
@@ -592,9 +604,19 @@ struct AyahQiraahComparisonSheet: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section(header: Text("QIRAAH COMPARISON")) {
-                    ForEach(sortedOptions) { option in
+                if !favoriteOptions.isEmpty {
+                    Section(header: Text("FAVORITES")) {
+                        ForEach(favoriteOptions) { option in
+                            qiraahRow(option)
+                        }
+                    }
+                }
+
+                ForEach(groupedOptions, id: \.teacher) { group in
+                    Section(header: Text("\(group.teacher.uppercased()) - \(group.teacherArabic)")) {
+                        ForEach(group.options) { option in
                         qiraahRow(option)
+                        }
                     }
                 }
             }
@@ -619,9 +641,10 @@ struct AyahQiraahComparisonSheet: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 2) {
                     Text(option.label)
                         .font(.subheadline.weight(.semibold))
+                    
                     Text(option.arabicCaption)
                         .font(.caption)
                         .foregroundStyle(settings.accentColor.color)
@@ -787,17 +810,20 @@ struct AyahEnglishComparisonSheet: View {
         }
     }
 
-    private var shouldShowTransliteration: Bool {
-        guard settings.showTransliteration,
-              quranData.ayah(surah: surahNumber, ayah: ayahNumber) != nil else {
+    private var shouldShowQuranText: Bool {
+        guard quranData.ayah(surah: surahNumber, ayah: ayahNumber) != nil else {
             return false
         }
 
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return true }
 
-        return "Transliteration".localizedCaseInsensitiveContains(query) ||
-            (quranData.ayah(surah: surahNumber, ayah: ayahNumber)?.textTransliteration.localizedCaseInsensitiveContains(query) ?? false)
+        guard let ayah = quranData.ayah(surah: surahNumber, ayah: ayahNumber) else { return false }
+        let arabic = ayah.displayArabicText(surahId: surahNumber, clean: settings.cleanArabicText)
+        return "Arabic Text".localizedCaseInsensitiveContains(query) ||
+            "Transliteration".localizedCaseInsensitiveContains(query) ||
+            arabic.localizedCaseInsensitiveContains(query) ||
+            ayah.textTransliteration.localizedCaseInsensitiveContains(query)
     }
 
     var body: some View {
@@ -809,10 +835,18 @@ struct AyahEnglishComparisonSheet: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if shouldShowTransliteration,
+                if shouldShowQuranText,
                    let ayah = quranData.ayah(surah: surahNumber, ayah: ayahNumber) {
-                    Section(header: Text("TRANSLITERATION")) {
-                        comparisonRow(title: "Transliteration", text: ayah.textTransliteration)
+                    Section(header: Text("QURAN TEXT")) {
+                        comparisonRow(
+                            title: "Arabic Text",
+                            text: ayah.displayArabicText(surahId: surahNumber, clean: settings.cleanArabicText),
+                            isArabic: true
+                        )
+
+                        if settings.showTransliteration {
+                            comparisonRow(title: "Transliteration", text: ayah.textTransliteration)
+                        }
                     }
                 }
 
@@ -857,7 +891,7 @@ struct AyahEnglishComparisonSheet: View {
         .modifier(TafsirSheetPresentationModifier())
     }
 
-    private func comparisonRow(title: String, text: String, editionID: String? = nil) -> some View {
+    private func comparisonRow(title: String, text: String, editionID: String? = nil, isArabic: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 HighlightedSnippet(
@@ -886,11 +920,13 @@ struct AyahEnglishComparisonSheet: View {
             HighlightedSnippet(
                 source: text,
                 term: searchText,
-                font: .subheadline,
+                font: isArabic ? .body : .subheadline,
                 accent: settings.accentColor.color,
                 fg: .primary
             )
                 .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(isArabic ? .trailing : .leading)
+                .frame(maxWidth: .infinity, alignment: isArabic ? .trailing : .leading)
         }
         .padding(.vertical, 4)
         .textSelection(.enabled)
@@ -951,13 +987,13 @@ struct AyahContextMenuModifier: ViewModifier {
     }
 
     private var canCompareEnglishText: Bool {
-        settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa)
+        settings.isHafsDisplay
     }
 
     #if os(iOS)
     @ViewBuilder
     private var comparisonMenuBlock: some View {
-        if settings.qiraatComparisonMode && canCompareEnglishText {
+        if settings.showQiraahDetails && canCompareEnglishText {
             Menu {
                 Button {
                     settings.hapticFeedback()
@@ -975,7 +1011,7 @@ struct AyahContextMenuModifier: ViewModifier {
             } label: {
                 Label("Compare Ayah", systemImage: "rectangle.split.2x1")
             }
-        } else if settings.qiraatComparisonMode {
+        } else if settings.showQiraahDetails {
             Button {
                 settings.hapticFeedback()
                 showQiraahComparisonSheet = true
