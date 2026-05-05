@@ -56,13 +56,19 @@ struct SurahView: View {
         SurahView.arFormatter.number(from: arabicNumber)?.intValue
     }
 
+    private var isSearchingAyahs: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private func markKhatmViewedIfNeeded(_ ayahID: Int) {
-        guard settings.quranSortMode == .khatm, searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard settings.quranSortMode == .khatm,
+              !settings.manualKhatmCompletion,
+              !isSearchingAyahs else { return }
         settings.markKhatmAyahComplete(surah: surah.id, ayah: ayahID)
     }
 
     private var shouldShowKhatmProgress: Bool {
-        settings.quranSortMode == .khatm && searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        settings.quranSortMode == .khatm && !isSearchingAyahs
     }
 
     private var khatmCompletedAyahCount: Int {
@@ -1753,6 +1759,14 @@ struct ArabicTextRiwayahPicker: View {
 
     private static let options: [(label: String, tag: String)] = Settings.Riwayah.menuOptions
 
+    private var favoriteOptions: [(label: String, tag: String)] {
+        Self.options.filter { settings.isQiraahFavorite(tag: $0.tag) }
+    }
+
+    private var otherOptions: [(label: String, tag: String)] {
+        Self.options.filter { !settings.isQiraahFavorite(tag: $0.tag) }
+    }
+
     private var currentLabel: String {
         let tag = Settings.normalizeLegacyRiwayahTag(selection)
         return Self.options.first(where: { $0.tag == tag })?.label ?? "Arabic Riwayah"
@@ -1762,8 +1776,19 @@ struct ArabicTextRiwayahPicker: View {
         #if os(iOS)
         if useSimpleIOSPicker {
             Picker("Arabic Riwayah", selection: $selection) {
+                if !favoriteOptions.isEmpty {
+                    Section {
+                        ForEach(favoriteOptions, id: \.tag) { option in
+                            Text(option.label).tag(option.tag)
+                        }
+                    } header: {
+                        Text("Favorite Riwayat")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 Section {
-                    ForEach(Self.options, id: \.tag) { option in
+                    ForEach(otherOptions, id: \.tag) { option in
                         Text(option.label).tag(option.tag)
                     }
                 } header: {
@@ -1776,21 +1801,16 @@ struct ArabicTextRiwayahPicker: View {
                 Text("Arabic Riwayah")
                     .foregroundStyle(.secondary)
 
-                ForEach(Array(Self.options.reversed()), id: \.tag) { option in
-                    Button {
-                        withAnimation {
-                            selection = option.tag
-                        }
-                    } label: {
-                        HStack {
-                            if option.tag == Settings.normalizeLegacyRiwayahTag(selection) {
-                                Image(systemName: "checkmark")
-                            }
-                            
-                            Text(option.label)
-                        }
-                        .font(.caption)
+                if !favoriteOptions.isEmpty {
+                    ForEach(favoriteOptions, id: \.tag) { option in
+                        qiraahButton(option)
                     }
+
+                    Divider()
+                }
+
+                ForEach(Array(otherOptions.reversed()), id: \.tag) { option in
+                    qiraahButton(option)
                 }
             } label: {
                 HStack(spacing: 4) {
@@ -1811,8 +1831,19 @@ struct ArabicTextRiwayahPicker: View {
         }
         #else
         Picker("Arabic Riwayah", selection: $selection) {
+            if !favoriteOptions.isEmpty {
+                Section {
+                    ForEach(favoriteOptions, id: \.tag) { option in
+                        Text(option.label).tag(option.tag)
+                    }
+                } header: {
+                    Text("Favorite Riwayat")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section {
-                ForEach(Self.options, id: \.tag) { option in
+                ForEach(otherOptions, id: \.tag) { option in
                     Text(option.label).tag(option.tag)
                 }
             } header: {
@@ -1821,6 +1852,24 @@ struct ArabicTextRiwayahPicker: View {
             }
         }
         #endif
+    }
+
+    @ViewBuilder
+    private func qiraahButton(_ option: (label: String, tag: String)) -> some View {
+        Button {
+            withAnimation {
+                selection = option.tag
+            }
+        } label: {
+            HStack {
+                if option.tag == Settings.normalizeLegacyRiwayahTag(selection) {
+                    Image(systemName: "checkmark")
+                }
+
+                Text(option.label)
+            }
+            .font(.caption)
+        }
     }
 }
 

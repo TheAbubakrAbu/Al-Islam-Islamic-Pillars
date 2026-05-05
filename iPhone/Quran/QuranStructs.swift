@@ -198,6 +198,7 @@ struct ShareSettings: Equatable {
     var englishSaheeh = false
     var englishMustafa = false
     var includeQiraah = false
+    var shareTajweed = false
     var shareArabicFont = ""
     var cleanArabic = false
 }

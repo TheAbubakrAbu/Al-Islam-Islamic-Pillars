@@ -173,6 +173,36 @@ extension Settings {
         return favoriteSurahs.contains(surah)
     }
 
+    func toggleQiraahFavorite(tag: String) {
+        let normalizedTag = Self.normalizeLegacyRiwayahTag(tag)
+        withAnimation {
+            if isQiraahFavorite(tag: normalizedTag) {
+                favoriteQiraahTags.removeAll { Self.normalizeLegacyRiwayahTag($0) == normalizedTag }
+            } else {
+                favoriteQiraahTags.append(normalizedTag)
+            }
+        }
+    }
+
+    func isQiraahFavorite(tag: String) -> Bool {
+        let normalizedTag = Self.normalizeLegacyRiwayahTag(tag)
+        return favoriteQiraahTags.contains { Self.normalizeLegacyRiwayahTag($0) == normalizedTag }
+    }
+
+    func toggleEnglishTranslationFavorite(id: String) {
+        withAnimation {
+            if isEnglishTranslationFavorite(id: id) {
+                favoriteEnglishTranslationIDs.removeAll { $0 == id }
+            } else {
+                favoriteEnglishTranslationIDs.append(id)
+            }
+        }
+    }
+
+    func isEnglishTranslationFavorite(id: String) -> Bool {
+        favoriteEnglishTranslationIDs.contains(id)
+    }
+
     private func khatmKey(surah: Int, ayah: Int) -> String {
         "\(surah):\(ayah)"
     }

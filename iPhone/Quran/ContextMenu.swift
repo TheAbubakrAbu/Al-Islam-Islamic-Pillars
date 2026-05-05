@@ -19,10 +19,11 @@ struct SurahContextMenu: View {
         favoriteSurahs.contains(surahID)
     }
 
-    var body: some View {
-        Text("Surah Actions")
-            .foregroundStyle(.secondary)
+    private var canAddToQueue: Bool {
+        quranPlayer.isPlaying || quranPlayer.isPaused
+    }
 
+    var body: some View {
         Button(role: isFavorite ? .destructive : .cancel) {
             settings.hapticFeedback()
             settings.toggleSurahFavorite(surah: surahID)
@@ -56,6 +57,15 @@ struct SurahContextMenu: View {
                 quranPlayer.playSurah(surahNumber: surahID, surahName: surahName)
             } label: {
                 Label("Play Surah", systemImage: "play.fill")
+            }
+        }
+
+        if canAddToQueue {
+            Button {
+                settings.hapticFeedback()
+                quranPlayer.addSurahToQueue(surahNumber: surahID, surahName: surahName)
+            } label: {
+                Label("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward")
             }
         }
 
@@ -135,9 +145,6 @@ private final class AyahTafsirViewModel: ObservableObject {
     init(surah: Int, ayah: Int) {
         self.surah = surah
         self.ayah = ayah
-        loadTask = Task { [weak self] in
-            await self?.loadIfNeeded()
-        }
     }
 
     deinit {
@@ -206,6 +213,10 @@ struct AyahTafsirSheet: View {
             get: { selectedAuthor },
             set: { selectedAuthor = $0 }
         )
+    }
+
+    private var loadKey: String {
+        "\(surahNumber):\(ayahNumber)"
     }
 
     private var selectedTafsirEntry: AyahTafsirEntry? {
@@ -305,6 +316,9 @@ struct AyahTafsirSheet: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .modifier(TafsirSheetPresentationModifier())
+        .task(id: loadKey) {
+            await viewModel.loadIfNeeded()
+        }
     }
 
     private var noticeCard: some View {
@@ -560,6 +574,15 @@ struct AyahQiraahComparisonSheet: View {
         }
     }
 
+    private var sortedOptions: [QiraahDisplay] {
+        options.sorted { lhs, rhs in
+            let lhsFavorite = settings.isQiraahFavorite(tag: lhs.tag)
+            let rhsFavorite = settings.isQiraahFavorite(tag: rhs.tag)
+            if lhsFavorite != rhsFavorite { return lhsFavorite }
+            return lhs.label.localizedCaseInsensitiveCompare(rhs.label) == .orderedAscending
+        }
+    }
+
     var body: some View {
         NavigationView {
             List {
@@ -570,7 +593,7 @@ struct AyahQiraahComparisonSheet: View {
                 }
 
                 Section(header: Text("QIRAAH COMPARISON")) {
-                    ForEach(options) { option in
+                    ForEach(sortedOptions) { option in
                         qiraahRow(option)
                     }
                 }
@@ -605,6 +628,16 @@ struct AyahQiraahComparisonSheet: View {
                 }
 
                 Spacer()
+
+                Button {
+                    settings.hapticFeedback()
+                    settings.toggleQiraahFavorite(tag: option.tag)
+                } label: {
+                    Image(systemName: settings.isQiraahFavorite(tag: option.tag) ? "star.fill" : "star")
+                        .foregroundStyle(settings.accentColor.color)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(settings.isQiraahFavorite(tag: option.tag) ? "Unfavorite Riwayah" : "Favorite Riwayah")
 
                 if text == nil {
                     Text("Unavailable")
@@ -675,7 +708,18 @@ private final class EnglishComparisonViewModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
+    private let surah: Int
+    private let ayah: Int
     private var loadedReference: String?
+
+    init(surah: Int, ayah: Int) {
+        self.surah = surah
+        self.ayah = ayah
+    }
+
+    func loadIfNeeded() async {
+        await load(surah: surah, ayah: ayah)
+    }
 
     func load(surah: Int, ayah: Int) async {
         let reference = "\(surah):\(ayah)"
@@ -714,14 +758,30 @@ struct AyahEnglishComparisonSheet: View {
     let surahNumber: Int
     let ayahNumber: Int
 
-    @StateObject private var viewModel = EnglishComparisonViewModel()
+    @StateObject private var viewModel: EnglishComparisonViewModel
     @State private var searchText = ""
+
+    init(surahNumber: Int, ayahNumber: Int) {
+        self.surahNumber = surahNumber
+        self.ayahNumber = ayahNumber
+        _viewModel = StateObject(wrappedValue: EnglishComparisonViewModel(surah: surahNumber, ayah: ayahNumber))
+    }
+
+    private var loadKey: String {
+        "\(surahNumber):\(ayahNumber)"
+    }
 
     private var filteredEditions: [EnglishEdition] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return englishComparisonEditions }
+        let sorted = englishComparisonEditions.sorted { lhs, rhs in
+            let lhsFavorite = settings.isEnglishTranslationFavorite(id: lhs.id)
+            let rhsFavorite = settings.isEnglishTranslationFavorite(id: rhs.id)
+            if lhsFavorite != rhsFavorite { return lhsFavorite }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+        guard !query.isEmpty else { return sorted }
 
-        return englishComparisonEditions.filter { edition in
+        return sorted.filter { edition in
             edition.name.localizedCaseInsensitiveContains(query) ||
             (viewModel.translations[edition.id]?.localizedCaseInsensitiveContains(query) ?? false)
         }
@@ -771,7 +831,8 @@ struct AyahEnglishComparisonSheet: View {
                         ForEach(filteredEditions) { edition in
                             comparisonRow(
                                 title: edition.name,
-                                text: viewModel.translations[edition.id] ?? "Unavailable"
+                                text: viewModel.translations[edition.id] ?? "Unavailable",
+                                editionID: edition.id
                             )
                             .opacity(viewModel.translations[edition.id] == nil ? 0.55 : 1)
                         }
@@ -789,22 +850,38 @@ struct AyahEnglishComparisonSheet: View {
             .navigationTitle("Translation Comparison")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search translations")
-            .task {
-                await viewModel.load(surah: surahNumber, ayah: ayahNumber)
+            .task(id: loadKey) {
+                await viewModel.loadIfNeeded()
             }
         }
         .modifier(TafsirSheetPresentationModifier())
     }
 
-    private func comparisonRow(title: String, text: String) -> some View {
+    private func comparisonRow(title: String, text: String, editionID: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HighlightedSnippet(
-                source: title,
-                term: searchText,
-                font: .subheadline.weight(.semibold),
-                accent: settings.accentColor.color,
-                fg: .primary
-            )
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HighlightedSnippet(
+                    source: title,
+                    term: searchText,
+                    font: .subheadline.weight(.semibold),
+                    accent: settings.accentColor.color,
+                    fg: .primary
+                )
+
+                Spacer()
+
+                if let editionID {
+                    Button {
+                        settings.hapticFeedback()
+                        settings.toggleEnglishTranslationFavorite(id: editionID)
+                    } label: {
+                        Image(systemName: settings.isEnglishTranslationFavorite(id: editionID) ? "star.fill" : "star")
+                            .foregroundStyle(settings.accentColor.color)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(settings.isEnglishTranslationFavorite(id: editionID) ? "Unfavorite Translation" : "Favorite Translation")
+                }
+            }
 
             HighlightedSnippet(
                 source: text,
@@ -876,6 +953,45 @@ struct AyahContextMenuModifier: ViewModifier {
     private var canCompareEnglishText: Bool {
         settings.isHafsDisplay && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa)
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private var comparisonMenuBlock: some View {
+        if settings.qiraatComparisonMode && canCompareEnglishText {
+            Menu {
+                Button {
+                    settings.hapticFeedback()
+                    showQiraahComparisonSheet = true
+                } label: {
+                    Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+                }
+
+                Button {
+                    settings.hapticFeedback()
+                    showEnglishComparisonSheet = true
+                } label: {
+                    Label("Translation Comparison", systemImage: "text.bubble")
+                }
+            } label: {
+                Label("Compare Ayah", systemImage: "rectangle.split.2x1")
+            }
+        } else if settings.qiraatComparisonMode {
+            Button {
+                settings.hapticFeedback()
+                showQiraahComparisonSheet = true
+            } label: {
+                Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+            }
+        } else if canCompareEnglishText {
+            Button {
+                settings.hapticFeedback()
+                showEnglishComparisonSheet = true
+            } label: {
+                Label("Translation Comparison", systemImage: "text.bubble")
+            }
+        }
+    }
+    #endif
     
     private func setNote(_ text: String?) {
         settings.setBookmarkNote(surah: surah, ayah: ayah, note: text)
@@ -900,9 +1016,6 @@ struct AyahContextMenuModifier: ViewModifier {
         #if os(iOS)
         content
             .contextMenu {
-                Text("Ayah Actions")
-                    .foregroundStyle(.secondary)
-
                 if lastRead {
                     Button(role: .destructive) {
                         settings.hapticFeedback()
@@ -954,29 +1067,10 @@ struct AyahContextMenuModifier: ViewModifier {
                     }
                 }
 
-                if settings.qiraatComparisonMode {
-                    Button {
-                        settings.hapticFeedback()
-                        showQiraahComparisonSheet = true
-                    } label: {
-                        Label("Qiraah Comparison", systemImage: "textformat.size.ar")
-                    }
-                }
-
-                if canCompareEnglishText {
-                    Button {
-                        settings.hapticFeedback()
-                        showEnglishComparisonSheet = true
-                    } label: {
-                        Label("Translation Comparison", systemImage: "text.bubble")
-                    }
-                }
+                comparisonMenuBlock
                 
                 if settings.isHafsDisplay {
                     Menu {
-                        Text("Ayah Playback")
-                            .foregroundStyle(.secondary)
-
                         Button {
                             settings.hapticFeedback()
                             quranPlayer.playAyah(surahNumber: surah, ayahNumber: ayah)

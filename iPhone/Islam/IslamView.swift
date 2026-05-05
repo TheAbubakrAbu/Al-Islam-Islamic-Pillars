@@ -28,17 +28,10 @@ struct IslamView: View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *), UIDevice.current.userInterfaceIdiom == .pad {
-                /*NavigationSplitView {
+                NavigationSplitView {
                     islamSidebar
                 } detail: {
                     islamDetail
-                }*/
-                
-                NavigationStack {
-                    islamList
-                        .navigationDestination(for: IslamDestination.self) { destination in
-                            destinationView(for: destination)
-                        }
                 }
             } else if #available(iOS 16.0, *) {
                 NavigationStack {

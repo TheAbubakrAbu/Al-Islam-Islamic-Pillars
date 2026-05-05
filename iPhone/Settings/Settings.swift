@@ -361,6 +361,31 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
     }
 
+    @AppStorage("favoriteQiraahTagsData") private var favoriteQiraahTagsData = Data()
+    var favoriteQiraahTags: [String] {
+        get {
+            (try? Self.decoder.decode([String].self, from: favoriteQiraahTagsData)) ?? []
+        }
+        set {
+            let normalized = Array(NSOrderedSet(array: newValue.map(Self.normalizeLegacyRiwayahTag))) as? [String] ?? []
+            favoriteQiraahTagsData = (try? Self.encoder.encode(normalized)) ?? Data()
+        }
+    }
+
+    @AppStorage("favoriteEnglishTranslationIDsData") private var favoriteEnglishTranslationIDsData = Data()
+    var favoriteEnglishTranslationIDs: [String] {
+        get {
+            (try? Self.decoder.decode([String].self, from: favoriteEnglishTranslationIDsData)) ?? []
+        }
+        set {
+            let normalized = Array(NSOrderedSet(array: newValue.compactMap {
+                let trimmed = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmed.isEmpty ? nil : trimmed
+            })) as? [String] ?? []
+            favoriteEnglishTranslationIDsData = (try? Self.encoder.encode(normalized)) ?? Data()
+        }
+    }
+
     @AppStorage("reciteType") var reciteType: String = "Continue to Next"
 
     @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
@@ -374,6 +399,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     }
 
     @AppStorage("khatmCompletedAyahsData") var khatmCompletedAyahsData = Data()
+    @AppStorage("manualKhatmCompletion") var manualKhatmCompletion = false
     var khatmCompletedAyahSetCache: Set<String> = []
     var khatmCompletedSurahCountsCache: [Int: Int] = [:]
     var khatmProgressSaveTask: Task<Void, Never>?

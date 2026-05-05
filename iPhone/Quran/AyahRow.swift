@@ -75,6 +75,14 @@ struct AyahRow: View, Equatable {
     private var shouldShowKhatmCheckmark: Bool {
         settings.quranSortMode == .khatm && settings.isKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
     }
+
+    private var shouldShowManualKhatmButton: Bool {
+        settings.quranSortMode == .khatm &&
+        settings.manualKhatmCompletion &&
+        comparisonQiraahOverride == nil &&
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !settings.isKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
+    }
     
     private func setNote(_ text: String?) {
         settings.setBookmarkNote(surah: surah.id, ayah: ayah.id, note: text)
@@ -230,6 +238,23 @@ struct AyahRow: View, Equatable {
                     Spacer()
                     
                     #if os(iOS)
+                    if shouldShowManualKhatmButton {
+                        Button {
+                            settings.hapticFeedback()
+                            settings.markKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
+                        } label: {
+                            Image(systemName: "checkmark.circle")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 25, height: 25)
+                                .foregroundColor(settings.accentColor.color)
+                                .conditionalGlassEffect()
+                                .frame(width: 28, height: 28)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Mark Ayah Viewed")
+                    }
+
                     if shouldShowKhatmCheckmark {
                         Image(systemName: "checkmark.circle.fill")
                             .resizable()
@@ -362,9 +387,6 @@ struct AyahRow: View, Equatable {
         }
         #if os(iOS)
         .contextMenu {
-            Text("Ayah Actions")
-                .foregroundStyle(.secondary)
-
             menuBlock(isBookmarked: isBookmarked, includePlaybackOptions: true)
         }
         #endif
@@ -639,9 +661,6 @@ struct AyahRow: View, Equatable {
         let repeatOptions = [2, 3, 5, 10, 15, 20]
 
         Menu {
-            Text("Repeat Count")
-                .foregroundStyle(.secondary)
-
             ForEach(repeatOptions, id: \.self) { count in
                 Button {
                     settings.hapticFeedback()
@@ -662,9 +681,6 @@ struct AyahRow: View, Equatable {
         }
 
         Menu {
-            Text("Ayah Playback")
-                .foregroundStyle(.secondary)
-
             Button {
                 settings.hapticFeedback()
                 showCustomRangeSheet = true
@@ -687,6 +703,43 @@ struct AyahRow: View, Equatable {
             }
         } label: {
             Label("Play Ayah", systemImage: "play.circle")
+        }
+    }
+
+    @ViewBuilder
+    private func comparisonMenuBlock(canShowQiraah: Bool, canShowTranslation: Bool) -> some View {
+        if canShowQiraah && canShowTranslation {
+            Menu {
+                Button {
+                    settings.hapticFeedback()
+                    showQiraahComparisonSheet = true
+                } label: {
+                    Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+                }
+
+                Button {
+                    settings.hapticFeedback()
+                    showEnglishComparisonSheet = true
+                } label: {
+                    Label("Translation Comparison", systemImage: "text.bubble")
+                }
+            } label: {
+                Label("Compare Ayah", systemImage: "rectangle.split.2x1")
+            }
+        } else if canShowQiraah {
+            Button {
+                settings.hapticFeedback()
+                showQiraahComparisonSheet = true
+            } label: {
+                Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+            }
+        } else if canShowTranslation {
+            Button {
+                settings.hapticFeedback()
+                showEnglishComparisonSheet = true
+            } label: {
+                Label("Translation Comparison", systemImage: "text.bubble")
+            }
         }
     }
     #endif
@@ -741,23 +794,10 @@ struct AyahRow: View, Equatable {
                 }
             }
 
-            if settings.qiraatComparisonMode {
-                Button {
-                    settings.hapticFeedback()
-                    showQiraahComparisonSheet = true
-                } label: {
-                    Label("Qiraah Comparison", systemImage: "textformat.size.ar")
-                }
-            }
-
-            if canCompareEnglishText {
-                Button {
-                    settings.hapticFeedback()
-                    showEnglishComparisonSheet = true
-                } label: {
-                    Label("Translation Comparison", systemImage: "text.bubble")
-                }
-            }
+            comparisonMenuBlock(
+                canShowQiraah: settings.qiraatComparisonMode,
+                canShowTranslation: canCompareEnglishText
+            )
             
             if settings.showArabicText && !settings.beginnerMode {
                 Button {

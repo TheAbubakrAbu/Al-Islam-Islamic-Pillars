@@ -25,8 +25,15 @@ struct QuranView: View {
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
     @State private var selectedSurahID: Int? = nil
+    @State private var selectedSplitAyahID: Int? = nil
     @State private var hasSetDefaultSelection = false
     private let hitPageSize = 5
+    private static let sajdahSearchTokens: Set<String> = [
+        "sujood", "sujud", "sajdah", "sajda", "sajdahs", "sajdas",
+        "prostration", "prostrations", "prostrate", "prostrating",
+        "bowing", "rukuu", "ruku", "rukoo", "rukou", "ركوع", "اركع",
+        "سجود", "سجدة", "اسجد", "يسجد", "السجدة"
+    ]
 
     /// Computed surah ID that should be selected/highlighted based on reading history, bookmarks, favorites, or default to 1.
     private var defaultSurahIDForSelection: Int {
@@ -123,6 +130,7 @@ struct QuranView: View {
         let exactMatch: (surah: Surah?, ayah: Ayah?)
         let surahCountQuery: SurahCountQuery?
         let filteredSurahs: [Surah]
+        let shouldShowSajdahSection: Bool
         let canShowMoreAyahHits: Bool
         let ayahCountDisplayText: String
     }
@@ -218,6 +226,29 @@ struct QuranView: View {
         return quranData.surahsMatchingCount(ayahFilter: countQuery.ayahs, pageFilter: countQuery.pages)
     }
 
+    private var sajdahAyahs: [(surah: Surah, ayah: Ayah)] {
+        quranData.quran.flatMap { surah in
+            surah.ayahs.compactMap { ayah in
+                ayah.textHafs.contains("۩") ? (surah: surah, ayah: ayah) : nil
+            }
+        }
+    }
+
+    private func shouldShowSajdahSection(for rawQuery: String) -> Bool {
+        let normalized = settings.cleanSearch(rawQuery, whitespace: true)
+            .removingArabicDiacriticsAndSigns
+            .lowercased()
+        guard !normalized.isEmpty else { return false }
+
+        let tokens = normalized
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+        if tokens.contains(where: { Self.sajdahSearchTokens.contains($0) }) {
+            return true
+        }
+        return Self.sajdahSearchTokens.contains { normalized.contains($0) }
+    }
+
     private func persistQuranSearchHistoryIfNeeded(_ rawQuery: String, requireMinLength: Bool = false) {
         let trimmed = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -260,6 +291,11 @@ struct QuranView: View {
             path.append(QuranRoute.ayahs(surahID: surahID, ayah: ayahID))
         }
         #endif
+    }
+
+    private func selectSplitSurah(_ surahID: Int, ayahID: Int? = nil) {
+        selectedSplitAyahID = ayahID
+        selectedSurahID = surahID
     }
     
     private func fetchHits(query: String, limit: Int, offset: Int) -> ([VerseIndexEntry], Bool) {
@@ -374,14 +410,7 @@ struct QuranView: View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *), useSplitOnThisDevice {
-                //splitNavigation
-                
-                NavigationStack(path: $path) {
-                    content
-                        .navigationDestination(for: QuranRoute.self) { route in
-                            routeDestination(route)
-                        }
-                }
+                splitNavigation
             } else if #available(iOS 16.0, *) {
                 NavigationStack(path: $path) {
                     content
@@ -469,6 +498,18 @@ struct QuranView: View {
                         Image(systemName: khatmEditMode ? "checkmark" : "square.and.pencil")
                     }
                     .accessibilityLabel(khatmEditMode ? "Done" : "Edit")
+                } else {
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            searchText = "sujood"
+                            self.endEditing()
+                        }
+                    } label: {
+                        Text("۩")
+                            .font(.title3.weight(.semibold))
+                    }
+                    .accessibilityLabel("Show All Sajdahs")
                 }
             }
             
@@ -540,13 +581,13 @@ struct QuranView: View {
             SurahView(
                 surah: surah,
                 ayah: ayah,
-                onSelectSurah: useSplitOnThisDevice ? { selectedSurahID = $0 } : nil
+                onSelectSurah: useSplitOnThisDevice ? { selectSplitSurah($0) } : nil
             )
                 .id("ayahs-\(surah.id)-\(ayah)")
         } else {
             SurahView(
                 surah: surah,
-                onSelectSurah: useSplitOnThisDevice ? { selectedSurahID = $0 } : nil
+                onSelectSurah: useSplitOnThisDevice ? { selectSplitSurah($0) } : nil
             )
                 .id("ayahs-\(surah.id)")
         }
@@ -601,6 +642,18 @@ struct QuranView: View {
                         Image(systemName: khatmEditMode ? "checkmark" : "square.and.pencil")
                     }
                     .accessibilityLabel(khatmEditMode ? "Done" : "Edit")
+                } else {
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            searchText = "sujood"
+                            self.endEditing()
+                        }
+                    } label: {
+                        Text("۩")
+                            .font(.title3.weight(.semibold))
+                    }
+                    .accessibilityLabel("Show All Sajdahs")
                 }
             }
             
@@ -973,10 +1026,23 @@ struct QuranView: View {
             let noteToShow = (noteText?.isEmpty == false) ? noteText : nil
 
             Group {
-                NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
-                    SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+                if useSplitOnThisDevice {
+                    Button {
+                        settings.hapticFeedback()
+                        selectSplitSurah(surah.id, ayahID: ayah.id)
+                    } label: {
+                        SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .tag(surah.id)
+                } else {
+                    NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
+                        SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+                    }
+                    .tag(surah.id)
                 }
-                .tag(surah.id)
             }
             .rightSwipeActions(
                 surahID: surah.id,
@@ -1040,7 +1106,7 @@ struct QuranView: View {
                 if useSplitOnThisDevice {
                     Button {
                         settings.hapticFeedback()
-                        selectedSurahID = surah.id
+                        selectSplitSurah(surah.id)
                     } label: {
                         SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1086,6 +1152,7 @@ struct QuranView: View {
             if settings.searchForSurahs {
                 surahSearchSection(context: context)
             }
+            sajdahSearchSection(context: context)
         } else {
             switch settings.quranSortMode {
             case .surah:
@@ -1100,6 +1167,43 @@ struct QuranView: View {
                 khatmProgressSection()
                 surahBrowseSection(context: context, showsRevelationOrder: false)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func sajdahSearchSection(context: SearchDisplayContext) -> some View {
+        let rows = sajdahAyahs
+        if context.shouldShowSajdahSection && !rows.isEmpty {
+            Section(header: sajdahHeader(count: rows.count)) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
+                    AyahSearchResultRow(
+                        surah: item.surah,
+                        ayah: item.ayah,
+                        favoriteSurahs: context.favoriteSurahs,
+                        bookmarkedAyahs: context.bookmarkedAyahs,
+                        searchText: $searchText,
+                        scrollToSurahID: $scrollToSurahID,
+                        disableTajweedColors: true
+                    )
+                }
+            }
+        }
+    }
+
+    private func sajdahHeader(count: Int) -> some View {
+        HStack {
+            Text("SAJDAH AYAHS")
+
+            Spacer()
+
+            Text("\(count) ۩")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
         }
     }
 
@@ -1197,7 +1301,7 @@ struct QuranView: View {
                         if useSplitOnThisDevice {
                             Button {
                                 settings.hapticFeedback()
-                                selectedSurahID = surah.id
+                                selectSplitSurah(surah.id)
                             } label: {
                                 surahSearchRow(surah: surah, context: context)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1313,7 +1417,7 @@ struct QuranView: View {
                 if useSplitOnThisDevice {
                     Button {
                         settings.hapticFeedback()
-                        selectedSurahID = surah.id
+                        selectSplitSurah(surah.id)
                     } label: {
                         preprocessedJuzLabel(row: row, surah: surah, favoriteSurahs: context.favoriteSurahs)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1407,7 +1511,7 @@ struct QuranView: View {
                         if useSplitOnThisDevice {
                             Button {
                                 settings.hapticFeedback()
-                                selectedSurahID = surah.id
+                                selectSplitSurah(surah.id)
                             } label: {
                                 HStack(spacing: 10) {
                                     revelationOrderBadge(surah.revelationOrder ?? 0)
@@ -1460,10 +1564,10 @@ struct QuranView: View {
 
         Group {
             if useSplitOnThisDevice {
-                Button {
-                    settings.hapticFeedback()
-                    selectedSurahID = surah.id
-                } label: {
+                   Button {
+                        settings.hapticFeedback()
+                        selectSplitSurah(surah.id)
+                    } label: {
                     if showsRevelationOrder {
                         HStack(spacing: 10) {
                             revelationOrderBadge(surah.revelationOrder ?? 0)
@@ -1825,6 +1929,8 @@ struct QuranView: View {
                     transliteration: ayah.textTransliteration,
                     englishSaheeh: ayah.textEnglishSaheeh,
                     englishMustafa: ayah.textEnglishMustafa,
+                    page: ayah.page,
+                    juz: ayah.juz,
                     favoriteSurahs: context.favoriteSurahs,
                     bookmarkedAyahs: context.bookmarkedAyahs,
                     searchText: $searchText,
@@ -1974,6 +2080,7 @@ struct QuranView: View {
             exactMatch: exactMatch,
             surahCountQuery: surahCountQuery,
             filteredSurahs: filteredSurahs,
+            shouldShowSajdahSection: shouldShowSajdahSection(for: searchText),
             canShowMoreAyahHits: hasMoreHits && !verseHits.isEmpty,
             ayahCountDisplayText: {
                 let exactMatchBump = (exactMatch.surah != nil && exactMatch.ayah != nil) ? 1 : 0
@@ -2003,7 +2110,8 @@ struct QuranView: View {
 
     private func setDefaultSelection() {
         let id = defaultSurahIDForSelection
-        selectedSurahID = id
+        let ayahID = (hasStoredLastReadAyah && settings.lastReadSurah == id) ? settings.lastReadAyah : nil
+        selectSplitSurah(id, ayahID: ayahID)
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             scrollToSurahID = id
         }
@@ -2012,8 +2120,9 @@ struct QuranView: View {
     private var detailContent: some View {
         Group {
             if let surahID = selectedSurahID, let surah = quranData.surah(surahID) {
-                if hasStoredLastReadAyah, let lastRead = lastReadAyah, lastRead.id > 0, settings.lastReadSurah == surahID {
-                    ayahsDestination(surah: surah, ayah: lastRead.id)
+                if let selectedSplitAyahID,
+                   quranData.ayah(surah: surahID, ayah: selectedSplitAyahID) != nil {
+                    ayahsDestination(surah: surah, ayah: selectedSplitAyahID)
                 } else {
                     ayahsDestination(surah: surah)
                 }
@@ -2021,6 +2130,7 @@ struct QuranView: View {
                 detailFallback
             }
         }
+        .id("split-detail-\(selectedSurahID ?? 0)-\(selectedSplitAyahID ?? 0)")
     }
 
     private var detailFallback: some View {

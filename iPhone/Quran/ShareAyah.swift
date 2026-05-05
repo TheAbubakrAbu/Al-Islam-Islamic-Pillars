@@ -51,6 +51,33 @@ struct ShareAyahSheet: View {
         
     private var surah: Surah? { quranData.quran.first(where: { $0.id == surahNumber }) }
     private var ayah: Ayah? { surah?.ayahs.first(where: { $0.id == ayahNumber }) }
+
+    private var canShareTajweed: Bool {
+        actionMode == .image &&
+        shareSettings.arabic &&
+        settings.showTajweedColors &&
+        settings.isHafsDisplay &&
+        !shareSettings.cleanArabic &&
+        !settings.beginnerMode
+    }
+
+    private func updatedShareSettings(
+        includeQiraah: Bool? = nil,
+        shareTajweed: Bool? = nil,
+        shareArabicFont: String? = nil,
+        cleanArabic: Bool? = nil
+    ) -> ShareSettings {
+        ShareSettings(
+            arabic: shareSettings.arabic,
+            transliteration: shareSettings.transliteration,
+            englishSaheeh: shareSettings.englishSaheeh,
+            englishMustafa: shareSettings.englishMustafa,
+            includeQiraah: includeQiraah ?? shareSettings.includeQiraah,
+            shareTajweed: shareTajweed ?? shareSettings.shareTajweed,
+            shareArabicFont: shareArabicFont ?? shareSettings.shareArabicFont,
+            cleanArabic: cleanArabic ?? shareSettings.cleanArabic
+        )
+    }
     
     private var shareText: String {
         guard let surah = surah, let ayah = ayah else { return "" }
@@ -242,6 +269,7 @@ struct ShareAyahSheet: View {
                                         englishSaheeh: shareSettings.englishSaheeh,
                                         englishMustafa: shareSettings.englishMustafa,
                                         includeQiraah: shareSettings.includeQiraah,
+                                        shareTajweed: shareSettings.shareTajweed,
                                         shareArabicFont: val,
                                         cleanArabic: shareSettings.cleanArabic
                                     )
@@ -259,6 +287,18 @@ struct ShareAyahSheet: View {
                                 .scaleEffect(0.8)
                                 .padding(.horizontal, -24)
                                 .padding(.vertical, 2)
+
+                            if settings.showTajweedColors && settings.isHafsDisplay && !settings.beginnerMode {
+                                Toggle("Share With Tajweed Colors", isOn: Binding(
+                                    get: { canShareTajweed && shareSettings.shareTajweed },
+                                    set: { shareSettings = updatedShareSettings(shareTajweed: $0 && canShareTajweed) }
+                                ).animation(.easeInOut))
+                                .disabled(!canShareTajweed)
+                                .tint(settings.accentColor.color)
+                                .scaleEffect(0.8)
+                                .padding(.horizontal, -24)
+                                .padding(.vertical, 2)
+                            }
                         }
 
                         Toggle("Show Ayah Information", isOn: $settings.showAyahInformation.animation(.easeInOut))
@@ -276,7 +316,10 @@ struct ShareAyahSheet: View {
                         if settings.showQiraahDetails {
                             Toggle("Show Riwayah/Qiraah", isOn: Binding(
                                 get: { shareSettings.includeQiraah },
-                                set: { shareIncludeRiwayah = $0; shareSettings = ShareSettings(arabic: shareSettings.arabic, transliteration: shareSettings.transliteration, englishSaheeh: shareSettings.englishSaheeh, englishMustafa: shareSettings.englishMustafa, includeQiraah: $0, shareArabicFont: shareSettings.shareArabicFont, cleanArabic: shareSettings.cleanArabic) }
+                                set: {
+                                    shareIncludeRiwayah = $0
+                                    shareSettings = updatedShareSettings(includeQiraah: $0)
+                                }
                             )
                                 .animation(.easeInOut))
                             .tint(settings.accentColor.color)
@@ -332,6 +375,7 @@ struct ShareAyahSheet: View {
                     englishSaheeh: settings.isHafsDisplay ? settings.showEnglishSaheeh : false,
                     englishMustafa: settings.isHafsDisplay ? settings.showEnglishMustafa : false,
                     includeQiraah: settings.showQiraahDetails ? shareIncludeRiwayah : false,
+                    shareTajweed: settings.showTajweedColors && settings.isHafsDisplay && !settings.cleanArabicText && !settings.beginnerMode,
                     shareArabicFont: font,
                     cleanArabic: settings.cleanArabicText
                 )
@@ -344,6 +388,9 @@ struct ShareAyahSheet: View {
         .onChange(of: actionMode) { newValue in
             storedActionModeRaw = newValue.rawValue
             isGeneratingImage = false
+            if newValue == .text || !canShareTajweed {
+                shareSettings = updatedShareSettings(shareTajweed: false)
+            }
             if newValue == .image && generatedImage == nil {
                 generatePreviewImage()
             }
@@ -362,6 +409,7 @@ struct ShareAyahSheet: View {
                     englishSaheeh: shareSettings.englishSaheeh,
                     englishMustafa: shareSettings.englishMustafa,
                     includeQiraah: false,
+                    shareTajweed: shareSettings.shareTajweed,
                     shareArabicFont: shareSettings.shareArabicFont,
                     cleanArabic: shareSettings.cleanArabic
                 )
@@ -668,6 +716,7 @@ extension ShareAyahSheet {
             englishSaheeh: settings.showEnglishSaheeh,
             englishMustafa: settings.showEnglishMustafa,
             includeQiraah: includeRiwayah,
+            shareTajweed: false,
             shareArabicFont: shareFont.isEmpty ? settings.fontArabic : shareFont,
             cleanArabic: settings.cleanArabicText
         )
@@ -778,7 +827,18 @@ extension ShareAyahSheet {
                 append("\(surah.idArabic):\(ayah.idArabic)]", accentAttr)
                 append("\n", bodyAttr)
             } else { arabicText += " \(ayah.idArabic)" }
-            append(arabicText, arAttr)
+            if shareSettings.shareTajweed,
+               let tajweedText = TajweedStore.shared.attributedText(surah: surah.id, ayah: ayah.id, text: arabicText) {
+                let attributed = NSMutableAttributedString(attributedString: NSAttributedString(tajweedText))
+                let fullRange = NSRange(location: 0, length: attributed.length)
+                attributed.addAttributes([
+                    .font: arabicFont,
+                    .paragraphStyle: right
+                ], range: fullRange)
+                text.append(attributed)
+            } else {
+                append(arabicText, arAttr)
+            }
         }
         if shareSettings.transliteration, settings.isHafsDisplay {
             let trLabelName = (!shareSettings.englishSaheeh && !shareSettings.englishMustafa) ? combinedName(translit: surah.nameTransliteration, english: surah.nameEnglish) : surah.nameTransliteration

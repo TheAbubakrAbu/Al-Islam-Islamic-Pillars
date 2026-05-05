@@ -292,9 +292,6 @@ struct NowPlayingView: View {
         let isFavorite = settings.isSurahFavorite(surah: context.surah.id)
         let isBookmarked = settings.isBookmarked(surah: context.surah.id, ayah: context.ayahNumber)
 
-        Text("Playback")
-            .foregroundStyle(.secondary)
-
         Button(role: .destructive) {
             settings.hapticFeedback()
             withAnimation {
@@ -311,6 +308,22 @@ struct NowPlayingView: View {
             quranPlayer.playSurah(surahNumber: context.surah.id, surahName: context.surah.nameTransliteration)
         } label: {
             Label("Play from Beginning", systemImage: "memories")
+        }
+
+        Button {
+            settings.hapticFeedback()
+            quranPlayer.addSurahToQueue(surahNumber: context.surah.id, surahName: context.surah.nameTransliteration)
+        } label: {
+            Label("Add Current Surah to Queue", systemImage: "text.line.last.and.arrowtriangle.forward")
+        }
+
+        if !quranPlayer.surahQueue.isEmpty {
+            Button(role: .destructive) {
+                settings.hapticFeedback()
+                quranPlayer.clearSurahQueue()
+            } label: {
+                Label("Clear Queue (\(quranPlayer.surahQueue.count))", systemImage: "text.badge.xmark")
+            }
         }
 
         Divider()

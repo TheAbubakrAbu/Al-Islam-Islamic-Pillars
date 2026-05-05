@@ -764,9 +764,31 @@ struct AyahSearchResultRow: View {
         bookmarkedAyahs.contains("\(surah.id)-\(ayah.id)")
     }
 
+    private var pageJuzLine: String? {
+        if let page = ayah.page, let juz = ayah.juz {
+            return "Page \(page) • Juz \(juz)"
+        }
+        if let page = ayah.page {
+            return "Page \(page)"
+        }
+        if let juz = ayah.juz {
+            return "Juz \(juz)"
+        }
+        return nil
+    }
+
     var body: some View {
         NavigationLink(destination: SurahView(surah: surah, ayah: ayah.id)) {
-            SurahAyahRow(surah: surah, ayah: ayah, disableTajweedColors: disableTajweedColors)
+            VStack(alignment: .leading, spacing: 4) {
+                SurahAyahRow(surah: surah, ayah: ayah, disableTajweedColors: disableTajweedColors)
+
+                if settings.showFullSurahRow, let pageJuzLine {
+                    Label(pageJuzLine, systemImage: "map")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
         }
         .rightSwipeActions(
             surahID: surah.id,
@@ -805,6 +827,8 @@ struct AyahSearchRow: View, Equatable {
     let transliteration: String
     let englishSaheeh: String
     let englishMustafa: String
+    let page: Int?
+    let juz: Int?
     
     let favoriteSurahs: Set<Int>
     let bookmarkedAyahs: Set<String>
@@ -826,6 +850,29 @@ struct AyahSearchRow: View, Equatable {
         let text = "10:100" as NSString
         let size = text.size(withAttributes: [.font: font])
         return size.width + 8
+    }
+
+    private var pageJuzLine: String? {
+        if let page, let juz {
+            return "Page \(page) • Juz \(juz)"
+        }
+        if let page {
+            return "Page \(page)"
+        }
+        if let juz {
+            return "Juz \(juz)"
+        }
+        return nil
+    }
+
+    @ViewBuilder
+    private var pageJuzMetadata: some View {
+        if settings.showFullSurahRow, let pageJuzLine {
+            Label(pageJuzLine, systemImage: "map")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
     }
 
     private func toggleBookmarkWithNoteGuard() {
@@ -969,6 +1016,8 @@ struct AyahSearchRow: View, Equatable {
                     fg: .secondary
                 )
             }
+
+            pageJuzMetadata
         }
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
@@ -1064,6 +1113,8 @@ struct AyahSearchRow: View, Equatable {
                     fg: .secondary
                 )
             }
+
+            pageJuzMetadata
         }
     }
     
@@ -1106,6 +1157,8 @@ struct AyahSearchRow: View, Equatable {
         l.qiraahRefreshKey == r.qiraahRefreshKey &&
         l.compact == r.compact &&
         l.disableTajweedColors == r.disableTajweedColors &&
+        l.page == r.page &&
+        l.juz == r.juz &&
         l.favoriteSurahs == r.favoriteSurahs &&
         l.bookmarkedAyahs == r.bookmarkedAyahs
     }

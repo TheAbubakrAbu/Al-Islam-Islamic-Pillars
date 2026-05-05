@@ -24,7 +24,7 @@ struct SettingsView: View {
             #if os(iOS)
             if #available(iOS 16.0, *) {
                 if UIDevice.current.userInterfaceIdiom == .pad {
-                    /*NavigationSplitView {
+                    NavigationSplitView {
                         settingsSplitList
                             .onAppear {
                                 if !hasSetDefaultSelection {
@@ -35,7 +35,7 @@ struct SettingsView: View {
                     } detail: {
                         settingsSplitDetail
                             .animation(.easeInOut(duration: 0.25), value: selectedDestination)
-                    }*/
+                    }
                     NavigationStack {
                         settingsList
                     }

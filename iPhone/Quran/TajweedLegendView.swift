@@ -72,12 +72,21 @@ struct TajweedLegendView: View {
 
             countBadge(item)
 
-            Text(item.shortDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .lineSpacing(1)
-                .fixedSize(horizontal: false, vertical: true)
+            if #available(iOS 16.0, *) {
+                Text(item.shortDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2 ,reservesSpace: true)
+                    .lineSpacing(1)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(item.shortDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .lineSpacing(1)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Label(settings.isTajweedCategoryVisible(item) ? "Hide" : "Show", systemImage: settings.isTajweedCategoryVisible(item) ? "eye.fill" : "eye.slash.fill")
                 .font(.caption.weight(.semibold))

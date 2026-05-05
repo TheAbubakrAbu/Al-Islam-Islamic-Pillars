@@ -142,6 +142,7 @@ struct SettingsQuranView: View {
     private var displaySection: some View {
         Section(header: Text("DISPLAY")) {
             pageAndJuzDividersGroup
+            khatmModeGroup
             
             VStack(alignment: .leading) {
                 Toggle("Show Full Surah Details", isOn: $settings.showFullSurahRow.animation(.easeInOut))
@@ -154,6 +155,18 @@ struct SettingsQuranView: View {
             }
             
             systemFontSizeToggle
+        }
+    }
+
+    private var khatmModeGroup: some View {
+        VStack(alignment: .leading) {
+            Toggle("Manually Mark Khatm Ayahs", isOn: $settings.manualKhatmCompletion.animation(.easeInOut))
+                .font(.subheadline)
+
+            Text("When Khatm mode is selected, ayahs are marked as viewed only after you tap the check button. Turn this off to mark ayahs automatically as they appear.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
         }
     }
 
@@ -284,7 +297,7 @@ struct SettingsQuranView: View {
                     .font(.subheadline)
                     .disabled(!settings.showArabicText)
 
-                Text("This is what the Uthmanic manuscript looked like with no dots or tashkeel. It is very hard to read and not meant for regular reading unless you're curious, temporarily testing it out, and want to know how the old Arabs used to read it.")
+                Text("Beta: this removes Arabic dots as an experimental view and will not work properly for every ayah. It is very hard to read and not meant for regular reading.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)

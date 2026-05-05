@@ -49,9 +49,9 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamBilaGhunnah: return "Merge Without Ghunnah"
             
         case .idghamGhunnah: return "Merge with Ghunnah"
-        case .generalGhunnah: return "General Ghunnah"
+        case .generalGhunnah: return "Noon/Meem Shaddah Ghunnah"
         case .ikhfaaLight: return "Hidden Letter (Light)"
-        case .ikhfaaHeavy: return "Hidden Letter (Heavy"
+        case .ikhfaaHeavy: return "Hidden Letter (Heavy)"
         case .iqlaab: return "Noon into Meem"
             
         case .qalqalah: return "Bounce Letter"
@@ -130,7 +130,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamBilaGhunnah: return "Merging without nasal"
             
         case .idghamGhunnah: return "Merging with nasal"
-        case .generalGhunnah: return "General nasalization"
+        case .generalGhunnah: return "Noon/meem shaddah nasalization"
         case .ikhfaaLight: return "Light Concealment"
         case .ikhfaaHeavy: return "Heavy Concealment"
         case .iqlaab: return "Conversion"
@@ -162,7 +162,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamGhunnah:
             return "Idgham with ghunnah merges noon or tanween into the next letter with a nasal sound."
         case .generalGhunnah:
-            return "General ghunnah is the two-count nasal sound used on noon/meem with shaddah and similar nasalized positions."
+            return "This is the two-count nasal sound on noon or meem with shaddah, also used for linked helper highlights where the nasal target needs to stay clear."
         case .ikhfaaLight:
             return "Light Ikhfaa partially hides noon or tanween before certain letters with a lighter nasal ghunnah."
         case .ikhfaaHeavy:
@@ -216,11 +216,11 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamGhunnah:
             return "When a noon sound (ن or tanween) comes before: ي، ن، م، و"
         case .generalGhunnah:
-            return "Nasal sound category used for noon/meem with shaddah and selected linked-merge highlights"
+            return "Noon or meem with shaddah; also used on selected nasal merge targets"
         case .ikhfaaLight:
-            return "When a noon sound (ن or tanween) comes before lighter letters: ت، ث، ج، د، ذ، ز، س، ش"
+            return "When a noon sound (ن or tanween) comes before lighter letters: ت، ث، ج، د، ذ، ز، س، ش، ف، ك"
         case .ikhfaaHeavy:
-            return "When a noon sound (ن or tanween) comes before heavier letters: ص، ض، ط، ظ، ق، ك"
+            return "When a noon sound (ن or tanween) comes before heavier letters: ص، ض، ط، ظ، ق"
         case .iqlaab:
             return "When noon (ن) or tanween comes before: ب (changes to meem sound)"
             
@@ -253,8 +253,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .droppedLetter: return Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
         case .idghamBilaGhunnah: return Color(red: 0.7059, green: 0.7059, blue: 0.7059) // B4B4B4
             
-        case .idghamGhunnah: return Color(red: 0.1294, green: 0.6392, blue: 0.3529) // 21A35A distinct green
-        case .generalGhunnah: return Color(red: 0.1294, green: 0.6392, blue: 0.3529) // same ghunnah green
+        case .idghamGhunnah: return Color(red: 0.2706, green: 0.7373, blue: 0.4510) // 45BC73
+        case .generalGhunnah: return Color(red: 0.2706, green: 0.7373, blue: 0.4510) // same as idgham bighunnah
         case .ikhfaaLight: return Color(red: 0.2706, green: 0.7373, blue: 0.4510) // 45BC73 light green
         case .ikhfaaHeavy: return Color(red: 0.1216, green: 0.6667, blue: 0.5804) // 1FAA94 teal-accent green
         case .iqlaab: return Color(red: 0.4588, green: 0.6980, blue: 0.2000) // 75B233 olive-green
@@ -323,7 +323,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamGhunnah:
             return "Merge into the next letter with nasal."
         case .generalGhunnah:
-            return "General two-count nasalization."
+            return "Noon/meem with shaddah nasal sound."
         case .ikhfaaLight:
             return "Lightly hide noon or tanween with nasal."
         case .ikhfaaHeavy:
@@ -366,7 +366,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamGhunnah:
             return "This uses merging into the next letter with a gentle nasal ghunnah. The sound flows smoothly, with the noon or tanween fully blending into the following letter while maintaining clear timing and resonance. It also overlaps with shafawi-style merging behavior in meem-linked contexts."
         case .generalGhunnah:
-            return "Use this as the baseline ghunnah color for explicit noon/meem shaddah positions and helper highlights where a nasalized target letter needs to stay visually clear."
+            return "Use this for explicit noon or meem with shaddah. It is also reused for a few helper target highlights in idgham-style nasal merges, so those targets stay visually connected to the same ghunnah family."
         case .ikhfaaLight:
             return "This is a light concealment, where the noon or tanween is partially hidden with a soft nasal ghunnah. The sound remains subtle, balancing clarity and smooth transition without fully merging. In shafawi contexts, meem before baa follows this same light-hidden nasal pattern."
         case .ikhfaaHeavy:
@@ -424,7 +424,7 @@ struct TajweedRules {
     static let waqfScalarSkipColorUpper: UInt32 = 0x06ED
 
     /// A few Uthmani marks in the same block must stay paintable because they are part of letters, not stop symbols.
-    static let waqfScalarExceptions: Set<UInt32> = [0x06E1, 0x06E2, 0x06E5, 0x06E6]
+    static let waqfScalarExceptions: Set<UInt32> = [0x06E1, 0x06E2, 0x06E5, 0x06E6, 0x06ED]
 
     /// Tree-driven annotations decoded from JSON, mapped to the public legend categories.
     static let treeDrivenRuleMap: [String: TajweedLegendCategory] = [
@@ -474,8 +474,8 @@ struct TajweedRules {
     static let fathataynFollowerSkipLetters: Set<Character> = ["ا", "ى"]
 
     /// Noon/tanween ikhfaa split for app coloring.
-    static let ikhfaaHeavyLetters: Set<Character> = ["ص", "ض", "ط", "ظ", "ق", "ك"]
-    static let ikhfaaLightLetters: Set<Character> = ["ت", "ث", "ج", "د", "ذ", "ز", "س", "ش", "ف"]
+    static let ikhfaaHeavyLetters: Set<Character> = ["ص", "ض", "ط", "ظ", "ق"]
+    static let ikhfaaLightLetters: Set<Character> = ["ت", "ث", "ج", "د", "ذ", "ز", "س", "ش", "ف", "ك"]
 
     static func categoryForNoTashkeelNoonOrProxy(nextLetter: Character) -> TajweedLegendCategory? {
         if noonTanweenTargetOnlyIdghamLetters.contains(nextLetter) { return .idghamGhunnah }

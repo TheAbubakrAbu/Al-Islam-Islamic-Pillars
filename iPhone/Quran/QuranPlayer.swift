@@ -4,6 +4,12 @@ import MediaPlayer
 import Foundation
 import CryptoKit
 
+struct SurahQueueItem: Identifiable, Equatable {
+    let id = UUID()
+    let surahNumber: Int
+    let surahName: String
+}
+
 final class QuranPlayer: ObservableObject {
     static let shared = QuranPlayer()
     private static let listeningHistoryKey = "quranListeningHistoryData"
@@ -24,6 +30,7 @@ final class QuranPlayer: ObservableObject {
     @Published var showInternetAlert = false
     @Published var playbackAlertTitle = "Playback Error"
     @Published var playbackAlertMessage = "Unable to load this recitation right now. Please try again."
+    @Published private(set) var surahQueue: [SurahQueueItem] = []
 
     @Published private(set) var customRangeStartAyah: Int?
     @Published private(set) var customRangeEndAyah: Int?
@@ -258,13 +265,20 @@ final class QuranPlayer: ObservableObject {
     /// Previous ayah and start playing (used from Control Center where double-tap isn’t possible).
     private func ayahGoToPreviousAndPlay() {
         guard let s = currentSurahNumber, let a = currentAyahNumber else { return }
+        let repeatCountToKeep = ayahRepeatCount
         if a > 1 {
-            playAyah(surahNumber: s, ayahNumber: a - 1, continueRecitation: continueRecitationFromAyah)
+            playAyah(
+                surahNumber: s,
+                ayahNumber: a - 1,
+                continueRecitation: continueRecitationFromAyah,
+                repeatCount: repeatCountToKeep
+            )
         } else if s > 1, let prev = quranData.quran.first(where: { $0.id == s - 1 }) {
             playAyah(
                 surahNumber: s - 1,
                 ayahNumber: prev.numberOfAyahs,
-                continueRecitation: continueRecitationFromAyah
+                continueRecitation: continueRecitationFromAyah,
+                repeatCount: repeatCountToKeep
             )
         }
     }
@@ -497,6 +511,10 @@ final class QuranPlayer: ObservableObject {
                 return
             }
 
+            if self.playNextQueuedSurahIfAvailable(certainReciter: certainReciter) {
+                return
+            }
+
             switch self.settings.reciteType {
             case "Continue to Previous": self.playPreviousSurah(certainReciter: certainReciter)
             case "End Recitation": self.stop()
@@ -504,6 +522,33 @@ final class QuranPlayer: ObservableObject {
             }
         }
         notificationObservers.append(obs)
+    }
+
+    func addSurahToQueue(surahNumber: Int, surahName: String) {
+        guard (1...114).contains(surahNumber) else { return }
+        let resolvedName = quranData.surah(surahNumber)?.nameTransliteration ?? surahName
+        surahQueue.append(SurahQueueItem(surahNumber: surahNumber, surahName: resolvedName))
+    }
+
+    func removeQueuedSurah(id: UUID) {
+        surahQueue.removeAll { $0.id == id }
+    }
+
+    func clearSurahQueue() {
+        surahQueue.removeAll()
+    }
+
+    @discardableResult
+    private func playNextQueuedSurahIfAvailable(certainReciter: Bool) -> Bool {
+        guard !surahQueue.isEmpty else { return false }
+        let next = surahQueue.removeFirst()
+        playSurah(
+            surahNumber: next.surahNumber,
+            surahName: next.surahName,
+            certainReciter: certainReciter,
+            skipSurah: true
+        )
+        return true
     }
     
     private func playNextSurah(certainReciter: Bool = false) {
@@ -999,10 +1044,8 @@ final class QuranPlayer: ObservableObject {
     func playBismillah() { playAyah(surahNumber: 1, ayahNumber: 1, isBismillah: true) }
     
     private func ayahSkipBackward() {
-        ayahRepeatCount = 1
-        ayahRepeatRemaining = 1
-
         guard let s = currentSurahNumber, let a = currentAyahNumber else { return }
+        let repeatCountToKeep = ayahRepeatCount
         let now = Date()
 
         if let scheduledAt = ayahBackPendingRestartScheduledAt,
@@ -1011,12 +1054,18 @@ final class QuranPlayer: ObservableObject {
             ayahBackPendingRestart = nil
             ayahBackPendingRestartScheduledAt = nil
             if a > 1 {
-                playAyah(surahNumber: s, ayahNumber: a - 1, continueRecitation: continueRecitationFromAyah)
+                playAyah(
+                    surahNumber: s,
+                    ayahNumber: a - 1,
+                    continueRecitation: continueRecitationFromAyah,
+                    repeatCount: repeatCountToKeep
+                )
             } else if s > 1, let prev = quranData.quran.first(where: { $0.id == s - 1 }) {
                 playAyah(
                     surahNumber: s - 1,
                     ayahNumber: prev.numberOfAyahs,
-                    continueRecitation: continueRecitationFromAyah
+                    continueRecitation: continueRecitationFromAyah,
+                    repeatCount: repeatCountToKeep
                 )
             }
             return
@@ -1039,16 +1088,19 @@ final class QuranPlayer: ObservableObject {
     }
     
     private func ayahSkipForward(continueRecitation: Bool) {
-        ayahRepeatCount = 1
-        ayahRepeatRemaining = 1
-        
         guard
             let s = currentSurahNumber,
             let a = currentAyahNumber,
             let sur = quranData.quran.first(where: { $0.id == s })
         else { return }
+        let repeatCountToKeep = ayahRepeatCount
         (a + 1) <= sur.numberOfAyahs
-            ? playAyah(surahNumber: s, ayahNumber: a + 1, continueRecitation: continueRecitation)
+            ? playAyah(
+                surahNumber: s,
+                ayahNumber: a + 1,
+                continueRecitation: continueRecitation,
+                repeatCount: repeatCountToKeep
+            )
             : stop()
     }
     
