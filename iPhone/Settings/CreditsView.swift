@@ -123,7 +123,7 @@ struct CreditsView: View {
                 
                 // https://qul.tarteel.ai/resources/font/458 SURAH HEADER FULL LINE
                 
-                creditLink("Credit for the Uthmani Quran font goes to King Fahd Complex (KFGQPC)", url: "https://qul.tarteel.ai/resources/font/245")
+                creditLink("Credit for the Uthmani Quran font goes to King Fahad Complex (KFGQPC)", url: "https://qul.tarteel.ai/resources/font/245")
                 
                 creditLink("Credit for the Indopak Nastaleeq Quran font goes to Ayman Siddiqui and R. Siddiqua", url: "https://qul.tarteel.ai/resources/font/242")
                 

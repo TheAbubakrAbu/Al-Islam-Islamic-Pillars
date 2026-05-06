@@ -399,7 +399,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     }
 
     @AppStorage("khatmCompletedAyahsData") var khatmCompletedAyahsData = Data()
-    @AppStorage("manualKhatmCompletion") var manualKhatmCompletion = false
+    @AppStorage("automaticKhatmCompletion") var automaticKhatmCompletion = true
     var khatmCompletedAyahSetCache: Set<String> = []
     var khatmCompletedSurahCountsCache: [Int: Int] = [:]
     var khatmProgressSaveTask: Task<Void, Never>?

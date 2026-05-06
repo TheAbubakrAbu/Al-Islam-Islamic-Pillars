@@ -160,10 +160,10 @@ struct SettingsQuranView: View {
 
     private var khatmModeGroup: some View {
         VStack(alignment: .leading) {
-            Toggle("Manually Mark Khatm Ayahs", isOn: $settings.manualKhatmCompletion.animation(.easeInOut))
+            Toggle("Automatically Mark Khatm Ayahs", isOn: $settings.automaticKhatmCompletion.animation(.easeInOut))
                 .font(.subheadline)
 
-            Text("When Khatm mode is selected, ayahs are marked as viewed only after you tap the check button. Turn this off to mark ayahs automatically as they appear.")
+            Text("When Khatm mode is selected, ayahs are marked as viewed as soon as they appear. Turn this off to require manual tapping.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
@@ -869,7 +869,8 @@ struct ReciterListView: View {
                 "hani al-rifai",
                 "abu bakr al-shatri",
                 "muhammad al-luhaidan",
-                "hazza al-balushi"
+                "hazza al-balushi",
+                "ahmad al-nufais",
             ]
         )
 

@@ -78,7 +78,7 @@ struct AyahRow: View, Equatable {
 
     private var shouldShowManualKhatmButton: Bool {
         settings.quranSortMode == .khatm &&
-        settings.manualKhatmCompletion &&
+        !settings.automaticKhatmCompletion &&
         comparisonQiraahOverride == nil &&
         searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !settings.isKhatmAyahComplete(surah: surah.id, ayah: ayah.id)

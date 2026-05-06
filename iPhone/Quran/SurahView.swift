@@ -62,7 +62,7 @@ struct SurahView: View {
 
     private func markKhatmViewedIfNeeded(_ ayahID: Int) {
         guard settings.quranSortMode == .khatm,
-              !settings.manualKhatmCompletion,
+              settings.automaticKhatmCompletion,
               !isSearchingAyahs else { return }
         settings.markKhatmAyahComplete(surah: surah.id, ayah: ayahID)
     }
