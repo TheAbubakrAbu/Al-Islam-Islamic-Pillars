@@ -121,9 +121,11 @@ struct CreditsView: View {
                 
                 creditLink("Credit for all the Quranic Arabic text and all qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc")
                 
-                creditLink("Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc/tree/main/qumbul/font")
+                // https://qul.tarteel.ai/resources/font/458 SURAH HEADER FULL LINE
                 
-                creditLink("Credit for the Indopak Quran font goes to Urdu Nigar", url: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")
+                creditLink("Credit for the Uthmani Quran font goes to King Fahd Complex (KFGQPC)", url: "https://qul.tarteel.ai/resources/font/245")
+                
+                creditLink("Credit for the Indopak Nastaleeq Quran font goes to Ayman Siddiqui and R. Siddiqua", url: "https://qul.tarteel.ai/resources/font/242")
                 
                 creditLink("Credit for the Surah Quran Recitations goes to MP3 Quran", url: "https://mp3quran.net/eng")
                 

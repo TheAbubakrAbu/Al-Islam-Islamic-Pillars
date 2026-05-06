@@ -136,7 +136,7 @@ struct IslamView: View {
             }
 
             #if os(iOS)
-            resourceLink(title: "Hijri Calendar Converter", systemImage: "calendar") {
+            resourceLink(title: "Hijri Date Converter", systemImage: "calendar") {
                 DateView()
             }
 
@@ -167,7 +167,7 @@ struct IslamView: View {
             splitResourceLink(title: "99 Names of Allah", systemImage: "signature", value: .namesOfAllah)
 
             #if os(iOS)
-            splitResourceLink(title: "Hijri Calendar Converter", systemImage: "calendar", value: .hijriCalendarConverter)
+            splitResourceLink(title: "Hijri Date Converter", systemImage: "calendar", value: .hijriCalendarConverter)
             splitResourceLink(title: "Masjid Locator", systemImage: "mappin.and.ellipse", value: .masjidLocator)
             #endif
 

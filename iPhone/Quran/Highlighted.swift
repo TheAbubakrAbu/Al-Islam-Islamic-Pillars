@@ -72,13 +72,13 @@ struct HighlightedSnippet: View {
     private func highlight(source: String, baseAttributed: AttributedString, term: String) -> AttributedString {
         var attributed = baseAttributed
 
-        let normalizedSource = normalizeForSearch(source, trimWhitespace: false)
         let normalizedTerm = normalizeForSearch(term, trimWhitespace: true)
 
         guard !normalizedTerm.isEmpty else {
             return attributed
         }
 
+        let normalizedSource = normalizeForSearch(source, trimWhitespace: false)
         var searchStart = normalizedSource.startIndex
         while searchStart < normalizedSource.endIndex,
               let matchRange = normalizedSource.range(of: normalizedTerm, range: searchStart..<normalizedSource.endIndex) {
@@ -128,21 +128,12 @@ struct HighlightedSnippet: View {
         var map: [String.Index] = []
         map.reserveCapacity(normalizedSource.count)
 
-        var previousNormalizedCount = 0
         for idx in source.indices {
             let next = source.index(after: idx)
-            let prefix = String(source[..<next])
-            let normalizedPrefix = normalizeForSearch(prefix, trimWhitespace: false)
-            let currentCount = normalizedPrefix.count
-            let delta = currentCount - previousNormalizedCount
-
-            if delta > 0 {
-                for _ in 0..<delta {
-                    map.append(idx)
-                }
+            let normalizedCharacter = normalizeForSearch(String(source[idx..<next]), trimWhitespace: false)
+            for _ in normalizedCharacter {
+                map.append(idx)
             }
-
-            previousNormalizedCount = currentCount
         }
 
         return map

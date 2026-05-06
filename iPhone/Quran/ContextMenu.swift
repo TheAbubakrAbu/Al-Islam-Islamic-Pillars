@@ -615,7 +615,7 @@ struct AyahQiraahComparisonSheet: View {
                 ForEach(groupedOptions, id: \.teacher) { group in
                     Section(header: Text("\(group.teacher.uppercased()) - \(group.teacherArabic)")) {
                         ForEach(group.options) { option in
-                        qiraahRow(option)
+                            qiraahRow(option)
                         }
                     }
                 }
@@ -641,7 +641,7 @@ struct AyahQiraahComparisonSheet: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                HStack(spacing: 2) {
+                HStack {
                     Text(option.label)
                         .font(.subheadline.weight(.semibold))
                     

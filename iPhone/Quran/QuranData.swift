@@ -911,7 +911,9 @@ final class TajweedStore {
 
         if settings.isTajweedCategoryVisible(.hamzatWaslSilent),
            let firstContentUTF16 = utf16StartOfFirstNonWhitespace(clusters: clusters) {
-            for cl in clusters where cl.contains(Self.hamzatWasl) {
+            for index in clusters.indices where clusters[index].contains(Self.hamzatWasl) {
+                let cl = clusters[index]
+                if isHamzatWaslConnectedToAllahWord(clusters: clusters, index: index) { continue }
                 if cl.utf16Range.lowerBound > firstContentUTF16 {
                     ops.append(PaintOp(range: nsRange(for: cl), priority: PaintPriority.hamzatWaslSilent, category: .hamzatWaslSilent))
                 }
@@ -1265,9 +1267,11 @@ final class TajweedStore {
 
     private func appendBareConsonantSilentPaintOps(clusters: [CharacterClusterInfo], into ops: inout [PaintOp]) {
         guard settings.isTajweedCategoryVisible(.droppedLetter) else { return }
-        for cluster in clusters {
+        for index in clusters.indices {
+            let cluster = clusters[index]
             guard let base = cluster.primaryArabicLetter else { continue }
             guard !hasAnyTashkeel(cluster) else { continue }
+            if base == "ل", isLamConnectedToAllahWord(clusters: clusters, index: index) { continue }
             guard !isBareSilentException(base, cluster: cluster) else { continue }
             let range = primaryArabicLetterScalarRange(in: cluster) ?? nsRange(for: cluster)
             ops.append(PaintOp(range: range, priority: PaintPriority.droppedLetter, category: .droppedLetter))
@@ -1521,6 +1525,16 @@ final class TajweedStore {
                 continue
             }
 
+            if category == .qalqalah {
+                appendQalqalahTreePaintOps(
+                    text: text,
+                    range: NSRange(location: start, length: end - start),
+                    priority: priority,
+                    into: &ops
+                )
+                continue
+            }
+
             if TajweedRules.specialTanweenCategories.contains(category) {
                 appendSpecialTanweenPaintOps(
                     text: text,
@@ -1572,6 +1586,30 @@ final class TajweedStore {
 
         if !paintedTanween {
             ops.append(PaintOp(range: range, priority: priority, category: category, color: category.color))
+        }
+    }
+
+    private func appendQalqalahTreePaintOps(
+        text: String,
+        range: NSRange,
+        priority: Int,
+        into ops: inout [PaintOp]
+    ) {
+        let clusters = characterClusters(in: text)
+        var painted = false
+        for idx in clusters.indices {
+            let cluster = clusters[idx]
+            guard utf16RangesOverlap(cluster.utf16Range, range) else { continue }
+            guard let base = cluster.primaryArabicLetter, TajweedRules.qalqalahLetters.contains(base) else { continue }
+            let qalqalahRange = (hasStandardSukoon(cluster) || hasUthmaniSukoon(cluster))
+                ? expandedQalqalahNSRange(clusters: clusters, index: idx)
+                : qalqalahLetterNSRange(clusters: clusters, index: idx)
+            ops.append(PaintOp(range: qalqalahRange, priority: priority, category: .qalqalah, color: TajweedLegendCategory.qalqalah.color))
+            painted = true
+        }
+
+        if !painted {
+            ops.append(PaintOp(range: range, priority: priority, category: .qalqalah, color: TajweedLegendCategory.qalqalah.color))
         }
     }
 
@@ -1644,6 +1682,13 @@ final class TajweedStore {
 
         for cluster in clusters {
             guard utf16RangesOverlap(cluster.utf16Range, range) else { continue }
+            if hasMaddah(cluster) {
+                for maddRange in explicitMaddahPaintRanges(in: cluster) {
+                    ops.append(PaintOp(range: maddRange, priority: priority, category: category, color: category.color))
+                }
+                paintedSpecialMark = true
+                continue
+            }
             let specialRanges = specialMaddScalarRanges(in: cluster)
             if specialRanges.isEmpty { continue }
             paintedSpecialMark = true
@@ -1674,6 +1719,24 @@ final class TajweedStore {
             offset += length
         }
         return ranges
+    }
+
+    private func explicitMaddahPaintRanges(in cluster: CharacterClusterInfo) -> [NSRange] {
+        let hasTashkeelMaddCarrier = scalarRange(in: cluster, scalar: Self.daggerAlif) != nil ||
+            scalarRange(in: cluster, scalar: Self.smallWaw) != nil ||
+            scalarRange(in: cluster, scalar: Self.smallYeh) != nil
+        if hasTashkeelMaddCarrier {
+            return specialMaddScalarRanges(in: cluster)
+        }
+
+        var ranges: [NSRange] = []
+        if let letterRange = primaryArabicLetterScalarRange(in: cluster) {
+            ranges.append(letterRange)
+        }
+        if let maddahRange = scalarRange(in: cluster, scalar: Self.maddah) {
+            ranges.append(maddahRange)
+        }
+        return ranges.isEmpty ? [nsRange(for: cluster)] : ranges
     }
 
     private func appendNuunMeemGhunnahHeuristicPaintOps(text: String, into ops: inout [PaintOp]) {
@@ -1792,6 +1855,37 @@ final class TajweedStore {
         return isFirstLam || isSecondLam
     }
 
+    private func isFirstLamOfAllahWord(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters[index].primaryArabicLetter == "ل" else { return false }
+        if index + 2 < clusters.count,
+           clusters[index + 1].primaryArabicLetter == "ل",
+           clusters[index + 2].primaryArabicLetter == "ه" {
+            return true
+        }
+        return index + 1 < clusters.count &&
+            clusters[index + 1].primaryArabicLetter == "ه" &&
+            hasShadda(clusters[index])
+    }
+
+    private func isLamConnectedToAllahWord(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters[index].primaryArabicLetter == "ل" else { return false }
+        if isLamInAllahWord(clusters: clusters, index: index) { return true }
+        if isFirstLamOfAllahWord(clusters: clusters, index: index) { return true }
+        let isSecondLamWithoutWasl =
+            index > 0 &&
+            clusters[index - 1].primaryArabicLetter == "ل" &&
+            index + 1 < clusters.count &&
+            clusters[index + 1].primaryArabicLetter == "ه"
+        return isSecondLamWithoutWasl
+    }
+
+    private func isHamzatWaslConnectedToAllahWord(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters[index].contains(Self.hamzatWasl), index + 3 < clusters.count else { return false }
+        return clusters[index + 1].primaryArabicLetter == "ل" &&
+            clusters[index + 2].primaryArabicLetter == "ل" &&
+            clusters[index + 3].primaryArabicLetter == "ه"
+    }
+
     private func isLamShamsiyah(clusters: [CharacterClusterInfo], index: Int) -> Bool {
         guard clusters[index].primaryArabicLetter == "ل" else { return false }
         // Uthmani typesetting often leaves this lam bare (no vowel/sukun on the ل itself); ٱ + ل + sun letter is still lam shamsiyyah.
@@ -1828,6 +1922,38 @@ final class TajweedStore {
         cluster.contains(Self.daggerAlif)
     }
 
+    private func shouldUseHeavyAllahLam(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        if hasKasraFamily(clusters[index]) { return false }
+        if hasHeavyOpenVowel(clusters[index]) { return true }
+        var previousIndex = index - 1
+        while previousIndex >= 0 {
+            let previous = clusters[previousIndex]
+            if isWhitespaceOnly(previous) || previous.contains(Self.hamzatWasl) {
+                previousIndex -= 1
+                continue
+            }
+            if isSilentCarrierForAllahLamScan(previous) {
+                previousIndex -= 1
+                continue
+            }
+            return hasFathaFamily(previous) || hasDammaFamily(previous)
+        }
+        return false
+    }
+
+    private func isSilentCarrierForAllahLamScan(_ cluster: CharacterClusterInfo) -> Bool {
+        guard let base = cluster.primaryArabicLetter else { return false }
+        if cluster.contains(Self.hamzatWasl) { return true }
+        if hasStandardSukoon(cluster), !hasUthmaniSukoon(cluster) {
+            return base == "و" || isYaBase(cluster) || (base == "ا" && isBareAlifForMadd(cluster))
+        }
+        if base == "و", cluster.contains(Self.daggerAlif),
+           !hasArabicVowelOnCluster(cluster), !hasShadda(cluster), !hasStandardSukoon(cluster), !hasUthmaniSukoon(cluster) {
+            return true
+        }
+        return false
+    }
+
     private func shouldUseHeavyColor(clusters: [CharacterClusterInfo], index: Int) -> Bool {
         guard let base = clusters[index].primaryArabicLetter else { return false }
 
@@ -1838,6 +1964,10 @@ final class TajweedStore {
 
         if base == "ر" {
             return isHeavyRaa(clusters: clusters, index: index)
+        }
+
+        if base == "ل", isFirstLamOfAllahWord(clusters: clusters, index: index) {
+            return shouldUseHeavyAllahLam(clusters: clusters, index: index)
         }
 
         if TajweedRules.alifFollowerLetters.contains(base), index > 0 {

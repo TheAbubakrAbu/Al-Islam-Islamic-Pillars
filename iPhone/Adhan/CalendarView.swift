@@ -44,7 +44,7 @@ struct CalendarView: View {
                     NavigationLink {
                         DateView()
                     } label: {
-                        Label("Open Date Converter", systemImage: "calendar.badge.clock")
+                        Label("Open Hijri Date Converter", systemImage: "calendar.badge.clock")
                             .font(.caption.weight(.semibold))
                             .foregroundColor(settings.accentColor.color)
                     }

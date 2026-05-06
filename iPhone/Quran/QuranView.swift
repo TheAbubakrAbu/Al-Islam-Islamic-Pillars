@@ -458,7 +458,7 @@ struct QuranView: View {
         ScrollViewReader { scrollProxy in
             let context = searchDisplayContext
 
-            List(selection: $selectedSurahID) {
+            List {
                 primaryHistorySections(context: context)
                 bookmarkSection(context: context)
                 favoriteSection(context: context)
@@ -498,18 +498,6 @@ struct QuranView: View {
                         Image(systemName: khatmEditMode ? "checkmark" : "square.and.pencil")
                     }
                     .accessibilityLabel(khatmEditMode ? "Done" : "Edit")
-                } else {
-                    Button {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            searchText = "sujood"
-                            self.endEditing()
-                        }
-                    } label: {
-                        Text("۩")
-                            .font(.title3.weight(.semibold))
-                    }
-                    .accessibilityLabel("Show All Sajdahs")
                 }
             }
             
@@ -642,18 +630,6 @@ struct QuranView: View {
                         Image(systemName: khatmEditMode ? "checkmark" : "square.and.pencil")
                     }
                     .accessibilityLabel(khatmEditMode ? "Done" : "Edit")
-                } else {
-                    Button {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            searchText = "sujood"
-                            self.endEditing()
-                        }
-                    } label: {
-                        Text("۩")
-                            .font(.title3.weight(.semibold))
-                    }
-                    .accessibilityLabel("Show All Sajdahs")
                 }
             }
             
@@ -964,7 +940,8 @@ struct QuranView: View {
                 favoriteSurahs: context.favoriteSurahs,
                 searchText: $searchText,
                 scrollToSurahID: $scrollToSurahID,
-                showListeningHistory: $showListeningHistory
+                showListeningHistory: $showListeningHistory,
+                onSelectSurah: useSplitOnThisDevice ? { selectSplitSurah($0) } : nil
             )
         }
         #else
@@ -981,7 +958,8 @@ struct QuranView: View {
                 bookmarkedAyahs: context.bookmarkedAyahs,
                 searchText: $searchText,
                 scrollToSurahID: $scrollToSurahID,
-                showReadingHistory: $showReadingHistory
+                showReadingHistory: $showReadingHistory,
+                onSelectAyah: useSplitOnThisDevice ? { selectSplitSurah($0, ayahID: $1) } : nil
             )
         }
     }

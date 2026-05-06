@@ -1752,6 +1752,7 @@ private struct SurahPickerSheet: View {
 
 struct ArabicTextRiwayahPicker: View {
     @EnvironmentObject private var settings: Settings
+    
     @Binding var selection: String
     var useSimpleIOSPicker: Bool = false
 
@@ -1805,24 +1806,9 @@ struct ArabicTextRiwayahPicker: View {
                 Text("Arabic Riwayah")
                     .foregroundStyle(.secondary)
 
-                if !favoriteOptions.isEmpty {
-                    ForEach(favoriteOptions, id: \.tag) { option in
-                        qiraahButton(option)
-                    }
-
-                    Divider()
-                }
-
-                ForEach(otherGroups) { group in
-                    Text("\(group.teacher) - \(group.teacherArabic)")
-                        .foregroundStyle(.secondary)
-
+                ForEach(Settings.Riwayah.groups) { group in
                     ForEach(group.options, id: \.tag) { option in
                         qiraahButton(option)
-                    }
-
-                    if group.id != otherGroups.last?.id {
-                        Divider()
                     }
                 }
             } label: {
