@@ -290,7 +290,7 @@ struct SettingsQuranView: View {
                 .padding(.vertical, 2)
             #endif
             
-            if settings.cleanArabicText {
+            if settings.cleanArabicText || settings.removeArabicDots {
                 Toggle("Remove Arabic Dots", isOn: $settings.removeArabicDots.animation(.easeInOut))
                     .font(.subheadline)
                     .disabled(!settings.showArabicText)

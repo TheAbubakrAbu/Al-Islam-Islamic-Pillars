@@ -52,18 +52,11 @@ struct ShareAyahSheet: View {
     private var surah: Surah? { quranData.quran.first(where: { $0.id == surahNumber }) }
     private var ayah: Ayah? { surah?.ayahs.first(where: { $0.id == ayahNumber }) }
 
-    private var canShareTajweed: Bool {
-        actionMode == .image &&
-        shareSettings.arabic &&
-        settings.showTajweedColors &&
-        settings.isHafsDisplay
-    }
-
     private func updatedShareSettings(
         includeQiraah: Bool? = nil,
-        shareTajweed: Bool? = nil,
         shareArabicFont: String? = nil,
-        cleanArabic: Bool? = nil
+        cleanArabic: Bool? = nil,
+        hideArabicDots: Bool? = nil
     ) -> ShareSettings {
         ShareSettings(
             arabic: shareSettings.arabic,
@@ -71,10 +64,19 @@ struct ShareAyahSheet: View {
             englishSaheeh: shareSettings.englishSaheeh,
             englishMustafa: shareSettings.englishMustafa,
             includeQiraah: includeQiraah ?? shareSettings.includeQiraah,
-            shareTajweed: shareTajweed ?? shareSettings.shareTajweed,
             shareArabicFont: shareArabicFont ?? shareSettings.shareArabicFont,
-            cleanArabic: cleanArabic ?? shareSettings.cleanArabic
+            cleanArabic: cleanArabic ?? shareSettings.cleanArabic,
+            hideArabicDots: hideArabicDots ?? shareSettings.hideArabicDots
         )
+    }
+
+    private static func shareArabicText(surah: Surah, ayah: Ayah, cleanArabic: Bool, hideArabicDots: Bool) -> String {
+        let base = ayah.displayArabicText(surahId: surah.id, clean: cleanArabic)
+        return hideArabicDots ? base.removingArabicDots : base
+    }
+
+    private static func shareRawArabicText(surah: Surah, ayah: Ayah) -> String {
+        ayah.displayArabicText(surahId: surah.id, clean: false)
     }
     
     private var shareText: String {
@@ -101,7 +103,12 @@ struct ShareAyahSheet: View {
                 ? "[\(surah.nameArabic) \(surah.idArabic):\(ayah.idArabic)]"
                 : nil
 
-            let arabicText = ayah.displayArabicText(surahId: surah.id, clean: shareSettings.cleanArabic)
+            let arabicText = Self.shareArabicText(
+                surah: surah,
+                ayah: ayah,
+                cleanArabic: shareSettings.cleanArabic,
+                hideArabicDots: shareSettings.hideArabicDots
+            )
             appendBlock(
                 label: header,
                 text: (settings.showAyahInformation ? arabicText : "\(arabicText) \(ayah.idArabic)")
@@ -256,9 +263,9 @@ struct ShareAyahSheet: View {
                                         englishSaheeh: shareSettings.englishSaheeh,
                                         englishMustafa: shareSettings.englishMustafa,
                                         includeQiraah: shareSettings.includeQiraah,
-                                        shareTajweed: shareSettings.shareTajweed,
                                         shareArabicFont: val,
-                                        cleanArabic: shareSettings.cleanArabic
+                                        cleanArabic: shareSettings.cleanArabic,
+                                        hideArabicDots: shareSettings.hideArabicDots
                                     )
                                 }
                             ).animation(.easeInOut)) {
@@ -275,12 +282,11 @@ struct ShareAyahSheet: View {
                                 .padding(.horizontal, -24)
                                 .padding(.vertical, 2)
 
-                            if settings.showTajweedColors && settings.isHafsDisplay {
-                                Toggle("Share With Tajweed Colors", isOn: Binding(
-                                    get: { canShareTajweed && shareSettings.shareTajweed },
-                                    set: { shareSettings = updatedShareSettings(shareTajweed: $0 && canShareTajweed) }
+                            if settings.cleanArabicText || settings.removeArabicDots || shareSettings.hideArabicDots {
+                                Toggle("Hide Arabic Dots", isOn: Binding(
+                                    get: { shareSettings.hideArabicDots },
+                                    set: { shareSettings = updatedShareSettings(hideArabicDots: $0) }
                                 ).animation(.easeInOut))
-                                .disabled(!canShareTajweed)
                                 .tint(settings.accentColor.color)
                                 .scaleEffect(0.8)
                                 .padding(.horizontal, -24)
@@ -362,9 +368,9 @@ struct ShareAyahSheet: View {
                     englishSaheeh: settings.isHafsDisplay ? settings.showEnglishSaheeh : false,
                     englishMustafa: settings.isHafsDisplay ? settings.showEnglishMustafa : false,
                     includeQiraah: settings.showQiraahDetails ? shareIncludeRiwayah : false,
-                    shareTajweed: settings.showTajweedColors && settings.isHafsDisplay,
                     shareArabicFont: font,
-                    cleanArabic: settings.cleanArabicText
+                    cleanArabic: settings.cleanArabicText,
+                    hideArabicDots: settings.removeArabicDots
                 )
                 
                 actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
@@ -375,9 +381,6 @@ struct ShareAyahSheet: View {
         .onChange(of: actionMode) { newValue in
             storedActionModeRaw = newValue.rawValue
             isGeneratingImage = false
-            if newValue == .text || !canShareTajweed {
-                shareSettings = updatedShareSettings(shareTajweed: false)
-            }
             if newValue == .image && generatedImage == nil {
                 generatePreviewImage()
             }
@@ -396,9 +399,9 @@ struct ShareAyahSheet: View {
                     englishSaheeh: shareSettings.englishSaheeh,
                     englishMustafa: shareSettings.englishMustafa,
                     includeQiraah: false,
-                    shareTajweed: shareSettings.shareTajweed,
                     shareArabicFont: shareSettings.shareArabicFont,
-                    cleanArabic: shareSettings.cleanArabic
+                    cleanArabic: shareSettings.cleanArabic,
+                    hideArabicDots: shareSettings.hideArabicDots
                 )
             }
             generatePreviewImage()
@@ -570,7 +573,7 @@ struct ShareAyahSheet: View {
             } else {
                 arabicText += " \(ayah.idArabic)"
             }
-            
+
             append(arabicText, arAttr)
         }
         
@@ -703,9 +706,9 @@ extension ShareAyahSheet {
             englishSaheeh: settings.showEnglishSaheeh,
             englishMustafa: settings.showEnglishMustafa,
             includeQiraah: includeRiwayah,
-            shareTajweed: false,
             shareArabicFont: shareFont.isEmpty ? settings.fontArabic : shareFont,
-            cleanArabic: settings.cleanArabicText
+            cleanArabic: settings.cleanArabicText,
+            hideArabicDots: settings.removeArabicDots
         )
         let noteText: String? = {
             guard let idx = settings.bookmarkedAyahs.firstIndex(where: { $0.surah == surahNumber && $0.ayah == ayahNumber }) else { return nil }
@@ -747,7 +750,12 @@ extension ShareAyahSheet {
         }
         if shareSettings.arabic {
             let header: String? = settings.showAyahInformation ? "[\(surah.nameArabic) \(surah.idArabic):\(ayah.idArabic)]" : nil
-            let arabicText = ayah.displayArabicText(surahId: surah.id, clean: shareSettings.cleanArabic)
+            let arabicText = Self.shareArabicText(
+                surah: surah,
+                ayah: ayah,
+                cleanArabic: shareSettings.cleanArabic,
+                hideArabicDots: shareSettings.hideArabicDots
+            )
             appendBlock(label: header, text: settings.showAyahInformation ? arabicText : "\(arabicText) \(ayah.idArabic)")
         }
         if shareSettings.transliteration, settings.isHafsDisplay {
@@ -808,34 +816,20 @@ extension ShareAyahSheet {
         func append(_ str: String, _ attrs: [NSAttributedString.Key: Any]) { text.append(NSAttributedString(string: str, attributes: attrs)) }
         func sepIfNeeded() { if text.length > 0 { append("\n\n", bodyAttr) } }
         if shareSettings.arabic {
-            var arabicText = ayah.displayArabicText(surahId: surah.id, clean: shareSettings.cleanArabic)
-            var rawArabicText = ayah.displayArabicText(surahId: surah.id, clean: false)
+            var arabicText = Self.shareArabicText(
+                surah: surah,
+                ayah: ayah,
+                cleanArabic: shareSettings.cleanArabic,
+                hideArabicDots: shareSettings.hideArabicDots
+            )
             if settings.showAyahInformation {
                 let prefix = "[\(surah.nameArabic) \(surah.idArabic):\(ayah.idArabic)]\n"
                 arabicText = prefix + arabicText
-                rawArabicText = prefix + rawArabicText
             } else {
                 arabicText += " \(ayah.idArabic)"
-                rawArabicText += " \(ayah.idArabic)"
             }
-            if shareSettings.shareTajweed,
-               let tajweedText = TajweedStore.shared.attributedText(
-                surah: surah.id,
-                ayah: ayah.id,
-                text: rawArabicText,
-                displayText: arabicText,
-                cleanDisplayText: shareSettings.cleanArabic
-               ) {
-                let attributed = NSMutableAttributedString(attributedString: NSAttributedString(tajweedText))
-                let fullRange = NSRange(location: 0, length: attributed.length)
-                attributed.addAttributes([
-                    .font: arabicFont,
-                    .paragraphStyle: right
-                ], range: fullRange)
-                text.append(attributed)
-            } else {
-                append(arabicText, arAttr)
-            }
+
+            append(arabicText, arAttr)
         }
         if shareSettings.transliteration, settings.isHafsDisplay {
             let trLabelName = (!shareSettings.englishSaheeh && !shareSettings.englishMustafa) ? combinedName(translit: surah.nameTransliteration, english: surah.nameEnglish) : surah.nameTransliteration
@@ -907,6 +901,7 @@ extension ShareAyahSheet {
             blackCard.draw(at: .zero)
         }
     }
+
 }
 
 struct ActivityView: UIViewControllerRepresentable {

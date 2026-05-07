@@ -92,7 +92,7 @@ struct IslamView: View {
         case .commonAdhkar:
             AdhkarView()
         case .commonDuas:
-            DuaIntroView()
+            DuaView()
         case .tasbihCounter:
             TasbihView()
         case .namesOfAllah:
@@ -124,7 +124,7 @@ struct IslamView: View {
             }
 
             resourceLink(title: "Dua & Supplications", systemImage: "text.book.closed") {
-                DuaIntroView()
+                DuaView()
             }
 
             resourceLink(title: "Tasbih Counter", systemImage: "circles.hexagonpath.fill") {

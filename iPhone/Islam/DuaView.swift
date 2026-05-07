@@ -34,42 +34,7 @@ struct DuaView: View {
         DuaCollections.common,
         DuaCollections.rabbana
     ]
-
-    var body: some View {
-        List {
-            Section {
-                ForEach(collections) { collection in
-                    NavigationLink {
-                        DuaCollectionView(collection: collection)
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(collection.title)
-                                    .foregroundStyle(.primary)
-
-                                Text(collection.subtitle)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } icon: {
-                            Image(systemName: collection.systemImage)
-                                .foregroundStyle(settings.accentColor.color)
-                        }
-                    }
-                }
-            } header: {
-                Text("DUA COLLECTIONS")
-            }
-        }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
-        .compactListSectionSpacing()
-        .navigationTitle("Dua & Supplications")
-    }
-}
-
-struct DuaIntroView: View {
-    @EnvironmentObject var settings: Settings
-
+    
     var body: some View {
         List {
             Section(header: Text("SUPPLICATIONS TO ALLAH")) {
@@ -78,19 +43,28 @@ struct DuaIntroView: View {
                     .foregroundColor(.primary)
                     .padding(.vertical, 8)
 
-                NavigationLink(destination: DuaView()) {
-                    HStack {
-                        Image(systemName: "text.book.closed")
-                            .foregroundStyle(settings.accentColor.color)
-                        VStack(alignment: .leading) {
-                            Text("Open Dua & Supplications")
-                                .foregroundStyle(.primary)
-                            Text("Browse common duas and Quranic Rabbana supplications")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                Section {
+                    ForEach(collections) { collection in
+                        NavigationLink {
+                            DuaCollectionView(collection: collection)
+                        } label: {
+                            Label {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(collection.title)
+                                        .foregroundStyle(.primary)
+
+                                    Text(collection.subtitle)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: collection.systemImage)
+                                    .foregroundStyle(settings.accentColor.color)
+                            }
                         }
                     }
-                    .padding(.vertical, 6)
+                } header: {
+                    Text("DUA COLLECTIONS")
                 }
             }
 

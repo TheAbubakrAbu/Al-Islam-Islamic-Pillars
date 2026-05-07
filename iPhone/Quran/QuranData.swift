@@ -207,7 +207,6 @@ struct Ayah: Codable, Identifiable, Equatable {
         }()
         return (raw ?? textHafs).trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
     /// Clean (no diacritics) Arabic for the given display qiraah.
     func textCleanArabic(for displayQiraah: String?) -> String {
         let cleaned = textArabic(for: displayQiraah).removingArabicDiacriticsAndSigns
@@ -403,6 +402,7 @@ final class TajweedStore {
     private var lastVisibilitySignature = ""
     private let settings = Settings.shared
 
+
     private struct PaintOp {
         let range: NSRange
         let priority: Int
@@ -488,7 +488,14 @@ final class TajweedStore {
 
         if settings.isTajweedCategoryVisible(.tafkhim) {
             for index in clusters.indices where shouldUseHeavyColor(clusters: clusters, index: index) {
-                ops.append(PaintOp(range: nsRange(for: clusters[index]), priority: PaintPriority.tafkhim, category: .tafkhim))
+                // Allah heavy-lam special case intentionally disabled for now.
+                // if clusters[index].primaryArabicLetter == "ل",
+                //    isFirstLamOfAllahWord(clusters: clusters, index: index),
+                //    let secondLamRange = secondLamScalarRange(in: clusters[index]) {
+                //     ops.append(PaintOp(range: secondLamRange, priority: PaintPriority.tafkhim, category: .tafkhim))
+                // } else {
+                    ops.append(PaintOp(range: nsRange(for: clusters[index]), priority: PaintPriority.tafkhim, category: .tafkhim))
+                // }
             }
         }
 
@@ -1941,6 +1948,24 @@ final class TajweedStore {
         return false
     }
 
+    private func secondLamScalarRange(in cluster: CharacterClusterInfo) -> NSRange? {
+        var offset = cluster.utf16Range.lowerBound
+        var seenFirstLam = false
+
+        for scalar in cluster.text.unicodeScalars {
+            let length = utf16Length(of: scalar)
+            if scalar.value == 0x0644 {
+                if seenFirstLam {
+                    return NSRange(location: offset, length: length)
+                }
+                seenFirstLam = true
+            }
+            offset += length
+        }
+
+        return nil
+    }
+
     private func isSilentCarrierForAllahLamScan(_ cluster: CharacterClusterInfo) -> Bool {
         guard let base = cluster.primaryArabicLetter else { return false }
         if cluster.contains(Self.hamzatWasl) { return true }
@@ -2584,7 +2609,7 @@ final class QuranData: ObservableObject {
     }
 
     var shouldWaitForFullLaunchReadiness: Bool {
-        loadState == .ready || hasDynamicCacheAvailableForCurrentResources()
+        true
     }
 
     var hasLoadFailed: Bool {
@@ -3565,11 +3590,15 @@ final class QuranData: ObservableObject {
             return filtered
         }
 
+        let candidateIndices = candidateVerseIndices(for: q, useArabic: useArabic)
+
         var results: [VerseIndexEntry] = []
         results.reserveCapacity(limit == .max ? 64 : min(limit, 64))
 
         var skipped = 0
-        for entry in verseIndex {
+        for index in candidateIndices {
+            guard verseIndex.indices.contains(index) else { continue }
+            let entry = verseIndex[index]
             let haystack = useArabic ? entry.arabicBlob : entry.englishBlob
             guard haystack.contains(q) else { continue }
             if skipped < offset { skipped += 1; continue }
@@ -3578,6 +3607,54 @@ final class QuranData: ObservableObject {
         }
 
         return results
+    }
+
+    private func candidateVerseIndices(for cleanedQuery: String, useArabic: Bool) -> [Int] {
+        let tokens = searchTokens(from: cleanedQuery)
+        guard !tokens.isEmpty else { return allVerseIndices }
+
+        let tokenIndex = useArabic ? arabicTokenIndex : englishTokenIndex
+        let prefixIndex = useArabic ? arabicPrefix2Index : englishPrefix3Index
+        let minimumPrefixLength = useArabic ? 2 : 3
+
+        var candidates: Set<Int>? = nil
+        var matchedAnyIndexedToken = false
+
+        for token in tokens {
+            var tokenMatches = Set<Int>()
+
+            if let exactMatches = tokenIndex[token] {
+                tokenMatches.formUnion(exactMatches)
+            }
+
+            if token.count >= minimumPrefixLength {
+                let prefix = String(token.prefix(minimumPrefixLength))
+                if let prefixMatches = prefixIndex[prefix] {
+                    tokenMatches.formUnion(prefixMatches)
+                }
+            }
+
+            guard !tokenMatches.isEmpty else {
+                continue
+            }
+
+            matchedAnyIndexedToken = true
+            if let existing = candidates {
+                candidates = existing.intersection(tokenMatches)
+            } else {
+                candidates = tokenMatches
+            }
+
+            if candidates?.isEmpty == true {
+                return []
+            }
+        }
+
+        guard matchedAnyIndexedToken, let candidates else {
+            return allVerseIndices
+        }
+
+        return candidates.sorted()
     }
 
     private struct BooleanAyahTerm {
