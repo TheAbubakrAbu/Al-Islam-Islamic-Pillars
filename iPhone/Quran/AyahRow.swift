@@ -324,11 +324,13 @@ struct AyahRow: View, Equatable {
                         AyahQiraahComparisonSheet(surahNumber: surah.id, ayahNumber: ayah.id)
                             .environmentObject(settings)
                             .environmentObject(quranData)
+                            .smallMediumSheetPresentation()
                     }
                     .sheet(isPresented: $showEnglishComparisonSheet) {
                         AyahEnglishComparisonSheet(surahNumber: surah.id, ayahNumber: ayah.id)
                             .environmentObject(settings)
                             .environmentObject(quranData)
+                            .smallMediumSheetPresentation()
                     }
                     .sheet(isPresented: $showingNoteSheet) {
                         NoteEditorSheet(
@@ -346,6 +348,7 @@ struct AyahRow: View, Equatable {
                             onCancel: {},
                             onSave: { setNote(draftNote) }
                         )
+                        .smallMediumSheetPresentation()
                     }
                     #else
                     HStack(spacing: 8) {
@@ -480,6 +483,7 @@ struct AyahRow: View, Equatable {
                 onCancel: { showCustomRangeSheet = false }
             )
             .environmentObject(settings)
+            .smallMediumSheetPresentation()
         }
         #endif
     }

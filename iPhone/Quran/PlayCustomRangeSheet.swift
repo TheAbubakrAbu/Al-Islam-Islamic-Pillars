@@ -271,24 +271,9 @@ struct PlayCustomRangeSheet: View {
     }
 
     private var reciterCard: some View {
-        Menu {
-            Section {
-                ForEach(availableAyahReciters) { reciter in
-                    Button {
-                        settings.hapticFeedback()
-                        settings.setSelectedReciter(reciter)
-                    } label: {
-                        if reciter.id == selectedRangeReciter?.id {
-                            Label(reciter.displayNameWithEnglishQiraah, systemImage: "checkmark")
-                        } else {
-                            Text(reciter.displayNameWithEnglishQiraah)
-                        }
-                    }
-                }
-            } header: {
-                Text("Reciter")
-                    .foregroundStyle(.secondary)
-            }
+        NavigationLink {
+            ReciterListView()
+                .environmentObject(settings)
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "person.wave.2.fill")
@@ -309,7 +294,7 @@ struct PlayCustomRangeSheet: View {
 
                 Spacer(minLength: 8)
 
-                Image(systemName: "chevron.up.chevron.down")
+                Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color(.tertiaryLabel))
             }

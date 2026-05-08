@@ -303,8 +303,10 @@ extension Settings {
         khatmProgressSaveTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard let self, !Task.isCancelled else { return }
-            self.persistKhatmProgressNow()
-            self.objectWillChange.send()
+            withAnimation {
+                self.persistKhatmProgressNow()
+                self.objectWillChange.send()
+            }
         }
     }
 
@@ -496,6 +498,7 @@ extension Settings {
         case .idghamBilaGhunnah: return showTajweedIdghamBilaGhunnah
         case .hamzatWaslSilent: return showTajweedHamzatWaslSilent
         case .maddNatural: return showTajweedMaddNatural2
+        case .maddNaturalMiniature: return showTajweedMaddNaturalMiniature
         case .maddSukoon: return showTajweedMaddAaridLisSukoon
         case .maddNecessary: return showTajweedMaddNecessary6
         case .maddSeparated: return showTajweedMaddSeparated
@@ -517,6 +520,7 @@ extension Settings {
         case .idghamBilaGhunnah: showTajweedIdghamBilaGhunnah = visible
         case .hamzatWaslSilent: showTajweedHamzatWaslSilent = visible
         case .maddNatural: showTajweedMaddNatural2 = visible
+        case .maddNaturalMiniature: showTajweedMaddNaturalMiniature = visible
         case .maddSukoon: showTajweedMaddAaridLisSukoon = visible
         case .maddNecessary: showTajweedMaddNecessary6 = visible
         case .maddSeparated: showTajweedMaddSeparated = visible

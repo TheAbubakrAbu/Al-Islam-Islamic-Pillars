@@ -203,8 +203,8 @@ struct SplashScreen: View {
         return ZStack {
             RadialGradient(
                 colors: [
-                    settings.accentColor.color.opacity(isDarkMode ? 0.45 : 0.34),
-                    settings.accentColor.color.opacity(isDarkMode ? 0.14 : 0.10),
+                    Color.yellow.opacity(isDarkMode ? 0.45 : 0.34),
+                    Color.green.opacity(isDarkMode ? 0.45 : 0.34),
                     .clear
                 ],
                 center: .center,
@@ -216,8 +216,8 @@ struct SplashScreen: View {
 
             LinearGradient(
                 colors: [
-                    settings.accentColor.color.opacity(isDarkMode ? 0.24 : 0.17),
-                    Color.cyan.opacity(isDarkMode ? 0.18 : 0.12),
+                    .yellow.opacity(isDarkMode ? 0.24 : 0.17),
+                    .green.opacity(isDarkMode ? 0.18 : 0.12),
                     .clear
                 ],
                 startPoint: .topLeading,

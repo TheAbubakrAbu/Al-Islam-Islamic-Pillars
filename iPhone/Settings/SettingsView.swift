@@ -36,9 +36,6 @@ struct SettingsView: View {
                         settingsSplitDetail
                             .animation(.easeInOut(duration: 0.25), value: selectedDestination)
                     }
-                    NavigationStack {
-                        settingsList
-                    }
                 } else {
                     NavigationStack {
                         settingsList
@@ -292,6 +289,7 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingCredits) {
             CreditsView()
+                .smallMediumSheetPresentation()
         }
         #endif
     }

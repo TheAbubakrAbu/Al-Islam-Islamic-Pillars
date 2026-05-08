@@ -155,6 +155,7 @@ struct TajweedFoundationsView: View {
             NavigationView {
                 TajweedLegendView()
             }
+            .smallMediumSheetPresentation()
         }
         #endif
     }
@@ -459,6 +460,73 @@ private struct TajweedInMushafView: View {
             Section("2. TANWIN SHAPE") {
                 Text("Tanwin always ends in a hidden nun sakinah, which is why its shape matters.")
                     .font(.body)
+            }
+
+            Section("SPECIAL TANWIN MARKS IN THE MUSHAF") {
+                Text("Some Uthmani tanwin marks are drawn differently to tell you whether the hidden noon sound needs a special rule.")
+                    .font(.body)
+
+                Text("Version 1: special rule")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("When the tanwin is written with the special mark, look at the next real letter and apply the noon sakinah/tanwin rule: ikhfaa, idghaam, iqlaab, or the correct ghunnah behavior.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedRuleRow(
+                        arabic: "رٞ",
+                        pronunciation: "special dammatayn",
+                        rule: "Version 1: apply the next-letter rule",
+                        arabicFont: arabicHeadlineFont
+                    )
+
+                    TajweedRuleRow(
+                        arabic: "لٖ",
+                        pronunciation: "special kasratayn",
+                        rule: "Version 1: apply the next-letter rule",
+                        arabicFont: arabicHeadlineFont
+                    )
+
+                    TajweedRuleRow(
+                        arabic: "رٗ",
+                        pronunciation: "special fathatayn",
+                        rule: "Version 1: apply the next-letter rule",
+                        arabicFont: arabicHeadlineFont
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Version 2: normal idhaar")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("When the normal double vowel mark is used before an idhaar letter, pronounce the hidden noon clearly. There is no merge, concealment, or conversion.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedRuleRow(
+                        arabic: "نٌ",
+                        pronunciation: "normal dammatayn",
+                        rule: "Version 2: clear idhaar",
+                        arabicFont: arabicHeadlineFont
+                    )
+
+                    TajweedRuleRow(
+                        arabic: "قٍ",
+                        pronunciation: "normal kasratayn",
+                        rule: "Version 2: clear idhaar",
+                        arabicFont: arabicHeadlineFont
+                    )
+
+                    TajweedRuleRow(
+                        arabic: "بً",
+                        pronunciation: "normal fathatayn",
+                        rule: "Version 2: clear idhaar",
+                        arabicFont: arabicHeadlineFont
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Section("A. PARALLEL TANWIN → IDHAAR") {
@@ -1469,6 +1537,28 @@ private struct TajweedIdghamIkhfaView: View {
 
                 Text("What happens to this hidden sound depends entirely on the letter that follows.")
                     .font(.body)
+            }
+
+            Section("MUSHAF TANWEEN HINTS") {
+                Text("The Mushaf often hints whether tanween is normal idhaar or whether a special noon sakinah rule is coming.")
+                    .font(.body)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedRuleRow(
+                        arabic: "رٞ  لٖ  رٗ",
+                        pronunciation: "special tanween marks",
+                        rule: "Apply ikhfaa, idghaam, iqlaab, or ghunnah by the next letter",
+                        arabicFont: arabicHeadlineFont
+                    )
+
+                    TajweedRuleRow(
+                        arabic: "نٌ  قٍ  بً",
+                        pronunciation: "normal tanween marks",
+                        rule: "Usually clear idhaar when followed by idhaar letters",
+                        arabicFont: arabicHeadlineFont
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Section("1. IDHAAR (CLEAR)") {

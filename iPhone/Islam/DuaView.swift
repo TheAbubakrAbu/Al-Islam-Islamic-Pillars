@@ -152,7 +152,7 @@ private struct DuaCollectionView: View {
             .background(Color.white.opacity(0.00001))
         }
         #else
-        .searchable(text: $searchText)
+        .searchable(text: $searchText.animation(.easeInOut))
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .compactListSectionSpacing()

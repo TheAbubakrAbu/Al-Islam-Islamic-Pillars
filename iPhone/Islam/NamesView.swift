@@ -228,7 +228,7 @@ struct NamesView: View {
             }
         }
         #if os(watchOS)
-        .searchable(text: $searchText)
+        .searchable(text: $searchText.animation(.easeInOut))
         #else
         .adaptiveSafeArea(edge: .bottom) {
             VStack(spacing: SafeAreaInsetVStackSpacing.standard) {

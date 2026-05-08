@@ -125,7 +125,7 @@ struct AdhkarView: View {
             .background(Color.white.opacity(0.00001))
         }
         #elseif os(watchOS)
-        .searchable(text: $searchText)
+        .searchable(text: $searchText.animation(.easeInOut))
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .compactListSectionSpacing()

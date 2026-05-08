@@ -1299,7 +1299,7 @@ struct ReciterListView: View {
                     .background(Color.white.opacity(0.00001))
             }
             #elseif os(watchOS)
-            .searchable(text: $searchText)
+            .searchable(text: $searchText.animation(.easeInOut))
             #endif
             .applyConditionalListStyle(defaultView: true)
             .confirmationDialog(qiraahChangeDialogTitle, isPresented: Binding(

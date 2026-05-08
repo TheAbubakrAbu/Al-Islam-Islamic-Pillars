@@ -16,6 +16,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
     case tafkhim
     
     case maddNatural
+    case maddNaturalMiniature
     case maddSukoon
     case maddSeparated
     case maddConnected
@@ -49,7 +50,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamBilaGhunnah: return "Merge Without Ghunnah"
             
         case .idghamGhunnah: return "Merge with Ghunnah"
-        case .generalGhunnah: return "Noon/Meem Shaddah Ghunnah"
+        case .generalGhunnah: return "Shaddah Ghunnah"
         case .ikhfaaLight: return "Hidden Letter (Light)"
         case .ikhfaaHeavy: return "Hidden Letter (Heavy)"
         case .iqlaab: return "Noon into Meem"
@@ -57,11 +58,12 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .qalqalah: return "Bounce Letter"
         case .tafkhim: return "Heavy Letter"
             
-        case .maddNatural: return "Madd (2 Counts)"
-        case .maddSukoon: return "Madd (2, 4, 6)"
-        case .maddSeparated: return "Madd Between Words"
-        case .maddConnected: return "Madd in Same Word"
-        case .maddNecessary: return "Madd (6 Counts)"
+        case .maddNatural: return "Madd Letters (2 Counts)"
+        case .maddNaturalMiniature: return "Tiny Madd Marks"
+        case .maddSukoon: return "Madd Aarid as-Sukoon"
+        case .maddSeparated: return "Madd Munfasil"
+        case .maddConnected: return "Madd Muttasil"
+        case .maddNecessary: return "Madd Lazim"
             
         @unknown default: return rawValue
         }
@@ -85,6 +87,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .tafkhim: return "تَفخِيم"
             
         case .maddNatural: return "مَدٌّ طَبِيعِي"
+        case .maddNaturalMiniature: return "مَدٌّ طَبِيعِي صَغِير"
         case .maddSukoon: return "مَدٌّ عَارِضٌ لِلسُّكُون"
         case .maddSeparated: return "مَدٌّ مُنفَصِل"
         case .maddConnected: return "مَدٌّ مُتَّصِل"
@@ -112,7 +115,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .qalqalah: return "Qalqalah"
         case .tafkhim: return "Tafkheem"
             
-        case .maddNatural: return "Madd Tabee"
+        case .maddNatural: return "Madd Tabee Letters"
+        case .maddNaturalMiniature: return "Madd Tabee Tiny Marks"
         case .maddSukoon: return "Madd Aarid lis-Sukoon"
         case .maddSeparated: return "Madd Munfasil"
         case .maddConnected: return "Madd Muttasil"
@@ -130,7 +134,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .idghamBilaGhunnah: return "Merging without nasal"
             
         case .idghamGhunnah: return "Merging with nasal"
-        case .generalGhunnah: return "Noon/meem shaddah nasalization"
+        case .generalGhunnah: return "Shaddah nasalization"
         case .ikhfaaLight: return "Light Concealment"
         case .ikhfaaHeavy: return "Heavy Concealment"
         case .iqlaab: return "Conversion"
@@ -138,7 +142,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .qalqalah: return "Echoing bounce"
         case .tafkhim: return "Heavy articulation"
             
-        case .maddNatural: return "Natural elongation"
+        case .maddNatural: return "Natural elongation letters"
+        case .maddNaturalMiniature: return "Tiny natural elongation marks"
         case .maddSukoon: return "Elongation due to end"
         case .maddSeparated: return "Separated elongation"
         case .maddConnected: return "Connected elongation"
@@ -177,6 +182,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural:
             return "Madd tabi'i is the baseline natural stretch of 2 counts on alif, waw, or ya after matching vowels."
+        case .maddNaturalMiniature:
+            return "Tiny madd marks such as small alif, small waw, and small ya indicate a natural two-count vowel sound written as miniature tashkeel."
         case .maddSukoon:
             return "Madd aarid lis-sukoon happens when stopping creates a temporary sukoon after a madd letter, read as 2, 4, or 6 counts."
         case .maddSeparated:
@@ -193,7 +200,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
 
     var countLabel: String? {
         switch self {
-        case .maddNatural, .idghamGhunnah, .generalGhunnah, .ikhfaaLight, .ikhfaaHeavy, .iqlaab:
+        case .maddNatural, .maddNaturalMiniature, .idghamGhunnah, .generalGhunnah, .ikhfaaLight, .ikhfaaHeavy, .iqlaab:
             return "2 counts"
         case .maddSukoon:
             return "2, 4, or 6 counts"
@@ -231,6 +238,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural:
             return "Occurs on madd letters: ا، و، ي (normal 2-count elongation)"
+        case .maddNaturalMiniature:
+            return "Occurs on miniature madd marks: alif sagheerah, waw sagheerah, ya sagheerah"
         case .maddSukoon:
             return "When stopping causes sukoon after madd letters: ا، و، ي"
         case .maddSeparated:
@@ -263,6 +272,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .qalqalah: return Color(red: 0.4706, green: 0.8000, blue: 0.9765) // 78CCF9
             
         case .maddNatural: return Color(red: 0.7255, green: 0.5490, blue: 0.1843) // B98C2F
+        case .maddNaturalMiniature: return Color(red: 0.7255, green: 0.5490, blue: 0.1843) // B98C2F
         case .maddSukoon: return Color(red: 0.8902, green: 0.4745, blue: 0.2078) // E37935
         case .maddSeparated: return Color(red: 0.9216, green: 0.3176, blue: 0.6667) // EB51AA
         case .maddConnected: return Color(red: 0.8510, green: 0.2706, blue: 0.2431) // D9453E
@@ -278,7 +288,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             return .silents
         case .tafkhim, .qalqalah:
             return .sifaat
-        case .maddNatural, .maddSukoon, .maddConnected, .maddSeparated, .maddNecessary:
+        case .maddNatural, .maddNaturalMiniature, .maddSukoon, .maddConnected, .maddSeparated, .maddNecessary:
             return .madd
         case .idghamGhunnah, .generalGhunnah, .ikhfaaLight, .ikhfaaHeavy, .iqlaab:
             return .ghunnah
@@ -302,10 +312,11 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .tafkhim: return 10
             
         case .maddNatural: return 11
-        case .maddSukoon: return 12
-        case .maddSeparated: return 13
-        case .maddConnected: return 14
-        case .maddNecessary: return 15
+        case .maddNaturalMiniature: return 12
+        case .maddSukoon: return 13
+        case .maddNecessary: return 14
+        case .maddSeparated: return 15
+        case .maddConnected: return 16
         }
     }
 
@@ -337,7 +348,9 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             return "Heavy, full-mouth pronunciation."
             
         case .maddNatural:
-            return "Normal 2-count madd elongation."
+            return "From full vowel letters: alif, waw, or yaa."
+        case .maddNaturalMiniature:
+            return "From tiny vowel diacritics: small alif, waw, or yaa."
         case .maddSukoon:
             return "Stop-based madd with 2, 4, or 6 counts."
         case .maddSeparated:
@@ -381,6 +394,8 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         
         case .maddNatural:
             return "Because it is the reference madd length, mastering its steady two-count rhythm helps calibrate all longer madd forms. The stretch should sound even and relaxed, not clipped and not drifting longer than intended."
+        case .maddNaturalMiniature:
+            return "These tiny written signs carry the same two-count natural vowel sound but are controlled separately so you can hide or show miniature Uthmani madd marks independently from normal madd letters."
         case .maddSukoon:
             return "The key condition is pausing at the word ending; if you continue reading (wasl), this special stop-based extension is usually not applied the same way. Recitation schools permit 2, 4, or 6 counts here, so consistency within a reading style matters."
         case .maddSeparated:
@@ -416,7 +431,18 @@ struct TajweedRules {
     /// Surahs whose first ayah opens with disconnected letters (حروف مقطعة).
     static let surahsOpeningMuqattaat: Set<Int> = [
         2, 3, 7, 10, 11, 12, 13, 14, 15, 19, 26, 27, 28, 29, 30, 31, 32,
-        36, 38, 40, 41, 42, 43, 44, 45, 46, 50, 68,
+        20, 36, 38, 40, 41, 42, 43, 44, 45, 46, 50, 68,
+    ]
+
+    /// Muqatta'at that form a complete opening ayah in Hafs. Ash-Shura is handled separately because
+    /// its muqatta'at occupy the first two ayahs.
+    static let completeAyahMuqattaatSurahs: Set<Int> = [
+        2, 3, 7, 19, 20, 26, 28, 29, 30, 31, 32, 36, 40, 41, 43, 44, 45, 46,
+    ]
+
+    /// Muqatta'at that are only the first word of ayah 1; later words in that ayah use normal rules.
+    static let firstWordOnlyMuqattaatSurahs: Set<Int> = [
+        10, 11, 12, 13, 14, 15, 27, 38, 50, 68,
     ]
 
     /// Quranic pause / ornamental marks. These are reading symbols, not tajweed colors.
@@ -488,7 +514,7 @@ struct TajweedRules {
     }
 
     static func categoryForNoTashkeelMeem(nextLetter: Character) -> TajweedLegendCategory? {
-        if nextLetter == "ب" { return .ikhfaaLight }
+        if nextLetter == "ب" { return .iqlaab }
         if nextLetter == "م" { return .idghamGhunnah }
         return nil
     }

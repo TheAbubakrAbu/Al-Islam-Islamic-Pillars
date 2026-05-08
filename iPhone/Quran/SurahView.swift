@@ -610,6 +610,7 @@ struct SurahView: View {
                 onCancel: { showCustomRangeSheet = false }
             )
             .environmentObject(settings)
+            .smallMediumSheetPresentation()
         }
         .sheet(isPresented: $showReciterPickerSheet) {
             NavigationView {
@@ -1907,17 +1908,10 @@ private struct TajweedLegendMenu: View {
             .conditionalGlassEffect()
         }
         .sheet(isPresented: $showingSheet) {
-            if #available(iOS 16.0, *) {
-                NavigationStack {
-                    TajweedLegendView()
-                }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-            } else {
-                NavigationView {
-                    TajweedLegendView()
-                }
+            NavigationView {
+                TajweedLegendView()
             }
+            .smallMediumSheetPresentation()
         }
     }
 }

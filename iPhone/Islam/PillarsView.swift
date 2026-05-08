@@ -56,6 +56,22 @@ struct PillarsView: View {
                 .padding(.vertical, 4)
             }
 
+            Section(header: Text("QURAN AND TAFSIR")) {
+                NavigationLink(destination: QuranPillarView()) {
+                    Text("What is the Quran?")
+                        .foregroundColor(settings.accentColor.color)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+
+                NavigationLink(destination: MuqattaatPillarView()) {
+                    Text("Muqatta'at Letters")
+                        .foregroundColor(settings.accentColor.color)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+            }
+
             IslamicPillarsView()
 
             ImanPillarsView()
@@ -505,6 +521,126 @@ struct QuranPillarView: View {
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("What is the Quran?")
+    }
+}
+
+struct MuqattaatPillarView: View {
+    @EnvironmentObject var settings: Settings
+
+    private struct MuqattaatRow: Identifiable {
+        let number: Int
+        let surah: String
+        let order: Int
+        let letters: String
+        let arabic: String
+        let completeAyah: String
+
+        var id: Int { number }
+    }
+
+    private let rows: [MuqattaatRow] = [
+        MuqattaatRow(number: 23, surah: "ash-Shura", order: 42, letters: "Ha Mim; Ain Sin Qaf", arabic: "حمٓ عٓسٓقٓ", completeAyah: "Yes, 2 ayahs"),
+        MuqattaatRow(number: 1, surah: "al-Baqarah", order: 2, letters: "Alif Lam Mim", arabic: "الٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 2, surah: "Al Imran", order: 3, letters: "Alif Lam Mim", arabic: "الٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 3, surah: "al-A'raf", order: 7, letters: "Alif Lam Mim Sad", arabic: "الٓمٓصٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 10, surah: "Maryam", order: 19, letters: "Kaf Ha Ya Ain Sad", arabic: "كٓهيعٓصٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 11, surah: "Ta Ha", order: 20, letters: "Ta Ha", arabic: "طه", completeAyah: "Yes"),
+        MuqattaatRow(number: 12, surah: "ash-Shu'ara", order: 26, letters: "Ta Sin Mim", arabic: "طسٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 14, surah: "al-Qasas", order: 28, letters: "Ta Sin Mim", arabic: "طسٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 15, surah: "al-Ankabut", order: 29, letters: "Alif Lam Mim", arabic: "الٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 16, surah: "ar-Rum", order: 30, letters: "Alif Lam Mim", arabic: "الٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 17, surah: "Luqman", order: 31, letters: "Alif Lam Mim", arabic: "الٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 18, surah: "as-Sajdah", order: 32, letters: "Alif Lam Mim", arabic: "الٓمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 19, surah: "Ya Sin", order: 36, letters: "Ya Sin", arabic: "يسٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 21, surah: "Ghafir", order: 40, letters: "Ha Mim", arabic: "حمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 22, surah: "Fussilat", order: 41, letters: "Ha Mim", arabic: "حمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 24, surah: "az-Zukhruf", order: 43, letters: "Ha Mim", arabic: "حمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 25, surah: "ad-Dukhan", order: 44, letters: "Ha Mim", arabic: "حمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 26, surah: "al-Jathiyah", order: 45, letters: "Ha Mim", arabic: "حمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 27, surah: "al-Ahqaf", order: 46, letters: "Ha Mim", arabic: "حمٓ", completeAyah: "Yes"),
+        MuqattaatRow(number: 4, surah: "Yunus", order: 10, letters: "Alif Lam Ra", arabic: "الٓر", completeAyah: "No"),
+        MuqattaatRow(number: 5, surah: "Hud", order: 11, letters: "Alif Lam Ra", arabic: "الٓر", completeAyah: "No"),
+        MuqattaatRow(number: 6, surah: "Yusuf", order: 12, letters: "Alif Lam Ra", arabic: "الٓر", completeAyah: "No"),
+        MuqattaatRow(number: 7, surah: "ar-Ra'd", order: 13, letters: "Alif Lam Mim Ra", arabic: "الٓمٓر", completeAyah: "No"),
+        MuqattaatRow(number: 8, surah: "Ibrahim", order: 14, letters: "Alif Lam Ra", arabic: "الٓر", completeAyah: "No"),
+        MuqattaatRow(number: 9, surah: "al-Hijr", order: 15, letters: "Alif Lam Ra", arabic: "الٓر", completeAyah: "No"),
+        MuqattaatRow(number: 13, surah: "an-Naml", order: 27, letters: "Ta Sin", arabic: "طسٓ", completeAyah: "No"),
+        MuqattaatRow(number: 20, surah: "Sad", order: 38, letters: "Sad", arabic: "صٓ", completeAyah: "No"),
+        MuqattaatRow(number: 28, surah: "Qaf", order: 50, letters: "Qaf", arabic: "قٓ", completeAyah: "No"),
+        MuqattaatRow(number: 29, surah: "al-Qalam", order: 68, letters: "Nun", arabic: "نٓ", completeAyah: "No"),
+    ]
+
+    private var arabicFont: Font {
+        .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
+    }
+
+    var body: some View {
+        List {
+            Section(header: Text("MUQATTA'AT")) {
+                Text("Muqatta'at are the disconnected opening letters that appear at the beginning of 29 surahs, after the Basmalah where the Basmalah is recited.")
+                    .font(.body)
+
+                Text("They are also called fawatih, meaning openers, because they open their surahs. Their exact meaning is known to Allah; Muslims recite them as revealed without claiming a hidden meaning with certainty.")
+                    .font(.body)
+
+                Text("Four surahs are named directly for these letters: Ta Ha, Ya Sin, Sad, and Qaf. Some also include Nun because Surah al-Qalam opens with Nun.")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+
+            Section(header: Text("PATTERNS")) {
+                Text("There are 14 distinct combinations. The most frequent are Alif Lam Mim and Ha Mim, each appearing six times.")
+                    .font(.body)
+
+                Text("The letters used are half of the Arabic alphabet: ا هـ ح ط ي ك ل م ن س ع ص ق ر.")
+                    .font(.body)
+
+                Text("Most combinations begin with either Alif Lam or Ha Mim. In most of these surahs, the opening letters are followed very soon by mention of the Quran, the Book, revelation, or signs.")
+                    .font(.body)
+            }
+
+            Section(header: Text("RECITATION NOTE")) {
+                Text("In the app's tajweed coloring, complete muqatta'at ayahs are treated as opening-letter recitation. Bare letters stay normal unless they are heavy letters, while letters with maddah are treated as madd lazim.")
+                    .font(.body)
+
+                Text("If the muqatta'at are not the whole ayah, only the first word receives that special opening-letter handling; the rest of the ayah uses normal tajweed rules. For ash-Shura, this handling applies to both of the first two ayahs.")
+                    .font(.body)
+            }
+
+            Section(header: Text("TABLE")) {
+                ForEach(rows) { row in
+                    muqattaatRow(row)
+                }
+            }
+        }
+        .navigationTitle("Muqatta'at Letters")
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+    }
+
+    private func muqattaatRow(_ row: MuqattaatRow) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("\(row.number). \(row.surah)")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("Surah \(row.order)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+            }
+
+            Text(row.arabic)
+                .font(arabicFont)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+            Text(row.letters)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Text("Complete ayah: \(row.completeAyah)")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(row.completeAyah.hasPrefix("Yes") ? settings.accentColor.color : .secondary)
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -2757,6 +2893,7 @@ struct TajweedView: View {
             NavigationView {
                 TajweedLegendView()
             }
+            .smallMediumSheetPresentation()
         }
         #endif
     }
