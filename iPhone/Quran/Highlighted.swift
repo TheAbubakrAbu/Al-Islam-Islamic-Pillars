@@ -14,12 +14,16 @@ struct HighlightedSnippet: View {
     var trailingSuffixFont: Font? = nil
     var trailingSuffixColor: Color? = nil
     var lineLimit: Int? = nil
+    var highlightAllahNames: Bool = false
 
     var body: some View {
-        let highlightedText = highlight(
+        let highlightedText = highlightAllahIfNeeded(
             source: source,
-            baseAttributed: baseAttributedText(),
-            term: searchTerm
+            baseAttributed: highlight(
+                source: source,
+                baseAttributed: baseAttributedText(),
+                term: searchTerm
+            )
         )
 
         let suffixText = Text(trailingSuffix)
@@ -59,6 +63,10 @@ struct HighlightedSnippet: View {
             .removingArabicDiacriticsAndSigns
     }
 
+    private func normalizeForAllahHighlight(_ text: String) -> String {
+        settings.cleanSearch(text.removingArabicDiacriticsAndSigns, whitespace: false)
+    }
+
     private func baseAttributedText() -> AttributedString {
         if let preStyledSource {
             return preStyledSource
@@ -79,14 +87,16 @@ struct HighlightedSnippet: View {
         }
 
         let normalizedSource = normalizeForSearch(source, trimWhitespace: false)
+        let indexMap = normalizedIndexMap(in: source, normalizedSource: normalizedSource)
         var searchStart = normalizedSource.startIndex
+
         while searchStart < normalizedSource.endIndex,
               let matchRange = normalizedSource.range(of: normalizedTerm, range: searchStart..<normalizedSource.endIndex) {
             if let originalRange = originalRange(
                 in: source,
                 normalizedSource: normalizedSource,
-                normalizedTerm: normalizedTerm,
-                matchRange: matchRange
+                matchRange: matchRange,
+                indexMap: indexMap
             ),
                let start = AttributedString.Index(originalRange.lowerBound, within: attributed),
                let end = AttributedString.Index(originalRange.upperBound, within: attributed) {
@@ -99,13 +109,110 @@ struct HighlightedSnippet: View {
         return attributed
     }
 
+    private func highlightAllahIfNeeded(source: String, baseAttributed: AttributedString) -> AttributedString {
+        guard highlightAllahNames else { return baseAttributed }
+
+        var attributed = baseAttributed
+
+        if !source.containsArabicLetters {
+            highlightEnglishAllah(source: source, attributed: &attributed)
+            return attributed
+        }
+
+        highlightArabicAllah(source: source, attributed: &attributed)
+
+        return attributed
+    }
+
+    private func highlightEnglishAllah(source: String, attributed: inout AttributedString) {
+        var searchStart = source.startIndex
+        while searchStart < source.endIndex,
+              let matchRange = source.range(
+                of: "Allah",
+                options: [.caseInsensitive, .diacriticInsensitive],
+                range: searchStart..<source.endIndex
+              ) {
+            if let start = AttributedString.Index(matchRange.lowerBound, within: attributed),
+               let end = AttributedString.Index(matchRange.upperBound, within: attributed) {
+                attributed[start..<end].foregroundColor = .red
+            }
+
+            searchStart = matchRange.upperBound
+        }
+    }
+
+    private func highlightArabicAllah(source: String, attributed: inout AttributedString) {
+        for start in source.indices {
+            if let range = arabicAllahRange(startingAt: start, in: source),
+               let attributedStart = AttributedString.Index(range.lowerBound, within: attributed),
+               let attributedEnd = AttributedString.Index(range.upperBound, within: attributed) {
+                attributed[attributedStart..<attributedEnd].foregroundColor = .red
+            }
+        }
+    }
+
+    private func arabicAllahRange(startingAt start: String.Index, in source: String) -> Range<String.Index>? {
+        if source[start].allahBase?.isAllahAlif == true,
+           let afterAlif = nextNonMarkIndex(after: start, in: source),
+           source[afterAlif].allahBase == "ل",
+           let secondLam = nextNonMarkIndex(after: afterAlif, in: source),
+           source[secondLam].allahBase == "ل",
+           let heh = nextNonMarkIndex(after: secondLam, in: source),
+           source[heh].allahBase == "ه" {
+            return start..<rangeUpperBound(afterBaseAt: heh, in: source)
+        }
+
+        if source[start].allahBase == "ل",
+           let secondLam = nextNonMarkIndex(after: start, in: source),
+           source[secondLam].allahBase == "ل",
+           let heh = nextNonMarkIndex(after: secondLam, in: source),
+           source[heh].allahBase == "ه" {
+            return start..<rangeUpperBound(afterBaseAt: heh, in: source)
+        }
+
+        return nil
+    }
+
+    private func nextNonMarkIndex(after index: String.Index, in source: String) -> String.Index? {
+        var cursor = source.index(after: index)
+        while cursor < source.endIndex {
+            if !source[cursor].isArabicMark {
+                return cursor
+            }
+            cursor = source.index(after: cursor)
+        }
+        return nil
+    }
+
+    private func rangeUpperBound(afterBaseAt index: String.Index, in source: String) -> String.Index {
+        var cursor = source.index(after: index)
+        while cursor < source.endIndex, source[cursor].isArabicMark {
+            cursor = source.index(after: cursor)
+        }
+        return cursor
+    }
+
+    private func normalizedIndexMap(in source: String, normalizedSource: String) -> [String.Index] {
+        var map: [String.Index] = []
+        map.reserveCapacity(normalizedSource.count)
+
+        for idx in source.indices {
+            let next = source.index(after: idx)
+            let normalizedCharacter = normalizeForSearch(String(source[idx..<next]), trimWhitespace: false)
+            for _ in normalizedCharacter {
+                map.append(idx)
+            }
+        }
+
+        return map
+    }
+
     private func originalRange(
         in source: String,
         normalizedSource: String,
-        normalizedTerm: String,
-        matchRange: Range<String.Index>
+        matchRange: Range<String.Index>,
+        indexMap: [String.Index]
     ) -> Range<String.Index>? {
-        let indexMap = normalizedIndexMap(in: source, normalizedSource: normalizedSource)
         guard indexMap.count == normalizedSource.count else { return nil }
 
         let lowerOffset = normalizedSource.distance(from: normalizedSource.startIndex, to: matchRange.lowerBound)
@@ -124,19 +231,46 @@ struct HighlightedSnippet: View {
         return start..<end
     }
 
-    private func normalizedIndexMap(in source: String, normalizedSource: String) -> [String.Index] {
-        var map: [String.Index] = []
-        map.reserveCapacity(normalizedSource.count)
+}
 
-        for idx in source.indices {
-            let next = source.index(after: idx)
-            let normalizedCharacter = normalizeForSearch(String(source[idx..<next]), trimWhitespace: false)
-            for _ in normalizedCharacter {
-                map.append(idx)
+private extension Character {
+    var allahBase: Character? {
+        for scalar in unicodeScalars where !scalar.isArabicMarkScalar {
+            switch scalar.value {
+            case 0x0627, 0x0671:
+                return "ا"
+            case 0x0644:
+                return "ل"
+            case 0x0647:
+                return "ه"
+            default:
+                continue
             }
         }
 
-        return map
+        return nil
+    }
+
+    var isAllahAlif: Bool {
+        self == "ا"
+    }
+
+    var isArabicMark: Bool {
+        unicodeScalars.allSatisfy(\.isArabicMarkScalar)
+    }
+}
+
+private extension UnicodeScalar {
+    var isArabicMarkScalar: Bool {
+        switch value {
+        case 0x0610...0x061A,
+             0x064B...0x065F,
+             0x0670,
+             0x06D6...0x06ED:
+            return true
+        default:
+            return false
+        }
     }
 }
 

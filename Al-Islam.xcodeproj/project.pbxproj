@@ -51,10 +51,10 @@
 		723DA4592D59FC6400AC20B3 /* Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 723DA4582D59FC5A00AC20B3 /* Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		723DA45A2D59FC6900AC20B3 /* Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 723DA4562D59FC5A00AC20B3 /* Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		723DA45B2D59FC7000AC20B3 /* Complication.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 723DA4572D59FC5A00AC20B3 /* Complication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		724B8BC02FADD09B00804C3D /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BBF2FADD09B00804C3D /* Indopak.ttf */; };
-		724B8BC12FADD09B00804C3D /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BBF2FADD09B00804C3D /* Indopak.ttf */; };
 		724B8BD22FADD98500804C3D /* Uthmani.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BD12FADD98500804C3D /* Uthmani.ttf */; };
 		724B8BD32FADD98500804C3D /* Uthmani.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BD12FADD98500804C3D /* Uthmani.ttf */; };
+		724B8BE12FADE8D900804C3D /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BE02FADE8D900804C3D /* Indopak.ttf */; };
+		724B8BE22FADE8D900804C3D /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BE02FADE8D900804C3D /* Indopak.ttf */; };
 		7256C3A42F6BE15800DBB66D /* GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E13AEF2E90DC8D000933B0 /* GlassEffect.swift */; };
 		72574CB52E49E3F000BFF138 /* QuranShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */; };
 		72574CB62E49E3F000BFF138 /* QuranShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */; };
@@ -299,8 +299,8 @@
 		723DA4562D59FC5A00AC20B3 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		723DA4572D59FC5A00AC20B3 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Complication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		723DA4582D59FC5A00AC20B3 /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Widget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		724B8BBF2FADD09B00804C3D /* Indopak.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Indopak.ttf; sourceTree = "<group>"; };
 		724B8BD12FADD98500804C3D /* Uthmani.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Uthmani.ttf; sourceTree = "<group>"; };
+		724B8BE02FADE8D900804C3D /* Indopak.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Indopak.ttf; sourceTree = "<group>"; };
 		72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranShortcuts.swift; sourceTree = "<group>"; };
 		72574CC52E49EDDE00BFF138 /* AdhanShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanShortcuts.swift; sourceTree = "<group>"; };
 		72574CC82E49EE7F00BFF138 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
@@ -599,7 +599,7 @@
 			isa = PBXGroup;
 			children = (
 				724B8BD12FADD98500804C3D /* Uthmani.ttf */,
-				724B8BBF2FADD09B00804C3D /* Indopak.ttf */,
+				724B8BE02FADE8D900804C3D /* Indopak.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -845,7 +845,7 @@
 				72F7DB752F0431740037B059 /* Assets.xcassets in Resources */,
 				72C3FE562F6A039400136976 /* NamesOfAllah.json in Resources */,
 				723B9E022F3B138C0042DCDE /* QiraahBuzzi.json in Resources */,
-				724B8BC12FADD09B00804C3D /* Indopak.ttf in Resources */,
+				724B8BE12FADE8D900804C3D /* Indopak.ttf in Resources */,
 				723B9E062F3B13B40042DCDE /* QiraahQunbul.json in Resources */,
 				727486622F3D8383001240F8 /* QiraahWarsh.json in Resources */,
 			);
@@ -873,7 +873,7 @@
 				72C3FE552F6A039400136976 /* NamesOfAllah.json in Resources */,
 				723B9E032F3B138C0042DCDE /* QiraahBuzzi.json in Resources */,
 				723B9E052F3B13B40042DCDE /* QiraahQunbul.json in Resources */,
-				724B8BC02FADD09B00804C3D /* Indopak.ttf in Resources */,
+				724B8BE22FADE8D900804C3D /* Indopak.ttf in Resources */,
 				72F7DB772F0431740037B059 /* Assets.xcassets in Resources */,
 				727486612F3D8383001240F8 /* QiraahWarsh.json in Resources */,
 			);

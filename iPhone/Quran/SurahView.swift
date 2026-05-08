@@ -60,6 +60,24 @@ struct SurahView: View {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var ayahRowRenderSettingsSignature: String {
+        [
+            settings.showArabicText ? "1" : "0",
+            settings.highlightAllahNames ? "1" : "0",
+            settings.showTajweedColors ? "1" : "0",
+            settings.cleanArabicText ? "1" : "0",
+            settings.removeArabicDots ? "1" : "0",
+            settings.beginnerMode ? "1" : "0",
+            settings.showTransliteration ? "1" : "0",
+            settings.showEnglishSaheeh ? "1" : "0",
+            settings.showEnglishMustafa ? "1" : "0",
+            settings.displayQiraah,
+            settings.fontArabic,
+            "\(settings.fontArabicSize)",
+            "\(settings.englishFontSize)"
+        ].joined(separator: "|")
+    }
+
     private func markKhatmViewedIfNeeded(_ ayahID: Int) {
         guard settings.quranSortMode == .khatm,
               settings.automaticKhatmCompletion,
@@ -992,6 +1010,7 @@ struct SurahView: View {
                                 AyahRow(
                                     surah: surah,
                                     ayah: ayah,
+                                    renderSettingsSignature: ayahRowRenderSettingsSignature,
                                     scrollDown: $scrollDown,
                                     searchText: $searchText
                                 )
@@ -1001,6 +1020,7 @@ struct SurahView: View {
                             AyahRow(
                                 surah: surah,
                                 ayah: ayah,
+                                renderSettingsSignature: ayahRowRenderSettingsSignature,
                                 scrollDown: $scrollDown,
                                 searchText: $searchText
                             )

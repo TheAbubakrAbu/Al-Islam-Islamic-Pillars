@@ -201,7 +201,7 @@ struct ShareSettings: Equatable {
     var shareArabicFont = ""
     var cleanArabic = false
     var hideArabicDots = false
-    var useBasicFontForDotless = false
+    var showTajweed = false
 }
 
 struct Reciter: Identifiable, Comparable, Codable, Hashable {

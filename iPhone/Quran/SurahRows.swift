@@ -203,6 +203,7 @@ struct SurahRow: View, Equatable {
         }
         .lineLimit(1)
         .minimumScaleFactor(0.75)
+        .contentShape(Rectangle())
         #else
         VStack {
             HStack {
@@ -224,6 +225,7 @@ struct SurahRow: View, Equatable {
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
+        .contentShape(Rectangle())
         #endif
     }
 

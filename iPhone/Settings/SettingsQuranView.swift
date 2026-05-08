@@ -220,6 +220,7 @@ struct SettingsQuranView: View {
     private var arabicTextSection: some View {
         Section(header: Text("ARABIC TEXT")) {
             arabicVisibilityToggle
+            highlightAllahGroup
             tajweedSettingsGroup
             arabicDisplayControls
         }
@@ -229,6 +230,19 @@ struct SettingsQuranView: View {
         Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
             .font(.subheadline)
             .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
+    }
+
+    private var highlightAllahGroup: some View {
+        VStack(alignment: .leading) {
+            Toggle("Highlight Allah", isOn: $settings.highlightAllahNames.animation(.easeInOut))
+                .font(.subheadline)
+                .disabled(!settings.showArabicText)
+
+            Text("Colors الله and لله in red throughout the Arabic Quran text.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+        }
     }
 
     private var tajweedSettingsGroup: some View {
@@ -274,31 +288,28 @@ struct SettingsQuranView: View {
 
     private var cleanArabicTextGroup: some View {
         VStack(alignment: .leading) {
-            Toggle("Remove Arabic Tashkeel (Vowel Diacritics) and Signs", isOn: cleanArabicTextBinding.animation(.easeInOut))
+            Toggle("Hide Arabic Tashkeel (Vowel Diacritics) and Signs", isOn: cleanArabicTextBinding.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!settings.showArabicText)
 
             #if os(iOS)
-            Text("This option removes Tashkeel, which are vowel diacretic marks such as Fatha, Damma, Kasra, and others, while retaining essential vowels like Alif, Yaa, and Waw. It also adjusts \"Mad\" letters and the \"Hamzatul Wasl,\" and removes baby vowel letters, various textual annotations including stopping signs, chapter markers, and prayer indicators. This option is not recommended.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.vertical, 2)
-            #else
-            Text("This option removes Tashkeel (vowel diacretics).")
+            Text("This option removes Tashkeel (like Fatha, Damma, Kasra, and others), while keeping vowel letters like Alif, Yaa, and Waw. It also adjusts \"Mad\" letters and the \"Hamzatul Wasl,\" and removes tiny vowel letters, stopping signs, chapter markers, and prayer indicators. This option is not recommended.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
             #endif
             
             if settings.cleanArabicText || settings.removeArabicDots {
-                Toggle("Remove Arabic Dots", isOn: $settings.removeArabicDots.animation(.easeInOut))
+                Toggle("Hide Arabic Dots", isOn: $settings.removeArabicDots.animation(.easeInOut))
                     .font(.subheadline)
                     .disabled(!settings.showArabicText)
 
-                Text("Beta: this removes Arabic dots as an experimental view and will not work properly for every ayah. It is very hard to read and not meant for regular reading.")
+                #if os(iOS)
+                Text("This removes Arabic dots, such as turning ب into ٮ. It is very difficult to read and is not recommended for beginners, but it allows you to experience how some of the earliest Muslims read and wrote the Quran in early manuscripts such as the Birmingham Manuscript.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)
+                #endif
             }
         }
     }

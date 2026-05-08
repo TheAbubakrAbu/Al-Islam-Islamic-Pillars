@@ -28,6 +28,26 @@ struct TajweedLegendView: View {
             GridItem(.flexible(), spacing: 10, alignment: .top)
         ]
     }
+
+    @ViewBuilder
+    private func visibilityButton(title: String, systemImage: String, visible: Bool) -> some View {
+        Button {
+            settings.hapticFeedback()
+            withAnimation {
+                TajweedLegendCategory.allCases.forEach {
+                    settings.setTajweedCategory($0, visible: visible)
+                }
+            }
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(settings.accentColor.color)
+        .conditionalGlassEffect(rectangle: true)
+    }
     
     @ViewBuilder
     private func legendLine(_ text: String, primary: Bool = true) -> some View {
@@ -202,6 +222,11 @@ struct TajweedLegendView: View {
                             }
                         }
                     }
+                }
+
+                HStack(spacing: 10) {
+                    visibilityButton(title: "Show All", systemImage: "eye.fill", visible: true)
+                    visibilityButton(title: "Hide All", systemImage: "eye.slash.fill", visible: false)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {

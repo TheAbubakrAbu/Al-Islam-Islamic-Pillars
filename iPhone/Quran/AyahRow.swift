@@ -26,6 +26,7 @@ struct AyahRow: View, Equatable {
     let ayah: Ayah
     /// When non-nil (e.g. comparison mode), use this qiraah for Arabic instead of global setting.
     var comparisonQiraahOverride: String? = nil
+    var renderSettingsSignature: String = ""
 
     @Binding var scrollDown: Int?
     @Binding var searchText: String
@@ -36,6 +37,7 @@ struct AyahRow: View, Equatable {
         lhs.surah == rhs.surah &&
         lhs.ayah == rhs.ayah &&
         lhs.comparisonQiraahOverride == rhs.comparisonQiraahOverride &&
+        lhs.renderSettingsSignature == rhs.renderSettingsSignature &&
         lhs.scrollDown == rhs.scrollDown &&
         lhs.searchText == rhs.searchText
     }
@@ -161,6 +163,7 @@ struct AyahRow: View, Equatable {
         let qiraahKey = comparisonQiraahOverride ?? settings.displayQiraah
         return [
             settings.showTajweedColors ? "1" : "0",
+            settings.highlightAllahNames ? "1" : "0",
             settings.cleanArabicText ? "1" : "0",
             (settings.beginnerMode || ayahBeginnerMode) ? "1" : "0",
             qiraahKey,
@@ -533,18 +536,25 @@ struct AyahRow: View, Equatable {
             }
 
             if showArabic {
+                let arabicFont: Font = settings.removeArabicDots
+                    ? .system(size: settings.fontArabicSize)
+                    : .custom(settings.fontArabic, size: settings.fontArabicSize)
+                let suffixFont: Font = .custom("KFGQPCQUMBULUthmanicScript-Regu", size: settings.fontArabicSize)
+
                 HighlightedSnippet(
                     source: arabicDisplayText(),
                     term: highlightQuery,
-                    font: .custom(settings.fontArabic, size: settings.fontArabicSize),
+                    font: arabicFont,
                     accent: settings.accentColor.color,
                     fg: .primary,
                     preStyledSource: arabicTajweedText(),
                     beginnerMode: (settings.beginnerMode || ayahBeginnerMode),
                     trailingSuffix: " \(ayah.idArabic)",
-                    trailingSuffixFont: .custom("KFGQPCQUMBULUthmanicScript-Regu", size: settings.fontArabicSize),
-                    trailingSuffixColor: settings.accentColor.color
+                    trailingSuffixFont: suffixFont,
+                    trailingSuffixColor: settings.accentColor.color,
+                    highlightAllahNames: settings.highlightAllahNames
                 )
+                .id(tajweedAnimationKey)
                 .animation(.easeInOut, value: tajweedAnimationKey)
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -558,7 +568,8 @@ struct AyahRow: View, Equatable {
                     term: highlightQuery,
                     font: .system(size: fontSizeEN),
                     accent: settings.accentColor.color,
-                    fg: .primary
+                    fg: .primary,
+                    highlightAllahNames: settings.highlightAllahNames
                 )
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -573,7 +584,8 @@ struct AyahRow: View, Equatable {
                         term: highlightQuery,
                         font: .system(size: fontSizeEN),
                         accent: settings.accentColor.color,
-                        fg: .primary
+                        fg: .primary,
+                        highlightAllahNames: settings.highlightAllahNames
                     )
                     Text("— Saheeh International")
                         .font(.caption)
@@ -592,7 +604,8 @@ struct AyahRow: View, Equatable {
                         term: highlightQuery,
                         font: .system(size: fontSizeEN),
                         accent: settings.accentColor.color,
-                        fg: .primary
+                        fg: .primary,
+                        highlightAllahNames: settings.highlightAllahNames
                     )
                     Text("— Clear Quran (Mustafa Khattab)")
                         .font(.caption)

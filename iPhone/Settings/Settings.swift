@@ -501,6 +501,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     }
 
     @AppStorage("showArabicText") var showArabicText: Bool = true
+    @AppStorage("highlightAllahNames") var highlightAllahNames: Bool = false
     @AppStorage("showTajweedColors") var showTajweedColors: Bool = false
     @AppStorage("showTajweedTafkhim") var showTajweedTafkhim: Bool = true
     @AppStorage("showTajweedQalqalah") var showTajweedQalqalah: Bool = true
@@ -508,6 +509,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     @AppStorage("showTajweedSukoonJazm") var showTajweedDroppedLetter: Bool = true
     @AppStorage("showTajweedBareNuunMeem") var showTajweedIdghamBiGhunnahLight: Bool = true
     @AppStorage("showTajweedIdghamBiGhunnahHeavy") var showTajweedIdghamBiGhunnahHeavy: Bool = true
+    @AppStorage("showTajweedGeneralGhunnah") var showTajweedGeneralGhunnah: Bool = true
     @AppStorage("showTajweedIkhfaa") var showTajweedIkhfaa: Bool = true
     @AppStorage("showTajweedIqlab") var showTajweedIqlab: Bool = true
     @AppStorage("showTajweedIdghamBilaGhunnah") var showTajweedIdghamBilaGhunnah: Bool = true
@@ -542,7 +544,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     // MARK: - Arabic letters & 99 Names
     
-    @AppStorage("THEfontArabic") var fontArabic: String = "" //"KFGQPCQUMBULUthmanicScript-Regu"
+    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
     @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .title1).pointSize)
     @AppStorage("useFontArabic") var useFontArabic = true
 
