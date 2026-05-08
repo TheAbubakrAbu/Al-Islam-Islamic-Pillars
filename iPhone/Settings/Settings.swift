@@ -542,7 +542,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     // MARK: - Arabic letters & 99 Names
     
-    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
+    @AppStorage("THEfontArabic") var fontArabic: String = "" //"KFGQPCQUMBULUthmanicScript-Regu"
     @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .title1).pointSize)
     @AppStorage("useFontArabic") var useFontArabic = true
 

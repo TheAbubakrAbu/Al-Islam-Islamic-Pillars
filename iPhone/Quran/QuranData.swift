@@ -544,6 +544,7 @@ final class TajweedStore {
 
         collectMaddAndWaslPaintOps(surah: surah, ayah: ayah, text: text, clusters: clusters, into: &ops)
         appendBareConsonantSilentPaintOps(clusters: clusters, muqattaatProtectedIndices: muqattaatProtectedIndices, into: &ops)
+        appendMuqattaatBareRaaTafkhimPaintOps(clusters: clusters, protectedIndices: muqattaatProtectedIndices, into: &ops)
         appendMuqattaatMaddLazimPaintOps(clusters: clusters, protectedIndices: muqattaatProtectedIndices, into: &ops)
         ops = filteredMuqattaatPaintOps(ops, clusters: clusters, protectedIndices: muqattaatProtectedIndices)
 
@@ -729,7 +730,8 @@ final class TajweedStore {
 
     private func dotlessArabicScalar(_ scalar: UnicodeScalar) -> UnicodeScalar {
         switch scalar.value {
-        case 0x0623, 0x0625, 0x0624, 0x0626: return UnicodeScalar(0x0621)!
+        case 0x0623, 0x0625: return UnicodeScalar(0x0627)!
+        case 0x0624, 0x0626: return UnicodeScalar(0x0621)!
         case 0x0622: return UnicodeScalar(0x0627)!
         case 0x0671: return UnicodeScalar(0x0627)!
         case 0x0628, 0x062A, 0x062B, 0x0646: return UnicodeScalar(0x066E)!
@@ -1422,6 +1424,19 @@ final class TajweedStore {
         }
     }
 
+    private func appendMuqattaatBareRaaTafkhimPaintOps(
+        clusters: [CharacterClusterInfo],
+        protectedIndices: Set<Int>,
+        into ops: inout [PaintOp]
+    ) {
+        guard settings.isTajweedCategoryVisible(.tafkhim) else { return }
+        for index in protectedIndices where clusters.indices.contains(index) {
+            let cluster = clusters[index]
+            guard isBareMuqattaatHeavyRaa(cluster) else { continue }
+            appendTafkhimPaintOps(cluster: cluster, into: &ops)
+        }
+    }
+
     private func filteredMuqattaatPaintOps(
         _ ops: [PaintOp],
         clusters: [CharacterClusterInfo],
@@ -1442,7 +1457,7 @@ final class TajweedStore {
                 }
 
                 if !hasAnyTashkeel(cluster) {
-                    if isHeavyCarrier(clusters: clusters, index: index) {
+                    if isHeavyCarrier(clusters: clusters, index: index) || isBareMuqattaatHeavyRaa(cluster) {
                         if op.category != .tafkhim { return false }
                     } else {
                         return false
@@ -1466,6 +1481,10 @@ final class TajweedStore {
             return true
         }
         return false
+    }
+
+    private func isBareMuqattaatHeavyRaa(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.primaryArabicLetter == "ر" && !hasAnyTashkeel(cluster)
     }
 
     private func containsAnySpecialNextLetterTrigger(_ cluster: CharacterClusterInfo) -> Bool {

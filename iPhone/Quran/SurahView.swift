@@ -1502,14 +1502,6 @@ struct SurahView: View {
             showingSettingsSheet = true
         } label: {
             Image(systemName: "gear")
-            
-            /*VStack(alignment: .trailing) {
-                Text("\(surah.nameArabic) - \(surah.idArabic)")
-                Text("\(surah.nameTransliteration) - \(surah.id)")
-            }
-            .font(.footnote)
-            .foregroundColor(settings.accentColor.color)
-            .padding(6)*/
         }
     }
 
@@ -1709,7 +1701,7 @@ private struct SurahPickerSheet: View {
                                         select(surah)
                                     }
                                 } label: {
-                                    SurahRow(surah: surah, isFavorite: settings.favoriteSurahs.contains(surah.id), hideInfo: true).equatable()
+                                    SurahRow(surah: surah, isFavorite: settings.favoriteSurahs.contains(surah.id), hideInfo: settings.showSurahInformation)
                                         .contentShape(Rectangle())
                                 }
                                 .id(surah.id)

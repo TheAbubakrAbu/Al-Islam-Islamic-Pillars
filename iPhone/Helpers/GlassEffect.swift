@@ -96,9 +96,16 @@ struct ConditionalGlassEffect: ViewModifier {
 struct SheetPresentationModifier: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 16.0, *) {
-            content
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                content
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+            } else {
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.hidden)
+            }
         } else {
             content
         }

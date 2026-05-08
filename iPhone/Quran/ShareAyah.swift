@@ -30,6 +30,7 @@ struct ShareAyahSheet: View {
     @State private var includeNote: Bool = false
     @State private var isGeneratingImage = false
     @State private var isSharing = false
+    @State private var imageGenerationID = 0
     private static let shareImageQueue = DispatchQueue(label: "app.shareAyah.imageGeneration", qos: .userInitiated)
     
     private func fetchNote() -> String? {
@@ -51,12 +52,18 @@ struct ShareAyahSheet: View {
         
     private var surah: Surah? { quranData.quran.first(where: { $0.id == surahNumber }) }
     private var ayah: Ayah? { surah?.ayahs.first(where: { $0.id == ayahNumber }) }
+    private var effectiveCleanArabic: Bool { shareSettings.cleanArabic }
+    private var effectiveHideArabicDots: Bool { shareSettings.hideArabicDots }
+    private var canShowHideArabicDotsToggle: Bool {
+        shareSettings.cleanArabic || settings.cleanArabicText || settings.removeArabicDots || shareSettings.hideArabicDots
+    }
 
     private func updatedShareSettings(
         includeQiraah: Bool? = nil,
         shareArabicFont: String? = nil,
         cleanArabic: Bool? = nil,
-        hideArabicDots: Bool? = nil
+        hideArabicDots: Bool? = nil,
+        useBasicFontForDotless: Bool? = nil
     ) -> ShareSettings {
         ShareSettings(
             arabic: shareSettings.arabic,
@@ -66,12 +73,28 @@ struct ShareAyahSheet: View {
             includeQiraah: includeQiraah ?? shareSettings.includeQiraah,
             shareArabicFont: shareArabicFont ?? shareSettings.shareArabicFont,
             cleanArabic: cleanArabic ?? shareSettings.cleanArabic,
-            hideArabicDots: hideArabicDots ?? shareSettings.hideArabicDots
+            hideArabicDots: hideArabicDots ?? shareSettings.hideArabicDots,
+            useBasicFontForDotless: useBasicFontForDotless ?? shareSettings.useBasicFontForDotless
         )
     }
 
-    private static func shareArabicText(surah: Surah, ayah: Ayah, cleanArabic: Bool, hideArabicDots: Bool) -> String {
-        let base = ayah.displayArabicText(surahId: surah.id, clean: cleanArabic)
+    private static func shareArabicText(
+        surah: Surah,
+        ayah: Ayah,
+        cleanArabic: Bool,
+        hideArabicDots: Bool,
+        qiraahOverride: String? = nil
+    ) -> String {
+        var base = ayah.displayArabicText(surahId: surah.id, clean: false, qiraahOverride: qiraahOverride)
+        if cleanArabic {
+            base = base.removingArabicDiacriticsAndSigns
+            if surah.id == 1 && ayah.id == 1 {
+                let trimmed = base.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.hasPrefix("بسم") {
+                    base = Ayah.bismillahCleanArabic
+                }
+            }
+        }
         return hideArabicDots ? base.removingArabicDots : base
     }
 
@@ -106,8 +129,9 @@ struct ShareAyahSheet: View {
             let arabicText = Self.shareArabicText(
                 surah: surah,
                 ayah: ayah,
-                cleanArabic: shareSettings.cleanArabic,
-                hideArabicDots: shareSettings.hideArabicDots
+                cleanArabic: effectiveCleanArabic,
+                hideArabicDots: effectiveHideArabicDots,
+                qiraahOverride: settings.displayQiraahForArabic
             )
             appendBlock(
                 label: header,
@@ -153,7 +177,7 @@ struct ShareAyahSheet: View {
             }
 
             if shareSettings.englishMustafa {
-                if shareSettings.englishSaheeh { s += "\n\n" } else if !settings.showAyahInformation { /* keep as-is */ } else { s += "\n" }
+                if shareSettings.englishSaheeh { s += "\n\n" }
                 if settings.showAyahInformation {
                     s += "— Mustafa Khattab\n"
                 }
@@ -252,37 +276,40 @@ struct ShareAyahSheet: View {
                                 .padding(.vertical, 2)
                         }
                         
-                        if shareSettings.arabic && actionMode == .image {
-                            Picker("Arabic Font", selection: Binding(
-                                get: { shareSettings.shareArabicFont.isEmpty ? (settings.fontArabic) : shareSettings.shareArabicFont },
-                                set: { val in
-                                    storedShareArabicFont = val
-                                    shareSettings = ShareSettings(
-                                        arabic: shareSettings.arabic,
-                                        transliteration: shareSettings.transliteration,
-                                        englishSaheeh: shareSettings.englishSaheeh,
-                                        englishMustafa: shareSettings.englishMustafa,
-                                        includeQiraah: shareSettings.includeQiraah,
-                                        shareArabicFont: val,
-                                        cleanArabic: shareSettings.cleanArabic,
-                                        hideArabicDots: shareSettings.hideArabicDots
-                                    )
+                        if shareSettings.arabic {
+                            if actionMode == .image {
+                                Picker("Arabic Font", selection: Binding(
+                                    get: { shareSettings.shareArabicFont.isEmpty ? (settings.fontArabic) : shareSettings.shareArabicFont },
+                                    set: { val in
+                                        storedShareArabicFont = val
+                                        shareSettings = ShareSettings(
+                                            arabic: shareSettings.arabic,
+                                            transliteration: shareSettings.transliteration,
+                                            englishSaheeh: shareSettings.englishSaheeh,
+                                            englishMustafa: shareSettings.englishMustafa,
+                                            includeQiraah: shareSettings.includeQiraah,
+                                            shareArabicFont: val,
+                                            cleanArabic: shareSettings.cleanArabic,
+                                            hideArabicDots: shareSettings.hideArabicDots,
+                                            useBasicFontForDotless: shareSettings.useBasicFontForDotless
+                                        )
+                                    }
+                                ).animation(.easeInOut)) {
+                                    Text("Uthmani").tag("KFGQPCQUMBULUthmanicScript-Regu")
+                                    Text("Indopak").tag("Al_Mushaf")
                                 }
-                            ).animation(.easeInOut)) {
-                                Text("Uthmani").tag("KFGQPCQUMBULUthmanicScript-Regu")
-                                Text("Indopak").tag("Al_Mushaf")
+                                .pickerStyle(SegmentedPickerStyle())
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 2)
                             }
-                            .pickerStyle(SegmentedPickerStyle())
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 2)
 
-                            Toggle("Clean Arabic Text (No Tashkeel)", isOn: $shareSettings.cleanArabic.animation(.easeInOut))
+                            Toggle("Hide Tashkeel and Diacretics", isOn: $shareSettings.cleanArabic.animation(.easeInOut))
                                 .tint(settings.accentColor.color)
                                 .scaleEffect(0.8)
                                 .padding(.horizontal, -24)
                                 .padding(.vertical, 2)
 
-                            if settings.cleanArabicText || settings.removeArabicDots || shareSettings.hideArabicDots {
+                            if canShowHideArabicDotsToggle {
                                 Toggle("Hide Arabic Dots", isOn: Binding(
                                     get: { shareSettings.hideArabicDots },
                                     set: { shareSettings = updatedShareSettings(hideArabicDots: $0) }
@@ -291,6 +318,23 @@ struct ShareAyahSheet: View {
                                 .scaleEffect(0.8)
                                 .padding(.horizontal, -24)
                                 .padding(.vertical, 2)
+
+                                if actionMode == .image && shareSettings.hideArabicDots {
+                                    Toggle("Use Basic Arabic Font", isOn: Binding(
+                                        get: { shareSettings.useBasicFontForDotless },
+                                        set: { shareSettings = updatedShareSettings(useBasicFontForDotless: $0) }
+                                    ).animation(.easeInOut))
+                                    .tint(settings.accentColor.color)
+                                    .scaleEffect(0.8)
+                                    .padding(.horizontal, -24)
+                                    .padding(.vertical, 2)
+
+                                    Text("Dotless Arabic is easier to read with a basic font than a Quranic font.")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal, 20)
+                                        .padding(.bottom, 2)
+                                }
                             }
                         }
 
@@ -370,7 +414,8 @@ struct ShareAyahSheet: View {
                     includeQiraah: settings.showQiraahDetails ? shareIncludeRiwayah : false,
                     shareArabicFont: font,
                     cleanArabic: settings.cleanArabicText,
-                    hideArabicDots: settings.removeArabicDots
+                    hideArabicDots: settings.removeArabicDots,
+                    useBasicFontForDotless: settings.removeArabicDots
                 )
                 
                 actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
@@ -401,7 +446,8 @@ struct ShareAyahSheet: View {
                     includeQiraah: false,
                     shareArabicFont: shareSettings.shareArabicFont,
                     cleanArabic: shareSettings.cleanArabic,
-                    hideArabicDots: shareSettings.hideArabicDots
+                    hideArabicDots: shareSettings.hideArabicDots,
+                    useBasicFontForDotless: shareSettings.useBasicFontForDotless
                 )
             }
             generatePreviewImage()
@@ -507,12 +553,17 @@ struct ShareAyahSheet: View {
     }
     
     private func generatePreviewImage(completion: @escaping (UIImage) -> Void = { _ in }) {
+        let snapshot = shareSettings
+        let generationID = imageGenerationID + 1
+        imageGenerationID = generationID
+        generatedImage = nil
         DispatchQueue.main.async {
             self.isGeneratingImage = true
         }
         Self.shareImageQueue.async { [self] in
-            let img: UIImage = autoreleasepool { self.drawImage() }
+            let img: UIImage = autoreleasepool { self.drawImage(shareSettings: snapshot) }
             DispatchQueue.main.async {
+                guard self.imageGenerationID == generationID else { return }
                 withAnimation {
                     self.generatedImage = img
                     self.isGeneratingImage = false
@@ -525,12 +576,14 @@ struct ShareAyahSheet: View {
         }
     }
     
-    private func drawImage() -> UIImage {
+    private func drawImage(shareSettings: ShareSettings) -> UIImage {
         guard let surah = surah, let ayah = ayah else { return UIImage() }
 
         let bodyFont   = UIFont.preferredFont(forTextStyle: .body)
         let arabicFontName = shareSettings.shareArabicFont.isEmpty ? settings.fontArabic : shareSettings.shareArabicFont
-        let arabicFont = UIFont(name: arabicFontName, size: bodyFont.pointSize * 1.15) ?? bodyFont
+        let arabicFont = shareSettings.hideArabicDots && shareSettings.useBasicFontForDotless
+            ? bodyFont.withSize(bodyFont.pointSize * 1.15)
+            : (UIFont(name: arabicFontName, size: bodyFont.pointSize * 1.15) ?? bodyFont)
         let captionFont = UIFont.preferredFont(forTextStyle: .caption2)
         
         let textColor      = UIColor.white
@@ -564,7 +617,13 @@ struct ShareAyahSheet: View {
         
         // Arabic
         if shareSettings.arabic {
-            var arabicText = ayah.displayArabicText(surahId: surah.id, clean: shareSettings.cleanArabic)
+            var arabicText = Self.shareArabicText(
+                surah: surah,
+                ayah: ayah,
+                cleanArabic: effectiveCleanArabic,
+                hideArabicDots: effectiveHideArabicDots,
+                qiraahOverride: settings.displayQiraahForArabic
+            )
 
             if settings.showAyahInformation {
                 append("[\(surah.nameArabic) ", arAccent)
@@ -708,7 +767,8 @@ extension ShareAyahSheet {
             includeQiraah: includeRiwayah,
             shareArabicFont: shareFont.isEmpty ? settings.fontArabic : shareFont,
             cleanArabic: settings.cleanArabicText,
-            hideArabicDots: settings.removeArabicDots
+            hideArabicDots: settings.removeArabicDots,
+            useBasicFontForDotless: settings.removeArabicDots
         )
         let noteText: String? = {
             guard let idx = settings.bookmarkedAyahs.firstIndex(where: { $0.surah == surahNumber && $0.ayah == ayahNumber }) else { return nil }
@@ -739,6 +799,14 @@ extension ShareAyahSheet {
         return "\(translit) | \(english)"
     }
 
+    private static func effectiveCleanArabic(_ shareSettings: ShareSettings) -> Bool {
+        shareSettings.cleanArabic
+    }
+
+    private static func effectiveHideArabicDots(_ shareSettings: ShareSettings) -> Bool {
+        shareSettings.hideArabicDots
+    }
+
     private static func buildShareText(surah: Surah, ayah: Ayah, shareSettings: ShareSettings, settings: Settings, includeNote: Bool, noteText: String?) -> String {
         var s = ""
         func sepIfNeeded() { if !s.isEmpty { s += "\n\n" } }
@@ -753,8 +821,9 @@ extension ShareAyahSheet {
             let arabicText = Self.shareArabicText(
                 surah: surah,
                 ayah: ayah,
-                cleanArabic: shareSettings.cleanArabic,
-                hideArabicDots: shareSettings.hideArabicDots
+                cleanArabic: effectiveCleanArabic(shareSettings),
+                hideArabicDots: effectiveHideArabicDots(shareSettings),
+                qiraahOverride: settings.displayQiraahForArabic
             )
             appendBlock(label: header, text: settings.showAyahInformation ? arabicText : "\(arabicText) \(ayah.idArabic)")
         }
@@ -773,7 +842,7 @@ extension ShareAyahSheet {
                 s += settings.showAyahInformation ? ayah.textEnglishSaheeh : "\(ayah.textEnglishSaheeh) (\(ayah.id))"
             }
             if shareSettings.englishMustafa {
-                if shareSettings.englishSaheeh { s += "\n\n" } else if settings.showAyahInformation { s += "\n" }
+                if shareSettings.englishSaheeh { s += "\n\n" }
                 if settings.showAyahInformation { s += "— Mustafa Khattab\n" }
                 s += settings.showAyahInformation ? ayah.textEnglishMustafa : "\(ayah.textEnglishMustafa) (\(ayah.id))"
             }
@@ -793,7 +862,9 @@ extension ShareAyahSheet {
     private static func buildShareImage(surah: Surah, ayah: Ayah, shareSettings: ShareSettings, settings: Settings, includeNote: Bool, noteText: String?) -> UIImage {
         let bodyFont = UIFont.preferredFont(forTextStyle: .body)
         let arabicFontName = shareSettings.shareArabicFont.isEmpty ? settings.fontArabic : shareSettings.shareArabicFont
-        let arabicFont = UIFont(name: arabicFontName, size: bodyFont.pointSize * 1.15) ?? bodyFont
+        let arabicFont = shareSettings.hideArabicDots && shareSettings.useBasicFontForDotless
+            ? bodyFont.withSize(bodyFont.pointSize * 1.15)
+            : (UIFont(name: arabicFontName, size: bodyFont.pointSize * 1.15) ?? bodyFont)
         let captionFont = UIFont.preferredFont(forTextStyle: .caption2)
         let textColor = UIColor.white
         let secondaryColor = UIColor.secondaryLabel
@@ -819,8 +890,9 @@ extension ShareAyahSheet {
             var arabicText = Self.shareArabicText(
                 surah: surah,
                 ayah: ayah,
-                cleanArabic: shareSettings.cleanArabic,
-                hideArabicDots: shareSettings.hideArabicDots
+                cleanArabic: effectiveCleanArabic(shareSettings),
+                hideArabicDots: effectiveHideArabicDots(shareSettings),
+                qiraahOverride: settings.displayQiraahForArabic
             )
             if settings.showAyahInformation {
                 let prefix = "[\(surah.nameArabic) \(surah.idArabic):\(ayah.idArabic)]\n"
