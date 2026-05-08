@@ -805,7 +805,6 @@ final class TajweedStore {
             )
         }
 
-        appendMiddleWordAlifMaqsurahSilentPaintOps(words: words, clusters: clusters, into: &ops)
         appendExplicitMaddahPaintOps(text: text, clusters: clusters, finalAaridCarrier: finalAaridCarrier, into: &ops)
 
         if settings.isTajweedCategoryVisible(.maddNecessary) {
@@ -1054,19 +1053,6 @@ final class TajweedStore {
         return false
     }
 
-    private func appendMiddleWordAlifMaqsurahSilentPaintOps(words: [Range<Int>], clusters: [CharacterClusterInfo], into ops: inout [PaintOp]) {
-        guard settings.isTajweedCategoryVisible(.droppedLetter) else { return }
-        for word in words {
-            guard word.count >= 2 else { continue }
-            for index in word where index < word.upperBound - 1 {
-                let cluster = clusters[index]
-                guard cluster.primaryArabicLetter == "ى", cluster.contains(Self.daggerAlif) else { continue }
-                guard let baseRange = primaryArabicLetterScalarRange(in: cluster) else { continue }
-                ops.append(PaintOp(range: baseRange, priority: PaintPriority.droppedLetter, category: .droppedLetter))
-            }
-        }
-    }
-
     private func appendTafkhimPaintOps(cluster: CharacterClusterInfo, into ops: inout [PaintOp]) {
         let tanweenScalars: Set<UInt32> = [Self.fathatayn.value, Self.dammatayn.value, Self.kasratayn.value]
         var offset = cluster.utf16Range.lowerBound
@@ -1276,6 +1262,7 @@ final class TajweedStore {
         guard clusters.indices.contains(index), index > wordStart else { return false }
         let cluster = clusters[index]
         if cluster.primaryArabicLetter == "ى" {
+            if isAlifMaqsurahWithDaggerAlif(cluster) { return false }
             guard !hasStandardSukoon(cluster), !cluster.contains(Self.hamzatWasl), !cluster.contains(Self.smallHighUprightRectangularZero) else {
                 return false
             }
@@ -1296,6 +1283,10 @@ final class TajweedStore {
 
     private func isBareAlifForMadd(_ cluster: CharacterClusterInfo) -> Bool {
         (cluster.primaryArabicLetter == "ا" || cluster.primaryArabicLetter == "ى") && !cluster.contains(Self.hamzatWasl)
+    }
+
+    private func isAlifMaqsurahWithDaggerAlif(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.primaryArabicLetter == "ى" && cluster.contains(Self.daggerAlif)
     }
 
     private func isLazimCombinedAlifCluster(_ cluster: CharacterClusterInfo) -> Bool {
@@ -1573,6 +1564,7 @@ final class TajweedStore {
         guard !hasArabicVowelOnCluster(cur) else { return false }
         if isLazimCombinedAlifCluster(cur) { return false }
         if isBareAlifForMadd(cur) {
+            if isAlifMaqsurahWithDaggerAlif(cur) { return false }
             if hasStandardSukoon(cur) { return false }
             if cur.contains(Self.hamzatWasl) { return false }
             if cur.contains(Self.smallHighUprightRectangularZero) { return false }

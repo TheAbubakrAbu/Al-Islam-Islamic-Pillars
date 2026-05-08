@@ -52,9 +52,9 @@
 		723DA45A2D59FC6900AC20B3 /* Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 723DA4562D59FC5A00AC20B3 /* Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		723DA45B2D59FC7000AC20B3 /* Complication.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 723DA4572D59FC5A00AC20B3 /* Complication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		724B8BAC2FAB409400804C3D /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BAA2FAB409400804C3D /* Indopak.ttf */; };
-		724B8BAD2FAB409400804C3D /* Uthmani.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BAB2FAB409400804C3D /* Uthmani.ttf */; };
 		724B8BAE2FAB409400804C3D /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BAA2FAB409400804C3D /* Indopak.ttf */; };
-		724B8BAF2FAB409400804C3D /* Uthmani.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BAB2FAB409400804C3D /* Uthmani.ttf */; };
+		724B8BB12FADB4BF00804C3D /* Uthmani.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BB02FADB4BF00804C3D /* Uthmani.ttf */; };
+		724B8BB22FADB4BF00804C3D /* Uthmani.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 724B8BB02FADB4BF00804C3D /* Uthmani.ttf */; };
 		7256C3A42F6BE15800DBB66D /* GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E13AEF2E90DC8D000933B0 /* GlassEffect.swift */; };
 		72574CB52E49E3F000BFF138 /* QuranShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */; };
 		72574CB62E49E3F000BFF138 /* QuranShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */; };
@@ -300,7 +300,7 @@
 		723DA4572D59FC5A00AC20B3 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Complication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		723DA4582D59FC5A00AC20B3 /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Widget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		724B8BAA2FAB409400804C3D /* Indopak.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Indopak.ttf; sourceTree = "<group>"; };
-		724B8BAB2FAB409400804C3D /* Uthmani.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Uthmani.ttf; sourceTree = "<group>"; };
+		724B8BB02FADB4BF00804C3D /* Uthmani.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Uthmani.ttf; sourceTree = "<group>"; };
 		72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranShortcuts.swift; sourceTree = "<group>"; };
 		72574CC52E49EDDE00BFF138 /* AdhanShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanShortcuts.swift; sourceTree = "<group>"; };
 		72574CC82E49EE7F00BFF138 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
@@ -598,7 +598,7 @@
 		7260F9382A8715D600E8FF87 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
-				724B8BAB2FAB409400804C3D /* Uthmani.ttf */,
+				724B8BB02FADB4BF00804C3D /* Uthmani.ttf */,
 				724B8BAA2FAB409400804C3D /* Indopak.ttf */,
 			);
 			path = Fonts;
@@ -827,6 +827,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				724B8BB12FADB4BF00804C3D /* Uthmani.ttf in Resources */,
 				723B9E082F3B13EF0042DCDE /* QiraahDuri.json in Resources */,
 				7238736D2F374BDB00D3A8CD /* QiraahShubah.json in Resources */,
 				723B9E0B2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
@@ -834,7 +835,6 @@
 				72EF01CA2F775DA000B273F7 /* egypt-30.caf in Resources */,
 				72C6FDEB2F7880700035F675 /* al-qatami-30.caf in Resources */,
 				724B8BAC2FAB409400804C3D /* Indopak.ttf in Resources */,
-				724B8BAD2FAB409400804C3D /* Uthmani.ttf in Resources */,
 				72C6FDEC2F7880700035F675 /* makkah-30.caf in Resources */,
 				72C6FDED2F7880700035F675 /* abdulbaset-30.caf in Resources */,
 				72C6FDEE2F7880700035F675 /* madina-30.caf in Resources */,
@@ -855,6 +855,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				724B8BB22FADB4BF00804C3D /* Uthmani.ttf in Resources */,
 				723B9E092F3B13EF0042DCDE /* QiraahDuri.json in Resources */,
 				723873662F374BDB00D3A8CD /* QiraahShubah.json in Resources */,
 				7274865E2F3D8219001240F8 /* QiraahQaloon.json in Resources */,
@@ -862,7 +863,6 @@
 				72C6FDF32F7880700035F675 /* al-qatami-30.caf in Resources */,
 				72C6FDF42F7880700035F675 /* makkah-30.caf in Resources */,
 				724B8BAE2FAB409400804C3D /* Indopak.ttf in Resources */,
-				724B8BAF2FAB409400804C3D /* Uthmani.ttf in Resources */,
 				72C6FDF52F7880700035F675 /* abdulbaset-30.caf in Resources */,
 				72C6FDF62F7880700035F675 /* madina-30.caf in Resources */,
 				72C6FDF72F7880700035F675 /* zakariya-30.caf in Resources */,

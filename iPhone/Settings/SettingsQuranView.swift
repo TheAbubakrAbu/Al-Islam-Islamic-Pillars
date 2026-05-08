@@ -714,7 +714,7 @@ struct ReciterListView: View {
     }
 
     private var qiraahReciterSections: [ReciterSectionGroup] {
-        [
+        let sections = [
             ReciterSectionGroup(
                 id: "khalaf",
                 title: Settings.Riwayah.khalaf.uppercased(),
@@ -758,6 +758,41 @@ struct ReciterListView: View {
                 isQiraah: true
             )
         ]
+
+        if let uncategorizedReciterSection {
+            return sections + [uncategorizedReciterSection]
+        }
+
+        return sections
+    }
+
+    private var categorizedReciterIDs: Set<String> {
+        Set((
+            recitersMinshawi +
+            recitersMurattal +
+            recitersMujawwad +
+            recitersMuallim +
+            recitersKhalaf +
+            recitersWarsh +
+            recitersQaloon +
+            recitersBuzzi +
+            recitersQunbul +
+            recitersDuri
+        ).map(\.id))
+    }
+
+    private var uncategorizedReciterSection: ReciterSectionGroup? {
+        let unmatched = filteredReciters(reciters)
+            .filter { !categorizedReciterIDs.contains($0.id) }
+
+        guard !unmatched.isEmpty else { return nil }
+        return ReciterSectionGroup(
+            id: "other-uncategorized",
+            title: "OTHER GROUP",
+            arabic: nil,
+            reciters: unmatched,
+            isQiraah: false
+        )
     }
 
     private var allReciterSections: [ReciterSectionGroup] {
