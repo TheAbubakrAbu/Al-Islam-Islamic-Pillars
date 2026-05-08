@@ -13,6 +13,23 @@ struct AlIslamApp: App {
 
     @State private var isLaunching = true
 
+    private enum RootStage: Equatable {
+        case launch
+        case splash
+        case main
+    }
+
+    private var rootStage: RootStage {
+        if isLaunching {
+            return .launch
+        }
+        return settings.firstLaunch ? .splash : .main
+    }
+
+    private var rootTransitionAnimation: Animation {
+        .easeInOut(duration: 0.42)
+    }
+
     var body: some Scene {
         WindowGroup {
             rootContent
@@ -23,8 +40,6 @@ struct AlIslamApp: App {
                 .accentColor(settings.accentColor.color)
                 .tint(settings.accentColor.color)
                 .preferredColorScheme(settings.colorScheme)
-                .animation(.easeInOut, value: settings.firstLaunch)
-                .animation(.easeInOut, value: isLaunching)
                 .appReviewPrompt()
                 .onAppear(perform: refreshPrayerTimes)
         }
@@ -51,13 +66,26 @@ struct AlIslamApp: App {
 
     @ViewBuilder
     private var rootContent: some View {
-        if isLaunching {
-            LaunchScreen(isLaunching: $isLaunching)
-        } else if settings.firstLaunch {
-            SplashScreen()
-        } else {
-            MainTabView()
+        ZStack {
+            if rootStage == .launch {
+                LaunchScreen(isLaunching: $isLaunching)
+                    .zIndex(3)
+                    .transition(.rootHandoff)
+            }
+
+            if rootStage == .splash {
+                SplashScreen()
+                    .zIndex(2)
+                    .transition(.rootHandoff)
+            }
+
+            if rootStage == .main {
+                MainTabView()
+                    .zIndex(1)
+                    .transition(.rootHandoff)
+            }
         }
+        .animation(rootTransitionAnimation, value: rootStage)
     }
 
     private func refreshPrayerTimes() {
@@ -123,5 +151,14 @@ private struct NowPlayingInsetModifier: ViewModifier {
 private extension View {
     func withNowPlayingInset() -> some View {
         modifier(NowPlayingInsetModifier())
+    }
+}
+
+private extension AnyTransition {
+    static var rootHandoff: AnyTransition {
+        .asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 1.015)),
+            removal: .opacity.combined(with: .scale(scale: 0.985))
+        )
     }
 }

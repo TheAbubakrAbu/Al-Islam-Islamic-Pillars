@@ -238,7 +238,7 @@ struct SettingsQuranView: View {
                 .font(.subheadline)
                 .disabled(!settings.showArabicText)
 
-            Text("Colors الله and لله in red throughout the Arabic Quran text.")
+            Text("Colors the majestic and glorius name الله (Allah) in red throughout the Quran.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)

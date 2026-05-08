@@ -3003,7 +3003,6 @@ final class QuranData: ObservableObject {
                 self.firstAyahByPage = firstAyahLookups.page
                 self.firstAyahByJuz = firstAyahLookups.juz
                 self.cachedFirstAyahLookupQiraah = finalizedQiraahKey
-                self.loadState = .ready
             }
 
             saveDynamicCache(
@@ -3019,6 +3018,10 @@ final class QuranData: ObservableObject {
                 firstAyahByPage: firstAyahLookups.page,
                 firstAyahByJuz: firstAyahLookups.juz
             )
+
+            await MainActor.run {
+                self.loadState = .ready
+            }
             return
         }
 
@@ -3155,7 +3158,6 @@ final class QuranData: ObservableObject {
             self.firstAyahByPage = firstAyahLookups.page
             self.firstAyahByJuz = firstAyahLookups.juz
             self.cachedFirstAyahLookupQiraah = finalizedQiraahKey
-            self.loadState = .ready
         }
 
         saveStaticCache(
@@ -3184,6 +3186,10 @@ final class QuranData: ObservableObject {
             firstAyahByPage: firstAyahLookups.page,
             firstAyahByJuz: firstAyahLookups.juz
         )
+
+        await MainActor.run {
+            self.loadState = .ready
+        }
     }
 
     private func applyDerivedSurahMetadata(to surahs: [Surah], displayQiraah: String?) -> [Surah] {
@@ -3217,6 +3223,7 @@ final class QuranData: ObservableObject {
                 nameArabic: surah.nameArabic,
                 nameTransliteration: surah.nameTransliteration,
                 nameEnglish: surah.nameEnglish,
+                similarNames: surah.similarNames,
                 type: surah.type,
                 numberOfAyahs: surah.numberOfAyahs,
                 revelationOrder: surah.revelationOrder,
