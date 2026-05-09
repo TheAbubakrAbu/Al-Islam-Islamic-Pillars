@@ -47,6 +47,9 @@ struct AyahRow: View, Equatable {
         cache.countLimit = 5000
         return cache
     }()
+
+    private static let uthmaniFontName = "KFGQPCQUMBULUthmanicScript-Regu"
+    private static let qiraatFontName = "Qiraat"
     
     func containsProfanity(_ text: String) -> Bool {
         let t = text.folding(options: [.diacriticInsensitive, .widthInsensitive], locale: .current).lowercased()
@@ -111,6 +114,15 @@ struct AyahRow: View, Equatable {
         let spaced = spacedArabic(baseText)
         Self.arabicDisplayCache.setObject(spaced as NSString, forKey: key as NSString)
         return spaced
+    }
+
+    private func ayahArabicFontName(for qiraah: String?) -> String {
+        guard settings.fontArabic == Self.uthmaniFontName else {
+            return settings.fontArabic
+        }
+
+        let normalizedQiraah = Settings.normalizeLegacyRiwayahTag(qiraah ?? Settings.Riwayah.hafsTag)
+        return normalizedQiraah.isEmpty ? Self.uthmaniFontName : Self.qiraatFontName
     }
 
     private func queryForInlineHighlight(_ query: String) -> String {
@@ -538,7 +550,10 @@ struct AyahRow: View, Equatable {
             if showArabic {
                 let arabicFont: Font = settings.removeArabicDots
                     ? .system(size: settings.fontArabicSize)
-                    : .custom(settings.fontArabic, size: settings.fontArabicSize)
+                    : .custom(
+                        ayahArabicFontName(for: comparisonQiraahOverride ?? settings.displayQiraahForArabic),
+                        size: settings.fontArabicSize
+                    )
                 let suffixFont: Font = .custom("KFGQPCQUMBULUthmanicScript-Regu", size: settings.fontArabicSize)
 
                 HighlightedSnippet(

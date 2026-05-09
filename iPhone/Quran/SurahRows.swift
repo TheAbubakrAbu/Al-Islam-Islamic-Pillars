@@ -891,6 +891,9 @@ struct AyahSearchResultRow: View {
 struct AyahSearchRow: View, Equatable {
     @EnvironmentObject private var settings: Settings
     @State private var confirmRemoveNote = false
+
+    private static let uthmaniFontName = "KFGQPCQUMBULUthmanicScript-Regu"
+    private static let qiraatFontName = "Qiraat"
     
     let surahName: String
     let surah: Int
@@ -991,6 +994,15 @@ struct AyahSearchRow: View, Equatable {
             && settings.isHafsDisplay
     }
 
+    private var searchArabicFontName: String {
+        guard settings.fontArabic == Self.uthmaniFontName else {
+            return settings.fontArabic
+        }
+
+        let normalizedQiraah = Settings.normalizeLegacyRiwayahTag(settings.displayQiraahForArabic ?? Settings.Riwayah.hafsTag)
+        return normalizedQiraah.isEmpty ? Self.uthmaniFontName : Self.qiraatFontName
+    }
+
     private func arabicTajweedText() -> AttributedString? {
         guard shouldShowTajweedColors else { return nil }
         return TajweedStore.shared.attributedText(
@@ -1054,7 +1066,7 @@ struct AyahSearchRow: View, Equatable {
                     HighlightedSnippet(
                         source: arabic,
                         term: mArabic ? query : "",
-                        font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
+                        font: .custom(searchArabicFontName, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                         accent: settings.accentColor.color,
                         fg: .primary,
                         preStyledSource: arabicTajweedText(),
@@ -1152,7 +1164,7 @@ struct AyahSearchRow: View, Equatable {
                 HighlightedSnippet(
                     source: arabic,
                     term: mArabic ? query : "",
-                    font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
+                    font: .custom(searchArabicFontName, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                     accent: settings.accentColor.color,
                     fg: .primary,
                     preStyledSource: arabicTajweedText(),

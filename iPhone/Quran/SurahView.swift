@@ -1239,7 +1239,7 @@ struct SurahView: View {
             && settings.showArabicText
             && settings.isHafsDisplay
 
-        if settings.showQiraahDetails || tajweedCanRenderNow {
+        if settings.qiraatComparisonMode || tajweedCanRenderNow {
             HStack(alignment: .bottom, spacing: 8) {
                 if tajweedCanRenderNow {
                     TajweedLegendMenu()
@@ -1247,7 +1247,7 @@ struct SurahView: View {
 
                 Spacer()
 
-                if settings.showQiraahDetails {
+                if settings.qiraatComparisonMode {
                     ArabicTextRiwayahPicker(selection: $settings.displayQiraah.animation(.easeInOut))
                 }
             }
@@ -1721,7 +1721,7 @@ private struct SurahPickerSheet: View {
                                         select(surah)
                                     }
                                 } label: {
-                                    SurahRow(surah: surah, isFavorite: settings.favoriteSurahs.contains(surah.id), hideInfo: settings.showSurahInformation)
+                                    SurahRow(surah: surah, hideInfo: settings.showSurahInformation)
                                         .contentShape(Rectangle())
                                 }
                                 .id(surah.id)
@@ -1771,18 +1771,6 @@ struct ArabicTextRiwayahPicker: View {
 
     private static let options: [Settings.Riwayah.Option] = Settings.Riwayah.options
 
-    private var favoriteOptions: [Settings.Riwayah.Option] {
-        Self.options.filter { settings.isQiraahFavorite(tag: $0.tag) }
-    }
-
-    private var otherGroups: [Settings.Riwayah.Group] {
-        Settings.Riwayah.groups.compactMap { group in
-            let options = group.options.filter { !settings.isQiraahFavorite(tag: $0.tag) }
-            guard !options.isEmpty else { return nil }
-            return Settings.Riwayah.Group(teacher: group.teacher, teacherArabic: group.teacherArabic, options: options)
-        }
-    }
-
     private var currentLabel: String {
         let tag = Settings.normalizeLegacyRiwayahTag(selection)
         return Self.options.first(where: { $0.tag == tag })?.label ?? "Arabic Riwayah"
@@ -1792,18 +1780,7 @@ struct ArabicTextRiwayahPicker: View {
         #if os(iOS)
         if useSimpleIOSPicker {
             Picker("Arabic Riwayah", selection: $selection) {
-                if !favoriteOptions.isEmpty {
-                    Section {
-                        ForEach(favoriteOptions, id: \.tag) { option in
-                            Text(option.label).tag(option.tag)
-                        }
-                    } header: {
-                        Text("Favorite Riwayat")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                ForEach(otherGroups) { group in
+                ForEach(Settings.Riwayah.groups) { group in
                     Section {
                         ForEach(group.options, id: \.tag) { option in
                             Text(option.label).tag(option.tag)
@@ -1843,18 +1820,7 @@ struct ArabicTextRiwayahPicker: View {
         }
         #else
         Picker("Arabic Riwayah", selection: $selection) {
-            if !favoriteOptions.isEmpty {
-                Section {
-                    ForEach(favoriteOptions, id: \.tag) { option in
-                        Text(option.label).tag(option.tag)
-                    }
-                } header: {
-                    Text("Favorite Riwayat")
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            ForEach(otherGroups) { group in
+            ForEach(Settings.Riwayah.groups) { group in
                 Section {
                     ForEach(group.options, id: \.tag) { option in
                         Text(option.label).tag(option.tag)

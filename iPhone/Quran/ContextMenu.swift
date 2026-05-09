@@ -557,6 +557,9 @@ struct AyahQiraahComparisonSheet: View {
     let ayahNumber: Int
     @State private var searchText = ""
 
+    private static let uthmaniFontName = "KFGQPCQUMBULUthmanicScript-Regu"
+    private static let qiraatFontName = "Qiraat"
+
     private struct QiraahDisplay: Identifiable {
         let label: String
         let tag: String
@@ -658,6 +661,15 @@ struct AyahQiraahComparisonSheet: View {
         return ayah.displayArabicText(surahId: surahNumber, clean: settings.cleanArabicText, qiraahOverride: option.tag)
     }
 
+    private func comparisonArabicFontName(for option: QiraahDisplay) -> String {
+        guard settings.fontArabic == Self.uthmaniFontName else {
+            return settings.fontArabic
+        }
+
+        let normalizedQiraah = Settings.normalizeLegacyRiwayahTag(option.tag)
+        return normalizedQiraah.isEmpty ? Self.uthmaniFontName : Self.qiraatFontName
+    }
+
     private func qiraahRow(_ option: QiraahDisplay) -> some View {
         let text = qiraahText(for: option)
 
@@ -703,7 +715,10 @@ struct AyahQiraahComparisonSheet: View {
             HighlightedSnippet(
                 source: text ?? "This ayah is not separate in this riwayah.",
                 term: searchText,
-                font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize),
+                font: .custom(
+                    comparisonArabicFontName(for: option),
+                    size: UIFont.preferredFont(forTextStyle: .title3).pointSize
+                ),
                 accent: settings.accentColor.color,
                 fg: text == nil ? .secondary : .primary
             )

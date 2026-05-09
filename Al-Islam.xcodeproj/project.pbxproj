@@ -48,6 +48,8 @@
 		723B9E092F3B13EF0042DCDE /* QiraahDuri.json in Resources */ = {isa = PBXBuildFile; fileRef = 723B9E072F3B13EF0042DCDE /* QiraahDuri.json */; };
 		723B9E0B2F3B141E0042DCDE /* QiraahSusi.json in Resources */ = {isa = PBXBuildFile; fileRef = 723B9E0A2F3B141E0042DCDE /* QiraahSusi.json */; };
 		723B9E0C2F3B141E0042DCDE /* QiraahSusi.json in Resources */ = {isa = PBXBuildFile; fileRef = 723B9E0A2F3B141E0042DCDE /* QiraahSusi.json */; };
+		723CE3032FAF0BB900E83F5A /* Qiraat.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 723CE3022FAF0BB900E83F5A /* Qiraat.ttf */; };
+		723CE3042FAF0BB900E83F5A /* Qiraat.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 723CE3022FAF0BB900E83F5A /* Qiraat.ttf */; };
 		723DA4592D59FC6400AC20B3 /* Widget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 723DA4582D59FC5A00AC20B3 /* Widget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		723DA45A2D59FC6900AC20B3 /* Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 723DA4562D59FC5A00AC20B3 /* Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		723DA45B2D59FC7000AC20B3 /* Complication.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 723DA4572D59FC5A00AC20B3 /* Complication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -295,6 +297,7 @@
 		723B9E042F3B13B30042DCDE /* QiraahQunbul.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = QiraahQunbul.json; sourceTree = "<group>"; };
 		723B9E072F3B13EF0042DCDE /* QiraahDuri.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = QiraahDuri.json; sourceTree = "<group>"; };
 		723B9E0A2F3B141E0042DCDE /* QiraahSusi.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = QiraahSusi.json; sourceTree = "<group>"; };
+		723CE3022FAF0BB900E83F5A /* Qiraat.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Qiraat.ttf; sourceTree = "<group>"; };
 		723DA4552D59FC5A00AC20B3 /* iPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		723DA4562D59FC5A00AC20B3 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		723DA4572D59FC5A00AC20B3 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Complication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -598,6 +601,7 @@
 		7260F9382A8715D600E8FF87 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
+				723CE3022FAF0BB900E83F5A /* Qiraat.ttf */,
 				724B8BD12FADD98500804C3D /* Uthmani.ttf */,
 				724B8BE02FADE8D900804C3D /* Indopak.ttf */,
 			);
@@ -841,6 +845,7 @@
 				72C6FDF02F7880700035F675 /* alaqsa-2-30.caf in Resources */,
 				72C6FDF12F7880700035F675 /* abdulghaffar-30.caf in Resources */,
 				72C6FDF22F7880700035F675 /* alaqsa-30.caf in Resources */,
+				723CE3032FAF0BB900E83F5A /* Qiraat.ttf in Resources */,
 				720BF0892F6A937600E3F263 /* Quran.json in Resources */,
 				72F7DB752F0431740037B059 /* Assets.xcassets in Resources */,
 				72C3FE562F6A039400136976 /* NamesOfAllah.json in Resources */,
@@ -869,6 +874,7 @@
 				72C6FDF92F7880700035F675 /* abdulghaffar-30.caf in Resources */,
 				72C6FDFA2F7880700035F675 /* alaqsa-30.caf in Resources */,
 				720BF0882F6A937600E3F263 /* Quran.json in Resources */,
+				723CE3042FAF0BB900E83F5A /* Qiraat.ttf in Resources */,
 				723B9E0C2F3B141E0042DCDE /* QiraahSusi.json in Resources */,
 				72C3FE552F6A039400136976 /* NamesOfAllah.json in Resources */,
 				723B9E032F3B138C0042DCDE /* QiraahBuzzi.json in Resources */,
