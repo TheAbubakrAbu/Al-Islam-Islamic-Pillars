@@ -812,6 +812,7 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.maddNecessary) {
             for index in clusters.indices where isLazimCombinedAlifCluster(clusters[index]) {
                 if index == finalAaridCarrier { continue }
+                if hasMiniatureMaddMark(clusters[index]) { continue }
                 if strongerMaddRuleCovers(range: nsRange(for: clusters[index]), ops: ops) { continue }
                 ops.append(PaintOp(range: nsRange(for: clusters[index]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
             }
@@ -819,6 +820,7 @@ final class TajweedStore {
             for i in clusters.indices where i > 0 {
                 let cur = clusters[i]
                 if i == finalAaridCarrier { continue }
+                if hasMiniatureMaddMark(cur) { continue }
                 guard isBareAlifForMadd(cur), hasMaddah(cur) else { continue }
                 if isLazimCombinedAlifCluster(cur) { continue }
                 if strongerMaddRuleCovers(range: nsRange(for: cur), ops: ops) { continue }
@@ -828,6 +830,7 @@ final class TajweedStore {
             }
             for i in clusters.indices where isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) {
                 if i == finalAaridCarrier || i + 1 == finalAaridCarrier { continue }
+                if hasMiniatureMaddMark(clusters[i]) || hasMiniatureMaddMark(clusters[i + 1]) { continue }
                 if strongerMaddRuleCovers(range: nsRange(for: clusters[i]), ops: ops) { continue }
                 ops.append(PaintOp(range: nsRange(for: clusters[i]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
                 ops.append(PaintOp(range: nsRange(for: clusters[i + 1]), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
@@ -835,6 +838,7 @@ final class TajweedStore {
             if ayah == 1, TajweedRules.surahsOpeningMuqattaat.contains(surah) {
                 for i in clusters.indices {
                     if i == finalAaridCarrier { continue }
+                    if hasMiniatureMaddMark(clusters[i]) { continue }
                     guard hasMaddah(clusters[i]) else { continue }
                     if isLazimCombinedAlifCluster(clusters[i]) { continue }
                     if isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) { continue }
@@ -850,6 +854,7 @@ final class TajweedStore {
                 guard hi - lo >= 3 else { continue }
                 for i in lo..<(hi - 1) {
                     if isLastMeaningfulWord(w, in: words, clusters: clusters) { continue }
+                    if hasMiniatureMaddMark(clusters[i]) { continue }
                     if isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) { continue }
                     if isLazimCombinedAlifCluster(clusters[i]) { continue }
                     guard isNaturalMaddCarrier(clusters: clusters, index: i, wordStart: lo) else { continue }
@@ -879,6 +884,7 @@ final class TajweedStore {
                 guard w1.upperBound - w1.lowerBound >= 2 else { continue }
                 let pen = w1.upperBound - 2
                 let last = w1.upperBound - 1
+                if hasMiniatureMaddMark(clusters[pen]) || hasMiniatureMaddMark(clusters[last]) { continue }
                 if isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: pen) { continue }
                 if isLazimCombinedAlifCluster(clusters[last]) { continue }
                 guard isNaturalMaddCarrier(clusters: clusters, index: pen, wordStart: w1.lowerBound) else { continue }
@@ -900,6 +906,7 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.maddNecessary) {
             for i in clusters.indices where hasMaddah(clusters[i]) {
                 if i == finalAaridCarrier { continue }
+                if hasMiniatureMaddMark(clusters[i]) { continue }
                 if strongerMaddRuleCoversCluster(index: i, ops: ops, clusters: clusters) { continue }
                 appendSpecialMaddPaintOps(
                     text: text,
@@ -913,6 +920,7 @@ final class TajweedStore {
 
         if settings.isTajweedCategoryVisible(.maddSukoon),
            let finalCarrier = finalAaridCarrier,
+           !hasMiniatureMaddMark(clusters[finalCarrier]),
            !strongerMaddRuleCoversCluster(index: finalCarrier, ops: ops, clusters: clusters) {
             appendAaridMaddPaintOps(
                 clusters: clusters,
@@ -991,6 +999,7 @@ final class TajweedStore {
     private func appendExplicitMaddahPaintOps(text: String, clusters: [CharacterClusterInfo], finalAaridCarrier: Int?, into ops: inout [PaintOp]) {
         for index in clusters.indices where hasMaddah(clusters[index]) {
             if index == finalAaridCarrier { continue }
+            if hasMiniatureMaddMark(clusters[index]) { continue }
             let classification = explicitMaddahCategory(clusters: clusters, index: index)
             guard settings.isTajweedCategoryVisible(classification.category) else { continue }
             appendSpecialMaddPaintOps(
@@ -1039,6 +1048,10 @@ final class TajweedStore {
         }
 
         return (.maddNecessary, PaintPriority.explicitMaddNecessary)
+    }
+
+    private func hasMiniatureMaddMark(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.daggerAlif) || cluster.contains(Self.smallWaw) || cluster.contains(Self.smallYeh)
     }
 
     private func shouldIgnoreForExplicitMaddahScan(_ cluster: CharacterClusterInfo) -> Bool {

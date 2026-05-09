@@ -7,17 +7,20 @@ struct NowPlayingView: View {
     @State private var quranView: Bool
     @Binding private var scrollDown: Int
     @Binding private var searchText: String
+    private let onOpenPlayback: ((PlaybackContext) -> Void)?
 
     @State private var confirmRemoveNote = false
 
     init(
         quranView: Bool = false,
         scrollDown: Binding<Int> = .constant(-1),
-        searchText: Binding<String> = .constant("")
+        searchText: Binding<String> = .constant(""),
+        onOpenPlayback: ((PlaybackContext) -> Void)? = nil
     ) {
         self.quranView = quranView
         _scrollDown = scrollDown
         _searchText = searchText
+        self.onOpenPlayback = onOpenPlayback
     }
 
     var body: some View {
@@ -30,10 +33,20 @@ struct NowPlayingView: View {
             AnyView(
                 VStack(spacing: 8) {
                     if quranView {
-                        NavigationLink {
-                            destinationView(for: playbackContext)
-                        } label: {
-                            playerRow(isPlaying: quranPlayer.isPlaying)
+                        if let onOpenPlayback {
+                            Button {
+                                settings.hapticFeedback()
+                                onOpenPlayback(playbackContext)
+                            } label: {
+                                playerRow(isPlaying: quranPlayer.isPlaying)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            NavigationLink {
+                                destinationView(for: playbackContext)
+                            } label: {
+                                playerRow(isPlaying: quranPlayer.isPlaying)
+                            }
                         }
                     } else {
                         playerRow(isPlaying: quranPlayer.isPlaying)
@@ -365,7 +378,7 @@ struct NowPlayingView: View {
     }
 }
 
-private struct PlaybackContext {
+struct PlaybackContext {
     let surah: Surah
     let ayahNumber: Int
     let isPlaying: Bool

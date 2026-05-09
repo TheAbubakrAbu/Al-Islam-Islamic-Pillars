@@ -70,19 +70,19 @@ struct AlIslamApp: App {
             if rootStage == .launch {
                 LaunchScreen(isLaunching: $isLaunching)
                     .zIndex(3)
-                    .transition(.rootHandoff)
+                    .transition(.opacity)
             }
 
             if rootStage == .splash {
                 SplashScreen()
                     .zIndex(2)
-                    .transition(.rootHandoff)
+                    .transition(.opacity)
             }
 
             if rootStage == .main {
                 MainTabView()
                     .zIndex(1)
-                    .transition(.rootHandoff)
+                    .transition(.opacity)
             }
         }
         .animation(rootTransitionAnimation, value: rootStage)

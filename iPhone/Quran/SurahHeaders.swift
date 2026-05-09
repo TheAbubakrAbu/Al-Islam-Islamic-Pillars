@@ -18,6 +18,7 @@ struct SurahsHeader: View {
             #if os(iOS)
             Spacer()
             
+            goToSurah
             randomSurahLink
             #endif
         }
@@ -46,6 +47,10 @@ struct SurahsHeader: View {
                 .padding(4)
                 .conditionalGlassEffect()
         }
+    }
+    
+    private var goToSurah: some View {
+        EmptyView()
     }
     #endif
 }
