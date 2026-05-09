@@ -4,6 +4,9 @@ extension Settings {
     // MARK: - Quran types and constants
 
     static let randomReciterName = "Random Reciter"
+    static let hafsUthmaniFontName = "KFGQPCHAFSUthmanicScript-Regula"
+    static let qiraatUthmaniFontName = "KFGQPCQUMBULUthmanicScript-Regu"
+    static let indopakFontName = "Al_Mushaf"
 
     enum QuranSortMode: String, CaseIterable, Identifiable {
         case surah
@@ -140,6 +143,10 @@ extension Settings {
     func runQuranStartupMigrations() {
         let defaults = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName)
 
+        if fontArabic == Self.qiraatUthmaniFontName {
+            fontArabic = Self.hafsUthmaniFontName
+        }
+
         if defaults?.object(forKey: "quranSortMode") == nil,
            let legacyGroupBySurah = defaults?.object(forKey: "groupBySurah") as? Bool {
             quranSortModeRaw = legacyGroupBySurah ? QuranSortMode.surah.rawValue : QuranSortMode.juz.rawValue
@@ -214,6 +221,39 @@ extension Settings {
     /// Normalizes older saved `displayQiraah` tags to canonical Unicode transliteration (matches on-screen riwayah names).
     static func normalizeLegacyRiwayahTag(_ stored: String) -> String {
         Riwayah.canonicalTag(stored)
+    }
+
+    static func normalizedArabicFontName(_ fontName: String) -> String {
+        fontName == qiraatUthmaniFontName ? hafsUthmaniFontName : fontName
+    }
+
+    static func isUthmaniArabicFont(_ fontName: String) -> Bool {
+        let trimmed = fontName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed == hafsUthmaniFontName || trimmed == qiraatUthmaniFontName
+    }
+
+    static func isNonHafsQiraah(_ qiraah: String?) -> Bool {
+        let normalizedQiraah = normalizeLegacyRiwayahTag(qiraah ?? Riwayah.hafsTag)
+        return Riwayah.options.contains { !$0.tag.isEmpty && $0.tag == normalizedQiraah }
+    }
+
+    static func quranArabicFontName(selectedFontName: String, qiraah: String?) -> String {
+        guard isUthmaniArabicFont(selectedFontName) else {
+            return normalizedArabicFontName(selectedFontName)
+        }
+        return isNonHafsQiraah(qiraah) ? qiraatUthmaniFontName : hafsUthmaniFontName
+    }
+
+    var normalizedArabicFontName: String {
+        Self.normalizedArabicFontName(fontArabic)
+    }
+
+    var usesUthmaniArabicFont: Bool {
+        Self.isUthmaniArabicFont(fontArabic)
+    }
+
+    func quranArabicFontName(for qiraah: String?) -> String {
+        Self.quranArabicFontName(selectedFontName: fontArabic, qiraah: qiraah)
     }
 
     func toggleSurahFavorite(surah: Int) {

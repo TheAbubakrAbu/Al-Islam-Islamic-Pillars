@@ -315,8 +315,8 @@ struct SettingsQuranView: View {
 
     private var arabicFontPicker: some View {
         Picker("Arabic Font", selection: $settings.fontArabic.animation(.easeInOut)) {
-            Text("Uthmani").tag("KFGQPCQUMBULUthmanicScript-Regu")
-            Text("Indopak").tag("Al_Mushaf")
+            Text("Uthmani").tag(Settings.hafsUthmaniFontName)
+            Text("Indopak").tag(Settings.indopakFontName)
         }
         #if os(iOS)
         .pickerStyle(SegmentedPickerStyle())

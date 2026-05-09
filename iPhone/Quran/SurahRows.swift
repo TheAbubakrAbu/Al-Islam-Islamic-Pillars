@@ -195,7 +195,7 @@ struct SurahRow: View, Equatable {
                 )
                 
                 Text(surah.idArabic)
-                    .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
+                    .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
                     .foregroundColor(accentColor.color)
             }
             .minimumScaleFactor(1)
@@ -892,8 +892,6 @@ struct AyahSearchRow: View, Equatable {
     @EnvironmentObject private var settings: Settings
     @State private var confirmRemoveNote = false
 
-    private static let uthmaniFontName = "KFGQPCQUMBULUthmanicScript-Regu"
-    private static let qiraatFontName = "Qiraat"
     
     let surahName: String
     let surah: Int
@@ -995,12 +993,7 @@ struct AyahSearchRow: View, Equatable {
     }
 
     private var searchArabicFontName: String {
-        guard settings.fontArabic == Self.uthmaniFontName else {
-            return settings.fontArabic
-        }
-
-        let normalizedQiraah = Settings.normalizeLegacyRiwayahTag(settings.displayQiraahForArabic ?? Settings.Riwayah.hafsTag)
-        return normalizedQiraah.isEmpty ? Self.uthmaniFontName : Self.qiraatFontName
+        settings.quranArabicFontName(for: settings.displayQiraahForArabic)
     }
 
     private func arabicTajweedText() -> AttributedString? {

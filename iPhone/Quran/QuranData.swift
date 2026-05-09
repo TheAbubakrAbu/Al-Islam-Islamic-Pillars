@@ -441,7 +441,8 @@ final class TajweedStore {
         text: String,
         displayText requestedDisplayText: String? = nil,
         cleanDisplayText: Bool = false,
-        beginnerSpacing: Bool = false
+        beginnerSpacing: Bool = false,
+        removeArabicDots: Bool? = nil
     ) -> AttributedString? {
         let visibilitySignature = tajweedVisibilitySignature()
         if visibilitySignature != lastVisibilitySignature {
@@ -449,12 +450,14 @@ final class TajweedStore {
             lastVisibilitySignature = visibilitySignature
         }
 
-        let projection = (requestedDisplayText != nil || cleanDisplayText || beginnerSpacing)
+        let shouldRemoveArabicDots = removeArabicDots ?? (cleanDisplayText && settings.removeArabicDots)
+        let projection = (requestedDisplayText != nil || cleanDisplayText || beginnerSpacing || shouldRemoveArabicDots)
             ? tajweedProjection(
                 from: text,
                 requestedDisplayText: requestedDisplayText,
                 cleanDisplayText: cleanDisplayText,
-                beginnerSpacing: beginnerSpacing
+                beginnerSpacing: beginnerSpacing,
+                removeArabicDots: shouldRemoveArabicDots
             )
             : nil
         let displayText = projection?.displayText ?? text
@@ -587,7 +590,8 @@ final class TajweedStore {
         from rawText: String,
         requestedDisplayText: String?,
         cleanDisplayText: Bool,
-        beginnerSpacing: Bool
+        beginnerSpacing: Bool,
+        removeArabicDots: Bool
     ) -> TajweedProjection {
         var projectedScalars = String.UnicodeScalarView()
         projectedScalars.reserveCapacity(rawText.unicodeScalars.count * (beginnerSpacing ? 2 : 1))
@@ -607,7 +611,7 @@ final class TajweedStore {
 
             for scalar in String(character).unicodeScalars {
                 let rawLength = utf16Length(of: scalar)
-                let outScalars = displayScalars(for: scalar, cleanDisplayText: cleanDisplayText)
+                let outScalars = displayScalars(for: scalar, cleanDisplayText: cleanDisplayText, removeArabicDots: removeArabicDots)
                 let outStart = displayUTF16Offset
 
                 for outScalar in outScalars {
@@ -690,7 +694,7 @@ final class TajweedStore {
         return indices.sorted()
     }
 
-    private func displayScalars(for scalar: UnicodeScalar, cleanDisplayText: Bool) -> [UnicodeScalar] {
+    private func displayScalars(for scalar: UnicodeScalar, cleanDisplayText: Bool, removeArabicDots: Bool) -> [UnicodeScalar] {
         let visibleScalar: UnicodeScalar?
         if cleanDisplayText {
             switch scalar.value {
@@ -704,7 +708,7 @@ final class TajweedStore {
         }
 
         guard var out = visibleScalar else { return [] }
-        if cleanDisplayText && settings.removeArabicDots {
+        if cleanDisplayText && removeArabicDots {
             out = dotlessArabicScalar(out)
         }
         return [out]

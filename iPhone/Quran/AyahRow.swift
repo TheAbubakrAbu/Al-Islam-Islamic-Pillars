@@ -48,8 +48,6 @@ struct AyahRow: View, Equatable {
         return cache
     }()
 
-    private static let uthmaniFontName = "KFGQPCQUMBULUthmanicScript-Regu"
-    private static let qiraatFontName = "Qiraat"
     
     func containsProfanity(_ text: String) -> Bool {
         let t = text.folding(options: [.diacriticInsensitive, .widthInsensitive], locale: .current).lowercased()
@@ -117,12 +115,7 @@ struct AyahRow: View, Equatable {
     }
 
     private func ayahArabicFontName(for qiraah: String?) -> String {
-        guard settings.fontArabic == Self.uthmaniFontName else {
-            return settings.fontArabic
-        }
-
-        let normalizedQiraah = Settings.normalizeLegacyRiwayahTag(qiraah ?? Settings.Riwayah.hafsTag)
-        return normalizedQiraah.isEmpty ? Self.uthmaniFontName : Self.qiraatFontName
+        settings.quranArabicFontName(for: qiraah)
     }
 
     private func queryForInlineHighlight(_ query: String) -> String {
@@ -554,7 +547,7 @@ struct AyahRow: View, Equatable {
                         ayahArabicFontName(for: comparisonQiraahOverride ?? settings.displayQiraahForArabic),
                         size: settings.fontArabicSize
                     )
-                let suffixFont: Font = .custom("KFGQPCQUMBULUthmanicScript-Regu", size: settings.fontArabicSize)
+                let suffixFont: Font = .custom(Settings.hafsUthmaniFontName, size: settings.fontArabicSize)
 
                 HighlightedSnippet(
                     source: arabicDisplayText(),

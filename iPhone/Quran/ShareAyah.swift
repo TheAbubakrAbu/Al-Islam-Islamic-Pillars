@@ -239,7 +239,6 @@ struct ShareAyahSheet: View {
         textColor: UIColor
     ) -> NSAttributedString? {
         guard shareSettings.showTajweed,
-              !shareSettings.hideArabicDots,
               settings.isHafsDisplay else {
             return nil
         }
@@ -249,7 +248,7 @@ struct ShareAyahSheet: View {
             surah: surah,
             ayah: ayah,
             cleanArabic: shareSettings.cleanArabic,
-            hideArabicDots: false,
+            hideArabicDots: shareSettings.hideArabicDots,
             qiraahOverride: settings.displayQiraahForArabic
         )
         guard let tajweed = TajweedStore.shared.attributedText(
@@ -257,7 +256,8 @@ struct ShareAyahSheet: View {
             ayah: ayah.id,
             text: rawText,
             displayText: displayText,
-            cleanDisplayText: shareSettings.cleanArabic
+            cleanDisplayText: shareSettings.cleanArabic,
+            removeArabicDots: shareSettings.hideArabicDots || settings.removeArabicDots
         ) else {
             return nil
         }
@@ -463,31 +463,36 @@ struct ShareAyahSheet: View {
                         if shareSettings.arabic {
                             if actionMode == .image && !shareSettings.hideArabicDots {
                                 Picker("Arabic Font", selection: Binding(
-                                    get: { shareSettings.shareArabicFont.isEmpty ? (settings.fontArabic) : shareSettings.shareArabicFont },
+                                    get: {
+                                        Settings.normalizedArabicFontName(
+                                            shareSettings.shareArabicFont.isEmpty ? settings.fontArabic : shareSettings.shareArabicFont
+                                        )
+                                    },
                                     set: { val in
-                                        storedShareArabicFont = val
+                                        let normalizedFont = Settings.normalizedArabicFontName(val)
+                                        storedShareArabicFont = normalizedFont
                                         shareSettings = ShareSettings(
                                             arabic: shareSettings.arabic,
                                             transliteration: shareSettings.transliteration,
                                             englishSaheeh: shareSettings.englishSaheeh,
                                             englishMustafa: shareSettings.englishMustafa,
                                             includeQiraah: shareSettings.includeQiraah,
-                                            shareArabicFont: val,
+                                            shareArabicFont: normalizedFont,
                                             cleanArabic: shareSettings.cleanArabic,
                                             hideArabicDots: shareSettings.hideArabicDots,
                                             showTajweed: shareSettings.showTajweed
                                         )
                                     }
                                 ).animation(.easeInOut)) {
-                                    Text("Uthmani").tag("KFGQPCQUMBULUthmanicScript-Regu")
-                                    Text("Indopak").tag("Al_Mushaf")
+                                    Text("Uthmani").tag(Settings.hafsUthmaniFontName)
+                                    Text("Indopak").tag(Settings.indopakFontName)
                                 }
                                 .pickerStyle(SegmentedPickerStyle())
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 2)
                             }
 
-                            if actionMode == .image && settings.isHafsDisplay && !shareSettings.hideArabicDots {
+                            if actionMode == .image && settings.isHafsDisplay {
                                 Toggle("Show Tajweed", isOn: Binding(
                                     get: { shareSettings.showTajweed },
                                     set: { shareSettings = updatedShareSettings(showTajweed: $0) }
@@ -583,7 +588,10 @@ struct ShareAyahSheet: View {
             didInit = true
 
             withAnimation {
-                let font = storedShareArabicFont.isEmpty ? settings.fontArabic : storedShareArabicFont
+                let font = Settings.normalizedArabicFontName(storedShareArabicFont.isEmpty ? settings.fontArabic : storedShareArabicFont)
+                if !storedShareArabicFont.isEmpty {
+                    storedShareArabicFont = font
+                }
                 shareSettings = ShareSettings(
                     arabic: settings.showArabicText,
                     transliteration: settings.isHafsDisplay ? settings.showTransliteration : false,
@@ -758,11 +766,12 @@ struct ShareAyahSheet: View {
         guard let surah = surah, let ayah = ayah else { return UIImage() }
 
         let bodyFont   = UIFont.preferredFont(forTextStyle: .body)
-        let arabicFontName = shareSettings.shareArabicFont.isEmpty ? settings.fontArabic : shareSettings.shareArabicFont
+        let selectedArabicFontName = shareSettings.shareArabicFont.isEmpty ? settings.fontArabic : shareSettings.shareArabicFont
+        let arabicFontName = Settings.quranArabicFontName(selectedFontName: selectedArabicFontName, qiraah: settings.displayQiraahForArabic)
         let arabicFont = shareSettings.hideArabicDots
             ? bodyFont.withSize(bodyFont.pointSize * 1.15)
             : (UIFont(name: arabicFontName, size: bodyFont.pointSize * 1.15) ?? bodyFont)
-        let arabicNumberFont = UIFont(name: "KFGQPCQUMBULUthmanicScript-Regu", size: bodyFont.pointSize * 1.15) ?? arabicFont
+        let arabicNumberFont = UIFont(name: Settings.hafsUthmaniFontName, size: bodyFont.pointSize * 1.15) ?? arabicFont
         let captionFont = UIFont.preferredFont(forTextStyle: .caption2)
         
         let textColor      = UIColor.white
@@ -965,7 +974,7 @@ extension ShareAyahSheet {
             englishSaheeh: settings.showEnglishSaheeh,
             englishMustafa: settings.showEnglishMustafa,
             includeQiraah: includeRiwayah,
-            shareArabicFont: shareFont.isEmpty ? settings.fontArabic : shareFont,
+            shareArabicFont: Settings.normalizedArabicFontName(shareFont.isEmpty ? settings.fontArabic : shareFont),
             cleanArabic: settings.cleanArabicText,
             hideArabicDots: settings.removeArabicDots,
             showTajweed: settings.showTajweedColors
@@ -1061,11 +1070,12 @@ extension ShareAyahSheet {
 
     private static func buildShareImage(surah: Surah, ayah: Ayah, shareSettings: ShareSettings, settings: Settings, includeNote: Bool, noteText: String?) -> UIImage {
         let bodyFont = UIFont.preferredFont(forTextStyle: .body)
-        let arabicFontName = shareSettings.shareArabicFont.isEmpty ? settings.fontArabic : shareSettings.shareArabicFont
+        let selectedArabicFontName = shareSettings.shareArabicFont.isEmpty ? settings.fontArabic : shareSettings.shareArabicFont
+        let arabicFontName = Settings.quranArabicFontName(selectedFontName: selectedArabicFontName, qiraah: settings.displayQiraahForArabic)
         let arabicFont = shareSettings.hideArabicDots
             ? bodyFont.withSize(bodyFont.pointSize * 1.15)
             : (UIFont(name: arabicFontName, size: bodyFont.pointSize * 1.15) ?? bodyFont)
-        let arabicNumberFont = UIFont(name: "KFGQPCQUMBULUthmanicScript-Regu", size: bodyFont.pointSize * 1.15) ?? arabicFont
+        let arabicNumberFont = UIFont(name: Settings.hafsUthmaniFontName, size: bodyFont.pointSize * 1.15) ?? arabicFont
         let captionFont = UIFont.preferredFont(forTextStyle: .caption2)
         let textColor = UIColor.white
         let secondaryColor = UIColor.secondaryLabel

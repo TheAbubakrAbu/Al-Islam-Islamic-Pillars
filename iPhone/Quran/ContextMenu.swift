@@ -557,8 +557,6 @@ struct AyahQiraahComparisonSheet: View {
     let ayahNumber: Int
     @State private var searchText = ""
 
-    private static let uthmaniFontName = "KFGQPCQUMBULUthmanicScript-Regu"
-    private static let qiraatFontName = "Qiraat"
 
     private struct QiraahDisplay: Identifiable {
         let label: String
@@ -662,12 +660,7 @@ struct AyahQiraahComparisonSheet: View {
     }
 
     private func comparisonArabicFontName(for option: QiraahDisplay) -> String {
-        guard settings.fontArabic == Self.uthmaniFontName else {
-            return settings.fontArabic
-        }
-
-        let normalizedQiraah = Settings.normalizeLegacyRiwayahTag(option.tag)
-        return normalizedQiraah.isEmpty ? Self.uthmaniFontName : Self.qiraatFontName
+        settings.quranArabicFontName(for: option.tag)
     }
 
     private func qiraahRow(_ option: QiraahDisplay) -> some View {

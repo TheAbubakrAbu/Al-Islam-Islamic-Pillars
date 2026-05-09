@@ -486,7 +486,8 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     /// Pass to Ayah.displayArabic(qiraah:clean:). Nil means Hafs.
     var displayQiraahForArabic: String? {
-        (displayQiraah.isEmpty || displayQiraah == "Hafs") ? nil : displayQiraah
+        let normalized = Self.normalizeLegacyRiwayahTag(displayQiraah)
+        return normalized.isEmpty ? nil : normalized
     }
 
     /// When false, only Arabic is shown (no transliteration or English), since those are for Hafs an Asim only.
@@ -544,7 +545,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     // MARK: - Arabic letters & 99 Names
     
-    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
+    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCHAFSUthmanicScript-Regula"
     @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .title1).pointSize)
     @AppStorage("useFontArabic") var useFontArabic = true
 

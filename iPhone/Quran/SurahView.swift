@@ -591,7 +591,10 @@ struct SurahView: View {
         .onAppear {
             quranPlayer.recordReadingHistory(surahNumber: surah.id, surahName: surah.nameTransliteration, ayahNumber: ayah ?? 1)
         }
-        .sheet(isPresented: $showingSettingsSheet) { settingsSheet }
+        .sheet(isPresented: $showingSettingsSheet) {
+            settingsSheet
+                .smallMediumSheetPresentation()
+        }
         .sheet(isPresented: $showSurahPickerSheet) {
             SurahPickerSheet(currentSurahID: surah.id) { selectedSurah in
                 settings.hapticFeedback()
@@ -1498,7 +1501,7 @@ struct SurahView: View {
                             .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .headline).pointSize + 2))
                         
                         Text(surah.idArabic)
-                            .font(.custom("KFGQPCQUMBULUthmanicScript-Regu", size: UIFont.preferredFont(forTextStyle: .headline).pointSize + 2))
+                            .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .headline).pointSize + 2))
                             .foregroundColor(settings.accentColor.color)
                     }
                 }

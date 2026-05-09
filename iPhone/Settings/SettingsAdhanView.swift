@@ -272,6 +272,7 @@ struct SettingsAdhanView: View {
         .sheet(isPresented: $showingMap) {
             MapView(choosingPrayerTimes: false)
                 .environmentObject(settings)
+                .smallMediumSheetPresentation()
         }
         #endif
     }

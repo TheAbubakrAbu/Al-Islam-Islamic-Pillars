@@ -101,6 +101,7 @@ struct AdhanView: View {
             NavigationView {
                 SettingsAdhanView(showNotifications: true, presentedAsSheet: true)
             }
+            .smallMediumSheetPresentation()
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)

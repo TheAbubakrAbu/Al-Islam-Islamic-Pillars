@@ -536,6 +536,7 @@ struct QuranView: View {
         }
         .sheet(isPresented: $showingSettingsSheet) {
             NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
+                .smallMediumSheetPresentation()
         }
         .sheet(isPresented: $showReciterPickerSheet) {
             NavigationView {
