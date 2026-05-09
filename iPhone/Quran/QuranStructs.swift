@@ -149,22 +149,6 @@ extension String {
             options: .regularExpression
         )
     }
-
-    var containsArabicLetters: Bool {
-        unicodeScalars.contains { scalar in
-            switch scalar.value {
-            case 0x0600...0x06FF,
-                 0x0750...0x077F,
-                 0x08A0...0x08FF,
-                 0xFB50...0xFDFF,
-                 0xFE70...0xFEFF,
-                 0x1EE00...0x1EEFF:
-                return true
-            default:
-                return false
-            }
-        }
-    }
 }
 
 struct LastListenedSurah: Identifiable, Codable {

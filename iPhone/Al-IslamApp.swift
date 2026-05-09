@@ -153,12 +153,3 @@ private extension View {
         modifier(NowPlayingInsetModifier())
     }
 }
-
-private extension AnyTransition {
-    static var rootHandoff: AnyTransition {
-        .asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 1.015)),
-            removal: .opacity.combined(with: .scale(scale: 0.985))
-        )
-    }
-}

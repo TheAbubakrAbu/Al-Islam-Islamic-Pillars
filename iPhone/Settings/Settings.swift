@@ -598,6 +598,69 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         favoriteNameNumbers.contains(number)
     }
     
+    func cleanSearch(_ text: String, whitespace: Bool = false) -> String {
+        let normalized = normalizedArabicForSearch(text)
+        var cleaned = String(normalized.unicodeScalars
+            .filter { !Self.unwantedCharSet.contains($0) }
+        ).lowercased()
+        cleaned = collapsingWhitespace(cleaned)
+
+        if whitespace {
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return cleaned
+    }
+    
+    private func normalizedArabicForSearch(_ text: String) -> String {
+        Self.canonicalArabicSearchMap.reduce(text) { partial, pair in
+            partial.replacingOccurrences(of: pair.key, with: pair.value)
+        }
+    }
+    
+    private static let canonicalArabicSearchMap: [String: String] = [
+        // Alif family
+        "\u{0670}": "ا", // dagger alif
+        "ٱ": "ا",
+        // Hamza family folds to plain carrier letters for forgiving search.
+        "أ": "ا",
+        "إ": "ا",
+        "آ": "ا",
+        "ٲ": "ا",
+        "ٳ": "ا",
+        "ٵ": "ا",
+        "ؤ": "و",
+        "ئ": "ي",
+        "ء": "",
+        "ٴ": "",
+        "ٶ": "و",
+        "ٷ": "و",
+        "ٸ": "ي",
+        // Waw variants
+        "ۥ": "و",
+        // Ya variants
+        "ۦ": "ي",
+        "ى": "ي", // alif maqsurah -> ya
+        // Teh marbuta equivalence (broad)
+        "ة": "ه"
+    ]
+    
+    private static let unwantedCharSet: CharacterSet = {
+        var set = CharacterSet.punctuationCharacters
+            .union(.symbols)
+            .union(.nonBaseCharacters)
+        // Keep boolean-search operators in the normalized query.
+        set.remove(charactersIn: "&|!#")
+        return set
+    }()
+    
+    private func collapsingWhitespace(_ text: String) -> String {
+        text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+    
     // MARK: - App-wide appearance & misc @AppStorage
 
     @AppStorage("THEfirstLaunch") var firstLaunch = true
