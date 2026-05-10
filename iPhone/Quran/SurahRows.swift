@@ -381,7 +381,6 @@ struct SurahAyahRow: View {
                             beginnerMode: settings.beginnerMode,
                             lineLimit: 1
                         )
-                            .animation(.easeInOut, value: tajweedAnimationKey)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                     
@@ -408,6 +407,7 @@ struct SurahAyahRow: View {
             }
         }
         .padding(.vertical, 2)
+        .contentShape(Rectangle())
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 settings.hapticFeedback()
@@ -483,8 +483,11 @@ struct LastListenedSurahRow: View {
                                 onSelectSurah(surah.id)
                             } label: {
                                 lastListenedTitleRow(surah: surah)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .contentShape(Rectangle())
                         } else {
                             NavigationLink(destination:
                                 SurahView(surah: surah)
@@ -492,7 +495,10 @@ struct LastListenedSurahRow: View {
                                     .animation(.easeInOut, value: lastListenedSurah.surahName)
                             ) {
                                 lastListenedTitleRow(surah: surah)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
                             }
+                            .contentShape(Rectangle())
                         }
                     }
                     .padding(.bottom, 1)
@@ -525,12 +531,18 @@ struct LastListenedSurahRow: View {
                                     onSelectSurah(historySurah.id)
                                 } label: {
                                     listeningHistoryLabel(item)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .contentShape(Rectangle())
                             } else {
                                 NavigationLink(destination: SurahView(surah: historySurah)) {
                                     listeningHistoryLabel(item)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .contentShape(Rectangle())
                                 }
+                                .contentShape(Rectangle())
                             }
                         }
                     }
@@ -725,14 +737,18 @@ struct LastReadAyahRow: View {
                     } label: {
                         SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .contentShape(Rectangle())
                 } else {
                     NavigationLink(destination: SurahView(surah: surah, ayah: ayah.id)) {
                         SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                     }
                     .tag(surah.id)
+                    .contentShape(Rectangle())
                 }
             }
             .rightSwipeActions(
@@ -776,6 +792,7 @@ struct LastReadAyahRow: View {
                                     )
                                     .opacity(0.6)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .contentShape(Rectangle())
@@ -787,8 +804,11 @@ struct LastReadAyahRow: View {
                                         note: noteText(surahID: surah.id, ayahID: ayah.id)
                                     )
                                     .opacity(0.6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
                                 }
                                 .tag(surah.id)
+                                .contentShape(Rectangle())
                             }
                         }
                         .rightSwipeActions(
@@ -833,6 +853,7 @@ struct AyahSearchResultRow: View {
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
     var disableTajweedColors: Bool = false
+    var onSelectAyah: ((Int, Int) -> Void)? = nil
 
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah.id)-\(ayah.id)")
@@ -852,16 +873,36 @@ struct AyahSearchResultRow: View {
     }
 
     var body: some View {
-        NavigationLink(destination: SurahView(surah: surah, ayah: ayah.id)) {
-            VStack(alignment: .leading, spacing: 4) {
-                SurahAyahRow(surah: surah, ayah: ayah, disableTajweedColors: disableTajweedColors)
+        let row = VStack(alignment: .leading, spacing: 4) {
+            SurahAyahRow(surah: surah, ayah: ayah, disableTajweedColors: disableTajweedColors)
 
-                if settings.showFullSurahRow, let pageJuzLine {
-                    Label(pageJuzLine, systemImage: "map")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
+            if settings.showFullSurahRow, let pageJuzLine {
+                Label(pageJuzLine, systemImage: "map")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+
+        Group {
+            if let onSelectAyah {
+                Button {
+                    settings.hapticFeedback()
+                    onSelectAyah(surah.id, ayah.id)
+                } label: {
+                    row
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+            } else {
+                NavigationLink(destination: SurahView(surah: surah, ayah: ayah.id)) {
+                    row
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .contentShape(Rectangle())
             }
         }
         .rightSwipeActions(
@@ -915,6 +956,37 @@ struct AyahSearchRow: View, Equatable {
     /// When true (Quran search grouped by surah): `surah:ayah` label + same Arabic / transliteration / English visibility rules as the full row, without the top surah name line.
     var compact: Bool = false
     var disableTajweedColors: Bool = false
+
+    private final class NormalizedSources {
+        let arabic: String
+        let transliteration: String
+        let saheeh: String
+        let mustafa: String
+
+        init(arabic: String, transliteration: String, saheeh: String, mustafa: String) {
+            self.arabic = arabic
+            self.transliteration = transliteration
+            self.saheeh = saheeh
+            self.mustafa = mustafa
+        }
+    }
+
+    private struct SearchVisibility {
+        let mArabic: Bool
+        let mTr: Bool
+        let mSaheeh: Bool
+        let mMustafa: Bool
+        let showArabicLine: Bool
+        let showTrLine: Bool
+        let showSaheehLine: Bool
+        let showMustafaLine: Bool
+    }
+
+    private static let normalizedSourcesCache: NSCache<NSString, NormalizedSources> = {
+        let cache = NSCache<NSString, NormalizedSources>()
+        cache.countLimit = 5000
+        return cache
+    }()
     
     private var isBookmarked: Bool {
         bookmarkedAyahs.contains("\(surah)-\(ayah)")
@@ -1022,24 +1094,34 @@ struct AyahSearchRow: View, Equatable {
         ].joined(separator: "|")
     }
 
-    @ViewBuilder
-    private func buildCompactSearchRow() -> some View {
+    private func normalizedSources() -> NormalizedSources {
+        let key = "\(surah):\(ayah)|\(qiraahRefreshKey)|\(arabic.hashValue)|\(transliteration.hashValue)|\(englishSaheeh.hashValue)|\(englishMustafa.hashValue)" as NSString
+        if let cached = Self.normalizedSourcesCache.object(forKey: key) {
+            return cached
+        }
+
+        let sources = NormalizedSources(
+            arabic: settings.cleanSearch(arabic, whitespace: false).removingArabicDiacriticsAndSigns,
+            transliteration: settings.cleanSearch(transliteration, whitespace: false).removingArabicDiacriticsAndSigns,
+            saheeh: settings.cleanSearch(englishSaheeh, whitespace: false).removingArabicDiacriticsAndSigns,
+            mustafa: settings.cleanSearch(englishMustafa, whitespace: false).removingArabicDiacriticsAndSigns
+        )
+        Self.normalizedSourcesCache.setObject(sources, forKey: key)
+        return sources
+    }
+
+    private func searchVisibility() -> SearchVisibility {
         let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
+        let sources = normalizedSources()
 
-        let srcArabic = settings.cleanSearch(arabic, whitespace: false).removingArabicDiacriticsAndSigns
-        let srcTr = settings.cleanSearch(transliteration, whitespace: false).removingArabicDiacriticsAndSigns
-        let srcSaheeh = settings.cleanSearch(englishSaheeh, whitespace: false).removingArabicDiacriticsAndSigns
-        let srcMustafa = settings.cleanSearch(englishMustafa, whitespace: false).removingArabicDiacriticsAndSigns
-
-        let mArabic = !normalizedQuery.isEmpty && srcArabic.contains(normalizedQuery)
-        let mTr = !normalizedQuery.isEmpty && srcTr.contains(normalizedQuery)
-        let mSaheeh = !normalizedQuery.isEmpty && srcSaheeh.contains(normalizedQuery)
-        let mMustafa = !normalizedQuery.isEmpty && srcMustafa.contains(normalizedQuery)
-
+        let mArabic = !normalizedQuery.isEmpty && sources.arabic.contains(normalizedQuery)
+        let mTr = !normalizedQuery.isEmpty && sources.transliteration.contains(normalizedQuery)
+        let mSaheeh = !normalizedQuery.isEmpty && sources.saheeh.contains(normalizedQuery)
+        let mMustafa = !normalizedQuery.isEmpty && sources.mustafa.contains(normalizedQuery)
         let showArabicLine = settings.showArabicText || mArabic
         let showTrLine = settings.isHafsDisplay && (settings.showTransliteration || mTr)
 
-        let (showSaheehLine, showMustafaLine): (Bool, Bool) = {
+        let showEnglishLines: (saheeh: Bool, mustafa: Bool) = {
             guard settings.isHafsDisplay else { return (false, false) }
             let userSaheehOn = settings.showEnglishSaheeh
             let userMustafaOn = settings.showEnglishMustafa
@@ -1051,50 +1133,65 @@ struct AyahSearchRow: View, Equatable {
             return (false, false)
         }()
 
+        return SearchVisibility(
+            mArabic: mArabic,
+            mTr: mTr,
+            mSaheeh: mSaheeh,
+            mMustafa: mMustafa,
+            showArabicLine: showArabicLine,
+            showTrLine: showTrLine,
+            showSaheehLine: showEnglishLines.saheeh,
+            showMustafaLine: showEnglishLines.mustafa
+        )
+    }
+
+    @ViewBuilder
+    private func buildCompactSearchRow() -> some View {
+        let visibility = searchVisibility()
+
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ayahReferenceBadge
 
-                if showArabicLine {
+                if visibility.showArabicLine {
                     HighlightedSnippet(
                         source: arabic,
-                        term: mArabic ? query : "",
+                        term: visibility.mArabic ? query : "",
                         font: .custom(searchArabicFontName, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                         accent: settings.accentColor.color,
                         fg: .primary,
                         preStyledSource: arabicTajweedText(),
                         beginnerMode: settings.beginnerMode
                     )
-                    .animation(.easeInOut, value: tajweedAnimationKey)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .multilineTextAlignment(.trailing)
                 }
             }
 
-            if showTrLine {
+            if visibility.showTrLine {
                 HighlightedSnippet(
                     source: transliteration,
-                    term: mTr ? query : "",
+                    term: visibility.mTr ? query : "",
                     font: .footnote,
                     accent: settings.accentColor.color,
                     fg: .secondary
                 )
             }
 
-            if showSaheehLine {
+            if visibility.showSaheehLine {
                 HighlightedSnippet(
                     source: englishSaheeh,
-                    term: mSaheeh ? query : "",
+                    term: visibility.mSaheeh ? query : "",
                     font: .footnote,
                     accent: settings.accentColor.color,
                     fg: .secondary
                 )
             }
 
-            if showMustafaLine {
+            if visibility.showMustafaLine {
                 HighlightedSnippet(
                     source: englishMustafa,
-                    term: mMustafa ? query : "",
+                    term: visibility.mMustafa ? query : "",
                     font: .footnote,
                     accent: settings.accentColor.color,
                     fg: .secondary
@@ -1116,32 +1213,7 @@ struct AyahSearchRow: View, Equatable {
 
     @ViewBuilder
     private func buildFullSearchRow() -> some View {
-        let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
-
-        let srcArabic = settings.cleanSearch(arabic, whitespace: false).removingArabicDiacriticsAndSigns
-        let srcTr = settings.cleanSearch(transliteration, whitespace: false).removingArabicDiacriticsAndSigns
-        let srcSaheeh = settings.cleanSearch(englishSaheeh, whitespace: false).removingArabicDiacriticsAndSigns
-        let srcMustafa = settings.cleanSearch(englishMustafa, whitespace: false).removingArabicDiacriticsAndSigns
-
-        let mArabic = !normalizedQuery.isEmpty && srcArabic.contains(normalizedQuery)
-        let mTr = !normalizedQuery.isEmpty && srcTr.contains(normalizedQuery)
-        let mSaheeh = !normalizedQuery.isEmpty && srcSaheeh.contains(normalizedQuery)
-        let mMustafa = !normalizedQuery.isEmpty && srcMustafa.contains(normalizedQuery)
-
-        let showArabicLine = settings.showArabicText || mArabic
-        let showTrLine = settings.isHafsDisplay && (settings.showTransliteration || mTr)
-
-        let (showSaheehLine, showMustafaLine): (Bool, Bool) = {
-            guard settings.isHafsDisplay else { return (false, false) }
-            let userSaheehOn = settings.showEnglishSaheeh
-            let userMustafaOn = settings.showEnglishMustafa
-            if mSaheeh && mMustafa { return (true, true) }
-            if mSaheeh || mMustafa { return (mSaheeh, mMustafa) }
-            if userSaheehOn && !userMustafaOn { return (true, false) }
-            if userMustafaOn && !userSaheehOn { return (false, true) }
-            if userSaheehOn && userMustafaOn { return (true, false) }
-            return (false, false)
-        }()
+        let visibility = searchVisibility()
 
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -1153,45 +1225,44 @@ struct AyahSearchRow: View, Equatable {
             .foregroundColor(settings.accentColor.color)
             .transition(.opacity)
 
-            if showArabicLine {
+            if visibility.showArabicLine {
                 HighlightedSnippet(
                     source: arabic,
-                    term: mArabic ? query : "",
+                    term: visibility.mArabic ? query : "",
                     font: .custom(searchArabicFontName, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                     accent: settings.accentColor.color,
                     fg: .primary,
                     preStyledSource: arabicTajweedText(),
                     beginnerMode: settings.beginnerMode
                 )
-                .animation(.easeInOut, value: tajweedAnimationKey)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
             }
 
-            if showTrLine {
+            if visibility.showTrLine {
                 HighlightedSnippet(
                     source: transliteration,
-                    term: mTr ? query : "",
+                    term: visibility.mTr ? query : "",
                     font: .footnote,
                     accent: settings.accentColor.color,
                     fg: .secondary
                 )
             }
 
-            if showSaheehLine {
+            if visibility.showSaheehLine {
                 HighlightedSnippet(
                     source: englishSaheeh,
-                    term: mSaheeh ? query : "",
+                    term: visibility.mSaheeh ? query : "",
                     font: .footnote,
                     accent: settings.accentColor.color,
                     fg: .secondary
                 )
             }
 
-            if showMustafaLine {
+            if visibility.showMustafaLine {
                 HighlightedSnippet(
                     source: englishMustafa,
-                    term: mMustafa ? query : "",
+                    term: visibility.mMustafa ? query : "",
                     font: .footnote,
                     accent: settings.accentColor.color,
                     fg: .secondary
@@ -1211,6 +1282,8 @@ struct AyahSearchRow: View, Equatable {
             }
         }
         .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
         .rightSwipeActions(
             surahID: surah,
             surahName: surahName,

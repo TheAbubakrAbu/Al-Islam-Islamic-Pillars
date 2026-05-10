@@ -17,22 +17,31 @@ struct HighlightedSnippet: View {
     var highlightAllahNames: Bool = false
 
     var body: some View {
-        let highlightedText = highlightAllahIfNeeded(
-            source: source,
-            baseAttributed: highlight(
-                source: source,
-                baseAttributed: baseAttributedText(),
-                term: searchTerm
-            )
-        )
-
+        let resolvedSearchTerm = searchTerm
+        let needsSearchHighlight = !resolvedSearchTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let needsAttributedWork = needsSearchHighlight || highlightAllahNames || preStyledSource != nil
         let suffixText = Text(trailingSuffix)
             .font(trailingSuffixFont ?? font)
             .foregroundColor(trailingSuffixColor ?? fg)
 
-        (Text(highlightedText) + suffixText)
-            .font(font)
-            .lineLimit(lineLimit)
+        if needsAttributedWork {
+            let highlightedText = highlightAllahIfNeeded(
+                source: source,
+                baseAttributed: highlight(
+                    source: source,
+                    baseAttributed: baseAttributedText(),
+                    term: resolvedSearchTerm
+                )
+            )
+
+            (Text(highlightedText) + suffixText)
+                .font(font)
+                .lineLimit(lineLimit)
+        } else {
+            (Text(source).foregroundColor(fg) + suffixText)
+                .font(font)
+                .lineLimit(lineLimit)
+        }
     }
 
     private var searchTerm: String {

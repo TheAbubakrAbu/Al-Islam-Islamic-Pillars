@@ -34,6 +34,31 @@ struct SurahView: View {
     var ayah: Int? = nil
     var onSelectSurah: ((Int) -> Void)? = nil
 
+    private final class PreparedSurahCache {
+        let ayahs: [Ayah]
+        let ayahByID: [Int: Ayah]
+        let searchBlobByAyahID: [Int: String]
+        let overlayDividerByAyahID: [Int: BoundaryDividerModel]
+
+        init(
+            ayahs: [Ayah],
+            ayahByID: [Int: Ayah],
+            searchBlobByAyahID: [Int: String],
+            overlayDividerByAyahID: [Int: BoundaryDividerModel]
+        ) {
+            self.ayahs = ayahs
+            self.ayahByID = ayahByID
+            self.searchBlobByAyahID = searchBlobByAyahID
+            self.overlayDividerByAyahID = overlayDividerByAyahID
+        }
+    }
+
+    private static let preparedSurahCache: NSCache<NSString, PreparedSurahCache> = {
+        let cache = NSCache<NSString, PreparedSurahCache>()
+        cache.countLimit = 160
+        return cache
+    }()
+
     private struct DividerInfo: Identifiable {
         let id = UUID()
         let title: String
@@ -376,20 +401,26 @@ struct SurahView: View {
         }
     }
 
-    private func rebuildQiraahCaches() {
-        let key = settings.displayQiraahForArabic ?? ""
-        if qiraahCacheSurahID == surah.id, key == cacheQiraahKey, !cachedAyahsForQiraah.isEmpty {
-            return
+    static func prewarm(surah: Surah, settings: Settings) {
+        _ = preparedCache(for: surah, settings: settings)
+        AyahRow.prewarmArabicDisplay(surah: surah, settings: settings)
+    }
+
+    private static func preparedCache(for surah: Surah, settings: Settings) -> PreparedSurahCache {
+        let qiraahKey = settings.displayQiraahForArabic ?? ""
+        let cacheKey = "\(surah.id)|\(qiraahKey)" as NSString
+        if let cached = preparedSurahCache.object(forKey: cacheKey) {
+            return cached
         }
 
         let ayahs = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
-        cachedAyahsForQiraah = ayahs
-        cachedAyahByID = Dictionary(uniqueKeysWithValues: ayahs.map { ($0.id, $0) })
+        let ayahByID = Dictionary(uniqueKeysWithValues: ayahs.map { ($0.id, $0) })
         let displayQiraah = settings.displayQiraahForArabic
+        let shouldBuildFullOverlayMap = surah.pageOrJuzChangesWithinSurah
 
         var overlayMap: [Int: BoundaryDividerModel] = [:]
         var searchBlobMap: [Int: String] = [:]
-        let shouldBuildFullOverlayMap = surah.pageOrJuzChangesWithinSurah
+
         if shouldBuildFullOverlayMap {
             overlayMap.reserveCapacity(ayahs.count)
         }
@@ -429,8 +460,42 @@ struct SurahView: View {
             searchBlobMap[ayah.id] = searchBlob
         }
 
-        overlayDividerByAyahID = overlayMap
-        cachedSearchBlobByAyahID = searchBlobMap
+        let prepared = PreparedSurahCache(
+            ayahs: ayahs,
+            ayahByID: ayahByID,
+            searchBlobByAyahID: searchBlobMap,
+            overlayDividerByAyahID: overlayMap
+        )
+        preparedSurahCache.setObject(prepared, forKey: cacheKey)
+        return prepared
+    }
+
+    private static func boundaryText(for ayah: Ayah) -> String? {
+        if let page = ayah.page, let juz = ayah.juz {
+            return "Page \(page) • Juz \(juz)"
+        }
+        if let page = ayah.page {
+            return "Page \(page)"
+        }
+        if let juz = ayah.juz {
+            return "Juz \(juz)"
+        }
+        return nil
+    }
+
+    private func rebuildQiraahCaches() {
+        let key = settings.displayQiraahForArabic ?? ""
+        if qiraahCacheSurahID == surah.id, key == cacheQiraahKey, !cachedAyahsForQiraah.isEmpty {
+            return
+        }
+
+        let prepared = Self.preparedCache(for: surah, settings: settings)
+        let ayahs = prepared.ayahs
+
+        cachedAyahsForQiraah = ayahs
+        cachedAyahByID = prepared.ayahByID
+        overlayDividerByAyahID = prepared.overlayDividerByAyahID
+        cachedSearchBlobByAyahID = prepared.searchBlobByAyahID
         cacheQiraahKey = key
         qiraahCacheSurahID = surah.id
 
@@ -441,6 +506,16 @@ struct SurahView: View {
             }
         } else {
             self.firstVisibleAyahID = fallbackID
+        }
+    }
+
+    private func scrollToAyah(_ ayahID: Int, proxy: ScrollViewProxy, animated: Bool = false) {
+        DispatchQueue.main.async {
+            if animated {
+                withAnimation { proxy.scrollTo(ayahID, anchor: .top) }
+            } else {
+                proxy.scrollTo(ayahID, anchor: .top)
+            }
         }
     }
 
@@ -721,11 +796,12 @@ struct SurahView: View {
         let isDividerKeywordSearch = dividerKeywordMode != nil
         let isPageOrJuzSearch = pageJuzQuery.page != nil || pageJuzQuery.juz != nil
         let showBoundaryDividers = settings.showPageJuzDividers && (searchText.isEmpty || isPageOrJuzSearch || isDividerKeywordSearch)
+        let prepared = cachedAyahsForQiraah.isEmpty ? Self.preparedCache(for: surah, settings: settings) : nil
         let ayahsForQiraah = cachedAyahsForQiraah.isEmpty
-            ? surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
+            ? (prepared?.ayahs ?? [])
             : cachedAyahsForQiraah
         let ayahByID = cachedAyahByID.isEmpty
-            ? Dictionary(uniqueKeysWithValues: ayahsForQiraah.map { ($0.id, $0) })
+            ? (prepared?.ayahByID ?? [:])
             : cachedAyahByID
         let filteredAyahs = ayahsForQiraah.filter { a in
             guard !cleanQuery.isEmpty else { return true }
@@ -744,7 +820,7 @@ struct SurahView: View {
                 return a.id == ayahNumberQuery
             }
 
-            if let blob = cachedSearchBlobByAyahID[a.id] {
+            if let blob = cachedSearchBlobByAyahID[a.id] ?? prepared?.searchBlobByAyahID[a.id] {
                 if let booleanGroups {
                     if booleanGroups.isEmpty { return false }
                     return matchesBooleanAyahSearch(ayah: a, haystack: blob, groups: booleanGroups)
@@ -977,13 +1053,13 @@ struct SurahView: View {
                             listBoundaryDivider(model: startOfSurahDivider, nextAyahID: ayahsForQiraah.first?.id)
                         }
                         .onAppear {
-                            if let nextID = filteredAyahs.first?.id {
+                            if shouldUpdateFloatingPageJuzOverlay, let nextID = filteredAyahs.first?.id {
                                 visibleBoundaryAyahIDs.insert(nextID)
                                 syncVisibleAyahAnchor()
                             }
                         }
                         .onDisappear {
-                            if let nextID = filteredAyahs.first?.id {
+                            if shouldUpdateFloatingPageJuzOverlay, let nextID = filteredAyahs.first?.id {
                                 visibleBoundaryAyahIDs.remove(nextID)
                                 syncVisibleAyahAnchor()
                             }
@@ -998,12 +1074,16 @@ struct SurahView: View {
                                 listBoundaryDivider(model: dividerBefore, nextAyahID: ayah.id)
                             }
                             .onAppear {
-                                visibleBoundaryAyahIDs.insert(ayah.id)
-                                syncVisibleAyahAnchor()
+                                if shouldUpdateFloatingPageJuzOverlay {
+                                    visibleBoundaryAyahIDs.insert(ayah.id)
+                                    syncVisibleAyahAnchor()
+                                }
                             }
                             .onDisappear {
-                                visibleBoundaryAyahIDs.remove(ayah.id)
-                                syncVisibleAyahAnchor()
+                                if shouldUpdateFloatingPageJuzOverlay {
+                                    visibleBoundaryAyahIDs.remove(ayah.id)
+                                    syncVisibleAyahAnchor()
+                                }
                             }
                         }
 
@@ -1032,12 +1112,16 @@ struct SurahView: View {
                         }
                         .id(ayah.id)
                         .onAppear {
-                            visibleAyahIDs.insert(ayah.id)
+                            if shouldUpdateFloatingPageJuzOverlay {
+                                visibleAyahIDs.insert(ayah.id)
+                            }
                             markKhatmViewedIfNeeded(ayah.id)
                             syncVisibleAyahAnchor()
                         }
                         .onDisappear {
-                            visibleAyahIDs.remove(ayah.id)
+                            if shouldUpdateFloatingPageJuzOverlay {
+                                visibleAyahIDs.remove(ayah.id)
+                            }
                             syncVisibleAyahAnchor()
                         }
                         #if os(watchOS)
@@ -1107,9 +1191,7 @@ struct SurahView: View {
 
                 if let sel = ayah, !didScrollDown {
                     didScrollDown = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        withAnimation { proxy.scrollTo(sel, anchor: .top) }
-                    }
+                    scrollToAyah(sel, proxy: proxy)
                 }
             }
             .onChange(of: quranPlayer.currentAyahNumber) { newVal in
@@ -1129,19 +1211,20 @@ struct SurahView: View {
                 visibleAyahIDs.removeAll()
                 visibleBoundaryAyahIDs.removeAll()
                 didScrollDown = false
-                let ayahs = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
-                let byID = Dictionary(uniqueKeysWithValues: ayahs.map { ($0.id, $0) })
-                if let sel = ayah, byID[sel] != nil {
+                let prepared = Self.preparedCache(for: surah, settings: settings)
+                if let sel = ayah, prepared.ayahByID[sel] != nil {
                     firstVisibleAyahID = sel
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        withAnimation { proxy.scrollTo(sel, anchor: .top) }
-                    }
-                } else if let top = ayahs.first?.id {
+                    scrollToAyah(sel, proxy: proxy)
+                } else if let top = prepared.ayahs.first?.id {
                     firstVisibleAyahID = top
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        withAnimation { proxy.scrollTo(top, anchor: .top) }
-                    }
+                    scrollToAyah(top, proxy: proxy)
                 }
+            }
+            .onChange(of: ayah) { newValue in
+                guard let target = newValue, cachedAyahByID[target] != nil else { return }
+                firstVisibleAyahID = target
+                didScrollDown = true
+                scrollToAyah(target, proxy: proxy)
             }
             #if os(iOS)
             .overlay(alignment: .top) {

@@ -153,6 +153,8 @@ struct SettingsQuranView: View {
                     .padding(.vertical, 2)
             }
             
+            highlightAllahGroup
+            
             systemFontSizeToggle
         }
     }
@@ -219,7 +221,6 @@ struct SettingsQuranView: View {
     private var arabicTextSection: some View {
         Section(header: Text("ARABIC TEXT")) {
             arabicVisibilityToggle
-            highlightAllahGroup
             tajweedSettingsGroup
             arabicDisplayControls
         }

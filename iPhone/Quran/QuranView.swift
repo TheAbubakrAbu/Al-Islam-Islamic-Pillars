@@ -299,12 +299,25 @@ struct QuranView: View {
 
     enum QuranRoute: Hashable {
         case ayahs(surahID: Int, ayah: Int?)
+
+        var surahID: Int {
+            switch self {
+            case .ayahs(let surahID, _):
+                return surahID
+            }
+        }
     }
     
     @State private var path: [QuranRoute] = []
+    @State private var selectedRoute: QuranRoute?
 
     func push(surahID: Int, ayahID: Int? = nil) {
         #if os(iOS)
+        if usesColumnNavigation {
+            selectedRoute = QuranRoute.ayahs(surahID: surahID, ayah: ayahID)
+            return
+        }
+
         if #available(iOS 16.0, *) {
             path.append(QuranRoute.ayahs(surahID: surahID, ayah: ayahID))
         }
@@ -418,16 +431,54 @@ struct QuranView: View {
         ) { Button("OK") { } } message: {
             Text(quranPlayer.playbackAlertMessage)
         }
+        .task {
+            prewarmQuranDestinations()
+        }
+    }
+
+    private func prewarmQuranDestinations() {
+        let priorityRoutes = [
+            defaultDetailRoute,
+            QuranRoute.ayahs(
+                surahID: settings.lastReadSurah,
+                ayah: settings.lastReadAyah > 0 ? settings.lastReadAyah : nil
+            ),
+            settings.bookmarkedAyahs.first.map { QuranRoute.ayahs(surahID: $0.surah, ayah: $0.ayah) },
+            settings.favoriteSurahs.first.map { QuranRoute.ayahs(surahID: $0, ayah: nil) }
+        ].compactMap { $0 }
+
+        var seen = Set<Int>()
+        for route in priorityRoutes {
+            if case let .ayahs(surahID, _) = route,
+               seen.insert(surahID).inserted,
+               let surah = quranData.surah(surahID) {
+                SurahView.prewarm(surah: surah, settings: settings)
+            }
+        }
+
+        Task(priority: .utility) { @MainActor in
+            for surah in quranData.quran {
+                guard seen.insert(surah.id).inserted else { continue }
+                SurahView.prewarm(surah: surah, settings: settings)
+                await Task.yield()
+                try? await Task.sleep(nanoseconds: 8_000_000)
+            }
+        }
     }
     
     private var navigationContainer: some View {
         Group {
             #if os(iOS)
-            if #available(iOS 16.0, *) {
-                stackNavigation
+            if #available(iOS 16.0, *), usesColumnNavigation {
+                NavigationSplitView {
+                    content
+                } detail: {
+                    quranSelectedDetail
+                }
+            } else if #available(iOS 16.0, *) {
+                pathNavigation
             } else {
                 NavigationView { content }
-                    .navigationViewStyle(.stack)
             }
             #else
             NavigationView { content }
@@ -435,14 +486,110 @@ struct QuranView: View {
         }
     }
 
+    #if os(iOS)
+    private var usesColumnNavigation: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad || UIDevice.current.userInterfaceIdiom == .mac
+    }
+    #endif
+
     @available(iOS 16.0, *)
-    private var stackNavigation: some View {
+    private var pathNavigation: some View {
         NavigationStack(path: $path) {
             content
                 .navigationDestination(for: QuranRoute.self) { route in
                     routeDestination(route)
                 }
         }
+    }
+
+    private var quranColumnPlaceholder: some View {
+        Color.clear
+            .navigationTitle("Al-Quran")
+    }
+
+    @ViewBuilder
+    private var quranSelectedDetail: some View {
+        let route = selectedRoute ?? defaultDetailRoute
+        routeDestination(route)
+            .id(route.surahID)
+    }
+
+    private var defaultDetailRoute: QuranRoute {
+        if settings.lastReadSurah > 0,
+           settings.lastReadAyah > 0,
+           quranData.surah(settings.lastReadSurah) != nil {
+            return .ayahs(surahID: settings.lastReadSurah, ayah: settings.lastReadAyah)
+        }
+
+        if let bookmark = settings.bookmarkedAyahs.first,
+           quranData.surah(bookmark.surah) != nil {
+            return .ayahs(surahID: bookmark.surah, ayah: bookmark.ayah)
+        }
+
+        if let favoriteSurahID = settings.favoriteSurahs.first,
+           quranData.surah(favoriteSurahID) != nil {
+            return .ayahs(surahID: favoriteSurahID, ayah: nil)
+        }
+
+        return .ayahs(surahID: 1, ayah: nil)
+    }
+
+    private var columnAyahSelectionHandler: ((Int, Int) -> Void)? {
+        #if os(iOS)
+        return usesColumnNavigation ? { surahID, ayahID in
+            selectedRoute = .ayahs(surahID: surahID, ayah: ayahID)
+        } : nil
+        #else
+        return nil
+        #endif
+    }
+
+    @ViewBuilder
+    private func quranNavigationLink<Label: View>(
+        route: QuranRoute,
+        @ViewBuilder label: () -> Label
+    ) -> some View {
+        #if os(iOS)
+        if usesColumnNavigation {
+            Button {
+                settings.hapticFeedback()
+                selectedRoute = route
+            } label: {
+                HStack(spacing: 8) {
+                    label()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+        } else if #available(iOS 16.0, *) {
+            NavigationLink(value: route) {
+                label()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .contentShape(Rectangle())
+        } else {
+            NavigationLink(destination: routeDestination(route)) {
+                label()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .contentShape(Rectangle())
+        }
+        #else
+        NavigationLink(destination: routeDestination(route)) {
+            label()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .contentShape(Rectangle())
+        #endif
     }
 
     @ViewBuilder
@@ -554,7 +701,6 @@ struct QuranView: View {
                         }
                     }
             }
-            .navigationViewStyle(.stack)
             .smallMediumSheetPresentation()
         }
         .onDisappear {
@@ -840,7 +986,9 @@ struct QuranView: View {
                 searchText: $searchText,
                 scrollToSurahID: $scrollToSurahID,
                 showListeningHistory: $showListeningHistory,
-                onSelectSurah: nil
+                onSelectSurah: usesColumnNavigation ? { surahID in
+                    selectedRoute = .ayahs(surahID: surahID, ayah: nil)
+                } : nil
             )
         }
         #else
@@ -858,7 +1006,7 @@ struct QuranView: View {
                 searchText: $searchText,
                 scrollToSurahID: $scrollToSurahID,
                 showReadingHistory: $showReadingHistory,
-                onSelectAyah: nil
+                onSelectAyah: columnAyahSelectionHandler
             )
         }
     }
@@ -902,7 +1050,7 @@ struct QuranView: View {
             let noteText = bookmarkedAyah.note?.trimmingCharacters(in: .whitespacesAndNewlines)
             let noteToShow = (noteText?.isEmpty == false) ? noteText : nil
 
-            NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
+            quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: ayah.id)) {
                 SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
             }
             .tag(surah.id)
@@ -964,7 +1112,7 @@ struct QuranView: View {
     @ViewBuilder
     private func favoriteRow(surahID: Int, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(surahID) {
-            NavigationLink(destination: ayahsDestination(surah: surah)) {
+            quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: nil)) {
                 SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)).equatable()
             }
             .rightSwipeActions(
@@ -1031,7 +1179,8 @@ struct QuranView: View {
                         bookmarkedAyahs: context.bookmarkedAyahs,
                         searchText: $searchText,
                         scrollToSurahID: $scrollToSurahID,
-                        disableTajweedColors: true
+                        disableTajweedColors: true,
+                        onSelectAyah: columnAyahSelectionHandler
                     )
                 }
             }
@@ -1068,7 +1217,8 @@ struct QuranView: View {
                         bookmarkedAyahs: context.bookmarkedAyahs,
                         searchText: $searchText,
                         scrollToSurahID: $scrollToSurahID,
-                        disableTajweedColors: true
+                        disableTajweedColors: true,
+                        onSelectAyah: columnAyahSelectionHandler
                     )
                 }
             }
@@ -1182,7 +1332,7 @@ struct QuranView: View {
             
             ForEach(context.filteredSurahs, id: \.id) { surah in
                 Section {
-                    NavigationLink(destination: ayahsDestination(surah: surah)) {
+                    quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: nil)) {
                         surahSearchRow(surah: surah, context: context)
                     }
                     .id("surah_\(surah.id)")
@@ -1283,7 +1433,7 @@ struct QuranView: View {
     @ViewBuilder
     private func preprocessedJuzRow(row: QuranData.JuzSectionData.Row, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(row.surahID) {
-            NavigationLink(destination: preprocessedJuzDestination(row: row, surah: surah)) {
+            quranNavigationLink(route: preprocessedJuzRoute(row: row, surah: surah)) {
                 preprocessedJuzLabel(row: row, surah: surah, favoriteSurahs: context.favoriteSurahs)
             }
             #if os(iOS)
@@ -1323,22 +1473,22 @@ struct QuranView: View {
 
     @ViewBuilder
     private func preprocessedJuzDestination(row: QuranData.JuzSectionData.Row, surah: Surah) -> some View {
+        routeDestination(preprocessedJuzRoute(row: row, surah: surah))
+    }
+
+    private func preprocessedJuzRoute(row: QuranData.JuzSectionData.Row, surah: Surah) -> QuranRoute {
+        let ayah: Int?
+
         switch row.kind {
         case .plain:
-            ayahsDestination(surah: surah)
-        case .start(let ayah):
-            if ayah > 1 {
-                ayahsDestination(surah: surah, ayah: ayah)
-            } else {
-                ayahsDestination(surah: surah)
-            }
-        case .end(let ayah):
-            if ayah < surah.numberOfAyahs {
-                ayahsDestination(surah: surah, ayah: ayah)
-            } else {
-                ayahsDestination(surah: surah)
-            }
+            ayah = nil
+        case .start(let startAyah):
+            ayah = startAyah > 1 ? startAyah : nil
+        case .end(let endAyah):
+            ayah = endAyah < surah.numberOfAyahs ? endAyah : nil
         }
+
+        return .ayahs(surahID: surah.id, ayah: ayah)
     }
 
     @ViewBuilder
@@ -1363,7 +1513,7 @@ struct QuranView: View {
             ForEach(quranData.revelationOrderSurahIDs, id: \.self) { surahID in
                 if let surah = quranData.surah(surahID) {
                     Group {
-                        NavigationLink(destination: ayahsDestination(surah: surah)) {
+                        quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: nil)) {
                             HStack(spacing: 10) {
                                 revelationOrderBadge(surah.revelationOrder ?? 0)
 
@@ -1400,7 +1550,7 @@ struct QuranView: View {
         let khatmCompleted = settings.quranSortMode == .khatm ? settings.khatmCompletedCount(for: surah) : nil
         let khatmTotal = settings.quranSortMode == .khatm ? surah.numberOfAyahs : nil
 
-        NavigationLink(destination: ayahsDestination(surah: surah)) {
+        quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: nil)) {
             if showsRevelationOrder {
                 HStack(spacing: 10) {
                     revelationOrderBadge(surah.revelationOrder ?? 0)
@@ -1492,7 +1642,8 @@ struct QuranView: View {
                     bookmarkedAyahs: context.bookmarkedAyahs,
                     searchText: $searchText,
                     scrollToSurahID: $scrollToSurahID,
-                    disableTajweedColors: true
+                    disableTajweedColors: true,
+                    onSelectAyah: columnAyahSelectionHandler
                 )
             }
         }
@@ -1510,7 +1661,8 @@ struct QuranView: View {
                         bookmarkedAyahs: context.bookmarkedAyahs,
                         searchText: $searchText,
                         scrollToSurahID: $scrollToSurahID,
-                        disableTajweedColors: true
+                        disableTajweedColors: true,
+                        onSelectAyah: columnAyahSelectionHandler
                     )
                 }
 
@@ -1706,7 +1858,8 @@ struct QuranView: View {
                 bookmarkedAyahs: context.bookmarkedAyahs,
                 searchText: $searchText,
                 scrollToSurahID: $scrollToSurahID,
-                disableTajweedColors: true
+                disableTajweedColors: true,
+                onSelectAyah: columnAyahSelectionHandler
             )
         }
     }
@@ -1754,9 +1907,7 @@ struct QuranView: View {
             .id("ayah-results-\(surah.id)-\(ayah.id)")
             .animation(.easeInOut, value: verseHits.count)
 
-            NavigationLink {
-                ayahsDestination(surah: surah, ayah: ayah.id)
-            } label: {
+            quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: ayah.id)) {
                 row
             }
         }
