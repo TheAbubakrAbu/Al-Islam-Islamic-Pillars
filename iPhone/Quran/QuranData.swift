@@ -1189,44 +1189,17 @@ final class TajweedStore {
         return found
     }
 
-    /// UTF-16 range for qalqalah coloring: letter cluster plus a following standalone U+06E1 grapheme when the font splits them.
+    /// UTF-16 range for qalqalah coloring: keep the consonant letter and any attached shaddah together.
     private func expandedQalqalahNSRange(clusters: [CharacterClusterInfo], index i: Int) -> NSRange {
         let cl = clusters[i]
-        var ranges: [NSRange] = []
-        
-        // If shaddah exists, color only the shaddah as per user requirement
+        let letterRange = primaryArabicLetterScalarRange(in: cl) ?? nsRange(for: cl)
+
+        // If shaddah exists, include it with the base letter only.
         if let shaddahRange = scalarRange(in: cl, scalar: Self.shadda) {
-            return shaddahRange
+            return NSUnionRange(letterRange, shaddahRange)
         }
-        
-        // Otherwise, color the letter with sukoon (or the sukoon mark itself)
-        let lo = cl.utf16Range.lowerBound
-        var offset = lo
-        var foundLetter = false
-        
-        for scalar in cl.text.unicodeScalars {
-            let length = utf16Length(of: scalar)
-            let v = scalar.value
-            
-            // Include Arabic letter or sukoon/uthmani sukoon marks
-            if !foundLetter && ((0x0621...0x063A).contains(v) || (0x0641...0x064A).contains(v) || v == 0x0671) {
-                ranges.append(NSRange(location: offset, length: length))
-                foundLetter = true
-            } else if foundLetter && (v == Self.sukoon.value || v == Self.sukoonUthmani.value) {
-                ranges.append(NSRange(location: offset, length: length))
-            }
-            
-            offset += length
-        }
-        
-        // Return the combined range
-        if !ranges.isEmpty {
-            let minLo = ranges.map { $0.location }.min() ?? lo
-            let maxHi = ranges.map { $0.location + $0.length }.max() ?? lo + 1
-            return NSRange(location: minLo, length: maxHi - minLo)
-        }
-        
-        return NSRange(location: lo, length: max(1, offset - lo))
+
+        return letterRange
     }
 
     /// Only the qalqalah letter itself, excluding tashkeel, unless it's shaddah or sukoon

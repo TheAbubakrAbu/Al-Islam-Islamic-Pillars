@@ -62,9 +62,7 @@ struct AdhanView: View {
 
     private var adhanContent: some View {
         List {
-            Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
-                DateAndLocationSection(showBigQibla: $showBigQibla)
-            }
+            DateAndLocationSection(showBigQibla: $showBigQibla)
 
             prayersSection
 
@@ -322,6 +320,7 @@ private struct CurrentLocationRow: View {
     @EnvironmentObject private var settings: Settings
 
     let showBigQibla: Bool
+    @State private var showingPrayerTimesMap = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -345,6 +344,15 @@ private struct CurrentLocationRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
+        #if os(iOS)
+        .sheet(isPresented: $showingPrayerTimesMap) {
+            NavigationView {
+                PrayerTimesMapView()
+                    .environmentObject(settings)
+            }
+            .smallMediumSheetPresentation()
+        }
+        #endif
     }
 
     @ViewBuilder
@@ -353,7 +361,10 @@ private struct CurrentLocationRow: View {
         if let currentLoc = settings.currentLocation {
             let currentCity = currentLoc.city
 
-            NavigationLink(destination: PrayerTimesMapView()) {
+            Button {
+                settings.hapticFeedback()
+                showingPrayerTimesMap = true
+            } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "location.fill")
                         .resizable()
@@ -378,9 +389,10 @@ private struct CurrentLocationRow: View {
                         }
                 }
                 .padding(12)
-                .background(.ultraThinMaterial)
+                .conditionalGlassEffect()
                 .cornerRadius(8)
             }
+            .buttonStyle(.plain)
         } else {
             HStack(spacing: 0) {
                 Image(systemName: "location.slash")

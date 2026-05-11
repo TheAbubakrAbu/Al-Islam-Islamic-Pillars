@@ -407,6 +407,45 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
     }
 
+    // Saved user flags: sajdah ayahs and broken-letter (muqatta'at) ayahs.
+    @AppStorage("savedSajdahAyahIDsData") private var savedSajdahAyahIDsData = Data()
+    var savedSajdahAyahIDs: Set<String> {
+        get {
+            (try? Self.decoder.decode([String].self, from: savedSajdahAyahIDsData)) .flatMap { Set($0) } ?? Set()
+        }
+        set {
+            let arr = Array(newValue)
+            savedSajdahAyahIDsData = (try? Self.encoder.encode(arr)) ?? Data()
+            objectWillChange.send()
+        }
+    }
+
+    @AppStorage("savedBrokenLetterAyahIDsData") private var savedBrokenLetterAyahIDsData = Data()
+    var savedBrokenLetterAyahIDs: Set<String> {
+        get {
+            (try? Self.decoder.decode([String].self, from: savedBrokenLetterAyahIDsData)) .flatMap { Set($0) } ?? Set()
+        }
+        set {
+            let arr = Array(newValue)
+            savedBrokenLetterAyahIDsData = (try? Self.encoder.encode(arr)) ?? Data()
+            objectWillChange.send()
+        }
+    }
+
+    func toggleSavedSajdah(surah: Int, ayah: Int) {
+        let key = "\(surah)-\(ayah)"
+        var s = savedSajdahAyahIDs
+        if s.contains(key) { s.remove(key) } else { s.insert(key) }
+        savedSajdahAyahIDs = s
+    }
+
+    func toggleSavedBrokenLetter(surah: Int, ayah: Int) {
+        let key = "\(surah)-\(ayah)"
+        var s = savedBrokenLetterAyahIDs
+        if s.contains(key) { s.remove(key) } else { s.insert(key) }
+        savedBrokenLetterAyahIDs = s
+    }
+
     @AppStorage("reciteType") var reciteType: String = "Continue to Next"
 
     @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()

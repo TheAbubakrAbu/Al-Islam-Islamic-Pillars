@@ -50,6 +50,15 @@ extension View {
     func apply<V: View>(@ViewBuilder _ block: (Self) -> V) -> V {
         block(self)
     }
+    
+    @ViewBuilder
+    func topContentMargin(_ length: CGFloat? = 0) -> some View {
+        if #available(iOS 17.0, watchOS 10.0, *) {
+            self.contentMargins(.top, length)
+        } else {
+            self
+        }
+    }
 }
 
 /// Vertical spacing between views inside `safeAreaInset` stacks: iOS 26+ uses tighter 8pt; older systems use 16pt.
@@ -85,6 +94,7 @@ struct ConditionalListStyle: ViewModifier {
         .accentColor(settings.accentColor.color)
         .tint(settings.accentColor.color)
         .dismissKeyboardOnScroll()
+        .topContentMargin(0)
     }
 
     @ViewBuilder

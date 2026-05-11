@@ -648,6 +648,10 @@ struct ReciterListView: View {
         return false
     }
 
+    private var favoriteReciters: [Reciter] {
+        reciters.filter { settings.isReciterFavorite(reciterID: $0.id) }
+    }
+
     /// Matches row `.id(...)` for `ScrollViewReader.scrollTo`.
     private var reciterListScrollTargetID: String {
         if settings.reciter == Settings.randomReciterName {
@@ -1058,6 +1062,12 @@ struct ReciterListView: View {
                         }
                     }
                 } else {
+                    if !favoriteReciters.isEmpty {
+                        Section(header: Text("FAVORITES")) {
+                            reciterButtons(favoriteReciters)
+                        }
+                    }
+
                     Section {
                         randomReciterButton
                     }
@@ -1489,6 +1499,10 @@ struct ReciterListView: View {
                 settings.hapticFeedback()
                 requestScrollToReciter(reciter)
             }
+            , onToggleFavorite: {
+                settings.hapticFeedback()
+                settings.toggleReciterFavorite(reciterID: reciter.id)
+            }
         )
         .environmentObject(downloadManager)
         .id(reciter.id)
@@ -1506,6 +1520,10 @@ struct ReciterListView: View {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
+            },
+            onToggleFavorite: {
+                settings.hapticFeedback()
+                settings.toggleReciterFavorite(reciterID: reciter.id)
             }
         )
         .id(reciter.id)
@@ -1526,6 +1544,7 @@ private struct ReciterRow: View {
     let searchQuery: String
     let onSelect: () -> Void
     let onScrollToReciter: () -> Void
+    let onToggleFavorite: () -> Void
 
     var body: some View {
         let hasDownloads = downloadState.completedSurahs > 0
@@ -1563,6 +1582,16 @@ private struct ReciterRow: View {
 
                 VStack(alignment: .trailing, spacing: 10) {
                     HStack(spacing: 8) {
+                        Button {
+                            settings.hapticFeedback()
+                            onToggleFavorite()
+                        } label: {
+                            Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
+                                .font(.body.weight(.semibold))
+                                .foregroundColor(settings.isReciterFavorite(reciterID: reciter.id) ? .yellow : .secondary)
+                        }
+                        .buttonStyle(.plain)
+
                         Image(systemName: "checkmark")
                             .font(.body.weight(.semibold))
                             .foregroundColor(accentColor.color)
@@ -1664,6 +1693,7 @@ private struct WatchReciterRow: View {
     let isSelected: Bool
     let accentColor: AccentColor
     let onSelect: () -> Void
+    let onToggleFavorite: () -> Void
 
     var body: some View {
         Button {
@@ -1671,6 +1701,15 @@ private struct WatchReciterRow: View {
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
+                    Button {
+                        settings.hapticFeedback()
+                        onToggleFavorite()
+                    } label: {
+                        Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
+                            .foregroundColor(settings.isReciterFavorite(reciterID: reciter.id) ? .yellow : accentColor.color)
+                    }
+                    .buttonStyle(.plain)
+
                     Text(reciter.name)
                         .font(.subheadline)
                         .foregroundColor(isSelected ? accentColor.color : .primary)
