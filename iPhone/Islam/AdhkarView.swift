@@ -4,8 +4,22 @@ struct CommonDhikr: Identifiable {
     let arabicText: String
     let transliteration: String
     let translation: String
+    let searchBlob: String
 
     var id: String { transliteration }
+
+    init(arabicText: String, transliteration: String, translation: String) {
+        self.arabicText = arabicText
+        self.transliteration = transliteration
+        self.translation = translation
+        self.searchBlob = Self.searchBlob(arabicText: arabicText, transliteration: transliteration, translation: translation)
+    }
+
+    private static func searchBlob(arabicText: String, transliteration: String, translation: String) -> String {
+        [arabicText, transliteration, translation]
+            .joined(separator: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
 }
 
 let commonDhikrItems: [CommonDhikr] = [
@@ -132,25 +146,21 @@ struct AdhkarView: View {
         .navigationTitle("Dhikr & Remembrances")
     }
 
-    private func matchesSearch(arabicText: String, transliteration: String, translation: String) -> Bool {
+    private func matchesSearch(_ dhikr: CommonDhikr) -> Bool {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return true }
 
         let normalizedQuery = query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        let combined = [arabicText, transliteration, translation]
-            .joined(separator: " ")
-            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-
-        return combined.contains(normalizedQuery)
+        return dhikr.searchBlob.contains(normalizedQuery)
     }
 
     @ViewBuilder
-    private func filteredAdhkarRow(arabicText: String, transliteration: String, translation: String, alignArabicTrailing: Bool = false) -> some View {
-        if matchesSearch(arabicText: arabicText, transliteration: transliteration, translation: translation) {
+    private func filteredAdhkarRow(_ dhikr: CommonDhikr, alignArabicTrailing: Bool = false) -> some View {
+        if matchesSearch(dhikr) {
             AdhkarRow(
-                arabicText: arabicText,
-                transliteration: transliteration,
-                translation: translation,
+                arabicText: dhikr.arabicText,
+                transliteration: dhikr.transliteration,
+                translation: dhikr.translation,
                 alignArabicTrailing: alignArabicTrailing,
                 useQuranicFont: settings.useFontArabic,
                 searchQuery: searchText
@@ -198,11 +208,7 @@ struct AdhkarView: View {
     @ViewBuilder
     private var adhkarRows: some View {
         ForEach(commonDhikrItems) { dhikr in
-            filteredAdhkarRow(
-                arabicText: dhikr.arabicText,
-                transliteration: dhikr.transliteration,
-                translation: dhikr.translation
-            )
+            filteredAdhkarRow(dhikr)
         }
     }
 

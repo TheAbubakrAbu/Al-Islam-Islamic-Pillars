@@ -24,33 +24,8 @@ struct PrayersEntryView: View {
         }
     }
     
-    var hijriCalendar: Calendar = {
-        var calendar = Calendar(identifier: .islamicUmmAlQura)
-        calendar.locale = Locale(identifier: "ar")
-        return calendar
-    }()
-    
     var hijriDate: String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.calendar = hijriCalendar
-        dateFormatter.dateStyle = .full
-        dateFormatter.locale = Locale(identifier: "en")
-        
-        var referenceDate = Date()
-        
-        // If switchHijriDateAtMaghrib is enabled, check if current time is after Maghrib
-        if entry.switchHijriDateAtMaghrib {
-            if let maghrib = entry.fullPrayers.first(where: { $0.nameTransliteration == "Maghrib" })?.time,
-               Date() >= maghrib {
-                referenceDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-            }
-        }
-        
-        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: referenceDate) else {
-            return dateFormatter.string(from: referenceDate)
-        }
-        
-        return dateFormatter.string(from: offsetDate)
+        AdhanWidgetDateFormatting.hijriDate(for: entry, style: .full)
     }
     
     var body: some View {

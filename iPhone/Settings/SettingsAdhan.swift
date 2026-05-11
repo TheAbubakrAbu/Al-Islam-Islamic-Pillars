@@ -25,11 +25,23 @@ extension Settings {
         .init(id: "zakariya-30", title: "Zakariya")
     ]
 
+    private static let supportedAdhanSoundIDs = Set(supportedAdhanSounds.map(\.id))
+    private static var adhanSoundFilenameCache: [String: String] = [:]
+
     func adhanSoundFilename(for selection: String) -> String? {
+        if let cached = Self.adhanSoundFilenameCache[selection] {
+            return cached
+        }
+
         guard selection != "default",
-              Self.supportedAdhanSounds.contains(where: { $0.id == selection }),
-              Bundle.main.path(forResource: selection, ofType: "caf") != nil else { return nil }
-        return "\(selection).caf"
+              Self.supportedAdhanSoundIDs.contains(selection),
+              Bundle.main.path(forResource: selection, ofType: "caf") != nil else {
+            return nil
+        }
+
+        let filename = "\(selection).caf"
+        Self.adhanSoundFilenameCache[selection] = filename
+        return filename
     }
 
     static let locationManager: CLLocationManager = {
@@ -41,6 +53,19 @@ extension Settings {
     
     private static let geocoder = CLGeocoder()
     private static var cachedPlacemark: (coord: CLLocationCoordinate2D, city: String, countryCode: String)?
+    private struct RawPrayerCacheKey: Hashable {
+        let year: Int
+        let month: Int
+        let day: Int
+        let latitude: Double
+        let longitude: Double
+        let calculation: String
+        let hanafiMadhab: Bool
+        let offsets: [Int]
+    }
+
+    private static var rawPrayerCache: [RawPrayerCacheKey: [Prayer]] = [:]
+    private static let rawPrayerCacheLimit = 10
     private static let geocodeActor = GeocodeActor()
     private static let networkMonitor = NWPathMonitor()
     private static let networkMonitorQueue = DispatchQueue(label: AppIdentifiers.networkMonitorQueueLabel)
@@ -597,10 +622,24 @@ extension Settings {
     private func _computeRawPrayers(for date: Date) -> [Prayer] {
         guard let here = currentLocation, here.latitude != 1000, here.longitude != 1000 else { return [] }
 
+        let comps = Self.gregorian.dateComponents([.year, .month, .day], from: date)
+        let cacheKey = RawPrayerCacheKey(
+            year: comps.year ?? 0,
+            month: comps.month ?? 0,
+            day: comps.day ?? 0,
+            latitude: here.latitude,
+            longitude: here.longitude,
+            calculation: prayerCalculation,
+            hanafiMadhab: hanafiMadhab,
+            offsets: [offsetFajr, offsetSunrise, offsetDhuhr, offsetAsr, offsetMaghrib, offsetIsha]
+        )
+
+        if let cached = Self.rawPrayerCache[cacheKey] {
+            return cached
+        }
+
         var params = Self.calcParams[prayerCalculation] ?? Self.calcParams["Muslim World League"]!
         params.madhab = hanafiMadhab ? Madhab.hanafi : Madhab.shafi
-
-        let comps = Self.gregorian.dateComponents([.year, .month, .day], from: date)
 
         guard let raw = PrayerTimes(
                 coordinates: Coordinates(latitude: here.latitude, longitude: here.longitude),
@@ -649,6 +688,10 @@ extension Settings {
             prayer(from: "Isha",    time: isha)
         ]
         
+        if Self.rawPrayerCache.count > Self.rawPrayerCacheLimit {
+            Self.rawPrayerCache.removeAll(keepingCapacity: true)
+        }
+        Self.rawPrayerCache[cacheKey] = list
         return list
     }
 
@@ -755,18 +798,28 @@ extension Settings {
 
         let nextIdx = p.firstIndex { $0.time > now }
 
+        let resolvedCurrent: Prayer?
+        let resolvedNext: Prayer?
+
         if let i = nextIdx {
-            nextPrayer = p[i]
-            currentPrayer = i == 0 ? p.last : p[i-1]
+            resolvedNext = p[i]
+            resolvedCurrent = i == 0 ? p.last : p[i-1]
         } else {
             // past last prayer – peek at tomorrow for “next”
-            currentPrayer = p.last
+            resolvedCurrent = p.last
             if let tmr = Calendar.current.date(byAdding: .day, value: 1, to: now),
                let firstTomorrow = _getFirstPrayerOfDay(for: tmr) {
-                nextPrayer = firstTomorrow
+                resolvedNext = firstTomorrow
             } else {
-                nextPrayer = nil
+                resolvedNext = nil
             }
+        }
+
+        if currentPrayer != resolvedCurrent {
+            currentPrayer = resolvedCurrent
+        }
+        if nextPrayer != resolvedNext {
+            nextPrayer = resolvedNext
         }
     }
     
@@ -918,7 +971,7 @@ extension Settings {
         
         if dateNotifications {
             for event in specialEvents {
-                scheduleNotification(for: event)
+                scheduleNotification(for: event, using: center)
             }
         }
 
@@ -929,7 +982,8 @@ extension Settings {
                 scheduleNotification(
                     for: prayer,
                     preNotificationTime: minutes == 0 ? nil : minutes,
-                    city: city
+                    city: city,
+                    using: center
                 )
             }
         }
@@ -947,7 +1001,8 @@ extension Settings {
                         scheduleNotification(
                             for: prayer,
                             preNotificationTime: minutes == 0 ? nil : minutes,
-                            city: city
+                            city: city,
+                            using: center
                         )
                     }
                 }
@@ -1045,7 +1100,7 @@ extension Settings {
         }
     }
     
-    func scheduleNotification(for event: (String, DateComponents, String, String)) {
+    func scheduleNotification(for event: (String, DateComponents, String, String), using center: UNUserNotificationCenter = .current()) {
         let (titleText, hijriComps, eventSubTitle, _) = event
         
         if let hijriDate = hijriCalendar.date(from: hijriComps) {
@@ -1078,7 +1133,7 @@ extension Settings {
                 trigger: trigger
             )
             
-            UNUserNotificationCenter.current().add(request) { error in
+            center.add(request) { error in
                 if let error = error {
                     logger.debug("Failed to schedule special event notification: \(error)")
                 }

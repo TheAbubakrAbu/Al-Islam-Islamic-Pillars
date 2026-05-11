@@ -44,7 +44,7 @@ struct AyahRow: View, Equatable {
 
     private static let arabicDisplayCache: NSCache<NSString, NSString> = {
         let cache = NSCache<NSString, NSString>()
-        cache.countLimit = 5000
+        cache.countLimit = AppPerformance.ayahRowCacheLimit
         return cache
     }()
 
@@ -64,7 +64,7 @@ struct AyahRow: View, Equatable {
 
     private static let matchSourcesCache: NSCache<NSString, MatchSources> = {
         let cache = NSCache<NSString, MatchSources>()
-        cache.countLimit = 5000
+        cache.countLimit = AppPerformance.ayahRowCacheLimit
         return cache
     }()
 
@@ -201,14 +201,9 @@ struct AyahRow: View, Equatable {
             && usingHafs
     }
 
-    private func arabicTajweedText() -> AttributedString? {
+    private func arabicTajweedText(displayText renderedDisplayText: String, beginner: Bool) -> AttributedString? {
         guard shouldShowTajweedColors else { return nil }
-        let beginner = settings.beginnerMode || ayahBeginnerMode
         let text = ayah.displayArabicText(surahId: surah.id, clean: false, qiraahOverride: comparisonQiraahOverride)
-        let displayText = settings.cleanArabicText
-            ? ayah.displayArabicText(surahId: surah.id, clean: true, qiraahOverride: comparisonQiraahOverride)
-            : text
-        let renderedDisplayText = beginner ? spacedArabic(displayText) : displayText
         return TajweedStore.shared.attributedText(
             surah: surah.id,
             ayah: ayah.id,
@@ -263,7 +258,7 @@ struct AyahRow: View, Equatable {
         let showTranslit = hafsOnly && (settings.showTransliteration || mTranslit)
         let showEnglishSaheeh = hafsOnly && (settings.showEnglishSaheeh || mSaheeh)
         let showEnglishMustafa = hafsOnly && (settings.showEnglishMustafa || mMustafa)
-        let highlightQuery = queryForInlineHighlight(searchText)
+        let highlightQuery = hasSearch ? queryForInlineHighlight(searchText) : ""
         let fontSizeEN = settings.englishFontSize
         
         ZStack {
@@ -596,6 +591,8 @@ struct AyahRow: View, Equatable {
             }
 
             if showArabic {
+                let beginner = settings.beginnerMode || ayahBeginnerMode
+                let arabicSource = arabicDisplayText()
                 let arabicFont: Font = settings.removeArabicDots
                     ? .system(size: settings.fontArabicSize)
                     : .custom(
@@ -605,13 +602,13 @@ struct AyahRow: View, Equatable {
                 let suffixFont: Font = .custom(Settings.hafsUthmaniFontName, size: settings.fontArabicSize)
 
                 HighlightedSnippet(
-                    source: arabicDisplayText(),
+                    source: arabicSource,
                     term: highlightQuery,
                     font: arabicFont,
                     accent: settings.accentColor.color,
                     fg: .primary,
-                    preStyledSource: arabicTajweedText(),
-                    beginnerMode: (settings.beginnerMode || ayahBeginnerMode),
+                    preStyledSource: arabicTajweedText(displayText: arabicSource, beginner: beginner),
+                    beginnerMode: beginner,
                     trailingSuffix: " \(ayah.idArabic)",
                     trailingSuffixFont: suffixFont,
                     trailingSuffixColor: settings.accentColor.color,

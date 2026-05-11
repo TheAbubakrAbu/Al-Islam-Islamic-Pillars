@@ -14,8 +14,55 @@ extension Settings {
         case page
         case revelation
         case khatm
+        case sajdah
+        case muqattaat
 
         var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .surah: return "Surah"
+            case .juz: return "Juz"
+            case .page: return "Page"
+            case .revelation: return "Revelation"
+            case .khatm: return "Khatm"
+            case .sajdah: return "Sajdahs"
+            case .muqattaat: return "Broken Letters"
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .surah: return "list.number"
+            case .juz: return "square.grid.3x3"
+            case .page: return "doc.text"
+            case .revelation: return "sparkles"
+            case .khatm: return "checkmark.seal"
+            case .sajdah: return "figure.mind.and.body"
+            case .muqattaat: return "textformat.abc"
+            }
+        }
+    }
+
+    enum QuranSortDirection: String, CaseIterable, Identifiable {
+        case ascending
+        case descending
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .ascending: return "Asc"
+            case .descending: return "Desc"
+            }
+        }
+
+        var accessibilityTitle: String {
+            switch self {
+            case .ascending: return "Ascending"
+            case .descending: return "Descending"
+            }
+        }
     }
 
     enum Riwayah {

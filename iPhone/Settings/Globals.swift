@@ -24,6 +24,52 @@ enum AppIdentifiers {
     static let reciterDownloadDedupeQueueLabel = "\(bundleIdentifier).reciter-dedupe"
 }
 
+enum AppPerformance {
+    static var isLowMemoryDevice: Bool {
+        ProcessInfo.processInfo.physicalMemory < 3_000_000_000
+    }
+
+    static var shouldAvoidBroadPrewarm: Bool {
+        #if os(watchOS)
+        true
+        #else
+        isLowMemoryDevice
+        #endif
+    }
+
+    static var ayahRowCacheLimit: Int {
+        #if os(watchOS)
+        900
+        #else
+        isLowMemoryDevice ? 1800 : 5000
+        #endif
+    }
+
+    static var preparedSurahCacheLimit: Int {
+        #if os(watchOS)
+        24
+        #else
+        isLowMemoryDevice ? 60 : 160
+        #endif
+    }
+
+    static var tajweedAttributedCacheLimit: Int {
+        #if os(watchOS)
+        180
+        #else
+        isLowMemoryDevice ? 700 : 1800
+        #endif
+    }
+
+    static var prewarmArabicAyahLimit: Int? {
+        #if os(watchOS)
+        20
+        #else
+        isLowMemoryDevice ? 32 : nil
+        #endif
+    }
+}
+
 enum AccentColor: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 

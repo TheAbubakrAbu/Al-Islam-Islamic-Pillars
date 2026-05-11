@@ -432,10 +432,16 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     @AppStorage("beginnerMode") var beginnerMode: Bool = false
 
     @AppStorage("quranSortMode") var quranSortModeRaw: String = QuranSortMode.surah.rawValue
+    @AppStorage("quranSortDirection") var quranSortDirectionRaw: String = QuranSortDirection.ascending.rawValue
 
     var quranSortMode: QuranSortMode {
         get { QuranSortMode(rawValue: quranSortModeRaw) ?? .surah }
         set { quranSortModeRaw = newValue.rawValue }
+    }
+
+    var quranSortDirection: QuranSortDirection {
+        get { QuranSortDirection(rawValue: quranSortDirectionRaw) ?? .ascending }
+        set { quranSortDirectionRaw = newValue.rawValue }
     }
 
     var groupBySurah: Bool { quranSortMode == .surah }

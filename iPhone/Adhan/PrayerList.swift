@@ -32,6 +32,13 @@ struct PrayerList: View {
         PrayerDisplayMode(rawValue: prayerDisplayModeRawValue) ?? .list
     }
 
+    private static let selectedDateHeaderFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+
     private var displayedPrayers: [Prayer] {
         if settings.changedDate {
             return fullPrayers ? (settings.dateFullPrayers ?? []) : (settings.datePrayers ?? [])
@@ -74,10 +81,7 @@ struct PrayerList: View {
     }
 
     private var selectedDateHeaderText: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: selectedDate).uppercased()
+        Self.selectedDateHeaderFormatter.string(from: selectedDate).uppercased()
     }
 
     private func prayerGroupHeader(_ title: String) -> some View {

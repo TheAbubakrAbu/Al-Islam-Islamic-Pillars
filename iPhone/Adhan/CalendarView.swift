@@ -8,6 +8,8 @@ struct CalendarView: View {
     @State private var hijriYear = 1445
     @State private var hijriMonth = 1
     @State private var didAutoScrollToNearest = false
+    @State private var eventRows: [HijriEventRowModel] = []
+    @State private var nearestEventRow: HijriEventRowModel?
 
     private static let monthSymbols = [
         "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
@@ -80,7 +82,7 @@ struct CalendarView: View {
         .navigationViewStyle(.stack)
     }
 
-    private var eventRows: [HijriEventRowModel] {
+    private func buildEventRows() -> [HijriEventRowModel] {
         settings.specialEvents.map { event in
             let date = settings.hijriCalendar.date(from: event.1)!
             let components = event.1
@@ -98,9 +100,9 @@ struct CalendarView: View {
         }
     }
 
-    private var nearestEventRow: HijriEventRowModel? {
+    private func nearestEventRow(in rows: [HijriEventRowModel]) -> HijriEventRowModel? {
         let now = Date()
-        return eventRows.min { lhs, rhs in
+        return rows.min { lhs, rhs in
             abs(lhs.date.timeIntervalSince(now)) < abs(rhs.date.timeIntervalSince(now))
         }
     }
@@ -135,6 +137,8 @@ struct CalendarView: View {
         let components = settings.hijriCalendar.dateComponents([.year, .month], from: currentDate)
         hijriYear = components.year ?? 1445
         hijriMonth = components.month ?? 1
+        eventRows = buildEventRows()
+        nearestEventRow = nearestEventRow(in: eventRows)
         settings.updateDates()
     }
 }

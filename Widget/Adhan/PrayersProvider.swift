@@ -1,6 +1,48 @@
 import SwiftUI
 import WidgetKit
 
+enum AdhanWidgetDateFormatting {
+    static let hijriCalendar: Calendar = {
+        var calendar = Calendar(identifier: .islamicUmmAlQura)
+        calendar.locale = Locale(identifier: "ar")
+        return calendar
+    }()
+
+    static let mediumHijriFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = hijriCalendar
+        formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: "en")
+        return formatter
+    }()
+
+    static let fullHijriFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = hijriCalendar
+        formatter.dateStyle = .full
+        formatter.locale = Locale(identifier: "en")
+        return formatter
+    }()
+
+    static func hijriDate(for entry: PrayersEntry, style: DateFormatter.Style) -> String {
+        let formatter = style == .full ? fullHijriFormatter : mediumHijriFormatter
+        let now = Date()
+        var referenceDate = now
+
+        if entry.switchHijriDateAtMaghrib,
+           let maghrib = entry.fullPrayers.first(where: { $0.nameTransliteration == "Maghrib" })?.time,
+           now >= maghrib {
+            referenceDate = Calendar.current.date(byAdding: .day, value: 1, to: now) ?? now
+        }
+
+        guard let offsetDate = hijriCalendar.date(byAdding: .day, value: entry.hijriOffset, to: referenceDate) else {
+            return formatter.string(from: referenceDate)
+        }
+
+        return formatter.string(from: offsetDate)
+    }
+}
+
 struct PrayersProvider: TimelineProvider {
     private let store   = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName)
     private let settings = Settings.shared

@@ -10,6 +10,7 @@ struct NameOfAllah: Decodable, Identifiable, Equatable {
     let otherNames: [String]
     let desc: String
     let numberArabic: String
+    let displayArabicName: String
     let searchTokens: [String]
     let firstFoundSurah: Int?
     let firstFoundAyah: Int?
@@ -31,6 +32,10 @@ struct NameOfAllah: Decodable, Identifiable, Equatable {
 
         id = "\(number)"
         numberArabic = arabicNumberString(from: number)
+        let deacriticizedName = name.removeDiacriticsFromLastLetter()
+        displayArabicName = deacriticizedName.contains(" ")
+            ? deacriticizedName.split(separator: " ").joined(separator: "\n")
+            : deacriticizedName
         let firstFound = Self.parseFirstFound(found)
         firstFoundSurah = firstFound?.surah
         firstFoundAyah = firstFound?.ayah
@@ -558,8 +563,7 @@ private struct NameRow: View, Equatable {
     }
 
     private var displayArabicName: String {
-        let text = name.name.removeDiacriticsFromLastLetter()
-        return text.contains(" ") ? text.split(separator: " ").joined(separator: "\n") : text
+        name.displayArabicName
     }
 
     @ViewBuilder

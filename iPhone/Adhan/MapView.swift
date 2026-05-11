@@ -19,6 +19,12 @@ struct MapView: View {
 
     private let kaabaCoordinate = CLLocationCoordinate2D(latitude: 21.422445, longitude: 39.826388)
 
+    private static let distanceFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.maximumFractionDigits = 1
+        return formatter
+    }()
+
     init(choosingPrayerTimes: Bool) {
         _choosingPrayerTimes = State(initialValue: choosingPrayerTimes)
 
@@ -99,12 +105,9 @@ struct MapView: View {
         let kilometers = meters / 1_000
         let miles = meters / 1_609.344
 
-        let formatter = NumberFormatter()
-        formatter.maximumFractionDigits = 1
-
         guard
-            let kmText = formatter.string(from: kilometers as NSNumber),
-            let mileText = formatter.string(from: miles as NSNumber)
+            let kmText = Self.distanceFormatter.string(from: kilometers as NSNumber),
+            let mileText = Self.distanceFormatter.string(from: miles as NSNumber)
         else { return nil }
 
         return "\(mileText) mi / \(kmText) km"

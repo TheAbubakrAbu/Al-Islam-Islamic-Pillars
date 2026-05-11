@@ -37,25 +37,36 @@ struct SurahView: View {
     private final class PreparedSurahCache {
         let ayahs: [Ayah]
         let ayahByID: [Int: Ayah]
-        let searchBlobByAyahID: [Int: String]
         let overlayDividerByAyahID: [Int: BoundaryDividerModel]
 
         init(
             ayahs: [Ayah],
             ayahByID: [Int: Ayah],
-            searchBlobByAyahID: [Int: String],
             overlayDividerByAyahID: [Int: BoundaryDividerModel]
         ) {
             self.ayahs = ayahs
             self.ayahByID = ayahByID
-            self.searchBlobByAyahID = searchBlobByAyahID
             self.overlayDividerByAyahID = overlayDividerByAyahID
+        }
+    }
+
+    private final class PreparedSurahSearchCache {
+        let searchBlobByAyahID: [Int: String]
+
+        init(searchBlobByAyahID: [Int: String]) {
+            self.searchBlobByAyahID = searchBlobByAyahID
         }
     }
 
     private static let preparedSurahCache: NSCache<NSString, PreparedSurahCache> = {
         let cache = NSCache<NSString, PreparedSurahCache>()
-        cache.countLimit = 160
+        cache.countLimit = AppPerformance.preparedSurahCacheLimit
+        return cache
+    }()
+
+    private static let preparedSurahSearchCache: NSCache<NSString, PreparedSurahSearchCache> = {
+        let cache = NSCache<NSString, PreparedSurahSearchCache>()
+        cache.countLimit = AppPerformance.preparedSurahCacheLimit
         return cache
     }()
 
@@ -403,7 +414,11 @@ struct SurahView: View {
 
     static func prewarm(surah: Surah, settings: Settings) {
         _ = preparedCache(for: surah, settings: settings)
-        AyahRow.prewarmArabicDisplay(surah: surah, settings: settings)
+        AyahRow.prewarmArabicDisplay(
+            surah: surah,
+            settings: settings,
+            limit: AppPerformance.prewarmArabicAyahLimit
+        )
     }
 
     private static func preparedCache(for surah: Surah, settings: Settings) -> PreparedSurahCache {
@@ -415,16 +430,13 @@ struct SurahView: View {
 
         let ayahs = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }
         let ayahByID = Dictionary(uniqueKeysWithValues: ayahs.map { ($0.id, $0) })
-        let displayQiraah = settings.displayQiraahForArabic
         let shouldBuildFullOverlayMap = surah.pageOrJuzChangesWithinSurah
 
         var overlayMap: [Int: BoundaryDividerModel] = [:]
-        var searchBlobMap: [Int: String] = [:]
 
         if shouldBuildFullOverlayMap {
             overlayMap.reserveCapacity(ayahs.count)
         }
-        searchBlobMap.reserveCapacity(ayahs.count)
 
         for (index, ayah) in ayahs.enumerated() {
             if shouldBuildFullOverlayMap || index == 0 {
@@ -445,7 +457,33 @@ struct SurahView: View {
                     style: .allAccent
                 )
             }
+        }
 
+        let prepared = PreparedSurahCache(
+            ayahs: ayahs,
+            ayahByID: ayahByID,
+            overlayDividerByAyahID: overlayMap
+        )
+        preparedSurahCache.setObject(prepared, forKey: cacheKey)
+        return prepared
+    }
+
+    private static func preparedSearchCache(
+        for surah: Surah,
+        settings: Settings,
+        ayahs: [Ayah]
+    ) -> PreparedSurahSearchCache {
+        let qiraahKey = settings.displayQiraahForArabic ?? ""
+        let cacheKey = "\(surah.id)|\(qiraahKey)" as NSString
+        if let cached = preparedSurahSearchCache.object(forKey: cacheKey) {
+            return cached
+        }
+
+        let displayQiraah = settings.displayQiraahForArabic
+        var searchBlobMap: [Int: String] = [:]
+        searchBlobMap.reserveCapacity(ayahs.count)
+
+        for ayah in ayahs {
             let searchBlob = [
                 ayah.textArabic(for: displayQiraah),
                 ayah.textCleanArabic(for: displayQiraah),
@@ -460,13 +498,8 @@ struct SurahView: View {
             searchBlobMap[ayah.id] = searchBlob
         }
 
-        let prepared = PreparedSurahCache(
-            ayahs: ayahs,
-            ayahByID: ayahByID,
-            searchBlobByAyahID: searchBlobMap,
-            overlayDividerByAyahID: overlayMap
-        )
-        preparedSurahCache.setObject(prepared, forKey: cacheKey)
+        let prepared = PreparedSurahSearchCache(searchBlobByAyahID: searchBlobMap)
+        preparedSurahSearchCache.setObject(prepared, forKey: cacheKey)
         return prepared
     }
 
@@ -495,7 +528,7 @@ struct SurahView: View {
         cachedAyahsForQiraah = ayahs
         cachedAyahByID = prepared.ayahByID
         overlayDividerByAyahID = prepared.overlayDividerByAyahID
-        cachedSearchBlobByAyahID = prepared.searchBlobByAyahID
+        cachedSearchBlobByAyahID = [:]
         cacheQiraahKey = key
         qiraahCacheSurahID = surah.id
 
@@ -803,49 +836,57 @@ struct SurahView: View {
         let ayahByID = cachedAyahByID.isEmpty
             ? (prepared?.ayahByID ?? [:])
             : cachedAyahByID
-        let filteredAyahs = ayahsForQiraah.filter { a in
-            guard !cleanQuery.isEmpty else { return true }
+        let shouldUseTextSearchBlobs = !cleanQuery.isEmpty
+            && !isDividerKeywordSearch
+            && !isPageOrJuzSearch
+            && ayahNumberQuery == nil
+        let searchBlobByAyahID = shouldUseTextSearchBlobs
+            ? (cachedSearchBlobByAyahID.isEmpty
+                ? Self.preparedSearchCache(for: surah, settings: settings, ayahs: ayahsForQiraah).searchBlobByAyahID
+                : cachedSearchBlobByAyahID)
+            : [:]
+        let filteredAyahs: [Ayah] = {
+            guard !cleanQuery.isEmpty else { return ayahsForQiraah }
+            if isDividerKeywordSearch { return [] }
 
-            if isDividerKeywordSearch {
-                return false
-            }
+            return ayahsForQiraah.filter { a in
+                if isPageOrJuzSearch {
+                    let pageMatch = pageJuzQuery.page != nil && a.page == pageJuzQuery.page
+                    let juzMatch = pageJuzQuery.juz != nil && a.juz == pageJuzQuery.juz
+                    return pageMatch || juzMatch
+                }
 
-            if isPageOrJuzSearch {
-                let pageMatch = pageJuzQuery.page != nil && a.page == pageJuzQuery.page
-                let juzMatch = pageJuzQuery.juz != nil && a.juz == pageJuzQuery.juz
-                return pageMatch || juzMatch
-            }
+                if let ayahNumberQuery {
+                    return a.id == ayahNumberQuery
+                }
 
-            if let ayahNumberQuery {
-                return a.id == ayahNumberQuery
-            }
+                if let blob = searchBlobByAyahID[a.id] {
+                    if let booleanGroups {
+                        if booleanGroups.isEmpty { return false }
+                        return matchesBooleanAyahSearch(ayah: a, haystack: blob, groups: booleanGroups)
+                    }
+                    return blob.contains(cleanQuery)
+                }
 
-            if let blob = cachedSearchBlobByAyahID[a.id] ?? prepared?.searchBlobByAyahID[a.id] {
+                let fallbackBlob = [
+                    settings.cleanSearch(a.textArabic),
+                    settings.cleanSearch(a.textCleanArabic),
+                    settings.cleanSearch(a.textTransliteration),
+                    settings.cleanSearch(a.textEnglishSaheeh),
+                    settings.cleanSearch(a.textEnglishMustafa),
+                    settings.cleanSearch(String(a.id)),
+                    settings.cleanSearch(a.idArabic)
+                ]
+                .joined(separator: " ")
+
                 if let booleanGroups {
                     if booleanGroups.isEmpty { return false }
-                    return matchesBooleanAyahSearch(ayah: a, haystack: blob, groups: booleanGroups)
+                    return matchesBooleanAyahSearch(ayah: a, haystack: fallbackBlob, groups: booleanGroups)
                 }
-                return blob.contains(cleanQuery)
+
+                return fallbackBlob.contains(cleanQuery)
             }
-
-            let fallbackBlob = [
-                settings.cleanSearch(a.textArabic),
-                settings.cleanSearch(a.textCleanArabic),
-                settings.cleanSearch(a.textTransliteration),
-                settings.cleanSearch(a.textEnglishSaheeh),
-                settings.cleanSearch(a.textEnglishMustafa),
-                settings.cleanSearch(String(a.id)),
-                settings.cleanSearch(a.idArabic)
-            ]
-            .joined(separator: " ")
-
-            if let booleanGroups {
-                if booleanGroups.isEmpty { return false }
-                return matchesBooleanAyahSearch(ayah: a, haystack: fallbackBlob, groups: booleanGroups)
-            }
-
-            return fallbackBlob.contains(cleanQuery)
-        }
+        }()
         let boundaryModel = showBoundaryDividers ? quranData.boundaryModel(forSurah: surah.id) : nil
         let trailingSearchBoundaryDivider: BoundaryDividerModel? = {
             guard showBoundaryDividers, isPageOrJuzSearch, !isDividerKeywordSearch else { return nil }

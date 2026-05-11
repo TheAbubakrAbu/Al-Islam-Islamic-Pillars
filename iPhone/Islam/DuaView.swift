@@ -5,12 +5,18 @@ private struct DuaItem: Identifiable {
     let transliteration: String
     let translation: String
     let reference: String?
+    let displayTranslation: String
+    let searchBlob: String
 
     init(arabicText: String, transliteration: String, translation: String, reference: String? = nil) {
         self.arabicText = arabicText
         self.transliteration = transliteration
         self.translation = translation
         self.reference = reference
+        self.displayTranslation = reference.map { "\(translation)\n- \($0) -" } ?? translation
+        self.searchBlob = [arabicText, transliteration, self.displayTranslation]
+            .joined(separator: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 
     var id: String { "\(reference ?? transliteration)-\(arabicText)" }
@@ -30,7 +36,7 @@ private struct DuaCollection: Identifiable {
 struct DuaView: View {
     @EnvironmentObject var settings: Settings
 
-    private let collections: [DuaCollection] = [
+    private static let collections: [DuaCollection] = [
         DuaCollections.common,
         DuaCollections.rabbana
     ]
@@ -44,7 +50,7 @@ struct DuaView: View {
                     .padding(.vertical, 8)
 
                 Section {
-                    ForEach(collections) { collection in
+                    ForEach(Self.collections) { collection in
                         NavigationLink {
                             DuaCollectionView(collection: collection)
                         } label: {
@@ -159,27 +165,21 @@ private struct DuaCollectionView: View {
         .navigationTitle(collection.title)
     }
 
-    private func matchesSearch(arabicText: String, transliteration: String, translation: String) -> Bool {
+    private func matchesSearch(_ item: DuaItem) -> Bool {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return true }
 
         let normalizedQuery = query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        let combined = [arabicText, transliteration, translation]
-            .joined(separator: " ")
-            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-
-        return combined.contains(normalizedQuery)
+        return item.searchBlob.contains(normalizedQuery)
     }
 
     @ViewBuilder
     private func filteredDuaRow(_ item: DuaItem, alignArabicTrailing: Bool = true) -> some View {
-        let translation = item.reference.map { "\(item.translation)\n- \($0) -" } ?? item.translation
-
-        if matchesSearch(arabicText: item.arabicText, transliteration: item.transliteration, translation: translation) {
+        if matchesSearch(item) {
             AdhkarRow(
                 arabicText: item.arabicText,
                 transliteration: item.transliteration,
-                translation: translation,
+                translation: item.displayTranslation,
                 alignArabicTrailing: alignArabicTrailing,
                 useQuranicFont: settings.useFontArabic,
                 searchQuery: searchText

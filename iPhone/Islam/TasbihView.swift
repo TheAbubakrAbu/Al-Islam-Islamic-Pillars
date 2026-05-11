@@ -3,10 +3,11 @@ import SwiftUI
 struct TasbihView: View {
     @EnvironmentObject var settings: Settings
 
-    @State private var counters: [Int: Int] = [:]
+    @State private var counters: [Int: Int] = Self.initialCounters
     @State private var selectedDhikrIndex: Int = 0
 
     private let tasbihData = commonDhikrItems
+    private static let initialCounters = Dictionary(uniqueKeysWithValues: commonDhikrItems.indices.map { ($0, 0) })
 
     private func binding(for index: Int) -> Binding<Int> {
         Binding(
@@ -21,11 +22,6 @@ struct TasbihView: View {
             #if os(watchOS)
             activeTasbihSection
             #endif
-        }
-        .onAppear {
-            for index in tasbihData.indices {
-                counters[index] = counters[index] ?? 0
-            }
         }
         #if os(iOS)
         .adaptiveSafeArea(edge: .bottom) {

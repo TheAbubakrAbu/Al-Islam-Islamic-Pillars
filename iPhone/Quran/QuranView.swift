@@ -17,6 +17,7 @@ struct QuranView: View {
     @State private var lastSavedSearchQuery = ""
     @State private var isListMoving = false
     @State private var listMotionIdleTask: Task<Void, Never>?
+    @State private var ayahSearchTask: Task<Void, Never>?
     @State private var showAyahSearchLearnMore = false
     @State private var khatmEditMode = false
 
@@ -25,24 +26,6 @@ struct QuranView: View {
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
     private let hitPageSize = 5
-    private static let sajdahSearchTokens: Set<String> = [
-        "sujood", "sujud", "sajdah", "sajda", "sajdahs", "sajdas",
-        "prostration", "prostrations", "prostrate", "prostrating",
-        "bowing", "rukuu", "ruku", "rukoo", "rukou", "ركوع", "اركع",
-        "سجود", "سجدة", "اسجد", "يسجد", "السجدة"
-    ]
-    private static let muqattaatSearchTokens: Set<String> = [
-        "muqattaat", "muqatta", "muqatta'at", "muqattaʿat", "muqattaʿāt",
-        "huroof", "huruf", "fawatih", "fawatihs",
-        "disconnected", "disjoined", "mysterious",
-        "المقطعات", "مقطعات", "مقطعة", "حروف", "فواتح"
-    ]
-    private static let muqattaatSearchPhrases: Set<String> = [
-        "disconnected letters", "disjoint letters", "disjoined letters",
-        "mysterious letters", "opening letters", "openers",
-        "huroof muqattaat", "huruf muqattaat", "huruf muqatta'at",
-        "حروف مقطعة", "الحروف المقطعة"
-    ]
 
     private static let arFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -126,8 +109,6 @@ struct QuranView: View {
         let exactMatch: (surah: Surah?, ayah: Ayah?)
         let surahCountQuery: SurahCountQuery?
         let filteredSurahs: [Surah]
-        let shouldShowSajdahSection: Bool
-        let shouldShowMuqattaatSection: Bool
         let canShowMoreAyahHits: Bool
         let ayahCountDisplayText: String
     }
@@ -224,65 +205,11 @@ struct QuranView: View {
     }
 
     private var sajdahAyahs: [(surah: Surah, ayah: Ayah)] {
-        quranData.quran.flatMap { surah in
-            surah.ayahs.compactMap { ayah in
-                ayah.textHafs.contains("۩") ? (surah: surah, ayah: ayah) : nil
-            }
-        }
+        quranData.sajdahAyahResults()
     }
 
     private var muqattaatAyahs: [(surah: Surah, ayah: Ayah)] {
-        let openingSurahs = TajweedRules.surahsOpeningMuqattaat
-        return quranData.quran
-            .filter { openingSurahs.contains($0.id) }
-            .flatMap { surah -> [(surah: Surah, ayah: Ayah)] in
-                if surah.id == 42 {
-                    return surah.ayahs
-                        .filter { (1...2).contains($0.id) }
-                        .map { (surah: surah, ayah: $0) }
-                }
-
-                guard let firstAyah = surah.ayahs.first(where: { $0.id == 1 }) else { return [] }
-                return [(surah: surah, ayah: firstAyah)]
-            }
-    }
-
-    private func shouldShowSpecialSearchSection(
-        for rawQuery: String,
-        tokens searchTokens: Set<String>,
-        phrases searchPhrases: Set<String> = []
-    ) -> Bool {
-        let normalized = settings.cleanSearch(rawQuery, whitespace: true)
-            .removingArabicDiacriticsAndSigns
-            .lowercased()
-        guard !normalized.isEmpty else { return false }
-
-        let tokens = normalized
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .map(String.init)
-        if tokens.contains(where: { searchTokens.contains($0) }) {
-            return true
-        }
-        return searchTokens.contains { normalized.contains($0) }
-            || searchPhrases.contains {
-                normalized.contains(
-                    settings.cleanSearch($0, whitespace: true)
-                        .removingArabicDiacriticsAndSigns
-                        .lowercased()
-                )
-            }
-    }
-
-    private func shouldShowSajdahSection(for rawQuery: String) -> Bool {
-        shouldShowSpecialSearchSection(for: rawQuery, tokens: Self.sajdahSearchTokens)
-    }
-
-    private func shouldShowMuqattaatSection(for rawQuery: String) -> Bool {
-        shouldShowSpecialSearchSection(
-            for: rawQuery,
-            tokens: Self.muqattaatSearchTokens,
-            phrases: Self.muqattaatSearchPhrases
-        )
+        quranData.muqattaatAyahResults()
     }
 
     private func persistQuranSearchHistoryIfNeeded(_ rawQuery: String, requireMinLength: Bool = false) {
@@ -324,10 +251,26 @@ struct QuranView: View {
         #endif
     }
     
-    private func fetchHits(query: String, limit: Int, offset: Int) -> ([VerseIndexEntry], Bool) {
-        let page = quranData.searchVerses(term: query, limit: limit + 1, offset: offset)
-        let more = page.count > limit
-        return (Array(page.prefix(limit)), more)
+    private func fetchHitsOffMain(query: String, limit: Int, offset: Int) async -> ([VerseIndexEntry], Bool) {
+        guard let snapshot = quranData.verseSearchSnapshot() else {
+            return ([], false)
+        }
+
+        return await Task.detached(priority: .userInitiated) {
+            let page = snapshot.search(term: query, limit: limit + 1, offset: offset)
+            let more = page.count > limit
+            return (Array(page.prefix(limit)), more)
+        }.value
+    }
+
+    private func fetchAllHitsOffMain(query: String) async -> [VerseIndexEntry] {
+        guard let snapshot = quranData.verseSearchSnapshot() else {
+            return []
+        }
+
+        return await Task.detached(priority: .userInitiated) {
+            snapshot.search(term: query, limit: .max, offset: 0)
+        }.value
     }
 
     private var shouldShowSearchHelpOverlay: Bool {
@@ -434,6 +377,10 @@ struct QuranView: View {
         .task {
             prewarmQuranDestinations()
         }
+        .onDisappear {
+            ayahSearchTask?.cancel()
+            listMotionIdleTask?.cancel()
+        }
     }
 
     private func prewarmQuranDestinations() {
@@ -456,14 +403,20 @@ struct QuranView: View {
             }
         }
 
+        guard shouldPrewarmAllQuranDestinations else { return }
+
         Task(priority: .utility) { @MainActor in
             for surah in quranData.quran {
                 guard seen.insert(surah.id).inserted else { continue }
                 SurahView.prewarm(surah: surah, settings: settings)
                 await Task.yield()
-                try? await Task.sleep(nanoseconds: 8_000_000)
+                try? await Task.sleep(nanoseconds: 18_000_000)
             }
         }
+    }
+
+    private var shouldPrewarmAllQuranDestinations: Bool {
+        !AppPerformance.shouldAvoidBroadPrewarm
     }
     
     private var navigationContainer: some View {
@@ -639,11 +592,16 @@ struct QuranView: View {
             .compactListSectionSpacing()
             .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
             .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
+            .animation(.easeInOut(duration: 0.22), value: settings.quranSortDirection)
             #if os(watchOS)
             .searchable(text: $searchText.animation(.easeInOut))
             #endif
             .onChange(of: searchText) { txt in
                 handleAyahSearchChange(txt)
+            }
+            .onChange(of: quranData.isVerseSearchReady) { isReady in
+                guard isReady else { return }
+                handleAyahSearchChange(searchText, debounce: false)
             }
             .onChange(of: scrollToSurahID) { id in
                 guard id > 0 else { return }
@@ -745,7 +703,7 @@ struct QuranView: View {
         #if os(iOS)
         VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             searchHistoryChips
-            sortModePicker
+            sortControls
             searchAndPlaybackRow
         }
         .padding(.horizontal, 24)
@@ -802,22 +760,72 @@ struct QuranView: View {
         .conditionalGlassEffect(useColor: 0.25)
     }
 
-    private var sortModePicker: some View {
+    private var sortControls: some View {
         #if os(iOS)
-        Picker("Sort Type", selection: Binding(
-            get: { settings.quranSortMode },
-            set: { newMode in
+        HStack(spacing: 8) {
+            sortDirectionPicker
+            sortModeMenu
+        }
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var sortDirectionPicker: some View {
+        #if os(iOS)
+        Picker("Sort Direction", selection: Binding(
+            get: { settings.quranSortDirection },
+            set: { newDirection in
+                settings.hapticFeedback()
                 withAnimation(.easeInOut(duration: 0.22)) {
-                    settings.quranSortMode = newMode
+                    settings.quranSortDirection = newDirection
                 }
             }
         ).animation(.easeInOut)) {
-            Text("Surah").tag(Settings.QuranSortMode.surah)
-            Text("Juz").tag(Settings.QuranSortMode.juz)
-            Text("Revelation").tag(Settings.QuranSortMode.revelation)
-            Text("Khatm").tag(Settings.QuranSortMode.khatm)
+            ForEach(Settings.QuranSortDirection.allCases) { direction in
+                Text(direction.title)
+                    .tag(direction)
+                    .accessibilityLabel(direction.accessibilityTitle)
+            }
         }
         .pickerStyle(SegmentedPickerStyle())
+        .conditionalGlassEffect()
+        .frame(maxWidth: 150)
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var sortModeMenu: some View {
+        #if os(iOS)
+        Menu {
+            ForEach(Settings.QuranSortMode.allCases) { mode in
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        settings.quranSortMode = mode
+                    }
+                } label: {
+                    Label(mode.title, systemImage: mode.systemImage)
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: settings.quranSortMode.systemImage)
+                    .imageScale(.medium)
+                Text(settings.quranSortMode.title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 32)
+            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
+        }
         .conditionalGlassEffect()
         #else
         EmptyView()
@@ -1138,6 +1146,27 @@ struct QuranView: View {
         }
     }
 
+    private var usesDescendingQuranSort: Bool {
+        settings.quranSortDirection == .descending
+    }
+
+    private func orderedQuranSurahs(showsRevelationOrder: Bool) -> [Surah] {
+        let surahs = showsRevelationOrder
+            ? quranData.quran.sorted {
+                let left = $0.revelationOrder ?? Int.max
+                let right = $1.revelationOrder ?? Int.max
+                if left == right { return $0.id < $1.id }
+                return left < right
+            }
+            : quranData.quran
+
+        return usesDescendingQuranSort ? Array(surahs.reversed()) : surahs
+    }
+
+    private func orderedSearchSurahs(_ surahs: [Surah]) -> [Surah] {
+        usesDescendingQuranSort ? Array(surahs.reversed()) : surahs
+    }
+
     @ViewBuilder
     private func surahContentSections(context: SearchDisplayContext) -> some View {
         // Full browse list only when browsing. Never stack it under explicit page/juz queries.
@@ -1147,8 +1176,6 @@ struct QuranView: View {
             if settings.searchForSurahs {
                 surahSearchSection(context: context)
             }
-            sajdahSearchSection(context: context)
-            muqattaatSearchSection(context: context)
         } else {
             switch settings.quranSortMode {
             case .surah:
@@ -1162,26 +1189,21 @@ struct QuranView: View {
             case .khatm:
                 khatmProgressSection()
                 surahBrowseSection(context: context, showsRevelationOrder: false)
+            case .sajdah:
+                sajdahBrowseSection(context: context)
+            case .muqattaat:
+                muqattaatBrowseSection(context: context)
             }
         }
     }
 
     @ViewBuilder
-    private func sajdahSearchSection(context: SearchDisplayContext) -> some View {
-        let rows = sajdahAyahs
-        if context.shouldShowSajdahSection && !rows.isEmpty {
+    private func sajdahBrowseSection(context: SearchDisplayContext) -> some View {
+        let rows = usesDescendingQuranSort ? Array(sajdahAyahs.reversed()) : sajdahAyahs
+        if !rows.isEmpty {
             Section(header: sajdahHeader(count: rows.count)) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
-                    AyahSearchResultRow(
-                        surah: item.surah,
-                        ayah: item.ayah,
-                        favoriteSurahs: context.favoriteSurahs,
-                        bookmarkedAyahs: context.bookmarkedAyahs,
-                        searchText: $searchText,
-                        scrollToSurahID: $scrollToSurahID,
-                        disableTajweedColors: true,
-                        onSelectAyah: columnAyahSelectionHandler
-                    )
+                    specialAyahRow(item: item, context: context)
                 }
             }
         }
@@ -1205,24 +1227,28 @@ struct QuranView: View {
     }
 
     @ViewBuilder
-    private func muqattaatSearchSection(context: SearchDisplayContext) -> some View {
-        let rows = muqattaatAyahs
-        if context.shouldShowMuqattaatSection && !rows.isEmpty {
+    private func muqattaatBrowseSection(context: SearchDisplayContext) -> some View {
+        let rows = usesDescendingQuranSort ? Array(muqattaatAyahs.reversed()) : muqattaatAyahs
+        if !rows.isEmpty {
             Section(header: muqattaatHeader(count: rows.count)) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
-                    AyahSearchResultRow(
-                        surah: item.surah,
-                        ayah: item.ayah,
-                        favoriteSurahs: context.favoriteSurahs,
-                        bookmarkedAyahs: context.bookmarkedAyahs,
-                        searchText: $searchText,
-                        scrollToSurahID: $scrollToSurahID,
-                        disableTajweedColors: true,
-                        onSelectAyah: columnAyahSelectionHandler
-                    )
+                    specialAyahRow(item: item, context: context)
                 }
             }
         }
+    }
+
+    private func specialAyahRow(item: (surah: Surah, ayah: Ayah), context: SearchDisplayContext) -> some View {
+        AyahSearchResultRow(
+            surah: item.surah,
+            ayah: item.ayah,
+            favoriteSurahs: context.favoriteSurahs,
+            bookmarkedAyahs: context.bookmarkedAyahs,
+            searchText: $searchText,
+            scrollToSurahID: $scrollToSurahID,
+            disableTajweedColors: true,
+            onSelectAyah: columnAyahSelectionHandler
+        )
     }
 
     private func muqattaatHeader(count: Int) -> some View {
@@ -1293,14 +1319,7 @@ struct QuranView: View {
 
     @ViewBuilder
     private func surahBrowseSection(context: SearchDisplayContext, showsRevelationOrder: Bool) -> some View {
-        let browsedSurahs = showsRevelationOrder
-            ? quranData.quran.sorted {
-                let left = $0.revelationOrder ?? Int.max
-                let right = $1.revelationOrder ?? Int.max
-                if left == right { return $0.id < $1.id }
-                return left < right
-            }
-            : quranData.quran
+        let browsedSurahs = orderedQuranSurahs(showsRevelationOrder: showsRevelationOrder)
 
         Section(header: surahBrowseHeader(showsRevelationOrder: showsRevelationOrder)) { }
             .padding(.bottom, -12)
@@ -1325,12 +1344,15 @@ struct QuranView: View {
         }
     }
 
+    @ViewBuilder
     private func surahSearchSection(context: SearchDisplayContext) -> some View {
+        let filteredSurahs = orderedSearchSurahs(context.filteredSurahs)
+
         Group {
             Section(header: surahSectionHeader(context: context)) { }
                 .padding(.bottom, -12)
             
-            ForEach(context.filteredSurahs, id: \.id) { surah in
+            ForEach(filteredSurahs, id: \.id) { surah in
                 Section {
                     quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: nil)) {
                         surahSearchRow(surah: surah, context: context)
@@ -1419,7 +1441,9 @@ struct QuranView: View {
 
     @ViewBuilder
     private func juzSections(context: SearchDisplayContext) -> some View {
-        ForEach(quranData.juzSections) { sectionData in
+        let sections = usesDescendingQuranSort ? Array(quranData.juzSections.reversed()) : quranData.juzSections
+
+        ForEach(sections) { sectionData in
             let juz = sectionData.juz
             Section(header: JuzHeader(juz: juz)) {
                 ForEach(sectionData.rows) { row in
@@ -1459,7 +1483,9 @@ struct QuranView: View {
 
     @ViewBuilder
     private func pageSections(context: SearchDisplayContext) -> some View {
-        ForEach(quranData.pageSections) { pageGroup in
+        let sections = usesDescendingQuranSort ? Array(quranData.pageSections.reversed()) : quranData.pageSections
+
+        ForEach(sections) { pageGroup in
             Section(header: PageHeader(page: pageGroup.page)) {
                 ForEach(pageGroup.surahIDs, id: \.self) { surahID in
                     if let surah = quranData.surah(surahID) {
@@ -1757,13 +1783,7 @@ struct QuranView: View {
         ranked.reserveCapacity(verseHits.count)
 
         for hit in verseHits {
-            guard let ayah = quranData.ayah(surah: hit.surah, ayah: hit.ayah) else { continue }
-
-            let arabic = normalizedBestMatchText(ayah.displayArabicText(surahId: hit.surah, clean: settings.cleanArabicText))
-            let tr = normalizedBestMatchText(ayah.textTransliteration)
-            let en1 = normalizedBestMatchText(ayah.textEnglishSaheeh)
-            let en2 = normalizedBestMatchText(ayah.textEnglishMustafa)
-            let sources = [arabic, tr, en1, en2]
+            let sources = [hit.arabicBlob, hit.englishBlob, hit.englishExactBlob]
 
             var score = 0
 
@@ -1915,7 +1935,7 @@ struct QuranView: View {
 
     @ViewBuilder
     private func ayahLoadMoreControls(context: SearchDisplayContext) -> some View {
-        if context.canShowMoreAyahHits {
+        if context.canShowMoreAyahHits && quranData.isVerseSearchReady {
             #if os(iOS)
             Menu {
                 Text("Load More")
@@ -1924,15 +1944,7 @@ struct QuranView: View {
                 ForEach([5, 10, 20], id: \.self) { amount in
                     Button {
                         settings.hapticFeedback()
-                        let (moreHits, moreAvail) = fetchHits(
-                            query: searchText,
-                            limit: amount,
-                            offset: verseHits.count
-                        )
-                        withAnimation {
-                            verseHits.append(contentsOf: moreHits)
-                            hasMoreHits = moreAvail
-                        }
+                        loadMoreAyahMatches(amount)
                     } label: {
                         Label("Load \(amount)", systemImage: "\(amount).circle")
                     }
@@ -1950,11 +1962,7 @@ struct QuranView: View {
             .padding(.bottom, -8)
             #else
             Button("Load \(hitPageSize) ayah matches") {
-                let (moreHits, moreAvail) = fetchHits(query: searchText, limit: hitPageSize, offset: verseHits.count)
-                withAnimation {
-                    verseHits.append(contentsOf: moreHits)
-                    hasMoreHits = moreAvail
-                }
+                loadMoreAyahMatches(hitPageSize)
             }
             .foregroundColor(settings.accentColor.color)
             .frame(maxWidth: .infinity, alignment: .center)
@@ -1966,9 +1974,16 @@ struct QuranView: View {
             
             Button {
                 settings.hapticFeedback()
-                withAnimation {
-                    verseHits = quranData.searchVersesAll(term: searchText)
-                    hasMoreHits = false
+                ayahSearchTask?.cancel()
+                let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                ayahSearchTask = Task { @MainActor in
+                    let allHits = await fetchAllHitsOffMain(query: query)
+                    guard !Task.isCancelled else { return }
+                    guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+                    withAnimation {
+                        verseHits = allHits
+                        hasMoreHits = false
+                    }
                 }
             } label: {
                 Text("Load all ayah matches")
@@ -1988,6 +2003,29 @@ struct QuranView: View {
     }
 
     private func handleAyahSearchChange(_ txt: String) {
+        handleAyahSearchChange(txt, debounce: true)
+    }
+
+    private func loadMoreAyahMatches(_ amount: Int) {
+        ayahSearchTask?.cancel()
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let offset = verseHits.count
+
+        ayahSearchTask = Task { @MainActor in
+            let (moreHits, moreAvail) = await fetchHitsOffMain(query: query, limit: amount, offset: offset)
+            guard !Task.isCancelled else { return }
+            guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+
+            withAnimation {
+                verseHits.append(contentsOf: moreHits)
+                hasMoreHits = moreAvail
+            }
+        }
+    }
+
+    private func handleAyahSearchChange(_ txt: String, debounce: Bool) {
+        ayahSearchTask?.cancel()
+
         let query = txt.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if parseSurahCountQuery(from: query) != nil {
@@ -2008,6 +2046,15 @@ struct QuranView: View {
             return
         }
 
+        guard quranData.isVerseSearchReady else {
+            withAnimation {
+                verseHits = []
+                hasMoreHits = false
+                blockAyahSearchAfterZero = false
+            }
+            return
+        }
+
         if blockAyahSearchAfterZero {
             if query.count < zeroResultQueryLength {
                 blockAyahSearchAfterZero = false
@@ -2016,16 +2063,29 @@ struct QuranView: View {
             }
         }
 
-        let (first, more) = fetchHits(query: query, limit: hitPageSize, offset: 0)
-        
-        withAnimation {
-            verseHits = first
-            hasMoreHits = more
-            if first.isEmpty {
-                blockAyahSearchAfterZero = true
-                zeroResultQueryLength = query.count
-            } else {
-                blockAyahSearchAfterZero = false
+        ayahSearchTask = Task { @MainActor in
+            if debounce {
+                #if os(watchOS)
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                #else
+                try? await Task.sleep(nanoseconds: 220_000_000)
+                #endif
+            }
+            guard !Task.isCancelled else { return }
+            guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+
+            let (first, more) = await fetchHitsOffMain(query: query, limit: hitPageSize, offset: 0)
+            guard !Task.isCancelled else { return }
+
+            withAnimation {
+                verseHits = first
+                hasMoreHits = more
+                if first.isEmpty {
+                    blockAyahSearchAfterZero = true
+                    zeroResultQueryLength = query.count
+                } else {
+                    blockAyahSearchAfterZero = false
+                }
             }
         }
     }
@@ -2048,8 +2108,6 @@ struct QuranView: View {
             exactMatch: exactMatch,
             surahCountQuery: surahCountQuery,
             filteredSurahs: filteredSurahs,
-            shouldShowSajdahSection: shouldShowSajdahSection(for: searchText),
-            shouldShowMuqattaatSection: shouldShowMuqattaatSection(for: searchText),
             canShowMoreAyahHits: hasMoreHits && !verseHits.isEmpty,
             ayahCountDisplayText: {
                 let exactMatchBump = (exactMatch.surah != nil && exactMatch.ayah != nil) ? 1 : 0

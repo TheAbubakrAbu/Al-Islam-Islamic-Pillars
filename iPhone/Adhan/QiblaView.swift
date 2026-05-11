@@ -14,6 +14,8 @@ struct QiblaView: View {
     private static let kaabaCoordinate = CLLocationCoordinate2D(latitude: 21.4225, longitude: 39.8262)
 
     @StateObject private var compass: LocalQiblaCompass
+    @State private var cachedDistanceLocationKey: String?
+    @State private var cachedDistanceToKaabaMiles: Double?
 
     #if os(iOS)
     @State private var lastAngle: Double = 0
@@ -51,9 +53,22 @@ struct QiblaView: View {
               currentLocation.latitude != 1000,
               currentLocation.longitude != 1000 else { return nil }
 
-        let here = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
-        let kaaba = CLLocation(latitude: Self.kaabaCoordinate.latitude, longitude: Self.kaabaCoordinate.longitude)
-        return here.distance(from: kaaba) / 1_609.344
+        let locationKey = "\(currentLocation.latitude),\(currentLocation.longitude)"
+        if cachedDistanceLocationKey == locationKey {
+            return cachedDistanceToKaabaMiles
+        }
+
+        let miles = haversineMiles(
+            fromLatitude: currentLocation.latitude,
+            fromLongitude: currentLocation.longitude,
+            toLatitude: Self.kaabaCoordinate.latitude,
+            toLongitude: Self.kaabaCoordinate.longitude
+        )
+        DispatchQueue.main.async {
+            cachedDistanceLocationKey = locationKey
+            cachedDistanceToKaabaMiles = miles
+        }
+        return miles
     }
 
     private var alignmentScore: Double {
@@ -150,6 +165,22 @@ struct QiblaView: View {
         if delta > 180 { delta -= 360 }
         if delta < -180 { delta += 360 }
         return delta
+    }
+
+    private func haversineMiles(
+        fromLatitude lat1: Double,
+        fromLongitude lon1: Double,
+        toLatitude lat2: Double,
+        toLongitude lon2: Double
+    ) -> Double {
+        let radiusMiles = 3_958.7613
+        let dLat = (lat2 - lat1) * .pi / 180
+        let dLon = (lon2 - lon1) * .pi / 180
+        let rLat1 = lat1 * .pi / 180
+        let rLat2 = lat2 * .pi / 180
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(rLat1) * cos(rLat2) * sin(dLon / 2) * sin(dLon / 2)
+        return radiusMiles * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 
     private func prepareHaptics() {
@@ -325,6 +356,8 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
     private let locationProvider: () -> Location?
     private let minStep: Double = 1.0
     private var started = false
+    private var cachedLocationKey: String?
+    private var cachedQiblaDirection: Double?
 
     init(locationProvider: @escaping () -> Location?) {
         self.locationProvider = locationProvider
@@ -348,9 +381,17 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         guard newHeading.headingAccuracy >= 0, let currentLocation = locationProvider() else { return }
 
-        let qiblaDirection = Qibla(
-            coordinates: Coordinates(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
-        ).direction
+        let locationKey = "\(currentLocation.latitude),\(currentLocation.longitude)"
+        let qiblaDirection: Double
+        if cachedLocationKey == locationKey, let cachedQiblaDirection {
+            qiblaDirection = cachedQiblaDirection
+        } else {
+            qiblaDirection = Qibla(
+                coordinates: Coordinates(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
+            ).direction
+            cachedLocationKey = locationKey
+            cachedQiblaDirection = qiblaDirection
+        }
         let heading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magneticHeading
 
         var delta = qiblaDirection - heading
