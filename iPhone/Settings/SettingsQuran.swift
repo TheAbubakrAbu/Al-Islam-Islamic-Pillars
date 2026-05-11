@@ -10,6 +10,7 @@ extension Settings {
 
     enum QuranSortMode: String, CaseIterable, Identifiable {
         case surah
+        case ayahs
         case juz
         case page
         case revelation
@@ -22,6 +23,7 @@ extension Settings {
         var title: String {
             switch self {
             case .surah: return "Surah"
+            case .ayahs: return "Ayahs"
             case .juz: return "Juz"
             case .page: return "Page"
             case .revelation: return "Revelation"
@@ -34,6 +36,7 @@ extension Settings {
         var systemImage: String {
             switch self {
             case .surah: return "list.number"
+            case .ayahs: return "number"
             case .juz: return "square.grid.3x3"
             case .page: return "doc.text"
             case .revelation: return "sparkles"
@@ -398,10 +401,12 @@ extension Settings {
     }
 
     func isKhatmAyahComplete(surah: Int, ayah: Int) -> Bool {
-        khatmCompletedAyahSetCache.contains(khatmKey(surah: surah, ayah: ayah))
+        guard isHafsDisplay else { return false }
+        return khatmCompletedAyahSetCache.contains(khatmKey(surah: surah, ayah: ayah))
     }
 
     func markKhatmAyahComplete(surah: Int, ayah: Int) {
+        guard isHafsDisplay else { return }
         let key = khatmKey(surah: surah, ayah: ayah)
         guard khatmCompletedAyahSetCache.insert(key).inserted else { return }
         khatmCompletedSurahCountsCache[surah, default: 0] += 1
@@ -409,7 +414,8 @@ extension Settings {
     }
 
     func khatmCompletedCount(for surah: Surah) -> Int {
-        min(khatmCompletedSurahCountsCache[surah.id, default: 0], surah.numberOfAyahs)
+        guard isHafsDisplay else { return 0 }
+        return min(khatmCompletedSurahCountsCache[surah.id, default: 0], surah.numberOfAyahs)
     }
 
     func resetKhatmProgress(for surah: Surah) {
@@ -428,7 +434,8 @@ extension Settings {
     }
 
     func khatmTotalCompleted(in surahs: [Surah]) -> Int {
-        khatmCompletedAyahSetCache.count
+        guard isHafsDisplay else { return 0 }
+        return khatmCompletedAyahSetCache.count
     }
 
     static let bookmarkNoteRemovalDialogTitle = "Remove bookmark and delete note?"

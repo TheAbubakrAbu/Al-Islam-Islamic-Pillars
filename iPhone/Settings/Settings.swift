@@ -48,6 +48,15 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
                 logger.debug("Failed to decode home location: \(error)")
             }
         }
+        
+        if let favoriteLocationsData = appGroupUserDefaults?.data(forKey: "favoriteLocations") {
+            do {
+                let locations = try Self.decoder.decode([Location].self, from: favoriteLocationsData)
+                self.favoriteLocations = locations
+            } catch {
+                logger.debug("Failed to decode favorite locations: \(error)")
+            }
+        }
 
         super.init()
         loadKhatmProgressCacheFromStorage()
@@ -125,6 +134,18 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
                 appGroupUserDefaults?.set(homeLocationData, forKey: "homeLocationData")
             } catch {
                 logger.debug("Failed to encode home location: \(error)")
+            }
+        }
+    }
+
+    @Published var favoriteLocations: [Location] = [] {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            do {
+                let favoriteLocationsData = try Self.encoder.encode(favoriteLocations)
+                appGroupUserDefaults?.set(favoriteLocationsData, forKey: "favoriteLocations")
+            } catch {
+                logger.debug("Failed to encode favorite locations: \(error)")
             }
         }
     }

@@ -17,100 +17,103 @@ struct QuranView: View {
     @State private var lastSavedSearchQuery = ""
     @State private var isListMoving = false
     @State private var listMotionIdleTask: Task<Void, Never>?
-    @State private var ayahSearchTask: Task<Void, Never>?
-    @State private var showAyahSearchLearnMore = false
-    @State private var khatmEditMode = false
+        Section {
+            VStack(alignment: .leading, spacing: 10) {
+                // Ensure cached stats are computed when this section appears
+                Color.clear.frame(height: 0).onAppear { computeKhatmStatsIfNeeded(force: false) }
 
-    @State private var verseHits: [VerseIndexEntry] = []
-    @State private var hasMoreHits = true
-    @State private var blockAyahSearchAfterZero = false
-    @State private var zeroResultQueryLength = 0
-    private let hitPageSize = 5
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(khatmPercent)% completed")
+                        .font(.headline)
+                        .foregroundStyle(settings.accentColor.color)
 
-    private static let arFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.locale = Locale(identifier: "ar")
-        return f
-    }()
-    
-    func arabicToEnglishNumber(_ arabicNumber: String) -> Int? {
-        QuranView.arFormatter.number(from: arabicNumber)?.intValue
-    }
-    
-    var lastReadSurah: Surah? {
-        quranData.surah(settings.lastReadSurah)
-    }
+                    Spacer()
 
-    var lastReadAyah: Ayah? {
-        lastReadSurah?.ayahs.first(where: { $0.id == settings.lastReadAyah })
-    }
-    
-    func getSurahAndAyah(from searchText: String) -> (surah: Surah?, ayah: Ayah?) {
-        let surahAyahPair = searchText.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: ":").map(String.init)
-        var surahNumber: Int? = nil
-        var ayahNumber: Int? = nil
+                    Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs)")
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
 
-        if surahAyahPair.count == 2 {
-            if let resolvedByName = quranData.resolveSurahIdentifier(surahAyahPair[0]) {
-                surahNumber = resolvedByName.id
-            } else if let s = Int(surahAyahPair[0]), (1...114).contains(s) {
-                surahNumber = s
-            } else if let s = arabicToEnglishNumber(surahAyahPair[0]), (1...114).contains(s) {
-                surahNumber = s
-            }
+                ProgressView(value: Double(khatmCompletedAyahs), total: Double(max(khatmTotalAyahs, 1)))
+                    .tint(settings.accentColor.color)
 
-            ayahNumber = Int(surahAyahPair[1]) ?? arabicToEnglishNumber(surahAyahPair[1])
-        }
+                // Juz / Pages / Ayahs metrics using cached stats
+                HStack {
+                    VStack(alignment: .leading) {
+                        let totalJuz = quranData.juzSections.count
+                        let completedJuz = khatmJuzStats.values.reduce(0) { $0 + ($1.completed == $1.total ? 1 : 0) }
+                        let juzPercent = totalJuz > 0 ? Int((Double(completedJuz) / Double(totalJuz) * 100).rounded()) : 0
 
-        if let sNum = surahNumber,
-           let aNum = ayahNumber,
-           let surah = quranData.surah(sNum),
-           let ayah = quranData.ayah(surah: sNum, ayah: aNum) {
-            return (surah, ayah)
-        }
-        return (nil, nil)
-    }
-    
-    /// Verse hits sorted by surah, then ayah (search results are always grouped by surah).
-    private var verseHitsGroupedBySurah: [(surahId: Int, hits: [VerseIndexEntry])] {
-        var grouped = [Int: [VerseIndexEntry]]()
-        var orderedSurahIDs: [Int] = []
+                        let totalPages = quranData.pageSections.count
+                        let completedPages = khatmPageStats.values.reduce(0) { $0 + ($1.completed == $1.total ? 1 : 0) }
+                        let pagePercent = totalPages > 0 ? Int((Double(completedPages) / Double(totalPages) * 100).rounded()) : 0
 
-        for hit in verseHits {
-            if grouped[hit.surah] == nil {
-                grouped[hit.surah] = []
-                orderedSurahIDs.append(hit.surah)
-            }
-            grouped[hit.surah, default: []].append(hit)
-        }
+                        Text("Juz: \(completedJuz)/\(totalJuz) (\(juzPercent)%)")
+                            .font(.subheadline.monospacedDigit())
+                        Text("Pages: \(completedPages)/\(totalPages) (\(pagePercent)%)")
+                            .font(.subheadline.monospacedDigit())
+                        Text("Ayahs: \(khatmCompletedAyahs)/\(khatmTotalAyahs) (\(khatmPercent)%)")
+                            .font(.subheadline.monospacedDigit())
+                    }
 
-        return orderedSurahIDs.compactMap { sid in
-            guard let hits = grouped[sid] else { return nil }
-            return (sid, hits)
-        }
-    }
+                    Spacer()
 
-    private struct PageJuzQuery {
-        let page: Int?
-        let juz: Int?
-        let isExplicitPage: Bool
-        let isExplicitJuz: Bool
-    }
+                    Button("Extra") {
+                        settings.hapticFeedback()
+                        showKhatmExtraSheet = true
+                    }
+                }
 
-    private struct SearchDisplayContext {
-        let isSearching: Bool
-        let favoriteSurahs: Set<Int>
-        let bookmarkedAyahs: Set<String>
-        let pageJuzQuery: PageJuzQuery
+                if khatmEditMode {
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            settings.resetAllKhatmProgress()
+                        }
+                    } label: {
+                        Label("Reset Khatm Progress", systemImage: "arrow.counterclockwise")
+                    }
+                }
         let juzSurahs: [Surah]
         let explicitPageOrJuzMode: Bool
         let pageSearchResult: (surah: Surah, ayah: Ayah)?
         let juzSearchResult: (surah: Surah, ayah: Ayah)?
-        let exactMatch: (surah: Surah?, ayah: Ayah?)
-        let surahCountQuery: SurahCountQuery?
-        let filteredSurahs: [Surah]
-        let canShowMoreAyahHits: Bool
-        let ayahCountDisplayText: String
+        .sheet(isPresented: $showKhatmExtraSheet) {
+            KhatmExtraSheet()
+                .environmentObject(settings)
+                .environmentObject(quranData)
+        }
+        .onReceive(settings.objectWillChange) { _ in
+            computeKhatmStatsIfNeeded(force: false)
+        }
+    }
+
+    private func computeKhatmStatsIfNeeded(force: Bool = false) {
+        // Simple signature: total completed ayahs across whole Quran
+        let totalCompleted = settings.khatmTotalCompleted(in: quranData.quran)
+        guard force || totalCompleted != khatmLastTotalSignature else { return }
+        khatmLastTotalSignature = totalCompleted
+
+        var pageMap: [Int: (completed: Int, total: Int)] = [:]
+        var juzMap: [Int: (completed: Int, total: Int)] = [:]
+
+        for surah in quranData.quran {
+            for ayah in surah.ayahs {
+                guard let page = ayah.page else { continue }
+                let juz = ayah.juz ?? -1
+
+                pageMap[page, default: (0,0)].total += 1
+                juzMap[juz, default: (0,0)].total += 1
+
+                if settings.isKhatmAyahComplete(surah: surah.id, ayah: ayah.id) {
+                    pageMap[page, default: (0,0)].completed += 1
+                    juzMap[juz, default: (0,0)].completed += 1
+                }
+            }
+        }
+
+        khatmPageStats = pageMap
+        khatmJuzStats = juzMap
     }
 
     private struct SurahCountQuery {
@@ -799,7 +802,11 @@ struct QuranView: View {
     private var sortModeMenu: some View {
         #if os(iOS)
         Menu {
-            ForEach(Settings.QuranSortMode.allCases) { mode in
+            ForEach(Settings.QuranSortMode.allCases.filter { mode in
+                // Hide Khatm sort when displaying a non-Hafs qiraah
+                if mode == .khatm && !settings.isHafsDisplay { return false }
+                return true
+            }) { mode in
                 Button {
                     settings.hapticFeedback()
                     withAnimation(.easeInOut(duration: 0.22)) {
@@ -1151,14 +1158,22 @@ struct QuranView: View {
     }
 
     private func orderedQuranSurahs(showsRevelationOrder: Bool) -> [Surah] {
-        let surahs = showsRevelationOrder
-            ? quranData.quran.sorted {
+        let surahs: [Surah]
+        if showsRevelationOrder {
+            surahs = quranData.quran.sorted {
                 let left = $0.revelationOrder ?? Int.max
                 let right = $1.revelationOrder ?? Int.max
                 if left == right { return $0.id < $1.id }
                 return left < right
             }
-            : quranData.quran
+        } else if settings.quranSortMode == .ayahs {
+            surahs = quranData.quran.sorted {
+                if $0.numberOfAyahs == $1.numberOfAyahs { return $0.id < $1.id }
+                return $0.numberOfAyahs < $1.numberOfAyahs
+            }
+        } else {
+            surahs = quranData.quran
+        }
 
         return usesDescendingQuranSort ? Array(surahs.reversed()) : surahs
     }
@@ -1309,37 +1324,78 @@ struct QuranView: View {
                     } label: {
                         Label("Reset Khatm Progress", systemImage: "arrow.counterclockwise")
                     }
-                }
-            }
-            .padding(.vertical, 4)
-        } header: {
-            Text("KHATM PROGRESS")
-        }
-    }
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("\(khatmPercent)% completed")
+                                            .font(.headline)
+                                            .foregroundStyle(settings.accentColor.color)
 
-    @ViewBuilder
-    private func surahBrowseSection(context: SearchDisplayContext, showsRevelationOrder: Bool) -> some View {
-        let browsedSurahs = orderedQuranSurahs(showsRevelationOrder: showsRevelationOrder)
+                                        ProgressView(value: Double(khatmCompletedAyahs), total: Double(max(khatmTotalAyahs, 1)))
+                                            .tint(settings.accentColor.color)
+                                    }
 
-        Section(header: surahBrowseHeader(showsRevelationOrder: showsRevelationOrder)) { }
-            .padding(.bottom, -12)
+                                    Spacer()
 
-        ForEach(browsedSurahs, id: \.id) { surah in
-            #if os(iOS)
-            Section {
-                surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
-            }
-            #else
-            surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
-            #endif
-        }
-    }
+                                    // Juz / Pages / Ayahs metrics
+                                    VStack(alignment: .trailing, spacing: 6) {
+                                        let totalJuz = quranData.juzSections.count
+                                        let completedJuz = quranData.juzSections.reduce(0) { acc, js in
+                                            let allComplete = js.surahIDs.allSatisfy { id in
+                                                guard let s = quranData.surah(id) else { return false }
+                                                return settings.khatmCompletedCount(for: s) >= s.numberOfAyahs
+                                            }
+                                            return acc + (allComplete ? 1 : 0)
+                                        }
+                                        let juzPercent = totalJuz > 0 ? Int((Double(completedJuz) / Double(totalJuz) * 100).rounded()) : 0
 
-    @ViewBuilder
+                                        let totalPages = quranData.pageSections.count
+                                        let completedPages = quranData.pageSections.reduce(0) { acc, ps in
+                                            let allComplete = ps.surahIDs.allSatisfy { id in
+                                                guard let s = quranData.surah(id) else { return false }
+                                                return settings.khatmCompletedCount(for: s) >= s.numberOfAyahs
+                                            }
+                                            return acc + (allComplete ? 1 : 0)
+                                        }
+                                        let pagePercent = totalPages > 0 ? Int((Double(completedPages) / Double(totalPages) * 100).rounded()) : 0
+
+                                        Text("Juz: \(completedJuz)/\(totalJuz) (\(juzPercent)%)")
+                                            .font(.subheadline.monospacedDigit())
+                                        Text("Pages: \(completedPages)/\(totalPages) (\(pagePercent)%)")
+                                            .font(.subheadline.monospacedDigit())
+                                        Text("Ayahs: \(khatmCompletedAyahs)/\(khatmTotalAyahs) (\(khatmPercent)%)")
+                                            .font(.subheadline.monospacedDigit())
+                                    }
+                                }
+
+                                HStack(spacing: 12) {
+                                    Button("Extra") {
+                                        settings.hapticFeedback()
+                                        showKhatmExtraSheet = true
+                                    }
+
+                                    Spacer()
+
+                                    if khatmEditMode {
+                                        Button(role: .destructive) {
+                                            settings.hapticFeedback()
+                                            withAnimation {
+                                                settings.resetAllKhatmProgress()
+                                            }
+                                        } label: {
+                                            Label("Reset Khatm Progress", systemImage: "arrow.counterclockwise")
+                                        }
+                                    }
+                                }
     private func surahBrowseHeader(showsRevelationOrder: Bool) -> some View {
         if showsRevelationOrder {
             SurahsHeader(text: "REVELATION ORDER")
         } else {
+                        .sheet(isPresented: $showKhatmExtraSheet) {
+                            KhatmExtraSheet()
+                                .environmentObject(settings)
+                                .environmentObject(quranData)
+                        }
             SurahsHeader()
         }
     }

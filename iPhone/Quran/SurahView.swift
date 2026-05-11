@@ -23,6 +23,7 @@ struct SurahView: View {
     @State private var showingSettingsSheet = false
     @State private var showFloatingHeader = false
     @State private var showAlert = false
+    @State private var showKhatmExtraSheet = false
     @State private var showCustomRangeSheet = false
     @State private var showReciterPickerSheet = false
     @State private var showSurahPickerSheet = false
@@ -30,6 +31,14 @@ struct SurahView: View {
     @State private var selectedSurahNavigation: Int? = nil
     @State private var dividerInfo: DividerInfo? = nil
     @State private var surahInfoDialog: SurahInfoDialog? = nil
+    @State private var khatmOverviewCompletedAyahs: Int = 0
+    @State private var khatmOverviewTotalAyahs: Int = 0
+    @State private var khatmOverviewPercent: Int = 0
+    @State private var khatmOverviewCompletedJuz: Int = 0
+    @State private var khatmOverviewTotalJuz: Int = 0
+    @State private var khatmOverviewCompletedPages: Int = 0
+    @State private var khatmOverviewTotalPages: Int = 0
+    @State private var khatmOverviewLastSignature: Int = 0
     let surah: Surah
     var ayah: Int? = nil
     var onSelectSurah: ((Int) -> Void)? = nil
@@ -48,6 +57,53 @@ struct SurahView: View {
             self.ayahByID = ayahByID
             self.overlayDividerByAyahID = overlayDividerByAyahID
         }
+    }
+
+    private func computeKhatmOverviewIfNeeded(force: Bool = false) {
+        let totalCompleted = settings.khatmTotalCompleted(in: quranData.quran)
+        guard force || totalCompleted != khatmOverviewLastSignature else { return }
+        khatmOverviewLastSignature = totalCompleted
+
+        var pageMap: [Int: (completed: Int, total: Int)] = [:]
+        var juzSet = Set<Int>()
+        var totalAyahs = 0
+        var completedAyahs = 0
+
+        for s in quranData.quran {
+            for ayah in s.ayahs {
+                totalAyahs += 1
+                let isComplete = settings.isKhatmAyahComplete(surah: s.id, ayah: ayah.id)
+                if isComplete { completedAyahs += 1 }
+
+                if let page = ayah.page {
+                    pageMap[page, default: (0,0)].total += 1
+                    if isComplete { pageMap[page, default: (0,0)].completed += 1 }
+                }
+
+                if let juz = ayah.juz {
+                    juzSet.insert(juz)
+                }
+            }
+        }
+
+        let completedPages = pageMap.values.reduce(0) { $0 + ($1.completed == $1.total ? 1 : 0) }
+
+        khatmOverviewTotalAyahs = totalAyahs
+        khatmOverviewCompletedAyahs = completedAyahs
+        khatmOverviewPercent = totalAyahs > 0 ? Int((Double(completedAyahs) / Double(totalAyahs) * 100).rounded()) : 0
+        khatmOverviewTotalPages = pageMap.keys.count
+        khatmOverviewCompletedPages = completedPages
+        khatmOverviewTotalJuz = juzSet.count
+
+        var completedJuzCount = 0
+        for js in quranData.juzSections {
+            let allComplete = js.surahIDs.allSatisfy { id in
+                guard let s = quranData.surah(id) else { return false }
+                return settings.khatmCompletedCount(for: s) >= s.numberOfAyahs
+            }
+            if allComplete { completedJuzCount += 1 }
+        }
+        khatmOverviewCompletedJuz = completedJuzCount
     }
 
     private final class PreparedSurahSearchCache {
@@ -1315,9 +1371,31 @@ struct SurahView: View {
                         .tint(settings.accentColor.color)
                 }
                 .padding(.vertical, 4)
+                
+                // Overall khatm summary (same metrics as Surahs list)
+                VStack(alignment: .leading, spacing: 8) {
+                    Color.clear.frame(height: 0).onAppear { computeKhatmOverviewIfNeeded(force: false) }
+
+                    HStack {
+                        Text("Overall: \(khatmOverviewPercent)% completed")
+                            .font(.subheadline)
+                            .foregroundStyle(settings.accentColor.color)
+                        Spacer()
+                        Button("Extra") {
+                            settings.hapticFeedback()
+                            showKhatmExtraSheet = true
+                        }
+                    }
+                }
             } header: {
                 Text("KHATM PROGRESS")
             }
+            .sheet(isPresented: $showKhatmExtraSheet) {
+                KhatmExtraSheet()
+                    .environmentObject(settings)
+                    .environmentObject(quranData)
+            }
+            .onReceive(settings.objectWillChange) { _ in computeKhatmOverviewIfNeeded(force: false) }
         }
     }
 

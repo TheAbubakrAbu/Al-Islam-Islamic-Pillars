@@ -353,28 +353,33 @@ private struct CurrentLocationRow: View {
         if let currentLoc = settings.currentLocation {
             let currentCity = currentLoc.city
 
-            HStack(spacing: 4) {
-                Image(systemName: "location.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 18, height: 18)
-                    .foregroundColor(settings.accentColor.color)
-                    .padding(.trailing, 8)
+            NavigationLink(destination: PrayerTimesMapView()) {
+                HStack(spacing: 4) {
+                    Image(systemName: "location.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.trailing, 8)
 
-                Text(currentCity)
-                    .font(.subheadline)
-                    .lineLimit(nil)
-                    .contextMenu {
-                        Text("City Actions")
-                            .foregroundStyle(.secondary)
+                    Text(currentCity)
+                        .font(.subheadline)
+                        .lineLimit(nil)
+                        .contextMenu {
+                            Text("City Actions")
+                                .foregroundStyle(.secondary)
 
-                        Button {
-                            settings.hapticFeedback()
-                            UIPasteboard.general.string = currentCity
-                        } label: {
-                            Label("Copy City Name", systemImage: "doc.on.doc")
+                            Button {
+                                settings.hapticFeedback()
+                                UIPasteboard.general.string = currentCity
+                            } label: {
+                                Label("Copy City Name", systemImage: "doc.on.doc")
+                            }
                         }
-                    }
+                }
+                .padding(12)
+                .background(.ultraThinMaterial)
+                .cornerRadius(8)
             }
         } else {
             HStack(spacing: 0) {

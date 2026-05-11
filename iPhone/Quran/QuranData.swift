@@ -930,7 +930,6 @@ final class TajweedStore {
 
         if settings.isTajweedCategoryVisible(.maddSukoon),
            let finalCarrier = finalAaridCarrier,
-           !hasMiniatureMaddMark(clusters[finalCarrier]),
            !strongerMaddRuleCoversCluster(index: finalCarrier, ops: ops, clusters: clusters) {
             appendAaridMaddPaintOps(
                 clusters: clusters,
@@ -1080,25 +1079,33 @@ final class TajweedStore {
 
     private func appendTafkhimPaintOps(cluster: CharacterClusterInfo, into ops: inout [PaintOp]) {
         let tanweenScalars: Set<UInt32> = [Self.fathatayn.value, Self.dammatayn.value, Self.kasratayn.value]
+        
+        // If cluster has tanween, don't color tashkeel heaviness at all
+        for scalar in cluster.text.unicodeScalars {
+            if tanweenScalars.contains(scalar.value) {
+                return // Skip tafkhim coloring if tanween is present
+            }
+        }
+        
+        // Color only the main Arabic letter, excluding all tashkeel marks
         var offset = cluster.utf16Range.lowerBound
-        var paintedAny = false
-
         for scalar in cluster.text.unicodeScalars {
             let length = utf16Length(of: scalar)
-            defer { offset += length }
-            if tanweenScalars.contains(scalar.value) { continue }
-            ops.append(
-                PaintOp(
-                    range: NSRange(location: offset, length: length),
-                    priority: PaintPriority.tafkhim,
-                    category: .tafkhim
+            let v = scalar.value
+            
+            // Color only Arabic letters, not any diacritics
+            if (0x0621...0x063A).contains(v) || (0x0641...0x064A).contains(v) || v == 0x0671 {
+                ops.append(
+                    PaintOp(
+                        range: NSRange(location: offset, length: length),
+                        priority: PaintPriority.tafkhim,
+                        category: .tafkhim
+                    )
                 )
-            )
-            paintedAny = true
-        }
-
-        if !paintedAny {
-            ops.append(PaintOp(range: nsRange(for: cluster), priority: PaintPriority.tafkhim, category: .tafkhim))
+                return // Only color the first letter, keep it contained to one letter
+            }
+            
+            offset += length
         }
     }
 
@@ -1185,20 +1192,70 @@ final class TajweedStore {
     /// UTF-16 range for qalqalah coloring: letter cluster plus a following standalone U+06E1 grapheme when the font splits them.
     private func expandedQalqalahNSRange(clusters: [CharacterClusterInfo], index i: Int) -> NSRange {
         let cl = clusters[i]
-        let lo = cl.utf16Range.lowerBound
-        var hi = cl.utf16Range.upperBound
-        if !hasUthmaniSukoon(cl), i + 1 < clusters.count, clusterIsOnlyUthmaniSukoonMark(clusters[i + 1]) {
-            hi = clusters[i + 1].utf16Range.upperBound
+        var ranges: [NSRange] = []
+        
+        // If shaddah exists, color only the shaddah as per user requirement
+        if let shaddahRange = scalarRange(in: cl, scalar: Self.shadda) {
+            return shaddahRange
         }
-        return NSRange(location: lo, length: hi - lo)
+        
+        // Otherwise, color the letter with sukoon (or the sukoon mark itself)
+        let lo = cl.utf16Range.lowerBound
+        var offset = lo
+        var foundLetter = false
+        
+        for scalar in cl.text.unicodeScalars {
+            let length = utf16Length(of: scalar)
+            let v = scalar.value
+            
+            // Include Arabic letter or sukoon/uthmani sukoon marks
+            if !foundLetter && ((0x0621...0x063A).contains(v) || (0x0641...0x064A).contains(v) || v == 0x0671) {
+                ranges.append(NSRange(location: offset, length: length))
+                foundLetter = true
+            } else if foundLetter && (v == Self.sukoon.value || v == Self.sukoonUthmani.value) {
+                ranges.append(NSRange(location: offset, length: length))
+            }
+            
+            offset += length
+        }
+        
+        // Return the combined range
+        if !ranges.isEmpty {
+            let minLo = ranges.map { $0.location }.min() ?? lo
+            let maxHi = ranges.map { $0.location + $0.length }.max() ?? lo + 1
+            return NSRange(location: minLo, length: maxHi - minLo)
+        }
+        
+        return NSRange(location: lo, length: max(1, offset - lo))
     }
 
-    /// Only the qalqalah letter itself, used for ayah-final letters so tashkeel does not change color.
+    /// Only the qalqalah letter itself, excluding tashkeel, unless it's shaddah or sukoon
     private func qalqalahLetterNSRange(clusters: [CharacterClusterInfo], index i: Int) -> NSRange {
         let cl = clusters[i]
+        
+        // If shaddah exists, color only the shaddah as per user requirement
+        if let shaddahRange = scalarRange(in: cl, scalar: Self.shadda) {
+            return shaddahRange
+        }
+        
+        // Otherwise, color only the Arabic letter, excluding all other tashkeel
         let lo = cl.utf16Range.lowerBound
-        let len = String(cl.base ?? Character(" ")).utf16.count
-        return NSRange(location: lo, length: max(1, len))
+        var offset = lo
+        
+        for scalar in cl.text.unicodeScalars {
+            let length = utf16Length(of: scalar)
+            let v = scalar.value
+            
+            // Return the range of the first Arabic letter found
+            if (0x0621...0x063A).contains(v) || (0x0641...0x064A).contains(v) || v == 0x0671 {
+                return NSRange(location: offset, length: length)
+            }
+            
+            offset += length
+        }
+        
+        // Fallback if no letter found
+        return NSRange(location: lo, length: 1)
     }
 
     /// Last qalqalah letter of the ayah (waqf implies sukun), skipping trailing space and ۝.
@@ -1280,12 +1337,43 @@ final class TajweedStore {
             guard isAaridMaddCarrier(clusters: clusters, index: index, wordStart: finalWord.lowerBound) else { continue }
             candidate = index
         }
+        
+        // Ensure the candidate is actually the last vowel in the word
+        // by checking that no letter after it has a vowel mark
+        guard let candidateIndex = candidate else { return nil }
+        for checkIndex in (candidateIndex + 1)..<finalWord.upperBound {
+            let checkCluster = clusters[checkIndex]
+            if hasAnyTashkeel(checkCluster) {
+                // There's a tashkeel (vowel) after our candidate, so candidate is not the last vowel
+                return nil
+            }
+        }
+        
         return candidate
     }
 
     private func isAaridMaddCarrier(clusters: [CharacterClusterInfo], index: Int, wordStart: Int) -> Bool {
         guard clusters.indices.contains(index), index > wordStart else { return false }
         let cluster = clusters[index]
+        
+        // Check for clusters with miniature madd marks (dagger alif, small waw, small yeh)
+        // These should also be recognized as madd arid carriers
+        if hasMiniatureMaddMark(cluster) {
+            guard let base = cluster.primaryArabicLetter else { return false }
+            // Miniature marks should be on actual letter bases
+            if base == "ا" || base == "و" || base == "ي" {
+                // Verify previous letter has appropriate vowel
+                if index > 0 {
+                    let previous = clusters[index - 1]
+                    // For miniature marks, check if previous has any vowel or is appropriate carrier
+                    if hasFathaFamily(previous) || hasDammaFamily(previous) || hasKasraFamily(previous) {
+                        return !previous.contains(Self.fathatayn)
+                    }
+                }
+            }
+            return false
+        }
+        
         if cluster.primaryArabicLetter == "ى" {
             if isAlifMaqsurahWithDaggerAlif(cluster) { return false }
             guard !hasStandardSukoon(cluster), !cluster.contains(Self.hamzatWasl), !cluster.contains(Self.smallHighUprightRectangularZero) else {
@@ -1497,7 +1585,7 @@ final class TajweedStore {
     }
 
     private func isBareSilentException(_ base: Character, cluster: CharacterClusterInfo) -> Bool {
-        if base == "ن" || base == "م" || base == "و" || base == "ا" {
+        if base == "ن" || base == "م" || base == "و" || base == "ا" || base == "ى" {
             return true
         }
         if isYaBase(cluster) {
@@ -2247,6 +2335,11 @@ final class TajweedStore {
         // if base == "ل", isFirstLamOfAllahWord(clusters: clusters, index: index) {
         //     return shouldUseHeavyAllahLam(clusters: clusters, index: index)
         // }
+
+        // Alif maqsuurah (ى) should NOT inherit heaviness from previous letters
+        if base == "ى" {
+            return false
+        }
 
         if TajweedRules.alifFollowerLetters.contains(base), index > 0 {
             return isHeavyCarrier(clusters: clusters, index: index - 1)

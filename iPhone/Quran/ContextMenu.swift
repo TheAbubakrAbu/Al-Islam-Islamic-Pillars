@@ -918,7 +918,8 @@ struct AyahEnglishComparisonSheet: View {
                             comparisonRow(
                                 title: edition.name,
                                 text: inAppTranslationText(for: edition.id, ayah: ayah),
-                                editionID: edition.id
+                                editionID: edition.id,
+                                isDownloaded: true
                             )
                         }
 
@@ -984,7 +985,7 @@ struct AyahEnglishComparisonSheet: View {
         }
     }
 
-    private func comparisonRow(title: String?, text: String, editionID: String? = nil, isArabic: Bool = false) -> some View {
+    private func comparisonRow(title: String?, text: String, editionID: String? = nil, isArabic: Bool = false, isDownloaded: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if let title, !title.isEmpty {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -998,7 +999,7 @@ struct AyahEnglishComparisonSheet: View {
 
                     Spacer()
 
-                    if let editionID {
+                    if let editionID, !isDownloaded {
                         Button {
                             settings.hapticFeedback()
                             settings.toggleEnglishTranslationFavorite(id: editionID)
