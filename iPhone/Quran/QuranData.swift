@@ -1202,13 +1202,13 @@ final class TajweedStore {
         return letterRange
     }
 
-    /// Only the qalqalah letter itself, excluding tashkeel, unless it's shaddah or sukoon
+    /// Only the qalqalah letter itself, excluding tashkeel, unless it's shaddah (letter + shaddah together)
     private func qalqalahLetterNSRange(clusters: [CharacterClusterInfo], index i: Int) -> NSRange {
         let cl = clusters[i]
-        
-        // If shaddah exists, color only the shaddah as per user requirement
-        if let shaddahRange = scalarRange(in: cl, scalar: Self.shadda) {
-            return shaddahRange
+
+        // If shaddah exists, color letter + shaddah together
+        if scalarRange(in: cl, scalar: Self.shadda) != nil {
+            return expandedQalqalahNSRange(clusters: clusters, index: i)
         }
         
         // Otherwise, color only the Arabic letter, excluding all other tashkeel

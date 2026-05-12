@@ -10,11 +10,11 @@ extension Settings {
 
     enum QuranSortMode: String, CaseIterable, Identifiable {
         case surah
-        case ayahs
         case juz
-        case page
         case revelation
         case khatm
+        case page
+        case ayahs
         case sajdah
         case muqattaat
 
@@ -41,8 +41,8 @@ extension Settings {
             case .page: return "doc.text"
             case .revelation: return "sparkles"
             case .khatm: return "checkmark.seal"
-            case .sajdah: return "figure.mind.and.body"
-            case .muqattaat: return "textformat.abc"
+            case .sajdah: return "moon.stars.fill"
+            case .muqattaat: return "character.book.closed.fill.ar"
             }
         }
     }

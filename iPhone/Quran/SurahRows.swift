@@ -184,6 +184,7 @@ struct SurahRow: View, Equatable {
                 khatmProgressLine
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .lineLimit(1)
 
             HStack {
                 HighlightedSnippet(

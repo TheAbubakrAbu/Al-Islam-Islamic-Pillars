@@ -244,7 +244,6 @@ struct QuranView: View {
     
     @State private var path: [QuranRoute] = []
     @State private var selectedRoute: QuranRoute?
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     func push(surahID: Int, ayahID: Int? = nil) {
         #if os(iOS)
@@ -431,14 +430,15 @@ struct QuranView: View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *), usesColumnNavigation {
-                NavigationSplitView(columnVisibility: $columnVisibility) {
+                NavigationSplitView {
                     content
                 } detail: {
                     quranSelectedDetail
                 }
                 .onChange(of: scenePhase) { phase in
-                    if phase == .active {
-                        columnVisibility = .all
+                    if phase == .active, let current = selectedRoute {
+                        selectedRoute = nil
+                        selectedRoute = current
                     }
                 }
             } else if #available(iOS 16.0, *) {
@@ -1328,8 +1328,6 @@ struct QuranView: View {
     private func khatmProgressSection() -> some View {
         Section {
             VStack(alignment: .leading, spacing: 10) {
-                Color.clear.frame(height: 0).onAppear { computeKhatmStatsIfNeeded(force: false) }
-
                 HStack(alignment: .firstTextBaseline) {
                     Text("\(khatmPercent)% completed")
                         .font(.headline)
@@ -1400,11 +1398,13 @@ struct QuranView: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
         } header: {
             Text("KHATM PROGRESS")
         }
         .onReceive(settings.objectWillChange) { _ in
+            computeKhatmStatsIfNeeded(force: false)
+        }
+        .onAppear {
             computeKhatmStatsIfNeeded(force: false)
         }
     }
@@ -1412,9 +1412,44 @@ struct QuranView: View {
     @ViewBuilder
     private func khatmExtraDetailsSection() -> some View {
         if showKhatmExtraDetails {
+            let totals = khatmExtraTotals
+            let isLoading = khatmExtraLoading
+            
             Section {
-                KhatmExtraSheet(totals: khatmExtraTotals, isLoading: khatmExtraLoading)
-                    .environmentObject(settings)
+                VStack {
+                    if isLoading {
+                        HStack {
+                            ProgressView()
+                            Spacer()
+                            Text("Calculating…")
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if let totals {
+                        HStack {
+                            Text("Words: \(totals.words)/\(totals.totalWords)")
+                            
+                            Spacer()
+                            
+                            Text("\(Int((Double(totals.words)/Double(max(totals.totalWords,1))*100)).description)%")
+                                .monospacedDigit()
+                        }
+                        
+                        HStack {
+                            Text("Letters: \(totals.letters)/\(totals.totalLetters)")
+                            
+                            Spacer()
+                            
+                            Text("\(Int((Double(totals.letters)/Double(max(totals.totalLetters,1))*100)).description)%")
+                                .monospacedDigit()
+                        }
+                    } else {
+                        HStack {
+                            Text("No data")
+                            Spacer()
+                        }
+                    }
+                }
+                .font(.caption)
             }
         }
     }

@@ -15,8 +15,8 @@ struct PrayerList: View {
     enum PrayerDisplayMode: String, CaseIterable, Identifiable {
         case list = "Prayer List"
         case grid = "Prayer Grid"
+        case tiles = "Prayer Tiles"
         case split = "Prayer Split"
-        case oneLine = "Prayer One Line"
 
         var id: String { rawValue }
 
@@ -24,8 +24,8 @@ struct PrayerList: View {
             switch self {
             case .list: return "LIST"
             case .grid: return "GRID"
+            case .tiles: return "TILES"
             case .split: return "SPLIT"
-            case .oneLine: return "ONE LINE"
             }
         }
     }
@@ -125,8 +125,8 @@ struct PrayerList: View {
             gridContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
         case .split:
             splitContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
-        case .oneLine:
-            oneLineContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
+        case .tiles:
+            tilesContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
         }
     }
 
@@ -223,44 +223,53 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func oneLineContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
-        ForEach(prayers) { prayer in
-            let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
-            let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
+    private func tilesContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+        let columns = Array(
+            repeating: GridItem(.flexible(), spacing: 10),
+            count: settings.travelingMode ? 2 : 3
+        )
 
-            HStack(spacing: 0) {
-                Image(systemName: prayer.image)
-                    .font(.subheadline)
-                    .foregroundColor(color)
-                    .frame(width: 26, alignment: .center)
-                    .padding(.trailing, 8)
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(prayers) { prayer in
+                let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
+                let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
 
-                Text(prayer.nameTransliteration)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(color)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top) {
+                        Image(systemName: prayer.image)
+                            .font(.subheadline)
+                            .foregroundColor(color)
 
-                Spacer()
+                        Spacer()
 
-                Text(prayer.time, style: .time)
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundColor(color)
+                        #if os(iOS)
+                        if !isComparisonBaseline {
+                            prayerBell(for: prayer, rowColor: color)
+                                .padding(.leading, -6)
+                        }
+                        #endif
+                    }
 
-                #if os(iOS)
-                if !isComparisonBaseline {
-                    prayerBell(for: prayer, rowColor: color)
+                    Text(prayer.nameTransliteration)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(color)
+
+                    Text(prayer.time, style: .time)
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundColor(color)
                 }
-                #endif
+                .padding(.horizontal, 10)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .conditionalGlassEffect(
+                    rectangle: true,
+                    useColor: isCurrent ? 0.22 : 0.12,
+                    customTint: isCurrent ? settings.accentColor.color : nil
+                )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isCurrent ? settings.accentColor.color.opacity(0.18) : Color.clear)
-            )
-            .conditionalGlassEffect(rectangle: true, useColor: 0.12)
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
         .onChange(of: settings.travelingMode) { _ in
             withAnimation { fullPrayers = false }
         }

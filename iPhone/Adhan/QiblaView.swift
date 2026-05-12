@@ -215,8 +215,10 @@ struct QiblaView: View {
             impact.prepare()
         }
 
-        lastHapticTime = now
-        lastAngle = newAngle
+        withAnimation {
+            lastHapticTime = now
+            lastAngle = newAngle
+        }
     }
     #endif
 }

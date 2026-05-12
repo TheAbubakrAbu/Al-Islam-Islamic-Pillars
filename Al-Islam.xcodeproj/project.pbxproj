@@ -166,8 +166,6 @@
 		72E13AF12E90DC8D000933B0 /* GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E13AEF2E90DC8D000933B0 /* GlassEffect.swift */; };
 		72E48E4C2FAF2771000F5D9C /* Qiraat.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 723CE3022FAF0BB900E83F5A /* Qiraat.ttf */; };
 		72E48E4D2FAF2771000F5D9C /* Qiraat.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 723CE3022FAF0BB900E83F5A /* Qiraat.ttf */; };
-		72E6F1DF2FB275B9006376FB /* KhatmExtraSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E6F1DE2FB275B9006376FB /* KhatmExtraSheet.swift */; };
-		72E6F1E02FB275B9006376FB /* KhatmExtraSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E6F1DE2FB275B9006376FB /* KhatmExtraSheet.swift */; };
 		72E6F1E22FB275DD006376FB /* PrayerTimesMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E6F1E12FB275DD006376FB /* PrayerTimesMapView.swift */; };
 		72E6F1E32FB275DD006376FB /* PrayerTimesMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E6F1E12FB275DD006376FB /* PrayerTimesMapView.swift */; };
 		72E832A62F6F52BA0013428B /* AdhkarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E832992F6F52BA0013428B /* AdhkarView.swift */; };
@@ -365,7 +363,6 @@
 		72D0BCC82D7AE45300B7E4F5 /* PrayersGridWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayersGridWidget.swift; sourceTree = "<group>"; };
 		72DC16A92D7B0819000760BC /* Entitlements-Widget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Entitlements-Widget.entitlements"; sourceTree = "<group>"; };
 		72E13AEF2E90DC8D000933B0 /* GlassEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassEffect.swift; sourceTree = "<group>"; };
-		72E6F1DE2FB275B9006376FB /* KhatmExtraSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KhatmExtraSheet.swift; sourceTree = "<group>"; };
 		72E6F1E12FB275DD006376FB /* PrayerTimesMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrayerTimesMapView.swift; sourceTree = "<group>"; };
 		72E832992F6F52BA0013428B /* AdhkarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhkarView.swift; sourceTree = "<group>"; };
 		72E8329B2F6F52BA0013428B /* DateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateView.swift; sourceTree = "<group>"; };
@@ -587,7 +584,6 @@
 				720CCE082E394375002DD82E /* AyahRow.swift */,
 				7260D5F22F7CB0D80066FBA9 /* TajweedLegendView.swift */,
 				720CCE0C2E394375002DD82E /* ShareAyah.swift */,
-				72E6F1DE2FB275B9006376FB /* KhatmExtraSheet.swift */,
 				723873432F37342E00D3A8CD /* PlayCustomRangeSheet.swift */,
 				720CCE0A2E394375002DD82E /* QuranPlayer.swift */,
 				720CCE0B2E394375002DD82E /* NowPlayingView.swift */,
@@ -954,7 +950,6 @@
 			files = (
 				72574CB52E49E3F000BFF138 /* QuranShortcuts.swift in Sources */,
 				72574CC72E49EDDE00BFF138 /* AdhanShortcuts.swift in Sources */,
-				72E6F1DF2FB275B9006376FB /* KhatmExtraSheet.swift in Sources */,
 				7260F9422A8715D600E8FF87 /* PrayerList.swift in Sources */,
 				729115412AF817CF00A4EB2B /* IslamView.swift in Sources */,
 				7260F93D2A8715D600E8FF87 /* Settings.swift in Sources */,
@@ -1018,7 +1013,6 @@
 			files = (
 				728D75A62F79C51C00502B8A /* ArabicLetters.swift in Sources */,
 				728D75B82F79CA4E00502B8A /* MapView.swift in Sources */,
-				72E6F1E02FB275B9006376FB /* KhatmExtraSheet.swift in Sources */,
 				720CCE272E39439E002DD82E /* Globals.swift in Sources */,
 				7260F9622A87164300E8FF87 /* PrayerCountdown.swift in Sources */,
 				728D75B52F79C71E00502B8A /* PlayCustomRangeSheet.swift in Sources */,
