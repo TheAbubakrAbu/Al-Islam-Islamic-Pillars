@@ -25,7 +25,7 @@ extension Settings {
             case .surah: return "Surah"
             case .ayahs: return "Ayahs"
             case .juz: return "Juz"
-            case .page: return "Page"
+            case .page: return "Pages"
             case .revelation: return "Revelation"
             case .khatm: return "Khatm"
             case .sajdah: return "Sajdahs"
