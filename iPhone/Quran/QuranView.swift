@@ -5,6 +5,7 @@ struct QuranView: View {
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var quranPlayer: QuranPlayer
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var searchText = ""
     @State private var isQuranSearchFocused = false
@@ -243,6 +244,7 @@ struct QuranView: View {
     
     @State private var path: [QuranRoute] = []
     @State private var selectedRoute: QuranRoute?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     func push(surahID: Int, ayahID: Int? = nil) {
         #if os(iOS)
@@ -429,10 +431,15 @@ struct QuranView: View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *), usesColumnNavigation {
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: $columnVisibility) {
                     content
                 } detail: {
                     quranSelectedDetail
+                }
+                .onChange(of: scenePhase) { phase in
+                    if phase == .active {
+                        columnVisibility = .all
+                    }
                 }
             } else if #available(iOS 16.0, *) {
                 pathNavigation
@@ -1171,6 +1178,13 @@ struct QuranView: View {
                 if $0.numberOfAyahs == $1.numberOfAyahs { return $0.id < $1.id }
                 return $0.numberOfAyahs < $1.numberOfAyahs
             }
+        } else if settings.quranSortMode == .page {
+            surahs = quranData.quran.sorted {
+                let l = $0.numberOfPages ?? 0
+                let r = $1.numberOfPages ?? 0
+                if l == r { return $0.id < $1.id }
+                return l < r
+            }
         } else {
             surahs = quranData.quran
         }
@@ -1185,7 +1199,18 @@ struct QuranView: View {
     @ViewBuilder
     private func surahContentSections(context: SearchDisplayContext) -> some View {
         // Full browse list only when browsing. Never stack it under explicit page/juz queries.
-        if context.explicitPageOrJuzMode && context.isSearching {
+        if quranData.quran.isEmpty {
+            Section {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("Loading…")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
+            }
+        } else if context.explicitPageOrJuzMode && context.isSearching {
             EmptyView()
         } else if context.isSearching {
             if settings.searchForSurahs {
@@ -1200,7 +1225,7 @@ struct QuranView: View {
             case .juz:
                 juzSections(context: context)
             case .page:
-                pageSections(context: context)
+                surahBrowseSection(context: context, showsRevelationOrder: false)
             case .revelation:
                 surahBrowseSection(context: context, showsRevelationOrder: true)
             case .khatm:
@@ -1872,30 +1897,43 @@ struct QuranView: View {
     private func ayahSearchSection(context: SearchDisplayContext) -> some View {
         let bestHits = bestAyahHitsForCurrentQuery()
 
-        if !bestHits.isEmpty {
-            Section(header: bestAyahHeader(count: bestHits.count)) {
-                ForEach(bestHits) { hit in
-                    ayahHitRow(hit: hit, context: context)
-                }
-            }
-        }
-
-        Section(header: ayahSearchHeader(context: context)) {
-            ayahExactMatchRows(context: context)
-        }
-        
-        ForEach(verseHitsGroupedBySurah, id: \.surahId) { group in
+        if !quranData.isVerseSearchReady {
             Section {
-                ForEach(group.hits) { hit in
-                    ayahHitRow(hit: hit, context: context)
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("Preparing ayah search…")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-            } header: {
-                surahSearchSectionHeader(surahId: group.surahId)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
-        }
-        
-        Section {
-            ayahLoadMoreControls(context: context)
+        } else {
+            if !bestHits.isEmpty {
+                Section(header: bestAyahHeader(count: bestHits.count)) {
+                    ForEach(bestHits) { hit in
+                        ayahHitRow(hit: hit, context: context)
+                    }
+                }
+            }
+
+            Section(header: ayahSearchHeader(context: context)) {
+                ayahExactMatchRows(context: context)
+            }
+
+            ForEach(verseHitsGroupedBySurah, id: \.surahId) { group in
+                Section {
+                    ForEach(group.hits) { hit in
+                        ayahHitRow(hit: hit, context: context)
+                    }
+                } header: {
+                    surahSearchSectionHeader(surahId: group.surahId)
+                }
+            }
+
+            Section {
+                ayahLoadMoreControls(context: context)
+            }
         }
     }
 

@@ -648,8 +648,15 @@ struct ReciterListView: View {
         return false
     }
 
+    private var orderedUniqueReciters: [Reciter] {
+        var seen = Set<String>()
+        return allReciterSections
+            .flatMap(\.reciters)
+            .filter { seen.insert($0.id).inserted }
+    }
+
     private var favoriteReciters: [Reciter] {
-        reciters.filter { settings.isReciterFavorite(reciterID: $0.id) }
+        orderedUniqueReciters.filter { settings.isReciterFavorite(reciterID: $0.id) }
     }
 
     /// Matches row `.id(...)` for `ScrollViewReader.scrollTo`.
@@ -1482,6 +1489,7 @@ struct ReciterListView: View {
         ReciterRow(
             reciter: reciter,
             qiraah: qiraah,
+            isFavorite: settings.isReciterFavorite(reciterID: reciter.id),
             isSelected: isSelectedReciter(reciter),
             downloadState: downloadManager.stateSnapshot(for: reciter),
             accentColor: settings.accentColor,
@@ -1498,10 +1506,6 @@ struct ReciterListView: View {
             onScrollToReciter: {
                 settings.hapticFeedback()
                 requestScrollToReciter(reciter)
-            }
-            , onToggleFavorite: {
-                settings.hapticFeedback()
-                settings.toggleReciterFavorite(reciterID: reciter.id)
             }
         )
         .environmentObject(downloadManager)
@@ -1538,13 +1542,13 @@ private struct ReciterRow: View {
 
     let reciter: Reciter
     let qiraah: Bool
+    let isFavorite: Bool
     let isSelected: Bool
     let downloadState: ReciterDownloadManager.DownloadState
     let accentColor: AccentColor
     let searchQuery: String
     let onSelect: () -> Void
     let onScrollToReciter: () -> Void
-    let onToggleFavorite: () -> Void
 
     var body: some View {
         let hasDownloads = downloadState.completedSurahs > 0
@@ -1556,6 +1560,16 @@ private struct ReciterRow: View {
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 12) {
+                Image(systemName: isFavorite ? "star.fill" : "star")
+                    .font(.body.weight(.semibold))
+                    .foregroundColor(accentColor.color)
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            settings.toggleReciterFavorite(reciterID: reciter.id)
+                        }
+                    }
+
                 VStack(alignment: .leading, spacing: 4) {
                     HighlightedSnippet(
                         source: reciter.name,
@@ -1582,16 +1596,6 @@ private struct ReciterRow: View {
 
                 VStack(alignment: .trailing, spacing: 10) {
                     HStack(spacing: 8) {
-                        Button {
-                            settings.hapticFeedback()
-                            onToggleFavorite()
-                        } label: {
-                            Image(systemName: settings.isReciterFavorite(reciterID: reciter.id) ? "star.fill" : "star")
-                                .font(.body.weight(.semibold))
-                                .foregroundColor(settings.isReciterFavorite(reciterID: reciter.id) ? .yellow : .secondary)
-                        }
-                        .buttonStyle(.plain)
-
                         Image(systemName: "checkmark")
                             .font(.body.weight(.semibold))
                             .foregroundColor(accentColor.color)

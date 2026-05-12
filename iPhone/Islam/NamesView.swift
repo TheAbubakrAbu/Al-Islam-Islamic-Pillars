@@ -195,6 +195,7 @@ struct NamesView: View {
 
     @State private var searchText = ""
     @State private var expandedNameNumbers = Set<Int>()
+    @AppStorage("namesDisplayMode") private var namesDisplayMode: String = "list"
 
     private var cleanedSearch: String { Self.clean(searchText) }
 
@@ -304,6 +305,21 @@ struct NamesView: View {
                     .padding(.vertical, 6)
                     .conditionalGlassEffect()
             }
+
+            Button {
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    namesDisplayMode = namesDisplayMode == "grid" ? "list" : "grid"
+                }
+            } label: {
+                Image(systemName: namesDisplayMode == "grid" ? "list.bullet" : "square.grid.2x2")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(settings.accentColor.color)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .conditionalGlassEffect()
+            }
+            .padding(.vertical, -16)
         }
     }
 
@@ -311,21 +327,36 @@ struct NamesView: View {
     private func favoriteNamesSection(hasActiveSearch: Bool, proxy: ScrollViewProxy) -> some View {
         if !hasActiveSearch && !favoriteNames.isEmpty {
             Section(header: Text("FAVORITE NAMES")) {
-                ForEach(favoriteNames, id: \.id) { name in
-                    NameRow(
-                        name: name,
-                        firstFoundTarget: namesData.firstFoundTargetsByNameNumber[name.number],
-                        showDescription: settings.showDescription,
-                        isExpanded: expandedNameNumbers.contains(name.number),
-                        isFavorite: true,
-                        accentColor: settings.accentColor,
-                        useFontArabic: settings.useFontArabic,
-                        fontArabic: settings.fontArabic,
-                        searchQuery: searchText
-                    ) {
-                        handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
+                if namesDisplayMode == "grid" {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                        ForEach(favoriteNames, id: \.id) { name in
+                            NameGridTile(
+                                name: name,
+                                isFavorite: true,
+                                accentColor: settings.accentColor,
+                                useFontArabic: settings.useFontArabic,
+                                fontArabic: settings.fontArabic
+                            )
+                        }
                     }
-                    .id("favorite_name_\(name.number)")
+                    .padding(.horizontal, -8)
+                } else {
+                    ForEach(favoriteNames, id: \.id) { name in
+                        NameRow(
+                            name: name,
+                            firstFoundTarget: namesData.firstFoundTargetsByNameNumber[name.number],
+                            showDescription: settings.showDescription,
+                            isExpanded: expandedNameNumbers.contains(name.number),
+                            isFavorite: true,
+                            accentColor: settings.accentColor,
+                            useFontArabic: settings.useFontArabic,
+                            fontArabic: settings.fontArabic,
+                            searchQuery: searchText
+                        ) {
+                            handleNameTap(name: name, hasActiveSearch: hasActiveSearch, proxy: proxy)
+                        }
+                        .id("favorite_name_\(name.number)")
+                    }
                 }
             }
         }
@@ -333,6 +364,22 @@ struct NamesView: View {
 
     @ViewBuilder
     private func namesSections(filteredNames: [NameOfAllah], hasActiveSearch: Bool, proxy: ScrollViewProxy) -> some View {
+        if namesDisplayMode == "grid" {
+            Section {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                    ForEach(filteredNames, id: \.id) { name in
+                        NameGridTile(
+                            name: name,
+                            isFavorite: favoriteNameNumberSet.contains(name.number),
+                            accentColor: settings.accentColor,
+                            useFontArabic: settings.useFontArabic,
+                            fontArabic: settings.fontArabic
+                        )
+                    }
+                }
+                .padding(.horizontal, -8)
+            }
+        } else {
         ForEach(filteredNames, id: \.id) { name in
             Section {
                 NameRow(
@@ -350,6 +397,7 @@ struct NamesView: View {
                 }
             }
             .id("name_\(name.number)")
+        }
         }
     }
 
@@ -732,6 +780,49 @@ private struct VerseReflectionCard: View {
                 .fill(Color.secondary.opacity(0.1))
         )
         .padding(-4)
+    }
+}
+
+private struct NameGridTile: View {
+    @EnvironmentObject private var settings: Settings
+
+    let name: NameOfAllah
+    let isFavorite: Bool
+    let accentColor: AccentColor
+    let useFontArabic: Bool
+    let fontArabic: String
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(name.displayArabicName)
+                .font(useFontArabic ? .custom(fontArabic, size: 20) : .title3)
+                .foregroundColor(accentColor.color)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+
+            Text(name.transliteration)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+
+            Text("\(name.number)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 4)
+        .conditionalGlassEffect(
+            rectangle: true,
+            useColor: isFavorite ? 0.25 : 0.12,
+            customTint: isFavorite ? accentColor.color : nil
+        )
+        .onTapGesture {
+            settings.hapticFeedback()
+            settings.toggleNameFavorite(number: name.number)
+        }
     }
 }
 
