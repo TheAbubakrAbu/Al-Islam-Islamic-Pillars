@@ -41,18 +41,27 @@ struct PrayerList: View {
         return formatter
     }()
 
+    private func mergedWithOptional(_ base: [Prayer], for date: Date) -> [Prayer] {
+        let optional = settings.getOptionalPrayers(for: date)
+        guard !optional.isEmpty else { return base }
+        return (base + optional).sorted { $0.time < $1.time }
+    }
+
     private var displayedPrayers: [Prayer] {
         if settings.changedDate {
-            return fullPrayers ? (settings.dateFullPrayers ?? []) : (settings.datePrayers ?? [])
+            let base = fullPrayers ? (settings.dateFullPrayers ?? []) : (settings.datePrayers ?? [])
+            return mergedWithOptional(base, for: selectedDate)
         }
 
         guard let prayers = settings.prayers else { return [] }
-        return fullPrayers ? prayers.fullPrayers : prayers.prayers
+        let base = fullPrayers ? prayers.fullPrayers : prayers.prayers
+        return mergedWithOptional(base, for: prayers.day)
     }
 
     private var todayPrayers: [Prayer] {
         guard let prayers = settings.prayers else { return [] }
-        return fullPrayers ? prayers.fullPrayers : prayers.prayers
+        let base = fullPrayers ? prayers.fullPrayers : prayers.prayers
+        return mergedWithOptional(base, for: prayers.day)
     }
 
     var body: some View {
@@ -155,7 +164,7 @@ struct PrayerList: View {
                 iconColor: listIconColor,
                 trailingContent: {
                     #if os(iOS)
-                    if !isComparisonBaseline {
+                    if !isComparisonBaseline && !Settings.optionalPrayerNames.contains(prayer.nameTransliteration) {
                         prayerBell(for: prayer, rowColor: bellRowColor)
                     }
                     #endif
@@ -243,7 +252,7 @@ struct PrayerList: View {
                         Spacer()
 
                         #if os(iOS)
-                        if !isComparisonBaseline {
+                        if !isComparisonBaseline && !Settings.optionalPrayerNames.contains(prayer.nameTransliteration) {
                             prayerBell(for: prayer, rowColor: color)
                                 .padding(.leading, -6)
                         }
@@ -412,6 +421,18 @@ struct PrayerList: View {
         }
         if prayer.nameTransliteration == "Isha" {
             return "Prophet Muhammad (peace be upon him) said: \"The time for Isha lasts until the middle of the night\" (Muslim 612)."
+        }
+        if prayer.nameTransliteration == "Duha" {
+            return "Prophet Muhammad (peace be upon him) said: \"The prayer of the oft-returning (Awwabin) is when young camels feel the heat of the sun\" (Sahih Muslim 748)."
+        }
+        if prayer.nameTransliteration == "Zawal" {
+            return "Prophet Muhammad (peace be upon him) forbade prayer when the sun is at its highest until it passes the zenith (Sahih Muslim 831). This marks the forbidden time and the beginning of Dhuhr."
+        }
+        if prayer.nameTransliteration == "Islamic Midnight" {
+            return "Prophet Muhammad (peace be upon him) said: \"The time of Isha lasts until the middle of the night\" (Sahih Muslim 612). Islamic midnight is the midpoint between Maghrib and the next Fajr."
+        }
+        if prayer.nameTransliteration == "Last Third" {
+            return "Prophet Muhammad (peace be upon him) said: \"Our Lord descends every night to the lowest heaven when the last third of the night remains\" (Sahih al-Bukhari 1145; Sahih Muslim 758). The best time for Tahajjud."
         }
         return nil
     }

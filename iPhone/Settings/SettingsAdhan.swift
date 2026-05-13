@@ -695,6 +695,83 @@ extension Settings {
         return list
     }
 
+    /// Computes the enabled optional prayer times (Duha, Zawal, Islamic Midnight, Last Third) for a given date.
+    /// These are NOT stored in `prayers` (which is shared with widgets) and NOT shown in widgets.
+    func getOptionalPrayers(for date: Date) -> [Prayer] {
+        let raw = _computeRawPrayers(for: date)
+        guard !raw.isEmpty else { return [] }
+
+        guard
+            let sunrise = raw.first(where: { $0.nameTransliteration == "Sunrise" })?.time,
+            let dhuhr   = raw.first(where: { $0.nameTransliteration == "Dhuhr" || $0.nameTransliteration == "Jumuah" })?.time,
+            let maghrib = raw.first(where: { $0.nameTransliteration == "Maghrib" })?.time
+        else { return [] }
+
+        let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: date) ?? date
+        let nextRaw = _computeRawPrayers(for: nextDay)
+        let fajrNext = nextRaw.first(where: { $0.nameTransliteration == "Fajr" })?.time
+
+        var result: [Prayer] = []
+
+        if showDuha {
+            result.append(Prayer(
+                nameArabic: "صَلَاةُ الضُّحَى",
+                nameTransliteration: "Duha",
+                nameEnglish: "Forenoon Prayer",
+                time: sunrise.addingTimeInterval(15 * 60),
+                image: "sun.haze.fill",
+                rakah: "2–8",
+                sunnahBefore: "0",
+                sunnahAfter: "0"
+            ))
+        }
+
+        if showZawal {
+            result.append(Prayer(
+                nameArabic: "وَقْتُ الزَّوَالِ",
+                nameTransliteration: "Zawal",
+                nameEnglish: "Solar Noon",
+                time: dhuhr,
+                image: "sun.max.fill",
+                rakah: "0",
+                sunnahBefore: "0",
+                sunnahAfter: "0"
+            ))
+        }
+
+        if let fajrNext {
+            let nightDuration = fajrNext.timeIntervalSince(maghrib)
+
+            if showIslamicMidnight {
+                result.append(Prayer(
+                    nameArabic: "نِصْفُ اللَّيْلِ",
+                    nameTransliteration: "Islamic Midnight",
+                    nameEnglish: "Middle of the Night",
+                    time: maghrib.addingTimeInterval(nightDuration / 2),
+                    image: "moon.fill",
+                    rakah: "0",
+                    sunnahBefore: "0",
+                    sunnahAfter: "0"
+                ))
+            }
+
+            if showLastThird {
+                result.append(Prayer(
+                    nameArabic: "الثُّلُثُ الْأَخِيرُ",
+                    nameTransliteration: "Last Third",
+                    nameEnglish: "Last Third of Night",
+                    time: fajrNext.addingTimeInterval(-nightDuration / 3),
+                    image: "moon.stars.fill",
+                    rakah: "0",
+                    sunnahBefore: "0",
+                    sunnahAfter: "0"
+                ))
+            }
+        }
+
+        return result
+    }
+
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, calledFrom: StaticString = #function, completion: (() -> Void)? = nil) {
         Self.ensureNetworkMonitorStarted()
         updateDates()
@@ -815,14 +892,30 @@ extension Settings {
             }
         }
 
+        // Check if any optional prayer is sooner than the regular next prayer
+        let todayOptional = getOptionalPrayers(for: now)
+        let tomorrowOptional: [Prayer] = {
+            guard let tmr = Calendar.current.date(byAdding: .day, value: 1, to: now) else { return [] }
+            return getOptionalPrayers(for: tmr)
+        }()
+        let allOptional = (todayOptional + tomorrowOptional).filter { $0.time > now }
+        let nearestOptional = allOptional.min { $0.time < $1.time }
+
+        let finalNext: Prayer?
+        if let opt = nearestOptional, let reg = resolvedNext {
+            finalNext = opt.time < reg.time ? opt : reg
+        } else {
+            finalNext = nearestOptional ?? resolvedNext
+        }
+
         if currentPrayer != resolvedCurrent {
             currentPrayer = resolvedCurrent
         }
-        if nextPrayer != resolvedNext {
-            nextPrayer = resolvedNext
+        if nextPrayer != finalNext {
+            nextPrayer = finalNext
         }
     }
-    
+
     /// Efficiently gets just the first prayer of a given day (optimized for getting tomorrow's Fajr)
     private func _getFirstPrayerOfDay(for date: Date) -> Prayer? {
         let raw = _computeRawPrayers(for: date)
@@ -1009,12 +1102,21 @@ extension Settings {
             }
         }
 
+        // Optional prayer time notifications (Duha, Zawal, Islamic Midnight, Last Third)
+        for dayOffset in 0...futureDays {
+            let date = dayOffset == 0 ? prayerObj.day
+                     : (Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? prayerObj.day)
+            for prayer in getOptionalPrayers(for: date) {
+                scheduleNotification(for: prayer, preNotificationTime: nil, city: city, using: center)
+            }
+        }
+
         if naggingMode {
             scheduleRefreshNag(inDays: 1, using: center)
         }
         scheduleRefreshNag(inDays: 2, using: center)
         scheduleRefreshNag(inDays: 3, using: center)
-        
+
         prayers?.setNotification = true
         #else
         return
@@ -1053,8 +1155,8 @@ extension Settings {
     }
 
     private func prayerNotificationSound(for prayer: Prayer, minutesBefore: Int?) -> UNNotificationSound {
-        // Shurooq marks end of Fajr, not a salah — never use full adhan.
-        if prayer.nameTransliteration == "Shurooq" {
+        // Shurooq and optional informational times use default sound, never full adhan.
+        if prayer.nameTransliteration == "Shurooq" || Self.optionalPrayerNames.contains(prayer.nameTransliteration) {
             return .default
         }
         guard minutesBefore == nil else { return .default }

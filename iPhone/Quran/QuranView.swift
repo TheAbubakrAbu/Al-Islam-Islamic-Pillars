@@ -5,7 +5,6 @@ struct QuranView: View {
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var quranPlayer: QuranPlayer
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.scenePhase) private var scenePhase
     
     @State private var searchText = ""
     @State private var isQuranSearchFocused = false
@@ -434,12 +433,6 @@ struct QuranView: View {
                     content
                 } detail: {
                     quranSelectedDetail
-                }
-                .onChange(of: scenePhase) { phase in
-                    if phase == .active, let current = selectedRoute {
-                        selectedRoute = nil
-                        selectedRoute = current
-                    }
                 }
             } else if #available(iOS 16.0, *) {
                 pathNavigation
@@ -1185,6 +1178,16 @@ struct QuranView: View {
                 if l == r { return $0.id < $1.id }
                 return l < r
             }
+        } else if settings.quranSortMode == .words {
+            surahs = quranData.quran.sorted {
+                if $0.wordCount == $1.wordCount { return $0.id < $1.id }
+                return $0.wordCount < $1.wordCount
+            }
+        } else if settings.quranSortMode == .letters {
+            surahs = quranData.quran.sorted {
+                if $0.letterCount == $1.letterCount { return $0.id < $1.id }
+                return $0.letterCount < $1.letterCount
+            }
         } else {
             surahs = quranData.quran
         }
@@ -1236,6 +1239,8 @@ struct QuranView: View {
                 sajdahBrowseSection(context: context)
             case .muqattaat:
                 muqattaatBrowseSection(context: context)
+            case .words, .letters:
+                surahBrowseSection(context: context, showsRevelationOrder: false)
             }
         }
     }

@@ -47,6 +47,7 @@ struct SettingsAdhanView: View {
     var body: some View {
         List {
             notificationsSection
+            optionalTimesSection
             prayerCalculationSection
             travelingModeSection
             prayerOffsetsSection
@@ -175,6 +176,71 @@ struct SettingsAdhanView: View {
             }
         }
         #endif
+    }
+
+    @ViewBuilder
+    private var optionalTimesSection: some View {
+        Section(header: Text("OPTIONAL TIMES")) {
+            Toggle(isOn: $settings.showDuha.animation(.easeInOut)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("صَلَاةُ الضُّحَى")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Duha")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("15 min after sunrise until before Zawal. Best when heat increases. (Sahih Muslim 748)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Toggle(isOn: $settings.showZawal.animation(.easeInOut)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("وَقْتُ الزَّوَالِ")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Zawal")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Solar noon — forbidden prayer time begins. Dhuhr starts right after. (Sahih Muslim 831)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Toggle(isOn: $settings.showIslamicMidnight.animation(.easeInOut)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("نِصْفُ اللَّيْلِ")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Islamic Midnight")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Midpoint between Maghrib and next Fajr. End of recommended Isha time. (Sahih Muslim 612)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Toggle(isOn: $settings.showLastThird.animation(.easeInOut)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("الثُّلُثُ الْأَخِيرُ")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Last Third of Night")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Best time for Tahajjud. Allah descends when the last third remains. (Bukhari 1145, Muslim 758)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var prayerCalculationSection: some View {

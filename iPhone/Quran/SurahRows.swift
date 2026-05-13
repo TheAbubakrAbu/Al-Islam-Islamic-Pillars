@@ -175,10 +175,20 @@ struct SurahRow: View, Equatable {
                     Text(pageLine)
                         .font(.caption2)
                         .foregroundColor(.secondary)
-                    
+
                     Text(ayahAndRevelationLine)
                         .font(.caption2)
                         .foregroundColor(.secondary)
+
+                    if settings.quranSortMode == .words {
+                        Text(surah.wordCountLabel)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    } else if settings.quranSortMode == .letters {
+                        Text(surah.letterCountLabel)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 khatmProgressLine

@@ -30,6 +30,9 @@ struct Surah: Codable, Identifiable, Equatable {
     let juzs: [Int]?
     let juzChangesWithinSurah: Bool
 
+    let wordCount: Int
+    let letterCount: Int
+
     let ayahs: [Ayah]
 
     enum CodingKeys: String, CodingKey {
@@ -37,6 +40,7 @@ struct Surah: Codable, Identifiable, Equatable {
         case revelationOrder, revelationExceptions
         case pageStart, pageEnd, numberOfPages, isLessThanOnePage
         case firstJuz, lastJuz, juzs, juzChangesWithinSurah
+        case wordCount, letterCount
         case ayahs
     }
 
@@ -50,7 +54,6 @@ struct Surah: Codable, Identifiable, Equatable {
         similarNames = try c.decodeIfPresent([String].self, forKey: .similarNames) ?? []
         type = try c.decode(String.self, forKey: .type)
         numberOfAyahs = try c.decode(Int.self, forKey: .numberOfAyahs)
-        ayahs = try c.decode([Ayah].self, forKey: .ayahs)
 
         revelationOrder = try c.decodeIfPresent(Int.self, forKey: .revelationOrder)
         revelationExceptions = try c.decodeIfPresent(String.self, forKey: .revelationExceptions)
@@ -65,6 +68,11 @@ struct Surah: Codable, Identifiable, Equatable {
         juzs = try c.decodeIfPresent([Int].self, forKey: .juzs)
         juzChangesWithinSurah = try c.decodeIfPresent(Bool.self, forKey: .juzChangesWithinSurah)
             ?? ((juzs?.count ?? 0) > 1 || (firstJuz != nil && lastJuz != nil && firstJuz != lastJuz))
+
+        let decodedAyahs = try c.decode([Ayah].self, forKey: .ayahs)
+        ayahs = decodedAyahs
+        wordCount = (try? c.decodeIfPresent(Int.self, forKey: .wordCount)) ?? decodedAyahs.reduce(0) { $0 + $1.wordCount }
+        letterCount = (try? c.decodeIfPresent(Int.self, forKey: .letterCount)) ?? decodedAyahs.reduce(0) { $0 + $1.letterCount }
 
         idArabic = arabicNumberString(from: id)
     }
@@ -112,7 +120,12 @@ struct Surah: Codable, Identifiable, Equatable {
         self.juzChangesWithinSurah = juzChangesWithinSurah
 
         self.ayahs = ayahs
+        self.wordCount = ayahs.reduce(0) { $0 + $1.wordCount }
+        self.letterCount = ayahs.reduce(0) { $0 + $1.letterCount }
     }
+
+    var wordCountLabel: String { "\(wordCount) Words" }
+    var letterCountLabel: String { "\(letterCount) Letters" }
 
     var pageCount: Int {
         if let n = numberOfPages, n > 0 { return n }
@@ -180,9 +193,12 @@ struct Ayah: Codable, Identifiable, Equatable {
     
     let textWarsh: String?
     let textQaloon: String?
-    
+
     let textDuri: String?
     let textSusi: String?
+
+    let wordCount: Int
+    let letterCount: Int
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -190,6 +206,7 @@ struct Ayah: Codable, Identifiable, Equatable {
         case textTransliteration, textEnglishSaheeh, textEnglishMustafa
         case juz, page
         case textWarsh, textQaloon, textDuri, textBuzzi, textQunbul, textShubah, textSusi
+        case wordCount, letterCount
     }
 
     /// Raw Arabic for the given display qiraah. Nil = Hafs.
@@ -281,6 +298,10 @@ struct Ayah: Codable, Identifiable, Equatable {
         textShubah = try c.decodeIfPresent(String.self, forKey: .textShubah)
         textSusi = try c.decodeIfPresent(String.self, forKey: .textSusi)
         idArabic = arabicNumberString(from: id)
+        wordCount = (try? c.decodeIfPresent(Int.self, forKey: .wordCount)) ?? textHafs.split(separator: " ").filter { !$0.isEmpty }.count
+        letterCount = (try? c.decodeIfPresent(Int.self, forKey: .letterCount)) ?? textHafs.unicodeScalars.filter {
+            ($0.value >= 0x0621 && $0.value <= 0x063A) || ($0.value >= 0x0641 && $0.value <= 0x064A) || $0.value == 0x0671
+        }.count
     }
 
     init(id: Int, idArabic: String, textHafs: String, textTransliteration: String, textEnglishSaheeh: String, textEnglishMustafa: String, juz: Int? = nil, page: Int? = nil, textWarsh: String?, textQaloon: String?, textDuri: String?, textBuzzi: String?, textQunbul: String?, textShubah: String?, textSusi: String?) {
@@ -299,6 +320,10 @@ struct Ayah: Codable, Identifiable, Equatable {
         self.textQunbul = textQunbul
         self.textShubah = textShubah
         self.textSusi = textSusi
+        self.wordCount = textHafs.split(separator: " ").filter { !$0.isEmpty }.count
+        self.letterCount = textHafs.unicodeScalars.filter {
+            ($0.value >= 0x0621 && $0.value <= 0x063A) || ($0.value >= 0x0641 && $0.value <= 0x064A) || $0.value == 0x0671
+        }.count
     }
 
     /// Arabic to display; pass qiraah and whether to strip diacritics.
@@ -1071,7 +1096,9 @@ final class TajweedStore {
     }
 
     private func hasMiniatureMaddMark(_ cluster: CharacterClusterInfo) -> Bool {
-        cluster.contains(Self.daggerAlif) || cluster.contains(Self.smallWaw) || cluster.contains(Self.smallYeh)
+        // If the miniature mark carries an explicit maddah (U+0653), treat it as explicit madd — not natural.
+        guard !cluster.contains(Self.maddah) else { return false }
+        return cluster.contains(Self.daggerAlif) || cluster.contains(Self.smallWaw) || cluster.contains(Self.smallYeh)
     }
 
     private func shouldIgnoreForExplicitMaddahScan(_ cluster: CharacterClusterInfo) -> Bool {

@@ -17,6 +17,8 @@ extension Settings {
         case ayahs
         case sajdah
         case muqattaat
+        case words
+        case letters
 
         var id: String { rawValue }
 
@@ -30,6 +32,8 @@ extension Settings {
             case .khatm: return "Khatm"
             case .sajdah: return "Sajdahs"
             case .muqattaat: return "Broken Letters"
+            case .words: return "Words"
+            case .letters: return "Letters"
             }
         }
 
@@ -43,6 +47,8 @@ extension Settings {
             case .khatm: return "checkmark.seal"
             case .sajdah: return "moon.stars.fill"
             case .muqattaat: return "character.book.closed.fill.ar"
+            case .words: return "textformat.abc"
+            case .letters: return "textformat"
             }
         }
     }
