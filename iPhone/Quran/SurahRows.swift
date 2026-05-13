@@ -65,6 +65,21 @@ struct SurahRow: View, Equatable {
         "\(surah.numberOfAyahs) Ayahs \(revelationEmoji)"
     }
 
+    private var sortedMetricLine: String? {
+        switch settings.quranSortMode {
+        case .ayahs:
+            return surah.ayahCountLabel(for: settings.displayQiraahForArabic)
+        case .page:
+            return pageCountLabel
+        case .words:
+            return "Words: \(surah.wordCount)"
+        case .letters:
+            return "Letters: \(surah.letterCount)"
+        default:
+            return nil
+        }
+    }
+
     private var pageLine: String {
         "Page \(startPageNumber) • \(pageCountLabel)"
     }
@@ -180,15 +195,16 @@ struct SurahRow: View, Equatable {
                         .font(.caption2)
                         .foregroundColor(.secondary)
 
-                    if settings.quranSortMode == .words {
-                        Text(surah.wordCountLabel)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    } else if settings.quranSortMode == .letters {
-                        Text(surah.letterCountLabel)
+                    if let sortedMetricLine,
+                       settings.quranSortMode == .words || settings.quranSortMode == .letters {
+                        Text(sortedMetricLine)
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
+                } else if let sortedMetricLine {
+                    Text(sortedMetricLine)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
 
                 khatmProgressLine

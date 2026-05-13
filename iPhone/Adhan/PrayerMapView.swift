@@ -9,29 +9,41 @@ struct PrayerTimesMapView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("prayerTimesMapAutomatic") private var isAutomatic: Bool = true
+    @AppStorage("prayerTimesMapShowCityTime") private var showCityTime: Bool = true
     @State private var selectedLocation: Location?
     @State private var selectedDate = Date()
     @State private var prayers: [Prayer] = []
+    @State private var automaticPrayers: [Prayer] = []
     @State private var showCityPicker = false
+    @State private var compareAutomaticLocation = false
+    @State private var timeZones: [String: TimeZone] = [:]
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateStyle = .medium; return f
     }()
 
     private var effectiveLocation: Location? {
-        isAutomatic ? settings.currentLocation : (selectedLocation ?? settings.currentLocation)
+        selectedLocation ?? settings.currentLocation
+    }
+
+    private var canCompareAutomaticLocation: Bool {
+        guard isAutomatic,
+              let current = settings.currentLocation,
+              let selected = selectedLocation else { return false }
+        return !isSameLocation(current, selected)
     }
 
     var body: some View {
         List {
             locationModeSection
-            if !isAutomatic {
-                citySection
-                if !settings.favoriteLocations.isEmpty {
-                    favoriteCitiesSection
-                }
+            citySection
+            if !settings.favoriteLocations.isEmpty {
+                favoriteCitiesSection
             }
+            timeDisplaySection
+            comparisonControlSection
             prayerTimesSection
+            comparisonSection
         }
         .navigationTitle("Prayer Times")
         .navigationBarTitleDisplayMode(.inline)
@@ -55,8 +67,9 @@ struct PrayerTimesMapView: View {
         .onChange(of: selectedDate) { _ in refreshPrayers() }
         .onChange(of: selectedLocation) { _ in refreshPrayers() }
         .onChange(of: isAutomatic) { _ in refreshPrayers() }
+        .onChange(of: showCityTime) { _ in refreshTimeZones() }
         .onChange(of: settings.currentLocation) { _ in
-            if isAutomatic { refreshPrayers() }
+            refreshPrayers()
         }
     }
 
@@ -86,12 +99,12 @@ struct PrayerTimesMapView: View {
             Text("Location Mode")
         } footer: {
             Text(isAutomatic
-                ? "Prayer times are calculated from your current GPS location."
+                ? "Automatic stays tied to your GPS location, but you can still browse any selected city here."
                 : "Choose any city to look up its prayer times.")
         }
     }
 
-    // MARK: - City (Manual Mode)
+    // MARK: - Selected City
 
     @ViewBuilder
     private var citySection: some View {
@@ -138,6 +151,10 @@ struct PrayerTimesMapView: View {
             }
         } header: {
             Text("Selected City")
+        } footer: {
+            Text(selectedLocation == nil
+                ? "If no city is selected, this view shows your current location."
+                : "Selecting a city here does not change your automatic prayer-time location.")
         }
     }
 
@@ -183,6 +200,47 @@ struct PrayerTimesMapView: View {
         }
     }
 
+    // MARK: - Time Display
+
+    private var timeDisplaySection: some View {
+        Section {
+            Picker("Show Times In", selection: $showCityTime.animation(.easeInOut)) {
+                Text("City Time").tag(true)
+                Text("My Time").tag(false)
+            }
+            .pickerStyle(.segmented)
+            .padding(.vertical, 2)
+        } header: {
+            Text("Time Display")
+        } footer: {
+            Text(showCityTime
+                ? "Times are shown in the viewed city's time zone when available."
+                : "Times are shown in your device's current time zone.")
+        }
+    }
+
+    // MARK: - Compare
+
+    @ViewBuilder
+    private var comparisonControlSection: some View {
+        if isAutomatic, selectedLocation != nil {
+            Section {
+                Toggle(isOn: $compareAutomaticLocation.animation(.easeInOut)) {
+                    Label("Compare with Automatic Location", systemImage: "arrow.left.arrow.right")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .tint(settings.accentColor.color)
+                .disabled(!canCompareAutomaticLocation)
+            } header: {
+                Text("Compare")
+            } footer: {
+                Text(canCompareAutomaticLocation
+                    ? "Compare your GPS prayer times with the selected city."
+                    : "Choose a different city to compare it with your automatic location.")
+            }
+        }
+    }
+
     // MARK: - Prayer Times
 
     @ViewBuilder
@@ -210,17 +268,12 @@ struct PrayerTimesMapView: View {
                                 .foregroundStyle(settings.accentColor.color)
                                 .frame(width: 22, alignment: .center)
 
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(prayer.nameTransliteration)
-                                    .font(.subheadline.weight(.semibold))
-                                Text(prayer.nameArabic)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
+                            Text(prayer.nameTransliteration)
+                                .font(.subheadline.weight(.semibold))
 
                             Spacer()
 
-                            Text(prayer.time, style: .time)
+                            Text(formattedTime(prayer.time, for: location))
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(.primary)
                         }
@@ -247,14 +300,126 @@ struct PrayerTimesMapView: View {
         }
     }
 
+    @ViewBuilder
+    private var comparisonSection: some View {
+        if canCompareAutomaticLocation,
+           compareAutomaticLocation,
+           let current = settings.currentLocation,
+           let selected = selectedLocation {
+            Section {
+                ForEach(comparisonRows(selected: prayers, automatic: automaticPrayers), id: \.name) { row in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 12) {
+                            Image(systemName: row.image)
+                                .font(.subheadline)
+                                .foregroundStyle(settings.accentColor.color)
+                                .frame(width: 22, alignment: .center)
+
+                            Text(row.name)
+                                .font(.subheadline.weight(.semibold))
+
+                            Spacer()
+                        }
+
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(current.city)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text(formattedTime(row.automatic.time, for: current))
+                                    .font(.subheadline.monospacedDigit())
+                            }
+
+                            Spacer()
+
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(selected.city)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text(formattedTime(row.selected.time, for: selected))
+                                    .font(.subheadline.monospacedDigit())
+                            }
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            } header: {
+                Text("Automatic vs Selected City")
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private func refreshPrayers() {
-        guard let location = effectiveLocation else { prayers = []; return }
+        guard let location = effectiveLocation else {
+            prayers = []
+            automaticPrayers = []
+            return
+        }
+
+        prayers = prayerTimes(for: location)
+        if canCompareAutomaticLocation, let current = settings.currentLocation {
+            automaticPrayers = prayerTimes(for: current)
+        } else {
+            automaticPrayers = []
+            compareAutomaticLocation = false
+        }
+
+        refreshTimeZones()
+    }
+
+    private func prayerTimes(for location: Location) -> [Prayer] {
         let original = settings.currentLocation
         settings.currentLocation = location
-        prayers = settings.getPrayerTimes(for: selectedDate, fullPrayers: false) ?? []
-        if let original { settings.currentLocation = original }
+        defer { settings.currentLocation = original }
+        return settings.getPrayerTimes(for: selectedDate, fullPrayers: false) ?? []
+    }
+
+    private func formattedTime(_ date: Date, for location: Location) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.timeZone = showCityTime ? (timeZones[timeZoneKey(for: location)] ?? .current) : .current
+        return formatter.string(from: date)
+    }
+
+    private func refreshTimeZones() {
+        guard showCityTime else { return }
+        if let location = effectiveLocation {
+            requestTimeZone(for: location)
+        }
+        if canCompareAutomaticLocation, let current = settings.currentLocation {
+            requestTimeZone(for: current)
+        }
+    }
+
+    private func requestTimeZone(for location: Location) {
+        let key = timeZoneKey(for: location)
+        guard timeZones[key] == nil else { return }
+
+        CLGeocoder().reverseGeocodeLocation(CLLocation(latitude: location.latitude, longitude: location.longitude)) { placemarks, _ in
+            guard let timeZone = placemarks?.first?.timeZone else { return }
+            DispatchQueue.main.async {
+                timeZones[key] = timeZone
+            }
+        }
+    }
+
+    private func timeZoneKey(for location: Location) -> String {
+        "\(location.latitude.stringRepresentation),\(location.longitude.stringRepresentation)"
+    }
+
+    private func comparisonRows(selected: [Prayer], automatic: [Prayer]) -> [(name: String, image: String, automatic: Prayer, selected: Prayer)] {
+        selected.compactMap { selectedPrayer in
+            guard let automaticPrayer = automatic.first(where: { $0.nameTransliteration == selectedPrayer.nameTransliteration }) else {
+                return nil
+            }
+            return (selectedPrayer.nameTransliteration, selectedPrayer.image, automaticPrayer, selectedPrayer)
+        }
+    }
+
+    private func isSameLocation(_ lhs: Location, _ rhs: Location) -> Bool {
+        abs(lhs.latitude - rhs.latitude) < 0.0001 && abs(lhs.longitude - rhs.longitude) < 0.0001
     }
 
     private func isFavorite(_ location: Location) -> Bool {

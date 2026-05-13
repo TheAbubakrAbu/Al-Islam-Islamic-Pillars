@@ -340,6 +340,9 @@ final class TajweedStore {
     private static let dammatayn = UnicodeScalar(0x064C)!
     private static let kasra = UnicodeScalar(0x0650)!
     private static let kasratayn = UnicodeScalar(0x064D)!
+    private static let specialFathatayn = UnicodeScalar(0x0657)!
+    private static let specialDammatayn = UnicodeScalar(0x065E)!
+    private static let specialKasratayn = UnicodeScalar(0x0656)!
     private static let sukoon = UnicodeScalar(0x0652)!
     private static let sukoonUthmani = UnicodeScalar(0x06E1)!
     private static let shadda = UnicodeScalar(0x0651)!
@@ -368,6 +371,7 @@ final class TajweedStore {
         static let iqlaab = 8
         static let idghamBilaGhunnah = 9
         static let generalGhunnah = 10
+        static let tinyMeemIqlaab = 11
         static let maddNatural2 = 12
         /// Miniature madd scalars (U+06E5, U+06E6, U+0670) use same category as natural madd; slightly higher priority than letter-body natural madd.
         static let maddNatural2MiniatureScalars = 13
@@ -1117,7 +1121,14 @@ final class TajweedStore {
 
     private func appendTafkhimPaintOps(clusters: [CharacterClusterInfo], index: Int, into ops: inout [PaintOp]) {
         let cluster = clusters[index]
-        let tanweenScalars: Set<UInt32> = [Self.fathatayn.value, Self.dammatayn.value, Self.kasratayn.value]
+        let tanweenScalars: Set<UInt32> = [
+            Self.fathatayn.value,
+            Self.dammatayn.value,
+            Self.kasratayn.value,
+            Self.specialFathatayn.value,
+            Self.specialDammatayn.value,
+            Self.specialKasratayn.value,
+        ]
 
         // Always color the Arabic base letter.
         var letterRange: NSRange?
@@ -1134,11 +1145,11 @@ final class TajweedStore {
         guard let letterRange else { return }
         ops.append(PaintOp(range: letterRange, priority: PaintPriority.tafkhim, category: .tafkhim))
 
-        // Word-final heavy letter → letter only (tashkeel is silent at waqf).
-        if isClusterWordFinal(clusters: clusters, index: index) { return }
-
         // Tanween-bearing → the nunation marks are excluded; color letter only.
         if cluster.text.unicodeScalars.contains(where: { tanweenScalars.contains($0.value) }) { return }
+
+        // Ayah-final pronounced heavy letter → letter only (tashkeel is silent at waqf).
+        if indexOfFinalPronouncedArabicLetterCluster(clusters: clusters) == index { return }
 
         // Otherwise: color all non-tanween tashkeel scalars on this cluster too.
         offset = cluster.utf16Range.lowerBound
@@ -1319,6 +1330,43 @@ final class TajweedStore {
         return nil
     }
 
+    private func indexOfFinalPronouncedArabicLetterCluster(clusters: [CharacterClusterInfo]) -> Int? {
+        var i = clusters.count - 1
+        while i >= 0 {
+            let cl = clusters[i]
+            if isWhitespaceOnly(cl) || isAyahEndOrDecorativeCluster(cl) {
+                i -= 1
+                continue
+            }
+            guard cl.primaryArabicLetter != nil else {
+                i -= 1
+                continue
+            }
+            if isSilentFinalLetter(clusters: clusters, index: i) {
+                i -= 1
+                continue
+            }
+            return i
+        }
+        return nil
+    }
+
+    private func isSilentFinalLetter(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters.indices.contains(index), let base = clusters[index].primaryArabicLetter else { return false }
+        if base == "ا" || base == "ى" {
+            guard !hasAnyTashkeel(clusters[index]) || clusters[index].contains(Self.smallHighUprightRectangularZero) else {
+                return false
+            }
+            if let previous = previousArabicLetterClusterIndex(clusters: clusters, before: index) {
+                return hasFathatayn(clusters[previous])
+            }
+        }
+        if base == "و" || isYaBase(clusters[index]) {
+            return clusters[index].contains(Self.smallHighUprightRectangularZero)
+        }
+        return false
+    }
+
     private func wordClusterRanges(clusters: [CharacterClusterInfo]) -> [Range<Int>] {
         var out: [Range<Int>] = []
         var start = 0
@@ -1435,11 +1483,15 @@ final class TajweedStore {
     }
 
     private func hasFathaFamily(_ cluster: CharacterClusterInfo) -> Bool {
-        cluster.contains(Self.fatha) || cluster.contains(Self.fathatayn)
+        cluster.contains(Self.fatha) ||
+        cluster.contains(Self.fathatayn) ||
+        cluster.contains(Self.specialFathatayn)
     }
 
     private func hasDammaFamily(_ cluster: CharacterClusterInfo) -> Bool {
-        cluster.contains(Self.damma) || cluster.contains(Self.dammatayn)
+        cluster.contains(Self.damma) ||
+        cluster.contains(Self.dammatayn) ||
+        cluster.contains(Self.specialDammatayn)
     }
 
     private func isYaBase(_ cluster: CharacterClusterInfo) -> Bool {
@@ -1995,7 +2047,7 @@ final class TajweedStore {
     }
 
     private func hasFathatayn(_ cluster: CharacterClusterInfo) -> Bool {
-        cluster.contains(Self.fathatayn)
+        cluster.contains(Self.fathatayn) || cluster.contains(Self.specialFathatayn)
     }
 
     private func sourceRangeForSpecialNoonProxyMark(in cluster: CharacterClusterInfo) -> NSRange {
@@ -2103,7 +2155,7 @@ final class TajweedStore {
 
     private func appendNuunMeemGhunnahHeuristicPaintOps(text: String, into ops: inout [PaintOp]) {
         let clusters = characterClusters(in: text)
-        let finalArabicLetterIndex = indexOfFinalArabicLetterCluster(clusters: clusters)
+        let finalArabicLetterIndex = indexOfFinalPronouncedArabicLetterCluster(clusters: clusters)
         for idx in clusters.indices {
             let cluster = clusters[idx]
 
@@ -2111,7 +2163,7 @@ final class TajweedStore {
             if finalArabicLetterIndex != idx {
                 for meemScalar in [Self.smallHighMeem, Self.smallLowMeem] {
                     if let tinyMeemRange = scalarRange(in: cluster, scalar: meemScalar) {
-                        appendPaintOpIfVisible(range: tinyMeemRange, priority: PaintPriority.iqlaab, category: .iqlaab, into: &ops)
+                        appendPaintOpIfVisible(range: tinyMeemRange, priority: PaintPriority.tinyMeemIqlaab, category: .iqlaab, into: &ops)
                     }
                 }
             }
@@ -2269,15 +2321,50 @@ final class TajweedStore {
         return clusters[index - 1]
     }
 
+    private func previousArabicLetterClusterIndex(clusters: [CharacterClusterInfo], before index: Int) -> Int? {
+        var i = index - 1
+        while i >= 0 {
+            let cluster = clusters[i]
+            if isWhitespaceOnly(cluster) { return nil }
+            if cluster.primaryArabicLetter != nil {
+                return i
+            }
+            i -= 1
+        }
+        return nil
+    }
+
+    private func previousPronouncedArabicLetterClusterIndex(clusters: [CharacterClusterInfo], before index: Int) -> Int? {
+        var i = index - 1
+        while i >= 0 {
+            let cluster = clusters[i]
+            if isWhitespaceOnly(cluster) { return nil }
+            guard cluster.primaryArabicLetter != nil else {
+                i -= 1
+                continue
+            }
+            if isSilentFinalLetter(clusters: clusters, index: i) {
+                i -= 1
+                continue
+            }
+            return i
+        }
+        return nil
+    }
+
     private func hasHeavyOpenVowel(_ cluster: CharacterClusterInfo) -> Bool {
         cluster.contains(Self.fatha) ||
         cluster.contains(Self.damma) ||
         cluster.contains(Self.fathatayn) ||
-        cluster.contains(Self.dammatayn)
+        cluster.contains(Self.dammatayn) ||
+        cluster.contains(Self.specialFathatayn) ||
+        cluster.contains(Self.specialDammatayn)
     }
 
     private func hasKasraFamily(_ cluster: CharacterClusterInfo) -> Bool {
-        cluster.contains(Self.kasra) || cluster.contains(Self.kasratayn)
+        cluster.contains(Self.kasra) ||
+        cluster.contains(Self.kasratayn) ||
+        cluster.contains(Self.specialKasratayn)
     }
 
     private func hasSukoon(_ cluster: CharacterClusterInfo) -> Bool {
@@ -2361,6 +2448,11 @@ final class TajweedStore {
         }
 
         if TajweedRules.alifFollowerLetters.contains(base), index > 0 {
+            if let previous = previousArabicLetterClusterIndex(clusters: clusters, before: index),
+               hasFathatayn(clusters[previous]),
+               isSilentFinalLetter(clusters: clusters, index: index) {
+                return false
+            }
             return isHeavyCarrier(clusters: clusters, index: index - 1)
         }
 
@@ -2378,10 +2470,22 @@ final class TajweedStore {
         return false
     }
 
-    /// Heavy ra: kasrah/kasratayn -> light; fathah/dammah/tanwin open vowel on the ra -> heavy; Uthmani sukun -> light here; shaddah -> heavy; else heavy if preceding cluster has kasrah or madd ya.
+    /// Heavy ra: normal connected reading follows local vowels; ayah-final raa follows the stopped sound.
     private func isHeavyRaa(clusters: [CharacterClusterInfo], index: Int) -> Bool {
         guard clusters[index].primaryArabicLetter == "ر" else { return false }
         let current = clusters[index]
+        if indexOfFinalPronouncedArabicLetterCluster(clusters: clusters) == index {
+            if hasHeavyOpenVowel(current) { return true }
+            guard let previousIndex = previousPronouncedArabicLetterClusterIndex(clusters: clusters, before: index) else { return false }
+            let previous = finalRaaVowelContextCluster(clusters: clusters, previousIndex: previousIndex)
+            if previous.primaryArabicLetter == "و" {
+                return !hasAnyTashkeel(previous) || hasDammaFamily(previous)
+            }
+            if previous.primaryArabicLetter == "ا" || previous.primaryArabicLetter == "ى" {
+                return !hasAnyTashkeel(previous)
+            }
+            return hasFathaFamily(previous) || hasDammaFamily(previous)
+        }
         if hasKasraFamily(current) { return false }
         if hasHeavyOpenVowel(current) { return true }
         if hasUthmaniSukoon(current) { return false }
@@ -2390,6 +2494,15 @@ final class TajweedStore {
         if hasKasraFamily(prev) { return true }
         if isYaaMaddLetterCluster(clusters: clusters, yaIndex: index - 1) { return true }
         return false
+    }
+
+    private func finalRaaVowelContextCluster(clusters: [CharacterClusterInfo], previousIndex: Int) -> CharacterClusterInfo {
+        let previous = clusters[previousIndex]
+        guard hasSukoon(previous),
+              let beforeSukoonIndex = previousPronouncedArabicLetterClusterIndex(clusters: clusters, before: previousIndex) else {
+            return previous
+        }
+        return clusters[beforeSukoonIndex]
     }
 
 }
