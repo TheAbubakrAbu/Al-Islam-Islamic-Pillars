@@ -17,6 +17,9 @@ struct MapView: View {
     @State private var choosingPrayerTimes: Bool
     @State private var region: MKCoordinateRegion
 
+    /// When set, tapping a city calls this instead of setting homeLocation.
+    var onSelectCity: ((Location) -> Void)? = nil
+
     private let kaabaCoordinate = CLLocationCoordinate2D(latitude: 21.422445, longitude: 39.826388)
 
     private static let distanceFormatter: NumberFormatter = {
@@ -25,8 +28,9 @@ struct MapView: View {
         return formatter
     }()
 
-    init(choosingPrayerTimes: Bool) {
+    init(choosingPrayerTimes: Bool, onSelectCity: ((Location) -> Void)? = nil) {
         _choosingPrayerTimes = State(initialValue: choosingPrayerTimes)
+        self.onSelectCity = onSelectCity
 
         let coordinate: CLLocationCoordinate2D = {
             let settings = Settings.shared
@@ -130,7 +134,7 @@ struct MapView: View {
                 .adaptiveSafeArea(edge: .bottom) {
                     bottomInsetContent
                 }
-                .navigationTitle("Select Location")
+                .navigationTitle(onSelectCity != nil ? "Choose City" : "Select Location")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -172,7 +176,52 @@ struct MapView: View {
 
     @ViewBuilder
     private var bottomInsetContent: some View {
-        if !choosingPrayerTimes, let home = settings.homeLocation {
+        // City-picker mode: show a confirm bar for the selected item
+        if let onSelectCity, let selectedItem {
+            let city = selectedItem.placemark.locality ?? selectedItem.placemark.name ?? "Unknown"
+            let state = selectedItem.placemark.administrativeArea ?? ""
+            let country = selectedItem.placemark.country ?? ""
+            let fullName = [city, state, country].filter { !$0.isEmpty }.joined(separator: ", ")
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    Image(systemName: "mappin.circle.fill")
+                        .foregroundStyle(settings.accentColor.color)
+                        .font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(city.isEmpty ? fullName : city)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        if !state.isEmpty || !country.isEmpty {
+                            Text([state, country].filter { !$0.isEmpty }.joined(separator: ", "))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+
+                Button {
+                    settings.hapticFeedback()
+                    let location = Location(
+                        city: [city, state].filter { !$0.isEmpty }.joined(separator: ", "),
+                        latitude: selectedItem.placemark.coordinate.latitude,
+                        longitude: selectedItem.placemark.coordinate.longitude
+                    )
+                    onSelectCity(location)
+                } label: {
+                    Text("Select \(city.isEmpty ? "City" : city)")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .conditionalGlassEffect(rectangle: true, useColor: 0.25, customTint: settings.accentColor.color)
+                .padding(.horizontal)
+            }
+            .padding(.vertical, 12)
+            .conditionalGlassEffect(rectangle: true, useColor: 0.08)
+        } else if !choosingPrayerTimes, let home = settings.homeLocation {
             VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
                 HomeLocationSummaryCard(home: home, distanceString: distanceString)
                 useCurrentButton
@@ -220,13 +269,17 @@ struct MapView: View {
 
         withAnimation {
             selectedItem = item
-            settings.homeLocation = Location(
-                city: fullName,
-                latitude: item.placemark.coordinate.latitude,
-                longitude: item.placemark.coordinate.longitude
-            )
             updateRegion(to: item.placemark.coordinate)
             searchText = ""
+
+            // In home-picker mode, also update homeLocation
+            if onSelectCity == nil {
+                settings.homeLocation = Location(
+                    city: fullName,
+                    latitude: item.placemark.coordinate.latitude,
+                    longitude: item.placemark.coordinate.longitude
+                )
+            }
         }
     }
 
@@ -280,16 +333,34 @@ struct MapView: View {
             return
         }
 
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = query
-        request.resultTypes = .address
-        request.region = region
+        // Run address + point-of-interest searches in parallel for better city coverage
+        async let addressSearch: [MKMapItem] = {
+            let req = MKLocalSearch.Request()
+            req.naturalLanguageQuery = query
+            req.resultTypes = .address
+            return (try? await MKLocalSearch(request: req).start())?.mapItems ?? []
+        }()
 
-        let response = try? await MKLocalSearch(request: request).start()
-        let items = response?.mapItems ?? []
+        async let poiSearch: [MKMapItem] = {
+            let req = MKLocalSearch.Request()
+            req.naturalLanguageQuery = query
+            req.resultTypes = .pointOfInterest
+            return (try? await MKLocalSearch(request: req).start())?.mapItems ?? []
+        }()
+
+        let (addressItems, poiItems) = await (addressSearch, poiSearch)
+
+        // Merge: prefer items that have a locality (city) set, deduplicate by name
+        let combined = (addressItems + poiItems)
+            .sorted { a, b in
+                let aHasCity = a.placemark.locality != nil
+                let bHasCity = b.placemark.locality != nil
+                if aHasCity != bHasCity { return aHasCity }
+                return false
+            }
 
         var seen = Set<String>()
-        let uniqueItems = items.filter {
+        let uniqueItems = combined.filter {
             let key = formattedName(for: $0)
             if seen.contains(key) { return false }
             seen.insert(key)

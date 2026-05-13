@@ -313,6 +313,32 @@ struct PlayCustomRangeSheet: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
 
+            HStack(spacing: 12) {
+                rangeField(title: "From", value: $startAyah, text: $startAyahText, isFocused: $startAyahFocused) { new in
+                    if new > endAyah {
+                        startAyah = endAyah
+                        startAyahText = "\(endAyah)"
+                    }
+                }
+                
+                Image(systemName: "arrow.right")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(Color(.tertiaryLabel))
+                
+                rangeField(title: "To", value: $endAyah, text: $endAyahText, isFocused: $endAyahFocused) { new in
+                    if new < startAyah {
+                        endAyah = startAyah
+                        endAyahText = "\(startAyah)"
+                    }
+                }
+            }
+            .onChange(of: startAyah) { ayah in
+                startAyahText = "\(ayah)"
+            }
+            .onChange(of: endAyah) { ayah in
+                endAyahText = "\(endAyah)"
+            }
+            
             HStack(spacing: 10) {
                 Button {
                     settings.hapticFeedback()
@@ -347,30 +373,6 @@ struct PlayCustomRangeSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .contentShape(Rectangle())
                 }
-            }
-
-            HStack(spacing: 12) {
-                rangeField(title: "From", value: $startAyah, text: $startAyahText, isFocused: $startAyahFocused) { new in
-                    if new > endAyah {
-                        startAyah = endAyah
-                        startAyahText = "\(endAyah)"
-                    }
-                }
-                Image(systemName: "arrow.right")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(Color(.tertiaryLabel))
-                rangeField(title: "To", value: $endAyah, text: $endAyahText, isFocused: $endAyahFocused) { new in
-                    if new < startAyah {
-                        endAyah = startAyah
-                        endAyahText = "\(startAyah)"
-                    }
-                }
-            }
-            .onChange(of: startAyah) { ayah in
-                startAyahText = "\(ayah)"
-            }
-            .onChange(of: endAyah) { ayah in
-                endAyahText = "\(endAyah)"
             }
 
             Button {

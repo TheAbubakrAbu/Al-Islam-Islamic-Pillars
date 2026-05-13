@@ -361,6 +361,24 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     @AppStorage("showPrayerInfo") var showPrayerInfo: Bool = false
 
+    // MARK: - Optional Prayer Times (shown in app only, never in widgets)
+
+    @AppStorage("showDuha") var showDuha: Bool = false {
+        didSet { fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("showZawal") var showZawal: Bool = false {
+        didSet { fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("showIslamicMidnight") var showIslamicMidnight: Bool = false {
+        didSet { fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("showLastThird") var showLastThird: Bool = false {
+        didSet { fetchPrayerTimes(notification: true) }
+    }
+
+    /// Names of optional/informational prayer times — never shown in widgets, no bell toggle.
+    static let optionalPrayerNames: Set<String> = ["Duha", "Zawal", "Islamic Midnight", "Last Third"]
+
     // MARK: - Quran — @AppStorage
     
     @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
