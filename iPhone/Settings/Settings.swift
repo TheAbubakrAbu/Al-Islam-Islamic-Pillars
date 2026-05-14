@@ -758,7 +758,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         "ۥ": "و",
         // Ya variants
         "ۦ": "ي",
-        "ى": "ي", // alif maqsurah -> ya
+        "ى": "ا", // alif maqsurah -> alif (matches both ى and ا forms in search)
         // Teh marbuta equivalence (broad)
         "ة": "ه"
     ]

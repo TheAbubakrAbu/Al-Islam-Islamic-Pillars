@@ -293,7 +293,7 @@ struct SurahAyahRow: View {
     private func arabicDisplayText() -> String {
         let clean = settings.cleanArabicText
         let text = ayah.displayArabicText(surahId: surah.id, clean: clean)
-        return settings.beginnerMode ? text.map { "\($0) " }.joined() : text
+        return settings.beginnerMode ? text.map { String($0) }.joined(separator: " ") : text
     }
 
     private var shouldShowTajweedColors: Bool {
@@ -307,7 +307,7 @@ struct SurahAyahRow: View {
         guard shouldShowTajweedColors else { return nil }
         let text = ayah.displayArabicText(surahId: surah.id, clean: false)
         let displayText = settings.cleanArabicText ? ayah.displayArabicText(surahId: surah.id, clean: true) : text
-        let renderedDisplayText = settings.beginnerMode ? displayText.map { "\($0) " }.joined() : displayText
+        let renderedDisplayText = settings.beginnerMode ? displayText.map { String($0) }.joined(separator: " ") : displayText
         return TajweedStore.shared.attributedText(
             surah: surah.id,
             ayah: ayah.id,
@@ -1182,7 +1182,7 @@ struct AyahSearchRow: View, Equatable {
 
                 if visibility.showArabicLine {
                     HighlightedSnippet(
-                        source: arabic,
+                        source: arabicDisplayText(),
                         term: visibility.mArabic ? query : "",
                         font: .custom(searchArabicFontName, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                         accent: settings.accentColor.color,
@@ -1254,7 +1254,7 @@ struct AyahSearchRow: View, Equatable {
 
             if visibility.showArabicLine {
                 HighlightedSnippet(
-                    source: arabic,
+                    source: arabicDisplayText(),
                     term: visibility.mArabic ? query : "",
                     font: .custom(searchArabicFontName, size: UIFont.preferredFont(forTextStyle: .body).pointSize),
                     accent: settings.accentColor.color,

@@ -49,7 +49,41 @@ struct HighlightedSnippet: View {
     }
 
     private static let englishHighlightStripSet: CharacterSet = {
-        CharacterSet.punctuationCharacters.union(.symbols)
+        CharacterSet.punctuationCharacters.union(.symbols).union(.nonBaseCharacters)
+    }()
+
+    // MARK: - Caches
+
+    private final class SourceNormEntry: NSObject {
+        let normalizedSource: String
+        let indexMap: [String.Index]
+        init(_ n: String, _ i: [String.Index]) { normalizedSource = n; indexMap = i }
+    }
+
+    private final class RangeEntry: NSObject {
+        let ranges: [Range<String.Index>]
+        init(_ r: [Range<String.Index>]) { ranges = r }
+    }
+
+    /// source → (normalizedSource, indexMap): amortises the O(n×k) per-character normalization.
+    private static let sourceNormCache: NSCache<NSString, SourceNormEntry> = {
+        let c = NSCache<NSString, SourceNormEntry>()
+        c.countLimit = 7_000
+        return c
+    }()
+
+    /// "source\0normalizedTerm" → matched ranges in original source: amortises the range search.
+    private static let matchRangeCache: NSCache<NSString, RangeEntry> = {
+        let c = NSCache<NSString, RangeEntry>()
+        c.countLimit = 10_000
+        return c
+    }()
+
+    /// source → Allah highlight ranges: amortises the O(n) per-render Allah scan.
+    private static let allahRangeCache: NSCache<NSString, RangeEntry> = {
+        let c = NSCache<NSString, RangeEntry>()
+        c.countLimit = 7_000
+        return c
     }()
 
     private func normalizeEnglishForHighlight(_ text: String, trimWhitespace: Bool) -> String {
@@ -90,29 +124,50 @@ struct HighlightedSnippet: View {
         var attributed = baseAttributed
 
         let normalizedTerm = normalizeForSearch(term, trimWhitespace: true)
+        guard !normalizedTerm.isEmpty else { return attributed }
 
-        guard !normalizedTerm.isEmpty else {
-            return attributed
+        // --- Step 1: normalizedSource + indexMap, cached per source string ---
+        let sourceKey = source as NSString
+        let normEntry: SourceNormEntry
+        if let cached = Self.sourceNormCache.object(forKey: sourceKey) {
+            normEntry = cached
+        } else {
+            let ns = normalizeForSearch(source, trimWhitespace: false)
+            let im = normalizedIndexMap(in: source, normalizedSource: ns)
+            normEntry = SourceNormEntry(ns, im)
+            Self.sourceNormCache.setObject(normEntry, forKey: sourceKey)
         }
 
-        let normalizedSource = normalizeForSearch(source, trimWhitespace: false)
-        let indexMap = normalizedIndexMap(in: source, normalizedSource: normalizedSource)
-        var searchStart = normalizedSource.startIndex
+        // --- Step 2: matched ranges in original source, cached per (source, normalizedTerm) ---
+        let matchKey = "\(source)\u{0000}\(normalizedTerm)" as NSString
+        let matchedRanges: [Range<String.Index>]
+        if let cached = Self.matchRangeCache.object(forKey: matchKey) {
+            matchedRanges = cached.ranges
+        } else {
+            var ranges: [Range<String.Index>] = []
+            var searchStart = normEntry.normalizedSource.startIndex
+            while searchStart < normEntry.normalizedSource.endIndex,
+                  let matchRange = normEntry.normalizedSource.range(of: normalizedTerm, range: searchStart..<normEntry.normalizedSource.endIndex) {
+                if let orig = originalRange(
+                    in: source,
+                    normalizedSource: normEntry.normalizedSource,
+                    matchRange: matchRange,
+                    indexMap: normEntry.indexMap
+                ) {
+                    ranges.append(orig)
+                }
+                searchStart = matchRange.upperBound
+            }
+            Self.matchRangeCache.setObject(RangeEntry(ranges), forKey: matchKey)
+            matchedRanges = ranges
+        }
 
-        while searchStart < normalizedSource.endIndex,
-              let matchRange = normalizedSource.range(of: normalizedTerm, range: searchStart..<normalizedSource.endIndex) {
-            if let originalRange = originalRange(
-                in: source,
-                normalizedSource: normalizedSource,
-                matchRange: matchRange,
-                indexMap: indexMap
-            ),
-               let start = AttributedString.Index(originalRange.lowerBound, within: attributed),
-               let end = AttributedString.Index(originalRange.upperBound, within: attributed) {
+        // --- Step 3: apply accent colour to each matched range ---
+        for range in matchedRanges {
+            if let start = AttributedString.Index(range.lowerBound, within: attributed),
+               let end = AttributedString.Index(range.upperBound, within: attributed) {
                 attributed[start..<end].foregroundColor = accent
             }
-
-            searchStart = matchRange.upperBound
         }
 
         return attributed
@@ -151,11 +206,25 @@ struct HighlightedSnippet: View {
     }
 
     private func highlightArabicAllah(source: String, attributed: inout AttributedString) {
-        for start in source.indices {
-            if let range = arabicAllahRange(startingAt: start, in: source),
-               let attributedStart = AttributedString.Index(range.lowerBound, within: attributed),
-               let attributedEnd = AttributedString.Index(range.upperBound, within: attributed) {
-                attributed[attributedStart..<attributedEnd].foregroundColor = .red
+        let cacheKey = source as NSString
+        let ranges: [Range<String.Index>]
+        if let cached = Self.allahRangeCache.object(forKey: cacheKey) {
+            ranges = cached.ranges
+        } else {
+            var found: [Range<String.Index>] = []
+            for start in source.indices {
+                if let range = arabicAllahRange(startingAt: start, in: source) {
+                    found.append(range)
+                }
+            }
+            Self.allahRangeCache.setObject(RangeEntry(found), forKey: cacheKey)
+            ranges = found
+        }
+
+        for range in ranges {
+            if let start = AttributedString.Index(range.lowerBound, within: attributed),
+               let end = AttributedString.Index(range.upperBound, within: attributed) {
+                attributed[start..<end].foregroundColor = .red
             }
         }
     }

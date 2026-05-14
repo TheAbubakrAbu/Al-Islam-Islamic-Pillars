@@ -116,7 +116,7 @@ struct AyahRow: View, Equatable {
     }
     
     private func spacedArabic(_ text: String) -> String {
-        (settings.beginnerMode || ayahBeginnerMode) ? text.map { "\($0) " }.joined() : text
+        (settings.beginnerMode || ayahBeginnerMode) ? text.map { String($0) }.joined(separator: " ") : text
     }
 
     private func arabicDisplayText() -> String {
@@ -146,7 +146,7 @@ struct AyahRow: View, Equatable {
             if Self.arabicDisplayCache.object(forKey: key) != nil { continue }
 
             let baseText = ayah.displayArabicText(surahId: surah.id, clean: clean, qiraahOverride: qiraah)
-            let displayText = beginner ? baseText.map { "\($0) " }.joined() : baseText
+            let displayText = beginner ? baseText.map { String($0) }.joined(separator: " ") : baseText
             Self.arabicDisplayCache.setObject(displayText as NSString, forKey: key)
         }
     }
