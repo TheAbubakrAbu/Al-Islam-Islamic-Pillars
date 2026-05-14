@@ -1095,13 +1095,17 @@ struct AyahSearchRow: View, Equatable {
         settings.quranArabicFontName(for: settings.displayQiraahForArabic)
     }
 
+    private func arabicDisplayText() -> String {
+        settings.beginnerMode ? arabic.map { String($0) }.joined(separator: " ") : arabic
+    }
+
     private func arabicTajweedText() -> AttributedString? {
         guard shouldShowTajweedColors else { return nil }
         return TajweedStore.shared.attributedText(
             surah: surah,
             ayah: ayah,
             text: arabic,
-            displayText: arabic,
+            displayText: arabicDisplayText(),
             cleanDisplayText: settings.cleanArabicText,
             beginnerSpacing: settings.beginnerMode
         )
