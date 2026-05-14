@@ -3,7 +3,7 @@ import SwiftUI
 struct PrayerList: View {
     @EnvironmentObject private var settings: Settings
 
-    @State private var expandedPrayer: Prayer?
+    @State private var expandedPrayerKey: String?
     @State private var fullPrayers = false
     @State private var animatingBellPrayerName: String?
     @State private var bellAnimationActive = false
@@ -41,10 +41,16 @@ struct PrayerList: View {
         return formatter
     }()
 
+    private func expansionKey(for prayer: Prayer) -> String {
+        prayer.stableDisplayID
+    }
+
+    private func listDisplayName(for prayer: Prayer) -> String {
+        prayer.nameTransliteration == "Midnight" ? "Islamic Midnight" : prayer.nameTransliteration
+    }
+
     private func mergedWithOptional(_ base: [Prayer], for date: Date) -> [Prayer] {
-        let optional = settings.getOptionalPrayers(for: date)
-        guard !optional.isEmpty else { return base }
-        return (base + optional).sorted { $0.time < $1.time }
+        settings.prayersIncludingOptional(base, for: date)
     }
 
     private var displayedPrayers: [Prayer] {
@@ -141,7 +147,7 @@ struct PrayerList: View {
 
     @ViewBuilder
     private func listContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
-        ForEach(prayers) { prayer in
+        ForEach(prayers, id: \.stableDisplayID) { prayer in
             listRow(for: prayer, in: prayers, isComparisonBaseline: isComparisonBaseline)
         }
         .onChange(of: settings.travelingMode) { _ in
@@ -152,7 +158,8 @@ struct PrayerList: View {
     }
 
     private func listRow(for prayer: Prayer, in prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
-        let isExpanded = expandedPrayer == prayer
+        let prayerKey = expansionKey(for: prayer)
+        let isExpanded = expandedPrayerKey == prayerKey
         let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
         let listIconColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : settings.accentColor.color
         let bellRowColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : .primary
@@ -160,11 +167,12 @@ struct PrayerList: View {
         return Group {
             PrayerListRowCard(
                 prayer: prayer,
+                displayName: listDisplayName(for: prayer),
                 isCurrent: isCurrent,
                 iconColor: listIconColor,
                 trailingContent: {
                     #if os(iOS)
-                    if !isComparisonBaseline && !Settings.optionalPrayerNames.contains(prayer.nameTransliteration) {
+                    if !isComparisonBaseline {
                         prayerBell(for: prayer, rowColor: bellRowColor)
                     }
                     #endif
@@ -179,7 +187,7 @@ struct PrayerList: View {
         .onTapGesture {
             settings.hapticFeedback()
             withAnimation {
-                expandedPrayer = isExpanded ? nil : prayer
+                expandedPrayerKey = isExpanded ? nil : prayerKey
             }
         }
     }
@@ -192,7 +200,7 @@ struct PrayerList: View {
         )
 
         LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(prayers) { prayer in
+            ForEach(prayers, id: \.stableDisplayID) { prayer in
                 PrayerGridTile(
                     prayer: prayer,
                     color: isComparisonBaseline ? .secondary : legacyGridPrayerColor(for: prayer, in: prayers)
@@ -212,7 +220,7 @@ struct PrayerList: View {
 
         HStack(spacing: 0) {
             VStack(spacing: 4) {
-                ForEach(firstHalf) { prayer in
+                ForEach(firstHalf, id: \.stableDisplayID) { prayer in
                     SplitPrayerRow(prayer: prayer, color: isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers))
                 }
             }
@@ -222,7 +230,7 @@ struct PrayerList: View {
                 .padding(.horizontal, 8)
 
             VStack(spacing: 4) {
-                ForEach(secondHalf) { prayer in
+                ForEach(secondHalf, id: \.stableDisplayID) { prayer in
                     SplitPrayerRow(prayer: prayer, color: isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers))
                 }
             }
@@ -239,7 +247,7 @@ struct PrayerList: View {
         )
 
         LazyVGrid(columns: columns, spacing: 10) {
-            ForEach(prayers) { prayer in
+            ForEach(prayers, id: \.stableDisplayID) { prayer in
                 let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
                 let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
 
@@ -252,7 +260,7 @@ struct PrayerList: View {
                         Spacer()
 
                         #if os(iOS)
-                        if !isComparisonBaseline && !Settings.optionalPrayerNames.contains(prayer.nameTransliteration) {
+                        if !isComparisonBaseline {
                             prayerBell(for: prayer, rowColor: color)
                                 .padding(.leading, -6)
                         }
@@ -422,17 +430,36 @@ struct PrayerList: View {
         if prayer.nameTransliteration == "Isha" {
             return "Prophet Muhammad (peace be upon him) said: \"The time for Isha lasts until the middle of the night\" (Muslim 612)."
         }
-        if prayer.nameTransliteration == "Duha" {
-            return "Prophet Muhammad (peace be upon him) said: \"The prayer of the oft-returning (Awwabin) is when young camels feel the heat of the sun\" (Sahih Muslim 748)."
+        if prayer.nameTransliteration == "Duhaa" {
+            return """
+            Duhaa is a voluntary prayer prayed after the sun has risen to the height of a spear, roughly 15 minutes after sunrise, until shortly before Dhuhr. Its best time is later in the morning, when the heat of the sun becomes stronger.
+
+            The Prophet ﷺ said: "The prayer of the oft-returning is when the young camels feel the heat of the sun."
+
+            Source: Sahih Muslim 748/784.
+            """
         }
-        if prayer.nameTransliteration == "Zawal" {
-            return "Prophet Muhammad (peace be upon him) forbade prayer when the sun is at its highest until it passes the zenith (Sahih Muslim 831). This marks the forbidden time and the beginning of Dhuhr."
-        }
-        if prayer.nameTransliteration == "Islamic Midnight" {
-            return "Prophet Muhammad (peace be upon him) said: \"The time of Isha lasts until the middle of the night\" (Sahih Muslim 612). Islamic midnight is the midpoint between Maghrib and the next Fajr."
+        if prayer.nameTransliteration == "Midnight" {
+            return """
+            Midnight is halfway between Maghrib and Fajr. It is used in fiqh discussions such as the end of the preferred or normal time for Isha according to many scholars, and for calculating parts of the night.
+
+            Formula: Midnight = Maghrib + ((Fajr - Maghrib) / 2)
+
+            The Prophet ﷺ said regarding Isha: "The time of Isha prayer is until the middle of the night."
+
+            Source: Sahih Muslim.
+            """
         }
         if prayer.nameTransliteration == "Last Third" {
-            return "Prophet Muhammad (peace be upon him) said: \"Our Lord descends every night to the lowest heaven when the last third of the night remains\" (Sahih al-Bukhari 1145; Sahih Muslim 758). The best time for Tahajjud."
+            return """
+            Tahajjud is commonly prayed during the last third of the night. A voluntary night prayer offered after Isha and before Fajr, its most virtuous time is during the final third of the night.
+
+            The final third of the night before Fajr is a blessed time for prayer, dua, and seeking forgiveness.
+
+            Formula: Last third starts = Fajr - ((Fajr - Maghrib) / 3)
+
+            Source: Sahih al-Bukhari and Sahih Muslim.
+            """
         }
         return nil
     }
@@ -518,6 +545,7 @@ private struct PrayerListRowCard<TrailingContent: View>: View {
     @EnvironmentObject private var settings: Settings
 
     let prayer: Prayer
+    let displayName: String
     let isCurrent: Bool
     let iconColor: Color
     @ViewBuilder let trailingContent: () -> TrailingContent
@@ -542,7 +570,7 @@ private struct PrayerListRowCard<TrailingContent: View>: View {
                         .padding(.trailing, 2)
 
                     VStack(alignment: .leading) {
-                        Text(prayer.nameTransliteration)
+                        Text(displayName)
                             .font(.headline)
                             .foregroundColor(.primary)
                     }
@@ -582,11 +610,16 @@ private struct PrayerDetailBlock: View {
     let prayer: Prayer
     let referenceText: String?
 
+    private var isOptionalPrayer: Bool {
+        Settings.optionalPrayerNames.contains(prayer.nameTransliteration)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(prayer.nameEnglish) - \(prayer.nameArabic)")
+            Text(isOptionalPrayer ? prayer.nameEnglish : "\(prayer.nameEnglish) - \(prayer.nameArabic)")
                 .font(.title3)
                 .foregroundColor(settings.accentColor.color)
+                .lineLimit(1)
 
             if prayer.nameTransliteration == "Shurooq" {
                 Text("Shurooq is not a prayer, but marks the end of Fajr.")
@@ -621,6 +654,12 @@ private struct PrayerDetailBlock: View {
                     .padding(.top, 2)
             }
         }
+    }
+}
+
+private extension Prayer {
+    var stableDisplayID: String {
+        "\(nameTransliteration)-\(Int(time.timeIntervalSince1970))"
     }
 }
 

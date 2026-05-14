@@ -317,6 +317,9 @@ private struct PrayerSubtitleView: View {
     }
 
     private var subtitleText: String {
+        if Settings.optionalPrayerNames.contains(prayer.nameTransliteration) {
+            return prayer.nameEnglish
+        }
         if isCombinedTravelPrayer {
             return prayer.nameArabic
         }
@@ -392,6 +395,10 @@ private struct PrayerRakahInfoView: View {
     let captionFont: Font
     let alignment: Alignment
 
+    private var isOptionalPrayer: Bool {
+        Settings.optionalPrayerNames.contains(prayer.nameTransliteration)
+    }
+
     var body: some View {
         Group {
             if prayer.rakah != "0" {
@@ -402,6 +409,11 @@ private struct PrayerRakahInfoView: View {
                     .font(.caption2)
                     #endif
                     .foregroundColor(.primary)
+            } else if isOptionalPrayer {
+                Text(prayer.nameEnglish)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
             } else {
                 Text("Shurooq is not a prayer, but marks the end of Fajr")
                     .font(.caption2)

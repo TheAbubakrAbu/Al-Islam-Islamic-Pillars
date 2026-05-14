@@ -336,6 +336,38 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         didSet { self.fetchPrayerTimes(force: true) }
     }
 
+    @AppStorage("preNotificationDuha") var preNotificationDuha: Int = 0 {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("notificationDuha") var notificationDuha: Bool = true {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("naggingDuha") var naggingDuha: Bool = false {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+
+    
+
+    @AppStorage("preNotificationIslamicMidnight") var preNotificationIslamicMidnight: Int = 0 {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("notificationIslamicMidnight") var notificationIslamicMidnight: Bool = true {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("naggingIslamicMidnight") var naggingIslamicMidnight: Bool = false {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+
+    @AppStorage("preNotificationLastThird") var preNotificationLastThird: Int = 0 {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("notificationLastThird") var notificationLastThird: Bool = true {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+    @AppStorage("naggingLastThird") var naggingLastThird: Bool = false {
+        didSet { self.fetchPrayerTimes(notification: true) }
+    }
+
     @AppStorage("travelAutomatic") var travelAutomatic: Bool = true
     @AppStorage("travelTurnOffAutomatic") var travelTurnOffAutomatic: Bool = false
     @AppStorage("travelTurnOnAutomatic") var travelTurnOnAutomatic: Bool = false
@@ -364,20 +396,21 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     // MARK: - Optional Prayer Times (shown in app only, never in widgets)
 
     @AppStorage("showDuha") var showDuha: Bool = false {
+        willSet { objectWillChange.send() }
         didSet { fetchPrayerTimes(notification: true) }
     }
-    @AppStorage("showZawal") var showZawal: Bool = false {
-        didSet { fetchPrayerTimes(notification: true) }
-    }
+    
     @AppStorage("showIslamicMidnight") var showIslamicMidnight: Bool = false {
+        willSet { objectWillChange.send() }
         didSet { fetchPrayerTimes(notification: true) }
     }
     @AppStorage("showLastThird") var showLastThird: Bool = false {
+        willSet { objectWillChange.send() }
         didSet { fetchPrayerTimes(notification: true) }
     }
 
-    /// Names of optional/informational prayer times — never shown in widgets, no bell toggle.
-    static let optionalPrayerNames: Set<String> = ["Duha", "Zawal", "Islamic Midnight", "Last Third"]
+    /// Names of optional/informational prayer times shown in the app, but not widgets.
+    static let optionalPrayerNames: Set<String> = ["Duhaa", "Midnight", "Last Third"]
 
     // MARK: - Quran — @AppStorage
     

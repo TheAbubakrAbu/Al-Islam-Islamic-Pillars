@@ -160,7 +160,7 @@ struct ShareAyahSheet: View {
 
     private static func rangeUpperBound(afterBaseAt index: String.Index, in source: String) -> String.Index {
         var cursor = source.index(after: index)
-        while cursor < source.endIndex, isArabicMark(source[cursor]) {
+        while cursor < source.endIndex, isArabicAllahHighlightMark(source[cursor]) {
             cursor = source.index(after: cursor)
         }
         return cursor
@@ -187,12 +187,27 @@ struct ShareAyahSheet: View {
         character.unicodeScalars.allSatisfy(isArabicMarkScalar)
     }
 
+    private static func isArabicAllahHighlightMark(_ character: Character) -> Bool {
+        character.unicodeScalars.allSatisfy(isArabicAllahHighlightMarkScalar)
+    }
+
     private static func isArabicMarkScalar(_ scalar: UnicodeScalar) -> Bool {
         switch scalar.value {
         case 0x0610...0x061A,
              0x064B...0x065F,
              0x0670,
              0x06D6...0x06ED:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private static func isArabicAllahHighlightMarkScalar(_ scalar: UnicodeScalar) -> Bool {
+        switch scalar.value {
+        case 0x0610...0x061A,
+             0x064B...0x065F,
+             0x0670:
             return true
         default:
             return false

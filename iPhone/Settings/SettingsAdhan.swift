@@ -597,7 +597,13 @@ extension Settings {
     
     /// Ultra‑fast prayer generator. Returns `nil` if location is not valid.
     func getPrayerTimes(for date: Date, fullPrayers: Bool = false) -> [Prayer]? {
-        let rawPrayers = _computeRawPrayers(for: date)
+        guard let here = currentLocation else { return nil }
+        return getPrayerTimes(for: date, at: here, fullPrayers: fullPrayers)
+    }
+
+    /// Computes prayer times for an explicit location without changing the app's saved current location.
+    func getPrayerTimes(for date: Date, at location: Location, fullPrayers: Bool = false) -> [Prayer]? {
+        let rawPrayers = _computeRawPrayers(for: date, at: location)
         guard !rawPrayers.isEmpty else { return nil }
         
         if fullPrayers || !travelingMode {
@@ -617,10 +623,25 @@ extension Settings {
         
         return (normal: normalList, full: fullList)
     }    
+
+    func prayersIncludingOptional(_ base: [Prayer], for date: Date) -> [Prayer] {
+        let optional = getOptionalPrayers(for: date)
+        guard !optional.isEmpty else { return base }
+
+        let existingNames = Set(base.map(\.nameTransliteration))
+        let missingOptional = optional.filter { !existingNames.contains($0.nameTransliteration) }
+        return (base + missingOptional).sorted { $0.time < $1.time }
+    }
+
     /// Computes the raw unfiltered prayer times for a given date. This internal function
     /// handles all PrayerTimes calculation logic once, avoiding duplicate computations.
     private func _computeRawPrayers(for date: Date) -> [Prayer] {
-        guard let here = currentLocation, here.latitude != 1000, here.longitude != 1000 else { return [] }
+        guard let here = currentLocation else { return [] }
+        return _computeRawPrayers(for: date, at: here)
+    }
+
+    private func _computeRawPrayers(for date: Date, at here: Location) -> [Prayer] {
+        guard here.latitude != 1000, here.longitude != 1000 else { return [] }
 
         let comps = Self.gregorian.dateComponents([.year, .month, .day], from: date)
         let cacheKey = RawPrayerCacheKey(
@@ -695,15 +716,14 @@ extension Settings {
         return list
     }
 
-    /// Computes the enabled optional prayer times (Duha, Zawal, Islamic Midnight, Last Third) for a given date.
+    /// Computes the enabled optional prayer times (Duhaa, Midnight, Last Third) for a given date.
     /// These are NOT stored in `prayers` (which is shared with widgets) and NOT shown in widgets.
     func getOptionalPrayers(for date: Date) -> [Prayer] {
         let raw = _computeRawPrayers(for: date)
         guard !raw.isEmpty else { return [] }
 
         guard
-            let sunrise = raw.first(where: { $0.nameTransliteration == "Sunrise" })?.time,
-            let dhuhr   = raw.first(where: { $0.nameTransliteration == "Dhuhr" || $0.nameTransliteration == "Jumuah" })?.time,
+            let sunrise = raw.first(where: { $0.nameTransliteration == "Shurooq" })?.time,
             let maghrib = raw.first(where: { $0.nameTransliteration == "Maghrib" })?.time
         else { return [] }
 
@@ -715,8 +735,8 @@ extension Settings {
 
         if showDuha {
             result.append(Prayer(
-                nameArabic: "صَلَاةُ الضُّحَى",
-                nameTransliteration: "Duha",
+                nameArabic: "صَلَاةُ الضُّحَى",
+                nameTransliteration: "Duhaa",
                 nameEnglish: "Forenoon Prayer",
                 time: sunrise.addingTimeInterval(15 * 60),
                 image: "sun.haze.fill",
@@ -726,27 +746,16 @@ extension Settings {
             ))
         }
 
-        if showZawal {
-            result.append(Prayer(
-                nameArabic: "وَقْتُ الزَّوَالِ",
-                nameTransliteration: "Zawal",
-                nameEnglish: "Solar Noon",
-                time: dhuhr,
-                image: "sun.max.fill",
-                rakah: "0",
-                sunnahBefore: "0",
-                sunnahAfter: "0"
-            ))
-        }
+        
 
         if let fajrNext {
             let nightDuration = fajrNext.timeIntervalSince(maghrib)
 
             if showIslamicMidnight {
                 result.append(Prayer(
-                    nameArabic: "نِصْفُ اللَّيْلِ",
-                    nameTransliteration: "Islamic Midnight",
-                    nameEnglish: "Middle of the Night",
+                    nameArabic: "نِصْفُ اللَّيْلِ الشَّرْعِيُّ",
+                    nameTransliteration: "Midnight",
+                    nameEnglish: "Middle of Night",
                     time: maghrib.addingTimeInterval(nightDuration / 2),
                     image: "moon.fill",
                     rakah: "0",
@@ -757,7 +766,7 @@ extension Settings {
 
             if showLastThird {
                 result.append(Prayer(
-                    nameArabic: "الثُّلُثُ الْأَخِيرُ",
+                    nameArabic: "الثُّلُثُ الْأَخِيرُ مِنَ اللَّيْلِ",
                     nameTransliteration: "Last Third",
                     nameEnglish: "Last Third of Night",
                     time: fajrNext.addingTimeInterval(-nightDuration / 3),
@@ -866,53 +875,37 @@ extension Settings {
     }
     
     func updateCurrentAndNextPrayer() {
-        guard let p = prayers?.prayers, !p.isEmpty else {
+        guard let prayerObj = prayers, !prayerObj.prayers.isEmpty else {
             logger.debug("No prayer list to compute current/next")
             return
         }
 
         let now = Date()
+        let calendar = Calendar.current
 
-        let nextIdx = p.firstIndex { $0.time > now }
-
-        let resolvedCurrent: Prayer?
-        let resolvedNext: Prayer?
-
-        if let i = nextIdx {
-            resolvedNext = p[i]
-            resolvedCurrent = i == 0 ? p.last : p[i-1]
-        } else {
-            // past last prayer – peek at tomorrow for “next”
-            resolvedCurrent = p.last
-            if let tmr = Calendar.current.date(byAdding: .day, value: 1, to: now),
-               let firstTomorrow = _getFirstPrayerOfDay(for: tmr) {
-                resolvedNext = firstTomorrow
-            } else {
-                resolvedNext = nil
+        let timeline = [-1, 0, 1]
+            .compactMap { calendar.date(byAdding: .day, value: $0, to: now) }
+            .flatMap { date -> [Prayer] in
+                let base = calendar.isDate(date, inSameDayAs: prayerObj.day)
+                    ? prayerObj.prayers
+                    : (getPrayerTimes(for: date) ?? [])
+                return prayersIncludingOptional(base, for: date)
             }
+            .sorted { $0.time < $1.time }
+
+        guard !timeline.isEmpty else {
+            logger.debug("No prayer timeline to compute current/next")
+            return
         }
 
-        // Check if any optional prayer is sooner than the regular next prayer
-        let todayOptional = getOptionalPrayers(for: now)
-        let tomorrowOptional: [Prayer] = {
-            guard let tmr = Calendar.current.date(byAdding: .day, value: 1, to: now) else { return [] }
-            return getOptionalPrayers(for: tmr)
-        }()
-        let allOptional = (todayOptional + tomorrowOptional).filter { $0.time > now }
-        let nearestOptional = allOptional.min { $0.time < $1.time }
-
-        let finalNext: Prayer?
-        if let opt = nearestOptional, let reg = resolvedNext {
-            finalNext = opt.time < reg.time ? opt : reg
-        } else {
-            finalNext = nearestOptional ?? resolvedNext
-        }
+        let resolvedCurrent = timeline.last { $0.time <= now } ?? timeline.first
+        let resolvedNext = timeline.first { $0.time > now }
 
         if currentPrayer != resolvedCurrent {
             currentPrayer = resolvedCurrent
         }
-        if nextPrayer != finalNext {
-            nextPrayer = finalNext
+        if nextPrayer != resolvedNext {
+            nextPrayer = resolvedNext
         }
     }
 
@@ -984,7 +977,10 @@ extension Settings {
         "Asr":           .init(enabled: \.notificationAsr,   preMinutes: \.preNotificationAsr,   nagging: \.naggingAsr),
         "Maghrib":       .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
         "Maghrib/Isha":         .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
-        "Isha":          .init(enabled: \.notificationIsha,  preMinutes: \.preNotificationIsha,  nagging: \.naggingIsha)
+        "Isha":          .init(enabled: \.notificationIsha,  preMinutes: \.preNotificationIsha,  nagging: \.naggingIsha),
+        "Duhaa":         .init(enabled: \.notificationDuha, preMinutes: \.preNotificationDuha, nagging: \.naggingDuha),
+        "Midnight":      .init(enabled: \.notificationIslamicMidnight, preMinutes: \.preNotificationIslamicMidnight, nagging: \.naggingIslamicMidnight),
+        "Last Third":    .init(enabled: \.notificationLastThird, preMinutes: \.preNotificationLastThird, nagging: \.naggingLastThird)
     ]
 
     /// Pre‑computes the full list of minutes‑before offsets for a prayer.
@@ -1068,7 +1064,7 @@ extension Settings {
             }
         }
 
-        for prayer in prayerObj.prayers {
+        for prayer in prayersIncludingOptional(prayerObj.prayers, for: prayerObj.day) {
             guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
 
             for minutes in offsets(for: prefs) {
@@ -1087,7 +1083,7 @@ extension Settings {
                 let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? Date()
                 guard let list = getPrayerTimes(for: date) else { continue }
                 
-                for prayer in list {
+                for prayer in prayersIncludingOptional(list, for: date) {
                     guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
                     
                     for minutes in offsets(for: prefs) {
@@ -1099,15 +1095,6 @@ extension Settings {
                         )
                     }
                 }
-            }
-        }
-
-        // Optional prayer time notifications (Duha, Zawal, Islamic Midnight, Last Third)
-        for dayOffset in 0...futureDays {
-            let date = dayOffset == 0 ? prayerObj.day
-                     : (Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? prayerObj.day)
-            for prayer in getOptionalPrayers(for: date) {
-                scheduleNotification(for: prayer, preNotificationTime: nil, city: city, using: center)
             }
         }
 

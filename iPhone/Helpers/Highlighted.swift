@@ -195,7 +195,7 @@ struct HighlightedSnippet: View {
 
     private func rangeUpperBound(afterBaseAt index: String.Index, in source: String) -> String.Index {
         var cursor = source.index(after: index)
-        while cursor < source.endIndex, source[cursor].isArabicMark {
+        while cursor < source.endIndex, source[cursor].isArabicAllahHighlightMark {
             cursor = source.index(after: cursor)
         }
         return cursor
@@ -267,6 +267,10 @@ private extension Character {
     var isArabicMark: Bool {
         unicodeScalars.allSatisfy(\.isArabicMarkScalar)
     }
+
+    var isArabicAllahHighlightMark: Bool {
+        unicodeScalars.allSatisfy(\.isArabicAllahHighlightMarkScalar)
+    }
 }
 
 private extension UnicodeScalar {
@@ -276,6 +280,17 @@ private extension UnicodeScalar {
              0x064B...0x065F,
              0x0670,
              0x06D6...0x06ED:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isArabicAllahHighlightMarkScalar: Bool {
+        switch value {
+        case 0x0610...0x061A,
+             0x064B...0x065F,
+             0x0670:
             return true
         default:
             return false

@@ -47,9 +47,9 @@ struct SettingsAdhanView: View {
     var body: some View {
         List {
             notificationsSection
-            optionalTimesSection
             prayerCalculationSection
             travelingModeSection
+            optionalTimesSection
             prayerOffsetsSection
         }
         .applyConditionalListStyle(defaultView: true)
@@ -180,67 +180,49 @@ struct SettingsAdhanView: View {
 
     @ViewBuilder
     private var optionalTimesSection: some View {
-        Section(header: Text("OPTIONAL TIMES")) {
-            Toggle(isOn: $settings.showDuha.animation(.easeInOut)) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text("صَلَاةُ الضُّحَى")
-                            .font(.subheadline.weight(.semibold))
-                        Text("Duha")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("15 min after sunrise until before Zawal. Best when heat increases. (Sahih Muslim 748)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
+        Section(header: Text("OPTIONAL PRAYERS")) {
+            optionalPrayerToggle(
+                title: "Duhaa",
+                subtitle: "15 min after sunrise until shortly before Dhuhr.",
+                icon: "sun.haze.fill",
+                isOn: $settings.showDuha
+            )
 
-            Toggle(isOn: $settings.showZawal.animation(.easeInOut)) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text("وَقْتُ الزَّوَالِ")
-                            .font(.subheadline.weight(.semibold))
-                        Text("Zawal")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("Solar noon — forbidden prayer time begins. Dhuhr starts right after. (Sahih Muslim 831)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            optionalPrayerToggle(
+                title: "Islamic Midnight",
+                subtitle: "Midpoint between Maghrib and next Fajr.",
+                icon: "moon.fill",
+                isOn: $settings.showIslamicMidnight
+            )
 
-            Toggle(isOn: $settings.showIslamicMidnight.animation(.easeInOut)) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text("نِصْفُ اللَّيْلِ")
-                            .font(.subheadline.weight(.semibold))
-                        Text("Islamic Midnight")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("Midpoint between Maghrib and next Fajr. End of recommended Isha time. (Sahih Muslim 612)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            optionalPrayerToggle(
+                title: "Last Third of Night",
+                subtitle: "Tahajjud is commonly prayed during the last third of the night — a voluntary night prayer after Isha and before Fajr; the final third is a blessed time for prayer, dua, and seeking forgiveness.",
+                icon: "moon.stars.fill",
+                isOn: $settings.showLastThird
+            )
+        }
+    }
 
-            Toggle(isOn: $settings.showLastThird.animation(.easeInOut)) {
+    private func optionalPrayerToggle(title: String, subtitle: String, icon: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn.animation(.easeInOut)) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .foregroundColor(settings.accentColor.color)
+                    .frame(width: 22, alignment: .center)
+
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text("الثُّلُثُ الْأَخِيرُ")
-                            .font(.subheadline.weight(.semibold))
-                        Text("Last Third of Night")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("Best time for Tahajjud. Allah descends when the last third remains. (Bukhari 1145, Muslim 758)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    Text(title)
+                        .foregroundColor(.primary)
+
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
         }
+        .font(.subheadline)
+        .tint(settings.accentColor.color)
     }
 
     private var prayerCalculationSection: some View {
@@ -982,6 +964,16 @@ struct MoreNotificationView: View {
                 NotificationSettingsSection(prayerName: "Asr", preNotificationTime: $settings.preNotificationAsr, isNotificationOn: $settings.notificationAsr)
                 NotificationSettingsSection(prayerName: "Maghrib", preNotificationTime: $settings.preNotificationMaghrib, isNotificationOn: $settings.notificationMaghrib)
                 NotificationSettingsSection(prayerName: "Isha", preNotificationTime: $settings.preNotificationIsha, isNotificationOn: $settings.notificationIsha)
+
+                if settings.showDuha {
+                    NotificationSettingsSection(prayerName: "Duhaa", preNotificationTime: $settings.preNotificationDuha, isNotificationOn: $settings.notificationDuha)
+                }
+                if settings.showIslamicMidnight {
+                    NotificationSettingsSection(prayerName: "Midnight", preNotificationTime: $settings.preNotificationIslamicMidnight, isNotificationOn: $settings.notificationIslamicMidnight)
+                }
+                if settings.showLastThird {
+                    NotificationSettingsSection(prayerName: "Last Third", preNotificationTime: $settings.preNotificationLastThird, isNotificationOn: $settings.notificationLastThird)
+                }
             } else {
                 if !settings.naggingFajr {
                     NotificationSettingsSection(prayerName: "Fajr", preNotificationTime: $settings.preNotificationFajr, isNotificationOn: $settings.notificationFajr)
@@ -1000,6 +992,15 @@ struct MoreNotificationView: View {
                 }
                 if !settings.naggingIsha {
                     NotificationSettingsSection(prayerName: "Isha", preNotificationTime: $settings.preNotificationIsha, isNotificationOn: $settings.notificationIsha)
+                }
+                if settings.showDuha {
+                    NotificationSettingsSection(prayerName: "Duhaa", preNotificationTime: $settings.preNotificationDuha, isNotificationOn: $settings.notificationDuha)
+                }
+                if settings.showIslamicMidnight {
+                    NotificationSettingsSection(prayerName: "Midnight", preNotificationTime: $settings.preNotificationIslamicMidnight, isNotificationOn: $settings.notificationIslamicMidnight)
+                }
+                if settings.showLastThird {
+                    NotificationSettingsSection(prayerName: "Last Third", preNotificationTime: $settings.preNotificationLastThird, isNotificationOn: $settings.notificationLastThird)
                 }
             }
         }
