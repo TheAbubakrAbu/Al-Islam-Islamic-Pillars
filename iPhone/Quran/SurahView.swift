@@ -989,13 +989,8 @@ struct SurahView: View {
         let syncVisibleAyahAnchor: () -> Void = {
             guard shouldUpdateFloatingPageJuzOverlay else { return }
 
-            let nextVisibleAyahID: Int?
-            if let topVisibleAyahID = (visibleAyahIDs.union(visibleBoundaryAyahIDs)).min() {
-                nextVisibleAyahID = topVisibleAyahID
-            } else if let sel = ayah, ayahByID[sel] != nil {
-                nextVisibleAyahID = sel
-            } else {
-                nextVisibleAyahID = ayahsForQiraah.first?.id
+            guard let nextVisibleAyahID = (visibleAyahIDs.union(visibleBoundaryAyahIDs)).min() else {
+                return
             }
 
             guard nextVisibleAyahID != firstVisibleAyahID else { return }
@@ -1224,8 +1219,6 @@ struct SurahView: View {
             #endif
             .onAppear {
                 rebuildQiraahCaches()
-                visibleAyahIDs.removeAll()
-                visibleBoundaryAyahIDs.removeAll()
                 if let sel = ayah, ayahByID[sel] != nil {
                     firstVisibleAyahID = sel
                 } else if firstVisibleAyahID == nil {
@@ -1680,7 +1673,6 @@ struct SurahView: View {
         if let targetID = selectedSurahNavigation,
            let targetSurah = quranData.surah(targetID) {
             SurahView(surah: targetSurah)
-                .id("ayahs-selected-\(targetSurah.id)")
         } else {
             EmptyView()
         }
@@ -1704,10 +1696,8 @@ struct SurahView: View {
             return
         }
 
-        withAnimation {
-            settings.lastReadSurah = surah.id
-            settings.lastReadAyah = targetAyah
-        }
+        settings.lastReadSurah = surah.id
+        settings.lastReadAyah = targetAyah
     }
 
     private func neighboringSurah(before currentSurahID: Int) -> Surah? {

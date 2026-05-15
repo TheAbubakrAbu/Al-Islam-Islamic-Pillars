@@ -31,6 +31,7 @@ struct QuranView: View {
     @State private var hasMoreHits = true
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
+    @State private var zeroResultQuery = ""
     private let hitPageSize = 5
 
     private static let arFormatter: NumberFormatter = {
@@ -570,12 +571,10 @@ struct QuranView: View {
                 surah: surah,
                 ayah: ayah
             )
-                .id("ayahs-\(surah.id)-\(ayah)")
         } else {
             SurahView(
                 surah: surah
             )
-                .id("ayahs-\(surah.id)")
         }
     }
     
@@ -2263,6 +2262,7 @@ struct QuranView: View {
                 verseHits = []
                 hasMoreHits = false
                 blockAyahSearchAfterZero = false
+                zeroResultQuery = ""
             }
             return
         }
@@ -2272,6 +2272,7 @@ struct QuranView: View {
                 verseHits = []
                 hasMoreHits = false
                 blockAyahSearchAfterZero = false
+                zeroResultQuery = ""
             }
             return
         }
@@ -2281,14 +2282,20 @@ struct QuranView: View {
                 verseHits = []
                 hasMoreHits = false
                 blockAyahSearchAfterZero = false
+                zeroResultQuery = ""
             }
             return
         }
 
         if blockAyahSearchAfterZero {
-            if query.count < zeroResultQueryLength {
+            if !query.hasPrefix(zeroResultQuery) || query.count < zeroResultQueryLength {
                 blockAyahSearchAfterZero = false
+                zeroResultQuery = ""
             } else if query.count > zeroResultQueryLength {
+                withAnimation {
+                    verseHits = []
+                    hasMoreHits = false
+                }
                 return
             }
         }
@@ -2306,6 +2313,7 @@ struct QuranView: View {
 
             let (first, more) = await fetchHitsOffMain(query: query, limit: hitPageSize, offset: 0)
             guard !Task.isCancelled else { return }
+            guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
 
             withAnimation {
                 verseHits = first
@@ -2313,8 +2321,10 @@ struct QuranView: View {
                 if first.isEmpty {
                     blockAyahSearchAfterZero = true
                     zeroResultQueryLength = query.count
+                    zeroResultQuery = query
                 } else {
                     blockAyahSearchAfterZero = false
+                    zeroResultQuery = ""
                 }
             }
         }

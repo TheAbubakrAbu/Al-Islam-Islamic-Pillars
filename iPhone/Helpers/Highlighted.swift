@@ -158,6 +158,14 @@ struct HighlightedSnippet: View {
                 }
                 searchStart = matchRange.upperBound
             }
+            if ranges.isEmpty, source.containsArabicLetters {
+                ranges = arabicPhrasePrefixRanges(
+                    in: source,
+                    normalizedSource: normEntry.normalizedSource,
+                    normalizedTerm: normalizedTerm,
+                    indexMap: normEntry.indexMap
+                )
+            }
             Self.matchRangeCache.setObject(RangeEntry(ranges), forKey: matchKey)
             matchedRanges = ranges
         }
@@ -171,6 +179,86 @@ struct HighlightedSnippet: View {
         }
 
         return attributed
+    }
+
+    private func arabicPhrasePrefixRanges(
+        in source: String,
+        normalizedSource: String,
+        normalizedTerm: String,
+        indexMap: [String.Index]
+    ) -> [Range<String.Index>] {
+        let queryTokens = normalizedTerm
+            .split(separator: " ")
+            .map(String.init)
+            .filter { !$0.isEmpty }
+        guard !queryTokens.isEmpty else { return [] }
+
+        let sourceTokens = normalizedTokenRanges(in: normalizedSource)
+        guard sourceTokens.count >= queryTokens.count else { return [] }
+
+        var ranges: [Range<String.Index>] = []
+        for start in 0...(sourceTokens.count - queryTokens.count) {
+            var matched = true
+
+            for offset in queryTokens.indices {
+                let tokenRange = sourceTokens[start + offset]
+                let sourceToken = String(normalizedSource[tokenRange])
+                let queryToken = queryTokens[offset]
+
+                if offset == queryTokens.count - 1 {
+                    if !sourceToken.hasPrefix(queryToken) {
+                        matched = false
+                        break
+                    }
+                } else if sourceToken != queryToken {
+                    matched = false
+                    break
+                }
+            }
+
+            guard matched else { continue }
+
+            let lower = sourceTokens[start].lowerBound
+            let lastTokenRange = sourceTokens[start + queryTokens.count - 1]
+            let lastToken = String(normalizedSource[lastTokenRange])
+            let upper: String.Index
+            if lastToken == queryTokens.last {
+                upper = lastTokenRange.upperBound
+            } else {
+                upper = normalizedSource.index(lastTokenRange.lowerBound, offsetBy: queryTokens.last?.count ?? 0)
+            }
+
+            if let orig = originalRange(
+                in: source,
+                normalizedSource: normalizedSource,
+                matchRange: lower..<upper,
+                indexMap: indexMap
+            ) {
+                ranges.append(orig)
+            }
+        }
+
+        return ranges
+    }
+
+    private func normalizedTokenRanges(in text: String) -> [Range<String.Index>] {
+        var ranges: [Range<String.Index>] = []
+        var cursor = text.startIndex
+
+        while cursor < text.endIndex {
+            while cursor < text.endIndex, text[cursor].isWhitespace {
+                cursor = text.index(after: cursor)
+            }
+            guard cursor < text.endIndex else { break }
+
+            let start = cursor
+            while cursor < text.endIndex, !text[cursor].isWhitespace {
+                cursor = text.index(after: cursor)
+            }
+            ranges.append(start..<cursor)
+        }
+
+        return ranges
     }
 
     private func highlightAllahIfNeeded(source: String, baseAttributed: AttributedString) -> AttributedString {

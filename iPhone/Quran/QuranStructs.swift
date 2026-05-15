@@ -29,8 +29,10 @@ struct VerseIndexEntry: Identifiable, Hashable, Codable {
     let arabicTashkeelBlob: String
     let englishExactBlob: String
     let arabicBlob: String
+    let silentArabicBlob: String
     let englishBlob: String
     let arabicTokens: [String]
+    let silentArabicTokens: [String]
     let englishTokens: [String]
 }
 

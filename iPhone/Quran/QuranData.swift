@@ -2241,7 +2241,6 @@ final class TajweedStore {
             for meemScalar in [Self.smallHighMeem, Self.smallLowMeem] {
                 if let tinyMeemRange = scalarRange(in: cluster, scalar: meemScalar) {
                     appendPaintOpIfVisible(range: tinyMeemRange, priority: PaintPriority.tinyMeemIqlaab, category: .iqlaab, into: &ops)
-                    appendPaintOpIfVisible(range: nsRange(for: cluster), priority: PaintPriority.tinyMeemIqlaab, category: .iqlaab, into: &ops)
                 }
             }
 
@@ -2710,7 +2709,7 @@ final class QuranData: ObservableObject {
     }
 
     private struct QuranDynamicCache: Codable {
-        static let version = 1
+        static let version = 2
 
         let version: Int
         let resourceSignature: String
@@ -2718,6 +2717,8 @@ final class QuranData: ObservableObject {
         let verseIndex: [VerseIndexEntry]
         let arabicTokenIndex: [String: [Int]]
         let arabicPrefix2Index: [String: [Int]]
+        let silentArabicTokenIndex: [String: [Int]]
+        let silentArabicPrefix2Index: [String: [Int]]
         let englishTokenIndex: [String: [Int]]
         let englishPrefix3Index: [String: [Int]]
         let allVerseIndices: [Int]
@@ -2760,6 +2761,8 @@ final class QuranData: ObservableObject {
     /// Preprocessed English indexes to reduce scoring to a small candidate set.
     private var englishTokenIndex = [String: [Int]]()
     private var englishPrefix3Index = [String: [Int]]()
+    private var silentArabicTokenIndex = [String: [Int]]()
+    private var silentArabicPrefix2Index = [String: [Int]]()
     /// Cached contiguous index list to avoid reallocating Array(verseIndex.indices) on every query.
     private var allVerseIndices: [Int] = []
     private var searchResultIndexCache = [SearchResultCacheKey: [Int]]()
@@ -2785,7 +2788,9 @@ final class QuranData: ObservableObject {
     private struct SearchResultCacheKey: Hashable {
         let qiraahKey: String
         let cleanedQuery: String
+        let silentQuery: String?
         let useArabic: Bool
+        let ignoreSilentLetters: Bool
     }
 
     struct VerseSearchSnapshot {
@@ -2793,6 +2798,8 @@ final class QuranData: ObservableObject {
         let verseIndex: [VerseIndexEntry]
         let arabicTokenIndex: [String: [Int]]
         let arabicPrefix2Index: [String: [Int]]
+        let silentArabicTokenIndex: [String: [Int]]
+        let silentArabicPrefix2Index: [String: [Int]]
         let englishTokenIndex: [String: [Int]]
         let englishPrefix3Index: [String: [Int]]
         let allVerseIndices: [Int]
@@ -2840,11 +2847,21 @@ final class QuranData: ObservableObject {
                 return filtered
             }
 
-            return regularSearchResults(for: q, useArabic: useArabic, limit: limit, offset: offset)
+            let silentQuery = useArabic && Settings.shared.ignoreSilentLettersInQuranSearch
+                ? Settings.shared.cleanSearchIgnoringSilentArabicLetters(raw, whitespace: true)
+                : nil
+            return regularSearchResults(
+                for: q,
+                silentQuery: silentQuery,
+                useArabic: useArabic,
+                limit: limit,
+                offset: offset
+            )
         }
 
         private func regularSearchResults(
             for cleanedQuery: String,
+            silentQuery: String?,
             useArabic: Bool,
             limit: Int,
             offset: Int
@@ -2853,11 +2870,10 @@ final class QuranData: ObservableObject {
             results.reserveCapacity(limit == .max ? 64 : min(limit, 64))
 
             var skipped = 0
-            for index in candidateVerseIndices(for: cleanedQuery, useArabic: useArabic) {
+            for index in candidateVerseIndices(for: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) {
                 guard verseIndex.indices.contains(index) else { continue }
                 let entry = verseIndex[index]
-                let haystack = useArabic ? entry.arabicBlob : entry.englishBlob
-                guard haystack.contains(cleanedQuery) else { continue }
+                guard regularSearchEntryMatches(entry, cleanedQuery: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) else { continue }
                 if skipped < offset {
                     skipped += 1
                     continue
@@ -2868,12 +2884,53 @@ final class QuranData: ObservableObject {
             return results
         }
 
-        private func candidateVerseIndices(for cleanedQuery: String, useArabic: Bool) -> [Int] {
-            let tokens = searchTokens(from: cleanedQuery)
+        private func regularSearchEntryMatches(
+            _ entry: VerseIndexEntry,
+            cleanedQuery: String,
+            silentQuery: String?,
+            useArabic: Bool
+        ) -> Bool {
+            if useArabic {
+                if entry.arabicBlob.contains(cleanedQuery) || phrasePrefixMatch(entry.arabicTokens, query: searchTokens(from: cleanedQuery)) {
+                    return true
+                }
+                guard let silentQuery, !silentQuery.isEmpty else { return false }
+                return entry.silentArabicBlob.contains(silentQuery)
+                    || phrasePrefixMatch(entry.silentArabicTokens, query: searchTokens(from: silentQuery))
+            }
+
+            return entry.englishBlob.contains(cleanedQuery)
+                || phrasePrefixMatch(entry.englishTokens, query: searchTokens(from: cleanedQuery))
+        }
+
+        private func phrasePrefixMatch(_ haystack: [String], query: [String]) -> Bool {
+            guard !query.isEmpty, haystack.count >= query.count else { return false }
+
+            for start in 0...(haystack.count - query.count) {
+                var matched = true
+                for offset in query.indices {
+                    let word = haystack[start + offset]
+                    let term = query[offset]
+                    if offset == query.count - 1 {
+                        if !word.hasPrefix(term) { matched = false; break }
+                    } else if word != term {
+                        matched = false
+                        break
+                    }
+                }
+                if matched { return true }
+            }
+
+            return false
+        }
+
+        private func candidateVerseIndices(for cleanedQuery: String, silentQuery: String?, useArabic: Bool) -> [Int] {
+            var tokens = searchTokens(from: cleanedQuery)
+            if useArabic, let silentQuery {
+                tokens.append(contentsOf: searchTokens(from: silentQuery))
+            }
             guard !tokens.isEmpty else { return allVerseIndices }
 
-            let tokenIndex = useArabic ? arabicTokenIndex : englishTokenIndex
-            let prefixIndex = useArabic ? arabicPrefix2Index : englishPrefix3Index
             let minimumPrefixLength = useArabic ? 2 : 3
 
             var candidates: Set<Int>? = nil
@@ -2881,6 +2938,8 @@ final class QuranData: ObservableObject {
 
             for token in tokens {
                 var tokenMatches = Set<Int>()
+                let tokenIndex = useArabic ? arabicTokenIndex : englishTokenIndex
+                let prefixIndex = useArabic ? arabicPrefix2Index : englishPrefix3Index
 
                 if let exactMatches = tokenIndex[token] {
                     tokenMatches.formUnion(exactMatches)
@@ -2890,6 +2949,19 @@ final class QuranData: ObservableObject {
                     let prefix = String(token.prefix(minimumPrefixLength))
                     if let prefixMatches = prefixIndex[prefix] {
                         tokenMatches.formUnion(prefixMatches)
+                    }
+                }
+
+                if useArabic {
+                    if let exactMatches = silentArabicTokenIndex[token] {
+                        tokenMatches.formUnion(exactMatches)
+                    }
+
+                    if token.count >= minimumPrefixLength {
+                        let prefix = String(token.prefix(minimumPrefixLength))
+                        if let prefixMatches = silentArabicPrefix2Index[prefix] {
+                            tokenMatches.formUnion(prefixMatches)
+                        }
                     }
                 }
 
@@ -3216,6 +3288,8 @@ final class QuranData: ObservableObject {
         verseIndex: [VerseIndexEntry],
         arabicTokenIndex: [String: [Int]],
         arabicPrefix2Index: [String: [Int]],
+        silentArabicTokenIndex: [String: [Int]],
+        silentArabicPrefix2Index: [String: [Int]],
         englishTokenIndex: [String: [Int]],
         englishPrefix3Index: [String: [Int]],
         allVerseIndices: [Int],
@@ -3232,6 +3306,8 @@ final class QuranData: ObservableObject {
             verseIndex: verseIndex,
             arabicTokenIndex: arabicTokenIndex,
             arabicPrefix2Index: arabicPrefix2Index,
+            silentArabicTokenIndex: silentArabicTokenIndex,
+            silentArabicPrefix2Index: silentArabicPrefix2Index,
             englishTokenIndex: englishTokenIndex,
             englishPrefix3Index: englishPrefix3Index,
             allVerseIndices: allVerseIndices,
@@ -3294,6 +3370,8 @@ final class QuranData: ObservableObject {
         self.verseIndex = cache.verseIndex
         self.arabicTokenIndex = cache.arabicTokenIndex
         self.arabicPrefix2Index = cache.arabicPrefix2Index
+        self.silentArabicTokenIndex = cache.silentArabicTokenIndex
+        self.silentArabicPrefix2Index = cache.silentArabicPrefix2Index
         self.englishTokenIndex = cache.englishTokenIndex
         self.englishPrefix3Index = cache.englishPrefix3Index
         self.allVerseIndices = cache.allVerseIndices
@@ -3354,6 +3432,7 @@ final class QuranData: ObservableObject {
             }
 
             let arabicIndexes = self.buildArabicSearchIndexes(for: vIndex)
+            let silentArabicIndexes = self.buildSilentArabicSearchIndexes(for: vIndex)
             if Task.isCancelled { return }
             let englishIndexes = self.buildEnglishSearchIndexes(for: vIndex)
             if Task.isCancelled { return }
@@ -3367,6 +3446,8 @@ final class QuranData: ObservableObject {
                 self.verseIndex = finalizedVerseIndex
                 self.arabicTokenIndex = arabicIndexes.token
                 self.arabicPrefix2Index = arabicIndexes.prefix2
+                self.silentArabicTokenIndex = silentArabicIndexes.token
+                self.silentArabicPrefix2Index = silentArabicIndexes.prefix2
                 self.englishTokenIndex = englishIndexes.token
                 self.englishPrefix3Index = englishIndexes.prefix3
                 self.allVerseIndices = finalizedAllVerseIndices
@@ -3381,6 +3462,8 @@ final class QuranData: ObservableObject {
                 verseIndex: finalizedVerseIndex,
                 arabicTokenIndex: arabicIndexes.token,
                 arabicPrefix2Index: arabicIndexes.prefix2,
+                silentArabicTokenIndex: silentArabicIndexes.token,
+                silentArabicPrefix2Index: silentArabicIndexes.prefix2,
                 englishTokenIndex: englishIndexes.token,
                 englishPrefix3Index: englishIndexes.prefix3,
                 allVerseIndices: finalizedAllVerseIndices,
@@ -3444,10 +3527,14 @@ final class QuranData: ObservableObject {
         let arabicBlob = [rawArabic, cleanArabic]
             .map { settings.cleanSearch($0) }
             .joined(separator: " ")
+        let silentArabicBlob = [rawArabic, cleanArabic]
+            .map { settings.cleanSearchIgnoringSilentArabicLetters($0) }
+            .joined(separator: " ")
         let englishBlob = [englishSaheeh, englishMustafa, transliteration]
             .map { settings.cleanSearch($0) }
             .joined(separator: " ")
         let arabicTokens = searchTokens(from: arabicBlob)
+        let silentArabicTokens = searchTokens(from: silentArabicBlob)
         let englishTokens = searchTokens(from: englishBlob)
 
         return VerseIndexEntry(
@@ -3457,8 +3544,10 @@ final class QuranData: ObservableObject {
             arabicTashkeelBlob: arabicTashkeelBlob(rawArabic),
             englishExactBlob: exactPhraseBlob([englishSaheeh, englishMustafa, transliteration].joined(separator: " ")),
             arabicBlob: arabicBlob,
+            silentArabicBlob: silentArabicBlob,
             englishBlob: englishBlob,
             arabicTokens: arabicTokens,
+            silentArabicTokens: silentArabicTokens,
             englishTokens: englishTokens
         )
     }
@@ -3496,13 +3585,30 @@ final class QuranData: ObservableObject {
         token: [String: [Int]],
         prefix2: [String: [Int]]
     ) {
+        buildArabicSearchIndexes(for: entries, tokenProvider: \.arabicTokens)
+    }
+
+    private func buildSilentArabicSearchIndexes(for entries: [VerseIndexEntry]) -> (
+        token: [String: [Int]],
+        prefix2: [String: [Int]]
+    ) {
+        buildArabicSearchIndexes(for: entries, tokenProvider: \.silentArabicTokens)
+    }
+
+    private func buildArabicSearchIndexes(
+        for entries: [VerseIndexEntry],
+        tokenProvider: KeyPath<VerseIndexEntry, [String]>
+    ) -> (
+        token: [String: [Int]],
+        prefix2: [String: [Int]]
+    ) {
         var tokenIndex = [String: [Int]]()
         var prefix2Index = [String: [Int]]()
         tokenIndex.reserveCapacity(9000)
         prefix2Index.reserveCapacity(3000)
 
         for (idx, entry) in entries.enumerated() {
-            let uniqueTokens = Set(entry.arabicTokens)
+            let uniqueTokens = Set(entry[keyPath: tokenProvider])
             for token in uniqueTokens {
                 guard !token.isEmpty else { continue }
                 tokenIndex[token, default: []].append(idx)
@@ -3685,6 +3791,8 @@ final class QuranData: ObservableObject {
                 self.verseIndex = []
                 self.arabicTokenIndex = [:]
                 self.arabicPrefix2Index = [:]
+                self.silentArabicTokenIndex = [:]
+                self.silentArabicPrefix2Index = [:]
                 self.englishTokenIndex = [:]
                 self.englishPrefix3Index = [:]
                 self.allVerseIndices = []
@@ -3812,6 +3920,8 @@ final class QuranData: ObservableObject {
             self.verseIndex = []
             self.arabicTokenIndex = [:]
             self.arabicPrefix2Index = [:]
+            self.silentArabicTokenIndex = [:]
+            self.silentArabicPrefix2Index = [:]
             self.englishTokenIndex = [:]
             self.englishPrefix3Index = [:]
             self.allVerseIndices = []
@@ -3918,9 +4028,12 @@ final class QuranData: ObservableObject {
             }
         }
         let arabicIndexes = buildArabicSearchIndexes(for: verseIndex)
+        let silentArabicIndexes = buildSilentArabicSearchIndexes(for: verseIndex)
         let englishIndexes = buildEnglishSearchIndexes(for: verseIndex)
         arabicTokenIndex = arabicIndexes.token
         arabicPrefix2Index = arabicIndexes.prefix2
+        silentArabicTokenIndex = silentArabicIndexes.token
+        silentArabicPrefix2Index = silentArabicIndexes.prefix2
         englishTokenIndex = englishIndexes.token
         englishPrefix3Index = englishIndexes.prefix3
         allVerseIndices = Array(verseIndex.indices)
@@ -4536,7 +4649,10 @@ final class QuranData: ObservableObject {
             return filtered
         }
 
-        return regularSearchResults(for: q, useArabic: useArabic, qiraahKey: currentKey, limit: limit, offset: offset)
+        let silentQuery = useArabic && settings.ignoreSilentLettersInQuranSearch
+            ? settings.cleanSearchIgnoringSilentArabicLetters(raw, whitespace: true)
+            : nil
+        return regularSearchResults(for: q, silentQuery: silentQuery, useArabic: useArabic, qiraahKey: currentKey, limit: limit, offset: offset)
         #endif
     }
 
@@ -4558,6 +4674,8 @@ final class QuranData: ObservableObject {
             verseIndex: verseIndex,
             arabicTokenIndex: arabicTokenIndex,
             arabicPrefix2Index: arabicPrefix2Index,
+            silentArabicTokenIndex: silentArabicTokenIndex,
+            silentArabicPrefix2Index: silentArabicPrefix2Index,
             englishTokenIndex: englishTokenIndex,
             englishPrefix3Index: englishPrefix3Index,
             allVerseIndices: allVerseIndices
@@ -4567,6 +4685,7 @@ final class QuranData: ObservableObject {
 
     private func regularSearchResults(
         for cleanedQuery: String,
+        silentQuery: String?,
         useArabic: Bool,
         qiraahKey: String,
         limit: Int,
@@ -4575,7 +4694,9 @@ final class QuranData: ObservableObject {
         let cacheKey = SearchResultCacheKey(
             qiraahKey: qiraahKey,
             cleanedQuery: cleanedQuery,
-            useArabic: useArabic
+            silentQuery: silentQuery,
+            useArabic: useArabic,
+            ignoreSilentLetters: useArabic && settings.ignoreSilentLettersInQuranSearch
         )
 
         if let cached = searchResultIndexCache[cacheKey] {
@@ -4604,11 +4725,10 @@ final class QuranData: ObservableObject {
             matchingIndices.reserveCapacity(64)
         }
 
-        for index in candidateVerseIndices(for: cleanedQuery, useArabic: useArabic) {
+        for index in candidateVerseIndices(for: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) {
             guard verseIndex.indices.contains(index) else { continue }
             let entry = verseIndex[index]
-            let haystack = useArabic ? entry.arabicBlob : entry.englishBlob
-            guard haystack.contains(cleanedQuery) else { continue }
+            guard regularSearchEntryMatches(entry, cleanedQuery: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) else { continue }
 
             if limit == .max {
                 matchingIndices.append(index)
@@ -4633,12 +4753,53 @@ final class QuranData: ObservableObject {
         return results
     }
 
-    private func candidateVerseIndices(for cleanedQuery: String, useArabic: Bool) -> [Int] {
-        let tokens = searchTokens(from: cleanedQuery)
+    private func regularSearchEntryMatches(
+        _ entry: VerseIndexEntry,
+        cleanedQuery: String,
+        silentQuery: String?,
+        useArabic: Bool
+    ) -> Bool {
+        if useArabic {
+            if entry.arabicBlob.contains(cleanedQuery) || phrasePrefixMatch(entry.arabicTokens, query: searchTokens(from: cleanedQuery)) {
+                return true
+            }
+            guard let silentQuery, !silentQuery.isEmpty else { return false }
+            return entry.silentArabicBlob.contains(silentQuery)
+                || phrasePrefixMatch(entry.silentArabicTokens, query: searchTokens(from: silentQuery))
+        }
+
+        return entry.englishBlob.contains(cleanedQuery)
+            || phrasePrefixMatch(entry.englishTokens, query: searchTokens(from: cleanedQuery))
+    }
+
+    private func phrasePrefixMatch(_ haystack: [String], query: [String]) -> Bool {
+        guard !query.isEmpty, haystack.count >= query.count else { return false }
+
+        for start in 0...(haystack.count - query.count) {
+            var matched = true
+            for offset in query.indices {
+                let word = haystack[start + offset]
+                let term = query[offset]
+                if offset == query.count - 1 {
+                    if !word.hasPrefix(term) { matched = false; break }
+                } else if word != term {
+                    matched = false
+                    break
+                }
+            }
+            if matched { return true }
+        }
+
+        return false
+    }
+
+    private func candidateVerseIndices(for cleanedQuery: String, silentQuery: String?, useArabic: Bool) -> [Int] {
+        var tokens = searchTokens(from: cleanedQuery)
+        if useArabic, let silentQuery {
+            tokens.append(contentsOf: searchTokens(from: silentQuery))
+        }
         guard !tokens.isEmpty else { return allVerseIndices }
 
-        let tokenIndex = useArabic ? arabicTokenIndex : englishTokenIndex
-        let prefixIndex = useArabic ? arabicPrefix2Index : englishPrefix3Index
         let minimumPrefixLength = useArabic ? 2 : 3
 
         var candidates: Set<Int>? = nil
@@ -4646,6 +4807,8 @@ final class QuranData: ObservableObject {
 
         for token in tokens {
             var tokenMatches = Set<Int>()
+            let tokenIndex = useArabic ? arabicTokenIndex : englishTokenIndex
+            let prefixIndex = useArabic ? arabicPrefix2Index : englishPrefix3Index
 
             if let exactMatches = tokenIndex[token] {
                 tokenMatches.formUnion(exactMatches)
@@ -4655,6 +4818,19 @@ final class QuranData: ObservableObject {
                 let prefix = String(token.prefix(minimumPrefixLength))
                 if let prefixMatches = prefixIndex[prefix] {
                     tokenMatches.formUnion(prefixMatches)
+                }
+            }
+
+            if useArabic {
+                if let exactMatches = silentArabicTokenIndex[token] {
+                    tokenMatches.formUnion(exactMatches)
+                }
+
+                if token.count >= minimumPrefixLength {
+                    let prefix = String(token.prefix(minimumPrefixLength))
+                    if let prefixMatches = silentArabicPrefix2Index[prefix] {
+                        tokenMatches.formUnion(prefixMatches)
+                    }
                 }
             }
 

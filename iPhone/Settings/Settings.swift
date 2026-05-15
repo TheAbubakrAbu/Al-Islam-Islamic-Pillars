@@ -557,6 +557,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     var groupBySurah: Bool { quranSortMode == .surah }
     @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
+    @AppStorage("ignoreSilentLettersInQuranSearch") var ignoreSilentLettersInQuranSearch: Bool = false
 
     @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
     @AppStorage("lastReadAyah") var lastReadAyah: Int = 0
@@ -728,6 +729,10 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
 
         return cleaned
+    }
+
+    func cleanSearchIgnoringSilentArabicLetters(_ text: String, whitespace: Bool = false) -> String {
+        cleanSearch(text.removingSilentArabicLettersForSearch, whitespace: whitespace)
     }
     
     private func normalizedArabicForSearch(_ text: String) -> String {

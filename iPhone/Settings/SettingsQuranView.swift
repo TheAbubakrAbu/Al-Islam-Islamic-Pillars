@@ -70,6 +70,7 @@ struct SettingsQuranView: View {
         List {
             recitationSection
             displaySection
+            searchSection
             arabicTextSection
             englishTextSection
             qiraahSection
@@ -186,6 +187,20 @@ struct SettingsQuranView: View {
     private var systemFontSizeToggle: some View {
         Toggle("Use System Font Size", isOn: useSystemFontSizes.animation(.easeInOut))
             .font(.subheadline)
+    }
+
+    private var searchSection: some View {
+        Section(header: Text("SEARCH")) {
+            VStack(alignment: .leading) {
+                Toggle("Ignore Silent Letters in Ayah Search", isOn: $settings.ignoreSilentLettersInQuranSearch.animation(.easeInOut))
+                    .font(.subheadline)
+
+                Text("Arabic ayah search also checks a recitation-style version with silent letters removed, such as hamzatul wasl and silent alif, waw, ya, or lam.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
+        }
     }
 
     private var useSystemFontSizes: Binding<Bool> {
