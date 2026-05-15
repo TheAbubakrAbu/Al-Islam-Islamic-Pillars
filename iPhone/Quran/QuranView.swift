@@ -821,7 +821,10 @@ struct QuranView: View {
                         settings.quranSortMode = mode
                     }
                 } label: {
-                    Label(mode.title, systemImage: mode.systemImage)
+                    Label(
+                        mode.title,
+                        systemImage: mode == settings.quranSortMode ? "checkmark" : mode.systemImage
+                    )
                 }
             }
         } label: {

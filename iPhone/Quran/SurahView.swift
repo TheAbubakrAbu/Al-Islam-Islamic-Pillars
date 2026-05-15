@@ -73,6 +73,8 @@ struct SurahView: View {
         return cache
     }()
 
+    @MainActor private static var visibleAyahMemoryByRoute: [String: Int] = [:]
+
     private struct DividerInfo: Identifiable {
         let id = UUID()
         let title: String
@@ -545,6 +547,24 @@ struct SurahView: View {
         }
     }
 
+    private var visibleAyahMemoryRouteKey: String {
+        "\(surah.id)|\(ayah ?? 0)|\(settings.displayQiraahForArabic ?? "")"
+    }
+
+    @MainActor
+    private func rememberedVisibleAyahID() -> Int? {
+        guard let remembered = Self.visibleAyahMemoryByRoute[visibleAyahMemoryRouteKey],
+              cachedAyahByID[remembered] != nil else {
+            return nil
+        }
+        return remembered
+    }
+
+    @MainActor
+    private func rememberVisibleAyahID(_ ayahID: Int) {
+        Self.visibleAyahMemoryByRoute[visibleAyahMemoryRouteKey] = ayahID
+    }
+
     private func scrollToAyah(_ ayahID: Int, proxy: ScrollViewProxy, animated: Bool = false) {
         DispatchQueue.main.async {
             if animated {
@@ -684,7 +704,10 @@ struct SurahView: View {
         }
         .environmentObject(quranPlayer)
         .onDisappear(perform: saveLastRead)
-        .onChange(of: scenePhase) { _ in saveLastRead() }
+        .onChange(of: scenePhase) { phase in
+            guard phase != .active else { return }
+            saveLastRead()
+        }
         #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -988,8 +1011,6 @@ struct SurahView: View {
         }()
         let searchCount = isDividerKeywordSearch ? keywordDividerModels.count : filteredAyahs.count
         let syncVisibleAyahAnchor: () -> Void = {
-            guard shouldUpdateFloatingPageJuzOverlay else { return }
-
             guard let nextVisibleAyahID = (visibleAyahIDs.union(visibleBoundaryAyahIDs)).min() else {
                 return
             }
@@ -1152,16 +1173,12 @@ struct SurahView: View {
                         }
                         .id(ayah.id)
                         .onAppear {
-                            if shouldUpdateFloatingPageJuzOverlay {
-                                visibleAyahIDs.insert(ayah.id)
-                            }
+                            visibleAyahIDs.insert(ayah.id)
                             markKhatmViewedIfNeeded(ayah.id)
                             syncVisibleAyahAnchor()
                         }
                         .onDisappear {
-                            if shouldUpdateFloatingPageJuzOverlay {
-                                visibleAyahIDs.remove(ayah.id)
-                            }
+                            visibleAyahIDs.remove(ayah.id)
                             syncVisibleAyahAnchor()
                         }
                         #if os(watchOS)
@@ -1221,13 +1238,19 @@ struct SurahView: View {
             #endif
             .onAppear {
                 rebuildQiraahCaches()
-                if let sel = ayah, ayahByID[sel] != nil {
+                let restoreTarget = rememberedVisibleAyahID()
+                if let restoreTarget {
+                    firstVisibleAyahID = restoreTarget
+                } else if let sel = ayah, ayahByID[sel] != nil {
                     firstVisibleAyahID = sel
                 } else if firstVisibleAyahID == nil {
                     firstVisibleAyahID = ayahsForQiraah.first?.id
                 }
 
-                if let sel = ayah, !didScrollDown {
+                if let restoreTarget, !didScrollDown {
+                    didScrollDown = true
+                    scrollToAyah(restoreTarget, proxy: proxy)
+                } else if let sel = ayah, !didScrollDown {
                     didScrollDown = true
                     scrollToAyah(sel, proxy: proxy)
                 }
@@ -1781,6 +1804,7 @@ struct SurahView: View {
             ?? cachedAyahsForQiraah.first?.id
 
         guard let targetAyah else { return }
+        rememberVisibleAyahID(targetAyah)
 
         if settings.lastReadSurah == surah.id, settings.lastReadAyah == targetAyah {
             return

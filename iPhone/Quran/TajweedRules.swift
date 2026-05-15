@@ -60,7 +60,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural: return "Madd Letters (2 Counts)"
         case .maddNaturalMiniature: return "Tiny Madd Marks"
-        case .maddSukoon: return "Madd Aarid as-Sukoon"
+        case .maddSukoon: return "Ending Madd"
         case .maddSeparated: return "Madd Munfasil"
         case .maddConnected: return "Madd Muttasil"
         case .maddNecessary: return "Madd Lazim"
@@ -88,7 +88,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural: return "مَدٌّ طَبِيعِي"
         case .maddNaturalMiniature: return "مَدٌّ طَبِيعِي صَغِير"
-        case .maddSukoon: return "مَدٌّ عَارِضٌ لِلسُّكُون"
+        case .maddSukoon: return "مَدّ الوَقْف"
         case .maddSeparated: return "مَدٌّ مُنفَصِل"
         case .maddConnected: return "مَدٌّ مُتَّصِل"
         case .maddNecessary: return "مَدٌّ لَازِم"
@@ -117,7 +117,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
             
         case .maddNatural: return "Madd Tabee Letters"
         case .maddNaturalMiniature: return "Madd Tabee Tiny Marks"
-        case .maddSukoon: return "Madd Aarid lis-Sukoon"
+        case .maddSukoon: return "Ending Madd"
         case .maddSeparated: return "Madd Munfasil"
         case .maddConnected: return "Madd Muttasil"
         case .maddNecessary: return "Madd Laazim"
@@ -185,7 +185,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .maddNaturalMiniature:
             return "Tiny madd marks such as small alif, small waw, and small ya indicate a natural two-count vowel sound written as miniature tashkeel."
         case .maddSukoon:
-            return "Madd aarid lis-sukoon happens when stopping creates a temporary sukoon after a madd letter, read as 2, 4, or 6 counts."
+            return "Ending madd covers stop-based madd, including madd aarid lis-sukoon and madd leen. It is read as 2, 4, or 6 counts when stopping."
         case .maddSeparated:
             return "Madd munfasil is when a word ends with madd and the next word begins with hamzah, so the stretch carries across words."
         case .maddConnected:
@@ -241,7 +241,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .maddNaturalMiniature:
             return "Occurs on miniature madd marks: alif sagheerah, waw sagheerah, ya sagheerah"
         case .maddSukoon:
-            return "When stopping causes sukoon after madd letters: ا، و، ي"
+            return "When stopping creates madd aarid lis-sukoon after ا، و، ي, or madd leen after َ + وۡ / َ + يۡ"
         case .maddSeparated:
             return "When madd letters (ا، و، ي) are followed by hamzah in the next word"
         case .maddConnected:
@@ -352,7 +352,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .maddNaturalMiniature:
             return "From tiny vowel diacritics: small alif, waw, or yaa."
         case .maddSukoon:
-            return "Stop-based madd with 2, 4, or 6 counts."
+            return "Stop-based madd, including aarid and leen."
         case .maddSeparated:
             return "Madd at word end before next hamzah."
         case .maddConnected:
@@ -397,7 +397,7 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .maddNaturalMiniature:
             return "These tiny written signs carry the same two-count natural vowel sound but are controlled separately so you can hide or show miniature Uthmani madd marks independently from normal madd letters."
         case .maddSukoon:
-            return "The key condition is pausing at the word ending; if you continue reading (wasl), this special stop-based extension is usually not applied the same way. Recitation schools permit 2, 4, or 6 counts here, so consistency within a reading style matters."
+            return "The key condition is pausing at the word ending. This includes madd aarid lis-sukoon, where the final letter becomes temporarily sakin after a normal madd letter, and madd leen, where a sakin waaw or yaa follows a fathah and is stretched softly when stopping. Use 2, 4, or 6 counts consistently, and keep madd leen no longer than the madd aarid length chosen in the same recitation."
         case .maddSeparated:
             return "Because the hamzah is in the following word, scholars classify this separately from muttasil. Allowed lengths vary by riwayah, so learners should follow one taught pattern and avoid switching counts randomly in the same recitation."
         case .maddConnected:

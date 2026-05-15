@@ -1462,7 +1462,12 @@ final class TajweedStore {
         var candidate: Int?
         for index in finalWord {
             guard index == requiredCarrierIndex else { continue }
-            guard isAaridMaddCarrier(clusters: clusters, index: index, wordStart: finalWord.lowerBound) else { continue }
+            guard isAaridMaddCarrier(
+                clusters: clusters,
+                index: index,
+                wordStart: finalWord.lowerBound,
+                finalPronouncedIndex: pronouncedLetters.last
+            ) else { continue }
             candidate = index
         }
         
@@ -1477,9 +1482,18 @@ final class TajweedStore {
         return indices
     }
 
-    private func isAaridMaddCarrier(clusters: [CharacterClusterInfo], index: Int, wordStart: Int) -> Bool {
+    private func isAaridMaddCarrier(
+        clusters: [CharacterClusterInfo],
+        index: Int,
+        wordStart: Int,
+        finalPronouncedIndex: Int?
+    ) -> Bool {
         guard clusters.indices.contains(index), index > wordStart else { return false }
         let cluster = clusters[index]
+
+        if isLeenMaddCarrier(clusters: clusters, index: index, finalPronouncedIndex: finalPronouncedIndex) {
+            return true
+        }
         
         // Check for clusters with miniature madd marks (dagger alif, small waw, small yeh)
         // These should also be recognized as madd arid carriers
@@ -1509,6 +1523,29 @@ final class TajweedStore {
             return true
         }
         return shouldOfferNaturalMadd2(clusters: clusters, index: index, wordStart: wordStart)
+    }
+
+    private func isLeenMaddCarrier(
+        clusters: [CharacterClusterInfo],
+        index: Int,
+        finalPronouncedIndex: Int?
+    ) -> Bool {
+        guard clusters.indices.contains(index),
+              index > 0,
+              let finalPronouncedIndex,
+              clusters.indices.contains(finalPronouncedIndex),
+              finalPronouncedIndex > index,
+              indexOfFinalPronouncedArabicLetterCluster(clusters: clusters) == finalPronouncedIndex,
+              clusters[finalPronouncedIndex].primaryArabicLetter != nil,
+              !isSilentFinalLetter(clusters: clusters, index: finalPronouncedIndex) else {
+            return false
+        }
+        let cluster = clusters[index]
+        guard cluster.primaryArabicLetter == "و" || isYaBase(cluster) else { return false }
+        guard hasUthmaniSukoon(cluster), !hasStandardSukoon(cluster) else { return false }
+        let previous = clusters[index - 1]
+        guard !isWhitespaceOnly(previous), hasFathaFamily(previous), !hasFathatayn(previous) else { return false }
+        return true
     }
 
     private func utf16StartOfFirstNonWhitespace(clusters: [CharacterClusterInfo]) -> Int? {
@@ -2121,7 +2158,7 @@ final class TajweedStore {
     private func shouldSuppressTinyMeemIqlaab(clusters: [CharacterClusterInfo], index: Int) -> Bool {
         guard clusters.indices.contains(index) else { return false }
         let cluster = clusters[index]
-        let suppressesAtFinalSound = cluster.contains(Self.smallHighMeem) || hasFathatayn(cluster)
+        let suppressesAtFinalSound = cluster.contains(Self.smallHighMeem) || cluster.contains(Self.smallLowMeem) || hasFathatayn(cluster)
         guard suppressesAtFinalSound else { return false }
 
         var next = index + 1

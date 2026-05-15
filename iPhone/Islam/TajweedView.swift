@@ -520,7 +520,7 @@ private struct TajweedInMushafView: View {
                     )
 
                     TajweedRuleRow(
-                        arabic: "بً",
+                        arabic: "بًا",
                         pronunciation: "normal fathatayn",
                         rule: "Version 2: clear idhaar",
                         arabicFont: arabicHeadlineFont
@@ -1291,7 +1291,50 @@ private struct TajweedMaddView: View {
                     .font(.body)
             }
 
-            Section("4. MADD LAZIM") {
+            Section("4. ENDING MADD") {
+                Text("Ending madd applies when you stop on a word and the ending sound changes because of waqf.")
+                    .font(.body)
+
+                Text("It includes Madd Aarid lis-Sukoon and Madd Leen.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+
+                Text("Madd Leen")
+                    .font(.subheadline.weight(.semibold))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("A sakin yaa or sakin waaw")
+                    Text("Preceded by fathah")
+                    Text("You stop on the word")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(alignment: .trailing, spacing: 12) {
+                    Text("خَوۡف")
+                    Text("بَيۡت")
+                    Text("قُرَيۡش")
+                }
+                .font(arabicHeadlineFont)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Text("Madd Aarid lis-Sukoon")
+                    .font(.subheadline.weight(.semibold))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedPairRow(arabic: "ٱلۡعَٰلَمِينَ", english: "stop: temporary sukoon", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "ٱلرَّحِيمِ", english: "stop: ٱلرَّحِيمۡ", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "نَسۡتَعِينُ", english: "stop: temporary sukoon", arabicFont: arabicHeadlineFont)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Length: 2, 4, or 6 counts. Madd Leen should follow the stopping style you choose for Madd Aarid lis-Sukoon, and should not be longer than it.")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+            }
+
+            Section("5. MADD LAZIM") {
                 Text("This is the strongest and longest madd.")
                     .font(.body)
 

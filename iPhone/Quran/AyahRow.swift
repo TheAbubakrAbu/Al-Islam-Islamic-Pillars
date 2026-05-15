@@ -799,14 +799,14 @@ struct AyahRow: View, Equatable {
                     settings.hapticFeedback()
                     showQiraahComparisonSheet = true
                 } label: {
-                    Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+                    Label("Qiraah Comparison", systemImage: "character.book.closed.fill.ar")
                 }
 
                 Button {
                     settings.hapticFeedback()
                     showEnglishComparisonSheet = true
                 } label: {
-                    Label("Translation Comparison", systemImage: "text.bubble")
+                    Label("Translation Comparison", systemImage: "character.book.closed")
                 }
             } label: {
                 Label("Compare Ayah", systemImage: "rectangle.split.2x1")
@@ -816,14 +816,14 @@ struct AyahRow: View, Equatable {
                 settings.hapticFeedback()
                 showQiraahComparisonSheet = true
             } label: {
-                Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+                Label("Qiraah Comparison", systemImage: "character.book.closed.fill.ar")
             }
         } else if canShowTranslation {
             Button {
                 settings.hapticFeedback()
                 showEnglishComparisonSheet = true
             } label: {
-                Label("Translation Comparison", systemImage: "text.bubble")
+                Label("Translation Comparison", systemImage: "character.book.closed")
             }
         }
     }

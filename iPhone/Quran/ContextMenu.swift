@@ -188,12 +188,14 @@ private final class AyahTafsirViewModel: ObservableObject {
 struct AyahTafsirSheet: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
+    @Environment(\.dismiss) private var dismiss
 
     let surahName: String
     let surahNumber: Int
     let ayahNumber: Int
 
     @StateObject private var viewModel: AyahTafsirViewModel
+    @State private var searchText = ""
     @AppStorage("quran.tafsir.author") private var selectedAuthorRawValue = TafsirAuthor.ibnKathir.rawValue
 
     init(surahName: String, surahNumber: Int, ayahNumber: Int) {
@@ -314,6 +316,14 @@ struct AyahTafsirSheet: View {
             }
             .navigationTitle("\(surahName) \(surahNumber):\(ayahNumber)")
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText.animation(.easeInOut), prompt: "Search tafsir")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
         .modifier(TafsirSheetPresentationModifier())
         .task(id: loadKey) {
@@ -377,7 +387,7 @@ struct AyahTafsirSheet: View {
 
     @ViewBuilder
     private func tafsirContentView(for content: String) -> some View {
-        TafsirMarkdownView(markdown: content)
+        TafsirMarkdownView(markdown: content, searchText: searchText, accent: settings.accentColor.color)
     }
 
     private var tafsirLoadingView: some View {
@@ -447,6 +457,8 @@ struct AyahTafsirSheet: View {
 
 private struct TafsirMarkdownView: View {
     let markdown: String
+    let searchText: String
+    let accent: Color
 
     private var blocks: [TafsirMarkdownBlock] {
         normalizedMarkdown
@@ -471,12 +483,12 @@ private struct TafsirMarkdownView: View {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                 switch block.kind {
                 case .heading:
-                    Text(block.displayText)
+                    Text(block.highlightedDisplayText(searchText: searchText, accent: accent))
                         .font(.title3.bold())
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 case .body:
-                    if let attributed = block.attributedText {
+                    if let attributed = block.attributedText(searchText: searchText, accent: accent) {
                         Text(attributed)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .textSelection(.enabled)
@@ -525,7 +537,7 @@ private struct TafsirMarkdownBlock {
         rawText.replacingOccurrences(of: #"\\-"#, with: "-", options: .regularExpression)
     }
 
-    var attributedText: AttributedString? {
+    func attributedText(searchText: String, accent: Color) -> AttributedString? {
         guard kind == .body else { return nil }
         guard var attributed = try? AttributedString(markdown: displayText) else { return nil }
         for run in attributed.runs {
@@ -533,7 +545,34 @@ private struct TafsirMarkdownBlock {
                 attributed[run.range].inlinePresentationIntent = nil
             }
         }
+        applySearchHighlight(to: &attributed, searchText: searchText, accent: accent)
         return attributed
+    }
+
+    func highlightedDisplayText(searchText: String, accent: Color) -> AttributedString {
+        var attributed = AttributedString(displayText)
+        applySearchHighlight(to: &attributed, searchText: searchText, accent: accent)
+        return attributed
+    }
+
+    private func applySearchHighlight(to attributed: inout AttributedString, searchText: String, accent: Color) {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        var searchStart = displayText.startIndex
+        while searchStart < displayText.endIndex,
+              let found = displayText.range(
+                of: trimmed,
+                options: [.caseInsensitive, .diacriticInsensitive],
+                range: searchStart..<displayText.endIndex
+              ) {
+            if let lower = AttributedString.Index(found.lowerBound, within: attributed),
+               let upper = AttributedString.Index(found.upperBound, within: attributed) {
+                attributed[lower..<upper].backgroundColor = accent.opacity(0.28)
+                attributed[lower..<upper].foregroundColor = accent
+            }
+            searchStart = found.upperBound
+        }
     }
 }
 
@@ -552,6 +591,7 @@ private struct TafsirSheetPresentationModifier: ViewModifier {
 struct AyahQiraahComparisonSheet: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
+    @Environment(\.dismiss) private var dismiss
 
     let surahNumber: Int
     let ayahNumber: Int
@@ -647,6 +687,13 @@ struct AyahQiraahComparisonSheet: View {
             .navigationTitle("Qiraah Comparison")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search riwayat")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
         .modifier(TafsirSheetPresentationModifier())
     }
@@ -822,6 +869,7 @@ private final class EnglishComparisonViewModel: ObservableObject {
 struct AyahEnglishComparisonSheet: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
+    @Environment(\.dismiss) private var dismiss
 
     let surahNumber: Int
     let ayahNumber: Int
@@ -967,6 +1015,13 @@ struct AyahEnglishComparisonSheet: View {
             .navigationTitle("Translation Comparison")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search translations")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
             .task(id: loadKey) {
                 await viewModel.loadIfNeeded()
             }
@@ -1101,14 +1156,14 @@ struct AyahContextMenuModifier: ViewModifier {
                     settings.hapticFeedback()
                     showQiraahComparisonSheet = true
                 } label: {
-                    Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+                    Label("Qiraah Comparison", systemImage: "character.book.closed.fill.ar")
                 }
 
                 Button {
                     settings.hapticFeedback()
                     showEnglishComparisonSheet = true
                 } label: {
-                    Label("Translation Comparison", systemImage: "text.bubble")
+                    Label("Translation Comparison", systemImage: "character.book.closed")
                 }
             } label: {
                 Label("Compare Ayah", systemImage: "rectangle.split.2x1")
@@ -1118,14 +1173,14 @@ struct AyahContextMenuModifier: ViewModifier {
                 settings.hapticFeedback()
                 showQiraahComparisonSheet = true
             } label: {
-                Label("Qiraah Comparison", systemImage: "textformat.size.ar")
+                Label("Qiraah Comparison", systemImage: "character.book.closed.fill.ar")
             }
         } else if canCompareEnglishText {
             Button {
                 settings.hapticFeedback()
                 showEnglishComparisonSheet = true
             } label: {
-                Label("Translation Comparison", systemImage: "text.bubble")
+                Label("Translation Comparison", systemImage: "character.book.closed")
             }
         }
     }

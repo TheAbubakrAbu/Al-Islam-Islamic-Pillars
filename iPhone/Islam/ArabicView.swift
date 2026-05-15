@@ -5,10 +5,12 @@ struct ArabicView: View {
     @State private var searchText = ""
     @AppStorage("arabicFilterMode") private var filterModeRaw: String = ArabicFilterMode.normal.rawValue
 
-    private enum ArabicFilterMode: String, CaseIterable {
+    private enum ArabicFilterMode: String, CaseIterable, Identifiable {
         case normal
         case similarity
         case heavyLight
+
+        var id: String { rawValue }
 
         var title: String {
             switch self {
@@ -111,14 +113,20 @@ struct ArabicView: View {
                     SearchBar(text: $searchText.animation(.easeInOut))
 
                     Menu {
-                        Picker("Arabic Filter", selection: $filterModeRaw.animation(.easeInOut)) {
-                            Section {
-                                ForEach(ArabicFilterMode.allCases.reversed(), id: \.rawValue) { mode in
-                                    Label(mode.title, systemImage: mode.icon).tag(mode.rawValue)
+                        Text("Arabic Filter")
+                            .foregroundStyle(.secondary)
+                        
+                        ForEach(ArabicFilterMode.allCases) { mode in
+                            Button {
+                                settings.hapticFeedback()
+                                withAnimation(.easeInOut) {
+                                    filterModeRaw = mode.rawValue
                                 }
-                            } header: {
-                                Text("Arabic Filter")
-                                    .foregroundStyle(.secondary)
+                            } label: {
+                                Label(
+                                    mode.title,
+                                    systemImage: mode == filterMode ? "checkmark" : mode.icon
+                                )
                             }
                         }
                     } label: {
