@@ -49,6 +49,21 @@ struct PrayerList: View {
         prayer.nameTransliteration == "Midnight" ? "Islamic Midnight" : prayer.nameTransliteration
     }
 
+    private func togglePrayerExpansion(for prayer: Prayer, animated: Bool = true) {
+        let prayerKey = expansionKey(for: prayer)
+        settings.hapticFeedback()
+        let update = {
+            expandedPrayerKey = expandedPrayerKey == prayerKey ? nil : prayerKey
+        }
+        if animated {
+            withAnimation {
+                update()
+            }
+        } else {
+            update()
+        }
+    }
+
     private func mergedWithOptional(_ base: [Prayer], for date: Date) -> [Prayer] {
         settings.prayersIncludingOptional(base, for: date)
     }
@@ -162,7 +177,6 @@ struct PrayerList: View {
         let isExpanded = expandedPrayerKey == prayerKey
         let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
         let listIconColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : settings.accentColor.color
-        let bellRowColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : .primary
 
         return Group {
             PrayerListRowCard(
@@ -172,23 +186,18 @@ struct PrayerList: View {
                 iconColor: listIconColor,
                 trailingContent: {
                     #if os(iOS)
-                    if !isComparisonBaseline {
-                        prayerBell(for: prayer, rowColor: bellRowColor)
-                    }
+                    prayerBell(for: prayer, rowColor: .primary)
                     #endif
                 }
             )
 
             if isExpanded {
-                PrayerDetailBlock(prayer: prayer, referenceText: prayerReferenceText(for: prayer))
+                expandedPrayerDetailContent(for: prayer)
                     .contentShape(Rectangle())
             }
         }
         .onTapGesture {
-            settings.hapticFeedback()
-            withAnimation {
-                expandedPrayerKey = isExpanded ? nil : prayerKey
-            }
+            togglePrayerExpansion(for: prayer)
         }
     }
 
@@ -201,15 +210,26 @@ struct PrayerList: View {
 
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(prayers, id: \.stableDisplayID) { prayer in
+                let color: Color = isComparisonBaseline ? .secondary : legacyGridPrayerColor(for: prayer, in: prayers)
+
                 PrayerGridTile(
                     prayer: prayer,
-                    color: isComparisonBaseline ? .secondary : legacyGridPrayerColor(for: prayer, in: prayers)
+                    color: color,
+                    trailingContent: {
+                        EmptyView()
+                    }
                 )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    togglePrayerExpansion(for: prayer)
+                }
             }
         }
         .padding(.horizontal, -20)
         .lineLimit(1)
         .minimumScaleFactor(0.5)
+
+        expandedPrayerDetail(for: prayers)
     }
 
     @ViewBuilder
@@ -221,7 +241,19 @@ struct PrayerList: View {
         HStack(spacing: 0) {
             VStack(spacing: 4) {
                 ForEach(firstHalf, id: \.stableDisplayID) { prayer in
-                    SplitPrayerRow(prayer: prayer, color: isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers))
+                    let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
+
+                    SplitPrayerRow(
+                        prayer: prayer,
+                        color: color,
+                        trailingContent: {
+                            EmptyView()
+                        }
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        togglePrayerExpansion(for: prayer)
+                    }
                 }
             }
 
@@ -231,12 +263,26 @@ struct PrayerList: View {
 
             VStack(spacing: 4) {
                 ForEach(secondHalf, id: \.stableDisplayID) { prayer in
-                    SplitPrayerRow(prayer: prayer, color: isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers))
+                    let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
+
+                    SplitPrayerRow(
+                        prayer: prayer,
+                        color: color,
+                        trailingContent: {
+                            EmptyView()
+                        }
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        togglePrayerExpansion(for: prayer)
+                    }
                 }
             }
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
+
+        expandedPrayerDetail(for: prayers)
     }
 
     @ViewBuilder
@@ -258,13 +304,6 @@ struct PrayerList: View {
                             .foregroundColor(color)
 
                         Spacer()
-
-                        #if os(iOS)
-                        if !isComparisonBaseline {
-                            prayerBell(for: prayer, rowColor: color)
-                                .padding(.leading, -6)
-                        }
-                        #endif
                     }
 
                     Text(prayer.nameTransliteration)
@@ -283,12 +322,40 @@ struct PrayerList: View {
                     useColor: isCurrent ? 0.22 : 0.12,
                     customTint: isCurrent ? settings.accentColor.color : nil
                 )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    togglePrayerExpansion(for: prayer)
+                }
             }
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
         .onChange(of: settings.travelingMode) { _ in
             withAnimation { fullPrayers = false }
+        }
+
+        expandedPrayerDetail(for: prayers)
+    }
+
+    @ViewBuilder
+    private func expandedPrayerDetail(for prayers: [Prayer]) -> some View {
+        if let prayer = prayers.first(where: { expansionKey(for: $0) == expandedPrayerKey }) {
+            expandedPrayerDetailContent(for: prayer)
+            .id(prayer.stableDisplayID)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private func expandedPrayerDetailContent(for prayer: Prayer) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            PrayerDetailBlock(prayer: prayer, referenceText: prayerReferenceText(for: prayer))
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            #if os(iOS)
+            if prayerDisplayMode != .list {
+                prayerBell(for: prayer, rowColor: .primary)
+            }
+            #endif
         }
     }
 
@@ -663,9 +730,10 @@ private extension Prayer {
     }
 }
 
-private struct PrayerGridTile: View {
+private struct PrayerGridTile<TrailingContent: View>: View {
     let prayer: Prayer
     let color: Color
+    @ViewBuilder let trailingContent: () -> TrailingContent
 
     var body: some View {
         VStack(alignment: .center, spacing: 4) {
@@ -679,6 +747,8 @@ private struct PrayerGridTile: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(color)
+
+                trailingContent()
             }
 
             Text(prayer.time, style: .time)
@@ -688,9 +758,10 @@ private struct PrayerGridTile: View {
     }
 }
 
-private struct SplitPrayerRow: View {
+private struct SplitPrayerRow<TrailingContent: View>: View {
     let prayer: Prayer
     let color: Color
+    @ViewBuilder let trailingContent: () -> TrailingContent
 
     var body: some View {
         HStack(spacing: 8) {
@@ -708,6 +779,8 @@ private struct SplitPrayerRow: View {
 
             Text(prayer.time, style: .time)
                 .fontWeight(.bold)
+
+            trailingContent()
         }
         .foregroundColor(color)
     }

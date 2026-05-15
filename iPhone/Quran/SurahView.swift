@@ -26,6 +26,7 @@ struct SurahView: View {
     @State private var showCustomRangeSheet = false
     @State private var showReciterPickerSheet = false
     @State private var showSurahPickerSheet = false
+    @State private var confirmConvertQiraahToHafs = false
     @State private var isAyahSearchFocused = false
     @State private var selectedSurahNavigation: Int? = nil
     @State private var dividerInfo: DividerInfo? = nil
@@ -1000,6 +1001,7 @@ struct SurahView: View {
         return
             List {
                 khatmProgressSection()
+                qiraahNoticeSection()
 
                 Section {
                     /*SurahRow(surah: surah, hideInfo: true).equatable()
@@ -1286,6 +1288,35 @@ struct SurahView: View {
             .adaptiveSafeArea(edge: .bottom) {
                 bottomInsetContent(proxy: proxy)
             }
+            .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmConvertQiraahToHafs, titleVisibility: .visible) {
+                Button("Yes") {
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut) {
+                        settings.displayQiraah = Settings.Riwayah.hafsTag
+                    }
+                }
+
+                Button("No") {
+                    settings.hapticFeedback()
+                }
+            } message: {
+                Text("Are you sure? This will convert the qiraah back to Hafs an Asim.")
+            }
+            #else
+            .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmConvertQiraahToHafs, titleVisibility: .visible) {
+                Button("Yes") {
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut) {
+                        settings.displayQiraah = Settings.Riwayah.hafsTag
+                    }
+                }
+
+                Button("No") {
+                    settings.hapticFeedback()
+                }
+            } message: {
+                Text("Are you sure? This will convert the qiraah back to Hafs an Asim.")
+            }
             #endif
     }
 
@@ -1323,6 +1354,65 @@ struct SurahView: View {
                 Text("KHATM PROGRESS")
             }
             .onReceive(settings.objectWillChange) { _ in computeKhatmOverviewIfNeeded(force: false) }
+        }
+    }
+
+    @ViewBuilder
+    private func qiraahNoticeSection() -> some View {
+        if !settings.isHafsDisplay {
+            let option = Settings.Riwayah.option(for: settings.displayQiraah)
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .center, spacing: 12) {
+                        Image(systemName: "character.book.closed.fill.ar")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(settings.accentColor.color)
+                            .frame(width: 34, height: 34)
+                            .background(settings.accentColor.color.opacity(0.12), in: Circle())
+                        
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Current Riwayah")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            
+                            HStack {
+                                Text(option.label)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                
+                                Text(option.arabic)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                    .minimumScaleFactor(0.8)
+                            }
+                        }
+                        
+                        Spacer(minLength: 0)
+                    }
+                    
+                    Button {
+                        settings.hapticFeedback()
+                        confirmConvertQiraahToHafs = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.uturn.backward")
+                            Text("Use Default Hafs an Asim")
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(settings.accentColor.color)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(settings.accentColor.color.opacity(0.11), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 6)
+            }
         }
     }
 

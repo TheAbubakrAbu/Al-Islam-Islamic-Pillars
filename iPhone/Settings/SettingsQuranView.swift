@@ -7,8 +7,9 @@ struct SettingsQuranView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var showEdits: Bool
+    @State private var confirmHideQiraahDetails = false
     private let presentedAsSheet: Bool
 
     init(showEdits: Bool = false, presentedAsSheet: Bool = false) {
@@ -70,7 +71,7 @@ struct SettingsQuranView: View {
         List {
             recitationSection
             displaySection
-            searchSection
+            //searchSection
             arabicTextSection
             englishTextSection
             qiraahSection
@@ -92,6 +93,22 @@ struct SettingsQuranView: View {
             }
         }
         #endif
+        .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmHideQiraahDetails, titleVisibility: .visible) {
+            Button("Yes") {
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    settings.displayQiraah = Settings.Riwayah.hafsTag
+                    settings.showQiraahDetails = false
+                }
+            }
+
+            Button("No") {
+                settings.hapticFeedback()
+                settings.showQiraahDetails = true
+            }
+        } message: {
+            Text("Are you sure? This will convert the qiraah back to Hafs an Asim.")
+        }
     }
 
     private var recitationSection: some View {
@@ -413,12 +430,10 @@ struct SettingsQuranView: View {
             if settings.showQiraahDetails {
                 Button {
                     settings.hapticFeedback()
-                    withAnimation(.easeInOut) {
-                        settings.showQiraahDetails = false
-                    }
+                    hideQiraahDetails()
                 } label: {
                     HStack {
-                        Text("Hide Riwayah / Qiraah")
+                        Label("Hide Riwayah / Qiraah", systemImage: "character.book.closed.fill.ar")
                         Spacer()
                         Image(systemName: "chevron.up")
                     }
@@ -438,7 +453,7 @@ struct SettingsQuranView: View {
                     }
                 } label: {
                     HStack {
-                        Text("Show Riwayah / Qiraah")
+                        Label("Show Riwayah / Qiraah", systemImage: "character.book.closed.fill.ar")
                         Spacer()
                         Image(systemName: "chevron.down")
                     }
@@ -459,6 +474,17 @@ struct SettingsQuranView: View {
             if settings.showQiraahDetails {
                 Text("Play Ayahs is unsupported for other qiraat. For full surahs, you can choose reciters by riwayah. If you play a surah while viewing a different qiraah on screen, the reciter may be in another riwayah, so the audio may not match the text you see. For beginners, staying with Hafs an Asim for both reading and listening is recommended.")
             }
+        }
+    }
+
+    private func hideQiraahDetails() {
+        if settings.isHafsDisplay {
+            withAnimation(.easeInOut) {
+                settings.showQiraahDetails = false
+            }
+        } else {
+            settings.showQiraahDetails = true
+            confirmHideQiraahDetails = true
         }
     }
 
@@ -568,6 +594,7 @@ struct ReciterListView: View {
     @State private var pendingQiraahReciter: Reciter?
     @State private var pendingDisplayQiraahTag: String?
     @State private var pendingScrollToReciterID: String? = nil
+    @State private var confirmHideQiraahDetails = false
     @AppStorage("splitMurattalRecitersByGroup") private var splitMurattalRecitersByGroup = false
     #if os(iOS)
     @StateObject private var downloadManager = ReciterDownloadManager.shared
@@ -1070,6 +1097,17 @@ struct ReciterListView: View {
         }
     }
 
+    private func hideQiraahDetails() {
+        if settings.isHafsDisplay {
+            withAnimation(.easeInOut) {
+                settings.showQiraahDetails = false
+            }
+        } else {
+            settings.showQiraahDetails = true
+            confirmHideQiraahDetails = true
+        }
+    }
+
     var body: some View {
         ScrollViewReader { scrollProxy in
             List {
@@ -1191,12 +1229,10 @@ struct ReciterListView: View {
                             Section {
                                 Button {
                                     settings.hapticFeedback()
-                                    withAnimation(.easeInOut) {
-                                        settings.showQiraahDetails = false
-                                    }
+                                    hideQiraahDetails()
                                 } label: {
                                     HStack {
-                                        Text("Hide Other Qiraat Reciters")
+                                        Label("Hide Other Qiraat Reciters", systemImage: "character.book.closed.fill.ar")
                                         
                                         Spacer()
                                         
@@ -1250,7 +1286,7 @@ struct ReciterListView: View {
                                     }
                                 } label: {
                                     HStack {
-                                        Text("Show Other Qiraat Reciters")
+                                        Label("Show Other Qiraat Reciters", systemImage: "character.book.closed.fill.ar")
                                         
                                         Spacer()
                                         
@@ -1266,12 +1302,10 @@ struct ReciterListView: View {
                         Section {
                             Button {
                                 settings.hapticFeedback()
-                                withAnimation(.easeInOut) {
-                                    settings.showQiraahDetails = false
-                                }
+                                hideQiraahDetails()
                             } label: {
                                 HStack {
-                                    Text("Hide Other Qiraat Reciters")
+                                    Label("Hide Other Qiraat Reciters", systemImage: "character.book.closed.fill.ar")
                                     
                                     Spacer()
                                     
@@ -1325,7 +1359,7 @@ struct ReciterListView: View {
                                 }
                             } label: {
                                 HStack {
-                                    Text("Show Other Qiraat Reciters")
+                                    Label("Show Other Qiraat Reciters", systemImage: "character.book.closed.fill.ar")
                                     
                                     Spacer()
                                     
@@ -1370,6 +1404,22 @@ struct ReciterListView: View {
                 }
             } message: {
                 Text(qiraahChangeDialogMessage)
+            }
+            .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmHideQiraahDetails, titleVisibility: .visible) {
+                Button("Yes") {
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut) {
+                        settings.displayQiraah = Settings.Riwayah.hafsTag
+                        settings.showQiraahDetails = false
+                    }
+                }
+
+                Button("No") {
+                    settings.hapticFeedback()
+                    settings.showQiraahDetails = true
+                }
+            } message: {
+                Text("Are you sure? This will convert the qiraah back to Hafs an Asim.")
             }
             .onChange(of: pendingScrollToReciterID) { id in
                 guard let id else { return }

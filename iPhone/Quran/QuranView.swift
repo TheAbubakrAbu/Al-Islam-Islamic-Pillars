@@ -114,6 +114,7 @@ struct QuranView: View {
         let pageSearchResult: (surah: Surah, ayah: Ayah)?
         let juzSearchResult: (surah: Surah, ayah: Ayah)?
         let exactMatch: (surah: Surah?, ayah: Ayah?)
+        let isExactAyahReference: Bool
         let surahCountQuery: SurahCountQuery?
         let filteredSurahs: [Surah]
         let canShowMoreAyahHits: Bool
@@ -278,6 +279,15 @@ struct QuranView: View {
         return await Task.detached(priority: .userInitiated) {
             snapshot.search(term: query, limit: .max, offset: 0)
         }.value
+    }
+
+    private func clearAyahSearchState() {
+        withAnimation {
+            verseHits = []
+            hasMoreHits = false
+            blockAyahSearchAfterZero = false
+            zeroResultQuery = ""
+        }
     }
 
     private var shouldShowSearchHelpOverlay: Bool {
@@ -1936,7 +1946,11 @@ struct QuranView: View {
     private func ayahSearchSection(context: SearchDisplayContext) -> some View {
         let bestHits = bestAyahHitsForCurrentQuery()
 
-        if !quranData.isVerseSearchReady {
+        if context.isExactAyahReference {
+            Section(header: ayahSearchHeader(context: context)) {
+                ayahExactMatchRows(context: context)
+            }
+        } else if !quranData.isVerseSearchReady {
             Section {
                 HStack(spacing: 12) {
                     ProgressView()
@@ -2205,13 +2219,15 @@ struct QuranView: View {
                 settings.hapticFeedback()
                 ayahSearchTask?.cancel()
                 let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-                ayahSearchTask = Task { @MainActor in
+                ayahSearchTask = Task {
                     let allHits = await fetchAllHitsOffMain(query: query)
                     guard !Task.isCancelled else { return }
-                    guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-                    withAnimation {
-                        verseHits = allHits
-                        hasMoreHits = false
+                    await MainActor.run {
+                        guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+                        withAnimation {
+                            verseHits = allHits
+                            hasMoreHits = false
+                        }
                     }
                 }
             } label: {
@@ -2240,14 +2256,15 @@ struct QuranView: View {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let offset = verseHits.count
 
-        ayahSearchTask = Task { @MainActor in
+        ayahSearchTask = Task {
             let (moreHits, moreAvail) = await fetchHitsOffMain(query: query, limit: amount, offset: offset)
             guard !Task.isCancelled else { return }
-            guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-
-            withAnimation {
-                verseHits.append(contentsOf: moreHits)
-                hasMoreHits = moreAvail
+            await MainActor.run {
+                guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+                withAnimation {
+                    verseHits.append(contentsOf: moreHits)
+                    hasMoreHits = moreAvail
+                }
             }
         }
     }
@@ -2258,32 +2275,22 @@ struct QuranView: View {
         let query = txt.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if parseSurahCountQuery(from: query) != nil {
-            withAnimation {
-                verseHits = []
-                hasMoreHits = false
-                blockAyahSearchAfterZero = false
-                zeroResultQuery = ""
-            }
+            clearAyahSearchState()
             return
         }
 
         guard !query.isEmpty else {
-            withAnimation {
-                verseHits = []
-                hasMoreHits = false
-                blockAyahSearchAfterZero = false
-                zeroResultQuery = ""
-            }
+            clearAyahSearchState()
+            return
+        }
+
+        if getSurahAndAyah(from: query).surah != nil {
+            clearAyahSearchState()
             return
         }
 
         guard quranData.isVerseSearchReady else {
-            withAnimation {
-                verseHits = []
-                hasMoreHits = false
-                blockAyahSearchAfterZero = false
-                zeroResultQuery = ""
-            }
+            clearAyahSearchState()
             return
         }
 
@@ -2300,7 +2307,7 @@ struct QuranView: View {
             }
         }
 
-        ayahSearchTask = Task { @MainActor in
+        ayahSearchTask = Task {
             if debounce {
                 #if os(watchOS)
                 try? await Task.sleep(nanoseconds: 400_000_000)
@@ -2309,22 +2316,26 @@ struct QuranView: View {
                 #endif
             }
             guard !Task.isCancelled else { return }
-            guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+            let shouldContinue = await MainActor.run {
+                query == searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            guard shouldContinue else { return }
 
             let (first, more) = await fetchHitsOffMain(query: query, limit: hitPageSize, offset: 0)
             guard !Task.isCancelled else { return }
-            guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-
-            withAnimation {
-                verseHits = first
-                hasMoreHits = more
-                if first.isEmpty {
-                    blockAyahSearchAfterZero = true
-                    zeroResultQueryLength = query.count
-                    zeroResultQuery = query
-                } else {
-                    blockAyahSearchAfterZero = false
-                    zeroResultQuery = ""
+            await MainActor.run {
+                guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+                withAnimation {
+                    verseHits = first
+                    hasMoreHits = more
+                    if first.isEmpty {
+                        blockAyahSearchAfterZero = true
+                        zeroResultQueryLength = query.count
+                        zeroResultQuery = query
+                    } else {
+                        blockAyahSearchAfterZero = false
+                        zeroResultQuery = ""
+                    }
                 }
             }
         }
@@ -2346,6 +2357,7 @@ struct QuranView: View {
             pageSearchResult: firstAyahResult(page: pageJuzQuery.page),
             juzSearchResult: firstAyahResult(juz: pageJuzQuery.juz),
             exactMatch: exactMatch,
+            isExactAyahReference: exactMatch.surah != nil && exactMatch.ayah != nil,
             surahCountQuery: surahCountQuery,
             filteredSurahs: filteredSurahs,
             canShowMoreAyahHits: hasMoreHits && !verseHits.isEmpty,

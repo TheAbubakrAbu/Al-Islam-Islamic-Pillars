@@ -988,6 +988,17 @@ final class TajweedStore {
                 let lo = w.lowerBound, hi = w.upperBound
                 for i in lo..<hi {
                     if i == finalAaridCarrier { continue }
+                    if isFinalFathataynSilentAlifMadd(clusters: clusters, index: i) {
+                        if strongerMaddRuleCoversCluster(index: i, ops: ops, clusters: clusters) { continue }
+                        appendLetterOnlyMaddPaintOps(
+                            clusters: clusters,
+                            index: i,
+                            priority: PaintPriority.maddNatural2,
+                            category: .maddNatural,
+                            into: &ops
+                        )
+                        continue
+                    }
                     guard shouldOfferNaturalMadd2(clusters: clusters, index: i, wordStart: lo) else { continue }
                     if strongerMaddRuleCoversCluster(index: i, ops: ops, clusters: clusters) { continue }
                     appendNaturalMaddPaintOps(
@@ -1210,6 +1221,18 @@ final class TajweedStore {
         }
     }
 
+    private func appendLetterOnlyMaddPaintOps(
+        clusters: [CharacterClusterInfo],
+        index: Int,
+        priority: Int,
+        category: TajweedLegendCategory,
+        into ops: inout [PaintOp]
+    ) {
+        let cluster = clusters[index]
+        let range = primaryArabicLetterScalarRange(in: cluster) ?? nsRange(for: cluster)
+        ops.append(PaintOp(range: range, priority: priority, category: category))
+    }
+
     private func appendAaridMaddPaintOps(
         clusters: [CharacterClusterInfo],
         index: Int,
@@ -1324,6 +1347,9 @@ final class TajweedStore {
                 continue
             }
             if isSilentFinalLetter(clusters: clusters, index: i) {
+                if isFinalFathataynSilentAlifMadd(clusters: clusters, index: i) {
+                    return nil
+                }
                 i -= 1
                 continue
             }
@@ -1389,6 +1415,14 @@ final class TajweedStore {
             return clusters[index].contains(Self.smallHighUprightRectangularZero)
         }
         return false
+    }
+
+    private func isFinalFathataynSilentAlifMadd(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters.indices.contains(index), isSilentFinalLetter(clusters: clusters, index: index) else { return false }
+        guard let base = clusters[index].primaryArabicLetter, base == "ا" || base == "ى" else { return false }
+        guard indexOfFinalArabicLetterCluster(clusters: clusters) == index else { return false }
+        guard let previous = previousArabicLetterClusterIndex(clusters: clusters, before: index) else { return false }
+        return hasFathatayn(clusters[previous])
     }
 
     private func wordClusterRanges(clusters: [CharacterClusterInfo]) -> [Range<Int>] {
@@ -2021,6 +2055,10 @@ final class TajweedStore {
         var paintedTanween = false
         for cluster in clusters {
             guard utf16RangesOverlap(cluster.utf16Range, range) else { continue }
+            if category == .iqlaab, clusterHasTinyMeemIqlaabMark(cluster) {
+                paintedTanween = true
+                continue
+            }
             guard let tanweenRange = tanweenScalarRange(in: cluster) else { continue }
             ops.append(PaintOp(range: tanweenRange, priority: priority, category: category, color: category.color))
             paintedTanween = true
@@ -2074,6 +2112,58 @@ final class TajweedStore {
             return tanweenRange
         }
         return nsRange(for: cluster)
+    }
+
+    private func clusterHasTinyMeemIqlaabMark(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.smallHighMeem) || cluster.contains(Self.smallLowMeem)
+    }
+
+    private func shouldSuppressTinyMeemIqlaab(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters.indices.contains(index) else { return false }
+        let cluster = clusters[index]
+        let suppressesAtFinalSound = cluster.contains(Self.smallHighMeem) || hasFathatayn(cluster)
+        guard suppressesAtFinalSound else { return false }
+
+        var next = index + 1
+        while next < clusters.count {
+            let cluster = clusters[next]
+            if isWhitespaceOnly(cluster) || isAyahEndOrDecorativeCluster(cluster) {
+                next += 1
+                continue
+            }
+            guard cluster.primaryArabicLetter != nil else {
+                next += 1
+                continue
+            }
+            if isSilentFinalLetter(clusters: clusters, index: next) ||
+                isSilentFinalLetterAfterTinyMeem(clusters: clusters, index: next, previousIndex: index) {
+                next += 1
+                continue
+            }
+            return false
+        }
+        return true
+    }
+
+    private func isSilentFinalLetterAfterTinyMeem(clusters: [CharacterClusterInfo], index: Int, previousIndex: Int) -> Bool {
+        guard clusters.indices.contains(index),
+              clusters.indices.contains(previousIndex),
+              clusterHasTinyMeemIqlaabMark(clusters[previousIndex]),
+              let base = clusters[index].primaryArabicLetter,
+              base == "ا" || base == "ى" else {
+            return false
+        }
+        return !hasAnyTashkeel(clusters[index]) || clusters[index].contains(Self.smallHighUprightRectangularZero)
+    }
+
+    private func tinyMeemPaintRanges(in cluster: CharacterClusterInfo) -> [NSRange] {
+        if cluster.contains(Self.smallLowMeem) {
+            return [nsRange(for: cluster)]
+        }
+        if let highMeemRange = scalarRange(in: cluster, scalar: Self.smallHighMeem) {
+            return [highMeemRange]
+        }
+        return []
     }
 
     private func hasFathatayn(_ cluster: CharacterClusterInfo) -> Bool {
@@ -2237,10 +2327,11 @@ final class TajweedStore {
         for idx in clusters.indices {
             let cluster = clusters[idx]
 
-            // Tiny high/low meem (ۢ U+06E2 / ۭ U+06ED): color as iqlaab. These are reading marks, not waqf signs.
-            for meemScalar in [Self.smallHighMeem, Self.smallLowMeem] {
-                if let tinyMeemRange = scalarRange(in: cluster, scalar: meemScalar) {
-                    appendPaintOpIfVisible(range: tinyMeemRange, priority: PaintPriority.tinyMeemIqlaab, category: .iqlaab, into: &ops)
+            // Tiny high meem (ۢ): color only the mark. Tiny low meem (ۭ): color the full cluster.
+            if clusterHasTinyMeemIqlaabMark(cluster),
+               !shouldSuppressTinyMeemIqlaab(clusters: clusters, index: idx) {
+                for range in tinyMeemPaintRanges(in: cluster) {
+                    appendPaintOpIfVisible(range: range, priority: PaintPriority.tinyMeemIqlaab, category: .iqlaab, into: &ops)
                 }
             }
 
@@ -2255,6 +2346,7 @@ final class TajweedStore {
 
             // Tanween follows noon-sound rules; color source as tanween mark only.
             if tanweenScalarRange(in: cluster) != nil {
+                if clusterHasTinyMeemIqlaabMark(cluster) { continue }
                 let skipFollower = hasFathatayn(cluster)
                 guard let nextIndex = nextArabicLetterClusterIndex(
                     clusters: clusters,
@@ -2551,9 +2643,9 @@ final class TajweedStore {
         guard clusters[index].primaryArabicLetter == "ر" else { return false }
         let current = clusters[index]
         if indexOfFinalPronouncedArabicLetterCluster(clusters: clusters) == index {
-            if hasHeavyOpenVowel(current) { return true }
             guard let previousIndex = previousPronouncedArabicLetterClusterIndex(clusters: clusters, before: index) else { return false }
             let previous = finalRaaVowelContextCluster(clusters: clusters, previousIndex: previousIndex)
+            if hasKasraFamily(previous) { return false }
             if previous.primaryArabicLetter == "و" {
                 return !hasAnyTashkeel(previous) || hasDammaFamily(previous)
             }

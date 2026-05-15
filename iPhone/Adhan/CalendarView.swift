@@ -78,6 +78,16 @@ struct CalendarView: View {
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle("Hijri Calendar")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink {
+                        HijriCalendarView()
+                    } label: {
+                        Image(systemName: "info.circle")
+                    }
+                    .accessibilityLabel("Learn about the Hijri Calendar")
+                }
+            }
         }
         .navigationViewStyle(.stack)
     }

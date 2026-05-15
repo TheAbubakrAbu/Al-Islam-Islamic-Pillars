@@ -18,6 +18,8 @@ struct PlayCustomRangeSheet: View {
     @State private var repeatSection: Int
     @State private var repeatPerAyahText: String
     @State private var repeatSectionText: String
+    @AppStorage("customRangeRepeatPerAyah") private var storedRepeatPerAyah = 1
+    @AppStorage("customRangeRepeatSection") private var storedRepeatSection = 1
     
     @FocusState private var startAyahFocused: Bool
     @FocusState private var endAyahFocused: Bool
@@ -27,11 +29,18 @@ struct PlayCustomRangeSheet: View {
     private static let repeatMin = 1
     private static let repeatMax = 20
     private static let repeatOptions = [1, 2, 3, 5, 10, 15, 20]
+    private static let repeatPerAyahStorageKey = "customRangeRepeatPerAyah"
+    private static let repeatSectionStorageKey = "customRangeRepeatSection"
 
     /// End ayah defaults to the ayah after `startAyah` (one-ayah range when possible); if `startAyah` is the last ayah, end matches start.
     static func defaultEndAyah(startAyah: Int, surah: Surah, displayQiraah: String?) -> Int {
         let maxA = surah.numberOfAyahs(for: displayQiraah)
         return min(max(startAyah + 1, 1), maxA)
+    }
+
+    private static func storedRepeatValue(for key: String) -> Int {
+        let saved = UserDefaults.standard.object(forKey: key) as? Int ?? repeatMin
+        return min(Swift.max(repeatMin, saved), repeatMax)
     }
 
     private var maxAyah: Int { surah.numberOfAyahs(for: settings.displayQiraahForArabic) }
@@ -52,10 +61,12 @@ struct PlayCustomRangeSheet: View {
         _endAyah = State(initialValue: initialEndAyah)
         _startAyahText = State(initialValue: "\(initialStartAyah)")
         _endAyahText = State(initialValue: "\(initialEndAyah)")
-        _repeatPerAyah = State(initialValue: 1)
-        _repeatSection = State(initialValue: 1)
-        _repeatPerAyahText = State(initialValue: "1")
-        _repeatSectionText = State(initialValue: "1")
+        let savedRepeatPerAyah = Self.storedRepeatValue(for: Self.repeatPerAyahStorageKey)
+        let savedRepeatSection = Self.storedRepeatValue(for: Self.repeatSectionStorageKey)
+        _repeatPerAyah = State(initialValue: savedRepeatPerAyah)
+        _repeatSection = State(initialValue: savedRepeatSection)
+        _repeatPerAyahText = State(initialValue: "\(savedRepeatPerAyah)")
+        _repeatSectionText = State(initialValue: "\(savedRepeatSection)")
     }
 
     private var canPlay: Bool {
@@ -179,6 +190,7 @@ struct PlayCustomRangeSheet: View {
             value.wrappedValue = newValue
             text.wrappedValue = "\(newValue)"
         }
+        persistRepeatValues()
     }
 
     private func syncRepeatTextInput(value: Binding<Int>, text: Binding<String>) {
@@ -202,6 +214,22 @@ struct PlayCustomRangeSheet: View {
                 value.wrappedValue = clamped
             }
         }
+    }
+
+    private func clampStoredRepeatValues() {
+        let perAyah = min(Swift.max(Self.repeatMin, storedRepeatPerAyah), Self.repeatMax)
+        let section = min(Swift.max(Self.repeatMin, storedRepeatSection), Self.repeatMax)
+        storedRepeatPerAyah = perAyah
+        storedRepeatSection = section
+        repeatPerAyah = perAyah
+        repeatSection = section
+        repeatPerAyahText = "\(perAyah)"
+        repeatSectionText = "\(section)"
+    }
+
+    private func persistRepeatValues() {
+        storedRepeatPerAyah = min(Swift.max(Self.repeatMin, repeatPerAyah), Self.repeatMax)
+        storedRepeatSection = min(Swift.max(Self.repeatMin, repeatSection), Self.repeatMax)
     }
 
     var body: some View {
@@ -242,7 +270,10 @@ struct PlayCustomRangeSheet: View {
                 playButtonBar
             }
         }
-        .onAppear { clampRangeToMaxAyah() }
+        .onAppear {
+            clampRangeToMaxAyah()
+            clampStoredRepeatValues()
+        }
         .onChange(of: settings.displayQiraahForArabic) { _ in clampRangeToMaxAyah() }
         .id("\(initialStartAyah)-\(initialEndAyah)")
     }
@@ -600,6 +631,7 @@ struct PlayCustomRangeSheet: View {
         }
         .onChange(of: value.wrappedValue) { newValue in
             text.wrappedValue = "\(newValue)"
+            persistRepeatValues()
         }
     }
 
@@ -655,6 +687,7 @@ struct PlayCustomRangeSheet: View {
         let clamped = min(Swift.max(Self.repeatMin, parsed), Self.repeatMax)
         value.wrappedValue = clamped
         text.wrappedValue = "\(clamped)"
+        persistRepeatValues()
     }
 
     private func commitAllRepeatFields() {

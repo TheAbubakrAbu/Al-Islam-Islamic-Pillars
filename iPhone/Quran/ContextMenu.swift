@@ -690,7 +690,9 @@ struct AyahQiraahComparisonSheet: View {
 
                 Button {
                     settings.hapticFeedback()
-                    settings.toggleQiraahFavorite(tag: option.tag)
+                    withAnimation(.easeInOut) {
+                        settings.toggleQiraahFavorite(tag: option.tag)
+                    }
                 } label: {
                     Image(systemName: settings.isQiraahFavorite(tag: option.tag) ? "star.fill" : "star")
                         .foregroundStyle(settings.accentColor.color)
@@ -1002,7 +1004,9 @@ struct AyahEnglishComparisonSheet: View {
                     if let editionID, !isDownloaded {
                         Button {
                             settings.hapticFeedback()
-                            settings.toggleEnglishTranslationFavorite(id: editionID)
+                            withAnimation(.easeInOut) {
+                                settings.toggleEnglishTranslationFavorite(id: editionID)
+                            }
                         } label: {
                             Image(systemName: settings.isEnglishTranslationFavorite(id: editionID) ? "star.fill" : "star")
                                 .foregroundStyle(settings.accentColor.color)

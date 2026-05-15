@@ -549,14 +549,16 @@ struct ShareAyahSheet: View {
                             .padding(.vertical, 2)
 
                         if settings.showQiraahDetails {
-                            Toggle("Show Riwayah/Qiraah", isOn: Binding(
+                            Toggle(isOn: Binding(
                                 get: { shareSettings.includeQiraah },
                                 set: {
                                     shareIncludeRiwayah = $0
                                     shareSettings = updatedShareSettings(includeQiraah: $0)
                                 }
                             )
-                                .animation(.easeInOut))
+                                .animation(.easeInOut)) {
+                                Label("Show Riwayah/Qiraah", systemImage: "character.book.closed.fill.ar")
+                            }
                             .tint(settings.accentColor.color)
                             .scaleEffect(0.8)
                             .padding(.horizontal, -24)
