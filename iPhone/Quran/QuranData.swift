@@ -1543,9 +1543,40 @@ final class TajweedStore {
         let cluster = clusters[index]
         guard cluster.primaryArabicLetter == "و" || isYaBase(cluster) else { return false }
         guard hasUthmaniSukoon(cluster), !hasStandardSukoon(cluster) else { return false }
+        guard !hasUnmarkedVowelLetterAfter(clusters: clusters, index: index) else { return false }
         let previous = clusters[index - 1]
         guard !isWhitespaceOnly(previous), hasFathaFamily(previous), !hasFathatayn(previous) else { return false }
         return true
+    }
+
+    private func hasUnmarkedVowelLetterAfter(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        var nextIndex = index + 1
+        while nextIndex < clusters.count {
+            let cluster = clusters[nextIndex]
+            if isWhitespaceOnly(cluster) { break }
+            if isUnmarkedVowelLetterCluster(cluster) { return true }
+            nextIndex += 1
+        }
+        return false
+    }
+
+    private func isUnmarkedVowelLetterCluster(_ cluster: CharacterClusterInfo) -> Bool {
+        guard let base = cluster.primaryArabicLetter,
+              base == "ا" || base == "ى" || base == "و" || base == "ي" else {
+            return false
+        }
+        return !cluster.text.unicodeScalars.contains { isArabicMarkScalar($0) }
+    }
+
+    private func isArabicMarkScalar(_ scalar: UnicodeScalar) -> Bool {
+        switch scalar.value {
+        case 0x064B...0x065F,
+             0x0670,
+             0x06D6...0x06ED:
+            return true
+        default:
+            return false
+        }
     }
 
     private func utf16StartOfFirstNonWhitespace(clusters: [CharacterClusterInfo]) -> Int? {
