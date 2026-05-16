@@ -784,10 +784,10 @@ struct QuranView: View {
         #if os(iOS)
         HStack(spacing: 8) {
             sortDirectionPicker
-                .layoutPriority(1)
             sortModeMenu
-                .frame(maxWidth: 158)
+                .frame(minWidth: 150, maxWidth: 180)
         }
+        .frame(maxWidth: .infinity)
         #else
         EmptyView()
         #endif
@@ -814,7 +814,7 @@ struct QuranView: View {
         }
         .pickerStyle(SegmentedPickerStyle())
         .conditionalGlassEffect()
-        .frame(maxWidth: 190)
+        .frame(maxWidth: .infinity)
         #else
         EmptyView()
         #endif
