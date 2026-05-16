@@ -618,6 +618,11 @@ struct QuranView: View {
                 guard isReady else { return }
                 handleAyahSearchChange(searchText, debounce: false)
             }
+            .onChange(of: settings.quranSortMode) { mode in
+                guard !supportsSurahSortDirection(mode),
+                      settings.quranSortDirection == .surahOrder else { return }
+                settings.quranSortDirection = .ascending
+            }
             .onChange(of: scrollToSurahID) { id in
                 guard id > 0 else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -779,7 +784,9 @@ struct QuranView: View {
         #if os(iOS)
         HStack(spacing: 8) {
             sortDirectionPicker
+                .layoutPriority(1)
             sortModeMenu
+                .frame(maxWidth: 158)
         }
         #else
         EmptyView()
@@ -789,7 +796,9 @@ struct QuranView: View {
     private var sortDirectionPicker: some View {
         #if os(iOS)
         Picker("Sort Direction", selection: Binding(
-            get: { settings.quranSortDirection },
+            get: {
+                sortDirectionOptions.contains(settings.quranSortDirection) ? settings.quranSortDirection : .ascending
+            },
             set: { newDirection in
                 settings.hapticFeedback()
                 withAnimation(.easeInOut(duration: 0.22)) {
@@ -797,7 +806,7 @@ struct QuranView: View {
                 }
             }
         ).animation(.easeInOut)) {
-            ForEach(Settings.QuranSortDirection.allCases) { direction in
+            ForEach(sortDirectionOptions) { direction in
                 Text(direction.title)
                     .tag(direction)
                     .accessibilityLabel(direction.accessibilityTitle)
@@ -805,27 +814,50 @@ struct QuranView: View {
         }
         .pickerStyle(SegmentedPickerStyle())
         .conditionalGlassEffect()
-        .frame(maxWidth: 150)
+        .frame(maxWidth: 190)
         #else
         EmptyView()
         #endif
     }
 
+    private var sortDirectionOptions: [Settings.QuranSortDirection] {
+        if supportsSurahSortDirection(settings.quranSortMode) {
+            return [.surahOrder, .ascending, .descending]
+        }
+        return [.ascending, .descending]
+    }
+
+    private func supportsSurahSortDirection(_ mode: Settings.QuranSortMode) -> Bool {
+        switch mode {
+        case .revelation, .page, .ayahs, .words, .letters:
+            return true
+        case .surah, .juz, .khatm, .sajdah, .muqattaat:
+            return false
+        }
+    }
+
     private var sortModeMenu: some View {
         #if os(iOS)
         Menu {
-            ForEach(Settings.QuranSortMode.allCases) { mode in
-                Button {
-                    settings.hapticFeedback()
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        settings.quranSortMode = mode
-                    }
-                } label: {
-                    Label(
-                        mode.title,
-                        systemImage: mode == settings.quranSortMode ? "checkmark" : mode.systemImage
-                    )
-                }
+            Text("Quran Sort")
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            ForEach([Settings.QuranSortMode.surah, .juz, .khatm]) { mode in
+                sortModeButton(mode)
+            }
+
+            Divider()
+
+            ForEach([Settings.QuranSortMode.revelation, .page, .ayahs, .words, .letters]) { mode in
+                sortModeButton(mode)
+            }
+
+            Divider()
+
+            ForEach([Settings.QuranSortMode.muqattaat, .sajdah]) { mode in
+                sortModeButton(mode)
             }
         } label: {
             HStack(spacing: 8) {
@@ -848,6 +880,23 @@ struct QuranView: View {
         #else
         EmptyView()
         #endif
+    }
+
+    private func sortModeButton(_ mode: Settings.QuranSortMode) -> some View {
+        Button {
+            settings.hapticFeedback()
+            withAnimation(.easeInOut(duration: 0.22)) {
+                settings.quranSortMode = mode
+                if !supportsSurahSortDirection(mode), settings.quranSortDirection == .surahOrder {
+                    settings.quranSortDirection = .ascending
+                }
+            }
+        } label: {
+            Label(
+                mode.title,
+                systemImage: mode == settings.quranSortMode ? "checkmark" : mode.systemImage
+            )
+        }
     }
 
     private var searchAndPlaybackRow: some View {
@@ -1169,6 +1218,10 @@ struct QuranView: View {
     }
 
     private func orderedQuranSurahs(showsRevelationOrder: Bool) -> [Surah] {
+        if settings.quranSortDirection == .surahOrder {
+            return quranData.quran
+        }
+
         let surahs: [Surah]
 
         if showsRevelationOrder {
@@ -1208,7 +1261,11 @@ struct QuranView: View {
     }
 
     private func orderedSearchSurahs(_ surahs: [Surah]) -> [Surah] {
-        usesDescendingQuranSort ? Array(surahs.reversed()) : surahs
+        if settings.quranSortDirection == .surahOrder {
+            return surahs
+        }
+
+        return usesDescendingQuranSort ? Array(surahs.reversed()) : surahs
     }
 
     @ViewBuilder
@@ -1306,7 +1363,6 @@ struct QuranView: View {
             bookmarkedAyahs: context.bookmarkedAyahs,
             searchText: $searchText,
             scrollToSurahID: $scrollToSurahID,
-            disableTajweedColors: true,
             onSelectAyah: columnAyahSelectionHandler
         )
     }

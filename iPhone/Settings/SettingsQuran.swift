@@ -54,6 +54,7 @@ extension Settings {
     }
 
     enum QuranSortDirection: String, CaseIterable, Identifiable {
+        case surahOrder = "surah"
         case ascending
         case descending
 
@@ -61,6 +62,7 @@ extension Settings {
 
         var title: String {
             switch self {
+            case .surahOrder: return "Surah"
             case .ascending: return "Asc"
             case .descending: return "Desc"
             }
@@ -68,6 +70,7 @@ extension Settings {
 
         var accessibilityTitle: String {
             switch self {
+            case .surahOrder: return "Surah order"
             case .ascending: return "Ascending"
             case .descending: return "Descending"
             }

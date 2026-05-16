@@ -113,7 +113,7 @@ struct ArabicView: View {
                     SearchBar(text: $searchText.animation(.easeInOut))
 
                     Menu {
-                        Text("Arabic Filter")
+                        Text("Arabic Sort")
                             .foregroundStyle(.secondary)
                         
                         ForEach(ArabicFilterMode.allCases) { mode in

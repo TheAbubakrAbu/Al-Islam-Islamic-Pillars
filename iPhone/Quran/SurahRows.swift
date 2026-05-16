@@ -935,6 +935,7 @@ struct AyahSearchResultRow: View {
         .rightSwipeActions(
             surahID: surah.id,
             surahName: surah.nameTransliteration,
+            ayahID: ayah.id,
             searchText: $searchText,
             scrollToSurahID: $scrollToSurahID
         )
