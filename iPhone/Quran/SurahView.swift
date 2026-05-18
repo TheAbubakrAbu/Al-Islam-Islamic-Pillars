@@ -778,6 +778,7 @@ struct SurahView: View {
                                 showReciterPickerSheet = false
                             } label: {
                                 Image(systemName: "xmark")
+                                    .font(.body.weight(.semibold))
                             }
                             .tint(settings.accentColor.color)
                         }
@@ -1077,7 +1078,7 @@ struct SurahView: View {
                         let showTaawwudh = (surah.id == 9) || (surah.id == 1 && firstAyahClean.hasPrefix("بسم"))
                         if showTaawwudh {
                             HeaderRow(
-                                arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيۡطَانِ ٱلرَّجِيمِ",
+                                arabicText: "أَعُوذُ بِٱللَّهِ مِنَ ٱلشَّيۡطَانِ ٱلرَّجِيمِ",
                                 englishTransliteration: "Audhu billahi minashaitanir rajeem",
                                 englishTranslation: "I seek refuge in Allah from the accursed Satan."
                             )
@@ -1995,6 +1996,7 @@ private struct SurahPickerSheet: View {
                             dismiss()
                         } label: {
                             Image(systemName: "xmark")
+                                .font(.body.weight(.semibold))
                         }
                         .tint(settings.accentColor.color)
                     }

@@ -282,6 +282,7 @@ struct TajweedLegendView: View {
                         presentationMode.wrappedValue.dismiss()
                     } label: {
                         Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
                     .tint(settings.accentColor.color)
                 }

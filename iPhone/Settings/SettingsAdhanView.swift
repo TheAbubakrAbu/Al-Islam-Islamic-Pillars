@@ -63,6 +63,7 @@ struct SettingsAdhanView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
                     .tint(settings.accentColor.color)
                 }

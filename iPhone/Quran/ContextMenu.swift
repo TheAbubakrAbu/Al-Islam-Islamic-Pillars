@@ -319,8 +319,11 @@ struct AyahTafsirSheet: View {
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search tafsir")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
                 }
             }
@@ -689,8 +692,11 @@ struct AyahQiraahComparisonSheet: View {
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search riwayat")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
                 }
             }
@@ -1017,8 +1023,11 @@ struct AyahEnglishComparisonSheet: View {
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search translations")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
                 }
             }
@@ -1715,6 +1724,7 @@ struct NoteEditorSheet: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
                     .tint(settings.accentColor.color)
                 }
@@ -1727,6 +1737,7 @@ struct NoteEditorSheet: View {
                         }
                     } label: {
                         Image(systemName: "checkmark")
+                            .font(.body.weight(.semibold))
                     }
                     .tint(settings.accentColor.color)
                     .disabled(isEmpty)

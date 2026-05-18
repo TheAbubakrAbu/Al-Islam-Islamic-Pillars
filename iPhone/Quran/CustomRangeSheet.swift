@@ -239,8 +239,8 @@ struct PlayCustomRangeSheet: View {
                     surahHeaderCard
                     reciterCard
                     rangeCard
-                    repeatsCard
                     arabicVersesCard
+                    repeatsCard
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -249,20 +249,12 @@ struct PlayCustomRangeSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    if #available(iOS 26.0, *) {
-                        Button(role: .cancel) {
-                            settings.hapticFeedback()
-                            onCancel()
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                    } else {
-                        Button {
-                            settings.hapticFeedback()
-                            onCancel()
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
+                    Button {
+                        settings.hapticFeedback()
+                        onCancel()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
                     }
                 }
             }
@@ -559,7 +551,7 @@ struct PlayCustomRangeSheet: View {
                             .foregroundColor(Color(.tertiaryLabel))
                         
                         Text(first.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: settings.displayQiraahForArabic))
-                            .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize))
+                            .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
                             .multilineTextAlignment(.trailing)
                             .lineLimit(nil)
                             .foregroundColor(.primary)
@@ -573,7 +565,7 @@ struct PlayCustomRangeSheet: View {
                                 .foregroundColor(Color(.tertiaryLabel))
                             
                             Text(last.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: settings.displayQiraahForArabic))
-                                .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .body).pointSize))
+                                .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
                                 .multilineTextAlignment(.trailing)
                                 .lineLimit(nil)
                                 .foregroundColor(.primary)

@@ -306,25 +306,26 @@ struct HighlightedSnippet: View {
 
     private func highlightArabicAllah(source: String, attributed: inout AttributedString) {
         let cacheKey = source as NSString
-        let ranges: [NSRange]
-        if let cached = Self.allahNSRangeCache.object(forKey: cacheKey) {
+        let ranges: [Range<String.Index>]
+        if let cached = Self.allahRangeCache.object(forKey: cacheKey) {
             ranges = cached.ranges
         } else {
-            var found: [NSRange] = []
+            var found: [Range<String.Index>] = []
             for start in source.indices {
-                if let range = arabicAllahNSRange(startingAt: start, in: source) {
+                if let range = arabicAllahRange(startingAt: start, in: source) {
                     found.append(range)
                 }
             }
-            Self.allahNSRangeCache.setObject(NSRangeEntry(found), forKey: cacheKey)
+            Self.allahRangeCache.setObject(RangeEntry(found), forKey: cacheKey)
             ranges = found
         }
 
-        let mutable = NSMutableAttributedString(attributedString: NSAttributedString(attributed))
         for range in ranges {
-            mutable.addAttribute(NSAttributedString.Key.foregroundColor, value: platformRedColor(), range: range)
+            if let start = AttributedString.Index(range.lowerBound, within: attributed),
+               let end = AttributedString.Index(range.upperBound, within: attributed) {
+                attributed[start..<end].foregroundColor = .red
+            }
         }
-        attributed = AttributedString(mutable)
     }
 
     private func arabicAllahRange(startingAt start: String.Index, in source: String) -> Range<String.Index>? {

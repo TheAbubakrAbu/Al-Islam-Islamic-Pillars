@@ -674,6 +674,7 @@ struct QuranView: View {
                                 showReciterPickerSheet = false
                             } label: {
                                 Image(systemName: "xmark")
+                                    .font(.body.weight(.semibold))
                             }
                             .tint(settings.accentColor.color)
                         }

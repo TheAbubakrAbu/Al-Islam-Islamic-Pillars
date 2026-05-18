@@ -233,9 +233,9 @@ struct HeaderRow: View {
                 beginnerMode: settings.beginnerMode || ayahBeginnerMode,
                 highlightAllahNames: settings.highlightAllahNames
             )
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 8)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 8)
 
             if settings.showTransliteration, settings.isHafsDisplay {
                 HighlightedSnippet(
@@ -246,9 +246,9 @@ struct HeaderRow: View {
                     fg: settings.accentColor.color,
                     highlightAllahNames: settings.highlightAllahNames
                 )
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 4)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 4)
             }
 
             if (settings.showEnglishSaheeh || settings.showEnglishMustafa), settings.isHafsDisplay {
@@ -260,9 +260,9 @@ struct HeaderRow: View {
                     fg: settings.accentColor.color,
                     highlightAllahNames: settings.highlightAllahNames
                 )
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 4)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 4)
             }
         }
         .padding(.top, -8)
