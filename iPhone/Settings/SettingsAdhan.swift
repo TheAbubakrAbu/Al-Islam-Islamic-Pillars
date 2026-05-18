@@ -353,6 +353,10 @@ extension Settings {
         Self.countryCalculationMap[countryCode] ?? "Muslim World League"
     }
 
+    func automaticPrayerCalculationMethod(for countryCode: String) -> String {
+        canonicalPrayerCalculationMethod(automaticCalculationMethod(for: countryCode.uppercased()))
+    }
+
     /// Maps stored or auto-detected labels to a key that exists in `calcParams` (avoids repeat auto-changes / picker fights).
     private func canonicalPrayerCalculationMethod(_ name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -373,6 +377,10 @@ extension Settings {
         if let params = Self.calcParams[trimmed] { return params }
         let canonical = canonicalPrayerCalculationMethod(trimmed)
         return Self.calcParams[canonical] ?? Self.calcParams["Muslim World League"]!
+    }
+
+    func canonicalPrayerCalculationLabel(_ name: String) -> String {
+        canonicalPrayerCalculationMethod(name)
     }
 
     func checkAutomaticPrayerCalculation() {
@@ -603,7 +611,12 @@ extension Settings {
 
     /// Computes prayer times for an explicit location without changing the app's saved current location.
     func getPrayerTimes(for date: Date, at location: Location, fullPrayers: Bool = false) -> [Prayer]? {
-        let rawPrayers = _computeRawPrayers(for: date, at: location)
+        getPrayerTimes(for: date, at: location, calculationMethod: nil, fullPrayers: fullPrayers)
+    }
+
+    /// Computes prayer times for an explicit location and optional calculation method without changing saved settings.
+    func getPrayerTimes(for date: Date, at location: Location, calculationMethod: String?, fullPrayers: Bool = false) -> [Prayer]? {
+        let rawPrayers = _computeRawPrayers(for: date, at: location, calculationMethod: calculationMethod)
         guard !rawPrayers.isEmpty else { return nil }
         
         if fullPrayers || !travelingMode {
@@ -640,8 +653,9 @@ extension Settings {
         return _computeRawPrayers(for: date, at: here)
     }
 
-    private func _computeRawPrayers(for date: Date, at here: Location) -> [Prayer] {
+    private func _computeRawPrayers(for date: Date, at here: Location, calculationMethod: String? = nil) -> [Prayer] {
         guard here.latitude != 1000, here.longitude != 1000 else { return [] }
+        let calculationLabel = calculationMethod.map(canonicalPrayerCalculationMethod) ?? prayerCalculation
 
         let comps = Self.gregorian.dateComponents([.year, .month, .day], from: date)
         let cacheKey = RawPrayerCacheKey(
@@ -650,7 +664,7 @@ extension Settings {
             day: comps.day ?? 0,
             latitude: here.latitude,
             longitude: here.longitude,
-            calculation: prayerCalculation,
+            calculation: calculationLabel,
             hanafiMadhab: hanafiMadhab,
             offsets: [offsetFajr, offsetSunrise, offsetDhuhr, offsetAsr, offsetMaghrib, offsetIsha]
         )
@@ -659,7 +673,7 @@ extension Settings {
             return cached
         }
 
-        var params = Self.calcParams[prayerCalculation] ?? Self.calcParams["Muslim World League"]!
+        var params = calculationParameters(forStoredLabel: calculationLabel)
         params.madhab = hanafiMadhab ? Madhab.hanafi : Madhab.shafi
 
         guard let raw = PrayerTimes(

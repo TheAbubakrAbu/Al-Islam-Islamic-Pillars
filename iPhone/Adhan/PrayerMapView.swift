@@ -9,6 +9,8 @@ struct PrayerTimesMapView: View {
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage("prayerTimesMapShowCityTime") private var showCityTime: Bool = true
+    @AppStorage("prayerTimesMapCalculationAutomatic") private var previewCalculationAutomatic: Bool = true
+    @AppStorage("prayerTimesMapCalculationMethod") private var previewCalculationMethod: String = "Muslim World League"
     @State private var selectedLocation: Location?
     @State private var selectedDate = Date()
     @State private var prayers: [Prayer] = []
@@ -16,6 +18,7 @@ struct PrayerTimesMapView: View {
     @State private var showCityPicker = false
     @State private var compareAutomaticLocation = false
     @State private var timeZones: [String: TimeZone] = [:]
+    @State private var countryCodes: [String: String] = [:]
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateStyle = .medium; return f
@@ -33,10 +36,12 @@ struct PrayerTimesMapView: View {
 
     var body: some View {
         List {
+            previewNoticeSection
             citySection
             if !settings.favoriteLocations.isEmpty {
                 favoriteCitiesSection
             }
+            calculationSection
             timeDisplaySection
             comparisonControlSection
             prayerTimesSection
@@ -64,8 +69,23 @@ struct PrayerTimesMapView: View {
         .onChange(of: selectedDate) { _ in refreshPrayers() }
         .onChange(of: selectedLocation) { _ in refreshPrayers() }
         .onChange(of: showCityTime) { _ in refreshTimeZones() }
+        .onChange(of: previewCalculationAutomatic) { _ in refreshPrayers() }
+        .onChange(of: previewCalculationMethod) { _ in refreshPrayers() }
         .onChange(of: settings.currentLocation) { _ in
             refreshPrayers()
+        }
+    }
+
+    private var previewNoticeSection: some View {
+        Section {
+            Label {
+                Text("This map is only for viewing prayer times in other cities. It does not change your actual prayer-time location, calculation method, notifications, or widgets.")
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+            } icon: {
+                Image(systemName: "eye")
+                    .foregroundStyle(settings.accentColor.color)
+            }
         }
     }
 
@@ -197,6 +217,40 @@ struct PrayerTimesMapView: View {
             Text(showCityTime
                 ? "Times are shown in the viewed city's time zone when available."
                 : "Times are shown in your device's current time zone.")
+        }
+    }
+
+    // MARK: - Calculation
+
+    private var calculationSection: some View {
+        Section {
+            Toggle("Automatic Prayer Calculation", isOn: $previewCalculationAutomatic.animation(.easeInOut))
+                .font(.subheadline)
+                .tint(settings.accentColor.color)
+
+            Picker("Calculation", selection: $previewCalculationMethod.animation(.easeInOut)) {
+                ForEach(calculationOptions, id: \.self) { option in
+                    Text(option).tag(option)
+                }
+            }
+            .font(.subheadline)
+            .disabled(previewCalculationAutomatic)
+
+            HStack {
+                Text("Using")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(calculationDescription)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(settings.accentColor.color)
+                    .multilineTextAlignment(.trailing)
+            }
+        } header: {
+            Text("Calculation")
+        } footer: {
+            Text(previewCalculationAutomatic
+                ? "Automatic mode detects the viewed city's country and uses that local default, such as Britain for London. If the country is not mapped, it uses Muslim World League."
+                : "Manual mode only changes this preview. Your actual prayer-time settings stay the same.")
         }
     }
 
@@ -389,8 +443,10 @@ struct PrayerTimesMapView: View {
             return
         }
 
+        requestCountryCode(for: location)
         prayers = prayerTimes(for: location)
         if canCompareAutomaticLocation, let current = settings.currentLocation {
+            requestCountryCode(for: current)
             currentLocationPrayers = prayerTimes(for: current)
         } else {
             currentLocationPrayers = []
@@ -401,7 +457,37 @@ struct PrayerTimesMapView: View {
     }
 
     private func prayerTimes(for location: Location) -> [Prayer] {
-        settings.getPrayerTimes(for: selectedDate, at: location, fullPrayers: true) ?? []
+        settings.getPrayerTimes(
+            for: selectedDate,
+            at: location,
+            calculationMethod: calculationMethod(for: location),
+            fullPrayers: true
+        ) ?? []
+    }
+
+    private var calculationDescription: String {
+        guard previewCalculationAutomatic else {
+            return settings.canonicalPrayerCalculationLabel(previewCalculationMethod)
+        }
+        guard let location = effectiveLocation else { return "Automatic" }
+        return automaticCalculationMethodDescription(for: location)
+    }
+
+    private func calculationMethod(for location: Location) -> String {
+        guard previewCalculationAutomatic else {
+            return settings.canonicalPrayerCalculationLabel(previewCalculationMethod)
+        }
+        guard let countryCode = countryCode(for: location), !countryCode.isEmpty else {
+            return settings.canonicalPrayerCalculationLabel("Muslim World League")
+        }
+        return settings.automaticPrayerCalculationMethod(for: countryCode)
+    }
+
+    private func automaticCalculationMethodDescription(for location: Location) -> String {
+        guard let countryCode = countryCode(for: location), !countryCode.isEmpty else {
+            return "Detecting..."
+        }
+        return settings.automaticPrayerCalculationMethod(for: countryCode)
     }
 
     private func formattedTime(_ date: Date, for location: Location) -> String {
@@ -429,6 +515,34 @@ struct PrayerTimesMapView: View {
             guard let timeZone = placemarks?.first?.timeZone else { return }
             DispatchQueue.main.async {
                 timeZones[key] = timeZone
+            }
+        }
+    }
+
+    private func countryCode(for location: Location) -> String? {
+        if let current = settings.currentLocation,
+           isSameLocation(current, location),
+           !settings.currentCountryCode.isEmpty {
+            return settings.currentCountryCode.uppercased()
+        }
+        return countryCodes[timeZoneKey(for: location)]
+    }
+
+    private func requestCountryCode(for location: Location) {
+        let key = timeZoneKey(for: location)
+        if countryCodes[key] != nil { return }
+        if let current = settings.currentLocation,
+           isSameLocation(current, location),
+           !settings.currentCountryCode.isEmpty {
+            countryCodes[key] = settings.currentCountryCode.uppercased()
+            return
+        }
+
+        CLGeocoder().reverseGeocodeLocation(CLLocation(latitude: location.latitude, longitude: location.longitude)) { placemarks, _ in
+            guard let code = placemarks?.first?.isoCountryCode?.uppercased(), !code.isEmpty else { return }
+            DispatchQueue.main.async {
+                countryCodes[key] = code
+                refreshPrayers()
             }
         }
     }
