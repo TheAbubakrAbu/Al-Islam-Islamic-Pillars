@@ -322,6 +322,9 @@ private struct PrayerSubtitleView: View {
 
     private var subtitleText: String {
         if Settings.optionalPrayerNames.contains(prayer.nameTransliteration) {
+            if prayer.nameTransliteration == "Islamic Midnight" {
+                return "Middle of Night"
+            }
             return prayer.nameEnglish
         }
         if isCombinedTravelPrayer {

@@ -183,7 +183,7 @@ struct SettingsAdhanView: View {
         Section(header: Text("OPTIONAL PRAYERS")) {
             optionalPrayerToggle(
                 title: "Duhaa",
-                subtitle: "15 min after sunrise until shortly before Dhuhr.",
+                subtitle: "A voluntary forenoon prayer after sunrise and before Dhuhr.",
                 icon: "sun.haze.fill",
                 isOn: $settings.showDuha
             )
@@ -197,7 +197,7 @@ struct SettingsAdhanView: View {
 
             optionalPrayerToggle(
                 title: "Last Third of Night",
-                subtitle: "The final third before Fajr. It is a blessed time for voluntary night prayer, dua, and seeking forgiveness.",
+                subtitle: "The final third before Fajr is a blessed time for dua and forgiveness.",
                 icon: "moon.stars.fill",
                 isOn: $settings.showLastThird
             )
