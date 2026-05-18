@@ -240,7 +240,7 @@ private struct CurrentPrayerCell: View {
                 Image(systemName: prayer.image)
             }
             #endif
-            Text(prayer.nameTransliteration)
+            Text(countdownDisplayName(for: prayer))
         }
         .modifier(PrayerTitleStyle(prayer: prayer))
     }
@@ -272,7 +272,7 @@ private struct UpcomingPrayerCell: View {
 
     private var title: some View {
         HStack {
-            Text(prayer.nameTransliteration)
+            Text(countdownDisplayName(for: prayer))
             
             #if os(iOS)
             Image(systemName: prayer.image)
@@ -288,6 +288,10 @@ private struct UpcomingPrayerCell: View {
     private var subtitle: some View {
         PrayerSubtitleView(prayer: prayer, alignment: .trailing)
     }
+}
+
+private func countdownDisplayName(for prayer: Prayer) -> String {
+    prayer.nameTransliteration == "Islamic Midnight" ? "Midnight" : prayer.nameTransliteration
 }
 
 private struct PrayerTitleStyle: ViewModifier {
@@ -409,6 +413,11 @@ private struct PrayerRakahInfoView: View {
                     .font(.caption2)
                     #endif
                     .foregroundColor(.primary)
+            } else if prayer.nameTransliteration == "Islamic Midnight" {
+                Text("Midnight is not a prayer, but marks the end of Isha")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
             } else if isOptionalPrayer {
                 Text(prayer.nameEnglish)
                     .font(.caption2)

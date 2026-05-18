@@ -46,7 +46,7 @@ struct PrayerList: View {
     }
 
     private func listDisplayName(for prayer: Prayer) -> String {
-        prayer.nameTransliteration == "Midnight" ? "Islamic Midnight" : prayer.nameTransliteration
+        prayer.nameTransliteration
     }
 
     private func togglePrayerExpansion(for prayer: Prayer, animated: Bool = true) {
@@ -304,9 +304,15 @@ struct PrayerList: View {
                             .foregroundColor(color)
 
                         Spacer()
+
+                        #if os(iOS)
+                        if !isComparisonBaseline {
+                            prayerBell(for: prayer, rowColor: color)
+                        }
+                        #endif
                     }
 
-                    Text(prayer.nameTransliteration)
+                    Text(prayer.compactDisplayName)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(color)
 
@@ -352,7 +358,7 @@ struct PrayerList: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             #if os(iOS)
-            if prayerDisplayMode != .list {
+            if prayerDisplayMode != .list && prayerDisplayMode != .tiles {
                 prayerBell(for: prayer, rowColor: .primary)
             }
             #endif
@@ -506,11 +512,11 @@ struct PrayerList: View {
             Source: Sahih Muslim 748/784.
             """
         }
-        if prayer.nameTransliteration == "Midnight" {
+        if prayer.nameTransliteration == "Islamic Midnight" {
             return """
-            Midnight is halfway between Maghrib and Fajr. It is used in fiqh discussions such as the end of the preferred or normal time for Isha according to many scholars, and for calculating parts of the night.
+            Islamic Midnight is halfway between Maghrib and the next Fajr. It marks the end of Isha and is used for calculating parts of the night.
 
-            Formula: Midnight = Maghrib + ((Fajr - Maghrib) / 2)
+            Formula: Islamic Midnight = Maghrib + ((Fajr - Maghrib) / 2)
 
             The Prophet ﷺ said regarding Isha: "The time of Isha prayer is until the middle of the night."
 
@@ -692,6 +698,10 @@ private struct PrayerDetailBlock: View {
                 Text("Shurooq is not a prayer, but marks the end of Fajr.")
                     .foregroundColor(.primary)
                     .font(.footnote)
+            } else if prayer.nameTransliteration == "Islamic Midnight" {
+                Text("Midnight is not a prayer, but marks the end of Isha.")
+                    .foregroundColor(.primary)
+                    .font(.footnote)
             } else {
                 if prayer.rakah != "0" {
                     Text("Prayer Rakahs: \(prayer.rakah)")
@@ -728,6 +738,10 @@ private extension Prayer {
     var stableDisplayID: String {
         "\(nameTransliteration)-\(Int(time.timeIntervalSince1970))"
     }
+
+    var compactDisplayName: String {
+        nameTransliteration == "Islamic Midnight" ? "Midnight" : nameTransliteration
+    }
 }
 
 private struct PrayerGridTile<TrailingContent: View>: View {
@@ -743,7 +757,7 @@ private struct PrayerGridTile<TrailingContent: View>: View {
                     .foregroundColor(color)
                     .padding(.trailing, -2)
 
-                Text(prayer.nameTransliteration)
+                Text(prayer.compactDisplayName)
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(color)
@@ -769,7 +783,7 @@ private struct SplitPrayerRow<TrailingContent: View>: View {
                 .font(.subheadline)
                 .frame(width: 20, alignment: .center)
 
-            Text(prayer.nameTransliteration)
+            Text(prayer.compactDisplayName)
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .lineLimit(1)

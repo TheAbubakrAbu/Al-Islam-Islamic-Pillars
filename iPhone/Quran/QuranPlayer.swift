@@ -218,6 +218,10 @@ final class QuranPlayer: ObservableObject {
             skipForwardFromRemote()
             return .success
         }
+        cmd.skipBackwardCommand.isEnabled = false
+        cmd.skipForwardCommand.isEnabled = false
+        cmd.skipBackwardCommand.preferredIntervals = []
+        cmd.skipForwardCommand.preferredIntervals = []
         
         cmd.changePlaybackPositionCommand.addTarget { [unowned self] evt in
             guard
@@ -234,17 +238,17 @@ final class QuranPlayer: ObservableObject {
     
     /// In-app: double-tap = previous, single-tap = restart current.
     func skipBackward()  {
-        if isPlayingCustomRange { seek(by: -10); return }
+        if isPlayingCustomRange { customRangeSkipAyah(by: -1); return }
         player == nil ? () : isPlayingSurah ? surahSkipBackward() : ayahSkipBackward()
     }
     func skipForward()   {
-        if isPlayingCustomRange { seek(by: 10); return }
+        if isPlayingCustomRange { customRangeSkipAyah(by: 1); return }
         player == nil ? () : isPlayingSurah ? surahSkipForward() : ayahSkipForward(continueRecitation: continueRecitationFromAyah)
     }
 
     /// Control Center / Lock Screen: one tap = previous/next and play (no double-tap).
     private func skipBackwardFromRemote() {
-        if isPlayingCustomRange { seek(by: -10); return }
+        if isPlayingCustomRange { customRangeSkipAyah(by: -1); return }
         guard player != nil else { return }
         if isPlayingSurah {
             surahSkipBackward()
@@ -253,7 +257,7 @@ final class QuranPlayer: ObservableObject {
         ayahGoToPreviousAndPlay()
     }
     private func skipForwardFromRemote() {
-        if isPlayingCustomRange { seek(by: 10); return }
+        if isPlayingCustomRange { customRangeSkipAyah(by: 1); return }
         guard player != nil else { return }
         if isPlayingSurah {
             surahSkipForward()
@@ -270,13 +274,6 @@ final class QuranPlayer: ObservableObject {
             playAyah(
                 surahNumber: s,
                 ayahNumber: a - 1,
-                continueRecitation: continueRecitationFromAyah,
-                repeatCount: repeatCountToKeep
-            )
-        } else if s > 1, let prev = quranData.quran.first(where: { $0.id == s - 1 }) {
-            playAyah(
-                surahNumber: s - 1,
-                ayahNumber: prev.numberOfAyahs,
                 continueRecitation: continueRecitationFromAyah,
                 repeatCount: repeatCountToKeep
             )
@@ -556,7 +553,7 @@ final class QuranPlayer: ObservableObject {
         repeatRemaining = 1
         
         guard let n = currentSurahNumber, n < 114, let next = quranData.quran.first(where: { $0.id == n + 1 })
-        else { stop(); return }
+        else { return }
         playSurah(surahNumber: next.id,
                   surahName: next.nameTransliteration,
                   certainReciter: certainReciter,
@@ -568,7 +565,7 @@ final class QuranPlayer: ObservableObject {
         repeatRemaining = 1
         
         guard let n = currentSurahNumber, n > 1, let prev = quranData.quran.first(where: { $0.id == n - 1 })
-        else { stop(); return }
+        else { return }
         playSurah(surahNumber: prev.id,
                   surahName: prev.nameTransliteration,
                   certainReciter: certainReciter,
@@ -654,7 +651,8 @@ final class QuranPlayer: ObservableObject {
         startAyah: Int,
         endAyah: Int,
         repeatPerAyah: Int,
-        repeatSection: Int
+        repeatSection: Int,
+        initialSequenceIndex: Int = 0
     ) {
         ayahBackPendingRestart?.cancel()
         ayahBackPendingRestart = nil
@@ -690,9 +688,10 @@ final class QuranPlayer: ObservableObject {
             }
         }
 
-        guard !sequence.isEmpty,
-              let first = sequence.first
+        guard !sequence.isEmpty
         else { return }
+        let initialIndex = min(max(0, initialSequenceIndex), sequence.count - 1)
+        let first = sequence[initialIndex]
 
         removeAllObservers()
         customRangeSequence = sequence
@@ -702,10 +701,11 @@ final class QuranPlayer: ObservableObject {
         customRangeEndAyah = endAyah
         customRangeRepeatPerAyah = perAyah
         customRangeRepeatSection = section
-        customRangeCurrentIndex = 1
+        customRangeCurrentIndex = initialIndex + 1
         customRangeTotalItems = sequence.count
-        customRangeCurrentRepeatWithinAyah = 1
-        customRangeRepeatSectionIndex = 1
+        customRangeCurrentRepeatWithinAyah = ((initialIndex % perAyah) + 1)
+        let itemsPerSection = max(1, (endAyah - startAyah + 1) * perAyah)
+        customRangeRepeatSectionIndex = (initialIndex / itemsPerSection) + 1
 
         withAnimation {
             currentSurahNumber = surahNumber
@@ -733,8 +733,9 @@ final class QuranPlayer: ObservableObject {
         q.automaticallyWaitsToMinimizeStalling = false
         q.insert(firstItem, after: nil)
 
-        if sequence.count > 1 {
-            let second = sequence[1]
+        let nextSequenceIndex = initialIndex + 1
+        if nextSequenceIndex < sequence.count {
+            let second = sequence[nextSequenceIndex]
             if let secondItem = makeItem(forSurah: surah, reciter: reciter, ayahNumber: second.ayahNumber, isBismillah: second.isBismillah) {
                 secondItem.preferredForwardBufferDuration = ayahStartupBuffer
                 q.insert(secondItem, after: firstItem)
@@ -754,8 +755,9 @@ final class QuranPlayer: ObservableObject {
                         self.queuePlayer?.playImmediately(atRate: 1.0)
                         self.isPlaying = true
                         self.isPaused = false
-                        let (ayahNum, isBismillah) = self.customRangeSequence[0]
-                        let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, repeatWithinAyah: 1)
+                        let (ayahNum, isBismillah) = self.customRangeSequence[initialIndex]
+                        let repeatWithinAyah = ((initialIndex % perAyah) + 1)
+                        let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, repeatWithinAyah: repeatWithinAyah)
                         self.nowPlayingTitle = base
                         self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                         self.updateNowPlayingInfo()
@@ -817,6 +819,38 @@ final class QuranPlayer: ObservableObject {
                 }
             }
         }
+    }
+
+    private func customRangeSkipAyah(by delta: Int) {
+        guard isPlayingCustomRange,
+              delta != 0,
+              let currentIndex = customRangeCurrentIndex,
+              let startAyah = customRangeStartAyah,
+              let endAyah = customRangeEndAyah,
+              customRangeSurahNumber > 0,
+              !customRangeSurahName.isEmpty else {
+            return
+        }
+
+        let perAyah = max(1, customRangeRepeatPerAyah)
+        let ayahCount = max(1, endAyah - startAyah + 1)
+        let itemsPerSection = ayahCount * perAyah
+        let currentZeroBased = max(0, currentIndex - 1)
+        let sectionStartIndex = (currentZeroBased / itemsPerSection) * itemsPerSection
+        let ayahOffsetInSection = min(ayahCount - 1, max(0, (currentZeroBased - sectionStartIndex) / perAyah))
+        let targetAyahOffset = min(ayahCount - 1, max(0, ayahOffsetInSection + delta))
+        guard targetAyahOffset != ayahOffsetInSection else { return }
+
+        let targetSequenceIndex = sectionStartIndex + (targetAyahOffset * perAyah)
+        playCustomRange(
+            surahNumber: customRangeSurahNumber,
+            surahName: customRangeSurahName,
+            startAyah: startAyah,
+            endAyah: endAyah,
+            repeatPerAyah: perAyah,
+            repeatSection: customRangeRepeatSection,
+            initialSequenceIndex: targetSequenceIndex
+        )
     }
 
     private func customRangeTitle(ayahNum: Int, isBismillah: Bool, repeatWithinAyah: Int) -> String {
@@ -1060,13 +1094,6 @@ final class QuranPlayer: ObservableObject {
                     continueRecitation: continueRecitationFromAyah,
                     repeatCount: repeatCountToKeep
                 )
-            } else if s > 1, let prev = quranData.quran.first(where: { $0.id == s - 1 }) {
-                playAyah(
-                    surahNumber: s - 1,
-                    ayahNumber: prev.numberOfAyahs,
-                    continueRecitation: continueRecitationFromAyah,
-                    repeatCount: repeatCountToKeep
-                )
             }
             return
         }
@@ -1101,7 +1128,7 @@ final class QuranPlayer: ObservableObject {
                 continueRecitation: continueRecitation,
                 repeatCount: repeatCountToKeep
             )
-            : stop()
+            : ()
     }
     
     private func updateNowPlayingInfo(clear: Bool = false) {
@@ -1110,11 +1137,17 @@ final class QuranPlayer: ObservableObject {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
             cmd.skipBackwardCommand.preferredIntervals = []
             cmd.skipForwardCommand.preferredIntervals = []
+            cmd.skipBackwardCommand.isEnabled = false
+            cmd.skipForwardCommand.isEnabled = false
             return
         }
-        // Control Center / Lock Screen: show backward/forward (no seconds) for surah/ayah; show 10 sec only for custom range
-        cmd.skipBackwardCommand.preferredIntervals = isPlayingCustomRange ? [10] : []
-        cmd.skipForwardCommand.preferredIntervals = isPlayingCustomRange ? [10] : []
+        // Keep every system surface on previous/next controls instead of +/- seconds.
+        cmd.previousTrackCommand.isEnabled = true
+        cmd.nextTrackCommand.isEnabled = true
+        cmd.skipBackwardCommand.isEnabled = false
+        cmd.skipForwardCommand.isEnabled = false
+        cmd.skipBackwardCommand.preferredIntervals = []
+        cmd.skipForwardCommand.preferredIntervals = []
 
         var info = [String: Any]()
         info[MPMediaItemPropertyTitle] = nowPlayingTitle

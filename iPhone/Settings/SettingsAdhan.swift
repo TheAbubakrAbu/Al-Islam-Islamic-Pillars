@@ -716,7 +716,7 @@ extension Settings {
         return list
     }
 
-    /// Computes the enabled optional prayer times (Duhaa, Midnight, Last Third) for a given date.
+    /// Computes the enabled optional prayer times (Duhaa, Islamic Midnight, Last Third) for a given date.
     /// These are NOT stored in `prayers` (which is shared with widgets) and NOT shown in widgets.
     func getOptionalPrayers(for date: Date) -> [Prayer] {
         let raw = _computeRawPrayers(for: date)
@@ -754,8 +754,8 @@ extension Settings {
             if showIslamicMidnight {
                 result.append(Prayer(
                     nameArabic: "نِصْفُ اللَّيْلِ الشَّرْعِيُّ",
-                    nameTransliteration: "Midnight",
-                    nameEnglish: "Middle of Night",
+                    nameTransliteration: "Islamic Midnight",
+                    nameEnglish: "Islamic Middle of Night",
                     time: maghrib.addingTimeInterval(nightDuration / 2),
                     image: "moon.fill",
                     rakah: "0",
@@ -979,7 +979,7 @@ extension Settings {
         "Maghrib/Isha":         .init(enabled: \.notificationMaghrib, preMinutes: \.preNotificationMaghrib, nagging: \.naggingMaghrib),
         "Isha":          .init(enabled: \.notificationIsha,  preMinutes: \.preNotificationIsha,  nagging: \.naggingIsha),
         "Duhaa":         .init(enabled: \.notificationDuha, preMinutes: \.preNotificationDuha, nagging: \.naggingDuha),
-        "Midnight":      .init(enabled: \.notificationIslamicMidnight, preMinutes: \.preNotificationIslamicMidnight, nagging: \.naggingIslamicMidnight),
+        "Islamic Midnight": .init(enabled: \.notificationIslamicMidnight, preMinutes: \.preNotificationIslamicMidnight, nagging: \.naggingIslamicMidnight),
         "Last Third":    .init(enabled: \.notificationLastThird, preMinutes: \.preNotificationLastThird, nagging: \.naggingLastThird)
     ]
 

@@ -1593,7 +1593,18 @@ struct SurahView: View {
                         surahName: surah.nameTransliteration
                     )
                 } label: {
-                    Label("Play from Beginning", systemImage: "memories")
+                    Label(canResumeLast ? "Play from Beginning" : "Play Surah", systemImage: "memories")
+                }
+
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(
+                        surahNumber: surah.id,
+                        ayahNumber: 1,
+                        continueRecitation: true
+                    )
+                } label: {
+                    Label("Play Ayah by Ayah", systemImage: "list.number")
                 }
 
                 Button {
@@ -1613,18 +1624,7 @@ struct SurahView: View {
                     } label: {
                         Label("Play Custom Range", systemImage: "slider.horizontal.3")
                     }
-                    
-                    Button {
-                        settings.hapticFeedback()
-                        quranPlayer.playAyah(
-                            surahNumber: surah.id,
-                            ayahNumber: 1,
-                            continueRecitation: true
-                        )
-                    } label: {
-                        Label("Play Ayah by Ayah", systemImage: "list.number")
-                    }
-                    
+
                     Button {
                         settings.hapticFeedback()
                         let ayahsForQiraah = surah.ayahs.filter { $0.existsInQiraah(settings.displayQiraahForArabic) }

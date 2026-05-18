@@ -346,8 +346,6 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
 
-    
-
     @AppStorage("preNotificationIslamicMidnight") var preNotificationIslamicMidnight: Int = 0 {
         didSet { self.fetchPrayerTimes(notification: true) }
     }
@@ -410,7 +408,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     }
 
     /// Names of optional/informational prayer times shown in the app, but not widgets.
-    static let optionalPrayerNames: Set<String> = ["Duhaa", "Midnight", "Last Third"]
+    static let optionalPrayerNames: Set<String> = ["Duhaa", "Islamic Midnight", "Last Third"]
 
     // MARK: - Quran — @AppStorage
     
@@ -586,7 +584,6 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
     }
 
-
     /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
     @AppStorage("displayQiraah") var displayQiraah: String = ""
 
@@ -645,6 +642,10 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     @AppStorage("showTransliteration") var showTransliteration: Bool = false
     @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
     @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
+    @AppStorage("copyAyahArabic") var copyAyahArabic: Bool = true
+    @AppStorage("copyAyahTransliteration") var copyAyahTransliteration: Bool = false
+    @AppStorage("copyAyahEnglishSaheeh") var copyAyahEnglishSaheeh: Bool = false
+    @AppStorage("copyAyahEnglishMustafa") var copyAyahEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
     @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = false
     @AppStorage("showFullSurahRow") var showFullSurahRow: Bool = false

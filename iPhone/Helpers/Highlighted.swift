@@ -65,6 +65,11 @@ struct HighlightedSnippet: View {
         init(_ r: [Range<String.Index>]) { ranges = r }
     }
 
+    private final class NSRangeEntry: NSObject {
+        let ranges: [NSRange]
+        init(_ r: [NSRange]) { ranges = r }
+    }
+
     /// source → (normalizedSource, indexMap): amortises the O(n×k) per-character normalization.
     private static let sourceNormCache: NSCache<NSString, SourceNormEntry> = {
         let c = NSCache<NSString, SourceNormEntry>()
@@ -82,6 +87,12 @@ struct HighlightedSnippet: View {
     /// source → Allah highlight ranges: amortises the O(n) per-render Allah scan.
     private static let allahRangeCache: NSCache<NSString, RangeEntry> = {
         let c = NSCache<NSString, RangeEntry>()
+        c.countLimit = 7_000
+        return c
+    }()
+
+    private static let allahNSRangeCache: NSCache<NSString, NSRangeEntry> = {
+        let c = NSCache<NSString, NSRangeEntry>()
         c.countLimit = 7_000
         return c
     }()
@@ -295,26 +306,25 @@ struct HighlightedSnippet: View {
 
     private func highlightArabicAllah(source: String, attributed: inout AttributedString) {
         let cacheKey = source as NSString
-        let ranges: [Range<String.Index>]
-        if let cached = Self.allahRangeCache.object(forKey: cacheKey) {
+        let ranges: [NSRange]
+        if let cached = Self.allahNSRangeCache.object(forKey: cacheKey) {
             ranges = cached.ranges
         } else {
-            var found: [Range<String.Index>] = []
+            var found: [NSRange] = []
             for start in source.indices {
-                if let range = arabicAllahRange(startingAt: start, in: source) {
+                if let range = arabicAllahNSRange(startingAt: start, in: source) {
                     found.append(range)
                 }
             }
-            Self.allahRangeCache.setObject(RangeEntry(found), forKey: cacheKey)
+            Self.allahNSRangeCache.setObject(NSRangeEntry(found), forKey: cacheKey)
             ranges = found
         }
 
+        let mutable = NSMutableAttributedString(attributedString: NSAttributedString(attributed))
         for range in ranges {
-            if let start = AttributedString.Index(range.lowerBound, within: attributed),
-               let end = AttributedString.Index(range.upperBound, within: attributed) {
-                attributed[start..<end].foregroundColor = .red
-            }
+            mutable.addAttribute(NSAttributedString.Key.foregroundColor, value: platformRedColor(), range: range)
         }
+        attributed = AttributedString(mutable)
     }
 
     private func arabicAllahRange(startingAt start: String.Index, in source: String) -> Range<String.Index>? {
@@ -339,9 +349,60 @@ struct HighlightedSnippet: View {
         return nil
     }
 
+    private func arabicAllahNSRange(startingAt start: String.Index, in source: String) -> NSRange? {
+        if source[start].allahBase?.isAllahAlif == true,
+           let afterAlif = nextNonMarkIndex(after: start, in: source),
+           source[afterAlif].allahBase == "ل",
+           let secondLam = nextNonMarkIndex(after: afterAlif, in: source),
+           source[secondLam].allahBase == "ل",
+           let heh = nextNonMarkIndex(after: secondLam, in: source),
+           source[heh].allahBase == "ه" {
+            return allahNSRange(from: start, throughHehAt: heh, in: source)
+        }
+
+        if source[start].allahBase == "ل",
+           let secondLam = nextNonMarkIndex(after: start, in: source),
+           source[secondLam].allahBase == "ل",
+           let heh = nextNonMarkIndex(after: secondLam, in: source),
+           source[heh].allahBase == "ه" {
+            return allahNSRange(from: start, throughHehAt: heh, in: source)
+        }
+
+        return nil
+    }
+
+    private func allahNSRange(from start: String.Index, throughHehAt heh: String.Index, in source: String) -> NSRange? {
+        guard var scalarCursor = heh.samePosition(in: source.unicodeScalars) else { return nil }
+
+        let lower = source.utf16.distance(from: source.startIndex, to: start)
+        var upper = source.utf16.distance(from: source.startIndex, to: heh)
+        var foundHeh = false
+
+        while scalarCursor < source.unicodeScalars.endIndex {
+            let scalar = source.unicodeScalars[scalarCursor]
+            if !foundHeh {
+                guard scalar.value == 0x0647 else { break }
+                foundHeh = true
+                upper += scalar.utf16.count
+                scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+                continue
+            }
+            guard scalar.isArabicAllahHighlightMarkScalar else { break }
+            upper += scalar.utf16.count
+            scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+        }
+
+        guard upper > lower else { return nil }
+        return NSRange(location: lower, length: upper - lower)
+    }
+
     private func nextNonMarkIndex(after index: String.Index, in source: String) -> String.Index? {
         var cursor = source.index(after: index)
         while cursor < source.endIndex {
+            if source[cursor].isWhitespace {
+                cursor = source.index(after: cursor)
+                continue
+            }
             if !source[cursor].isArabicMark {
                 return cursor
             }
@@ -351,11 +412,33 @@ struct HighlightedSnippet: View {
     }
 
     private func rangeUpperBound(afterBaseAt index: String.Index, in source: String) -> String.Index {
-        var cursor = source.index(after: index)
-        while cursor < source.endIndex, source[cursor].isArabicAllahHighlightMark {
-            cursor = source.index(after: cursor)
+        guard var scalarCursor = index.samePosition(in: source.unicodeScalars) else {
+            return source.index(after: index)
         }
-        return cursor
+
+        var foundBase = false
+        while scalarCursor < source.unicodeScalars.endIndex {
+            let scalar = source.unicodeScalars[scalarCursor]
+            if !foundBase {
+                foundBase = scalar.value == 0x0647
+                scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+                continue
+            }
+            guard scalar.isArabicAllahHighlightMarkScalar else { break }
+            scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+        }
+
+        return scalarCursor.samePosition(in: source) ?? source.index(after: index)
+    }
+
+    private func platformRedColor() -> Any {
+        #if canImport(UIKit)
+        return UIColor(Color.red)
+        #elseif canImport(AppKit)
+        return NSColor(Color.red)
+        #else
+        return Color.red
+        #endif
     }
 
     private func normalizedIndexMap(in source: String, normalizedSource: String) -> [String.Index] {

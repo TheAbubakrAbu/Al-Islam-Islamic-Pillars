@@ -20,6 +20,10 @@ struct ShareAyahSheet: View {
     @AppStorage("shareIncludeRiwayah") private var shareIncludeRiwayah = false
     @AppStorage("shareArabicFont") private var storedShareArabicFont = ""
     @AppStorage("shareAyahLastActionMode") private var storedActionModeRaw: String = ActionMode.image.rawValue
+    @AppStorage("copyAyahArabic") private var storedCopyArabic = true
+    @AppStorage("copyAyahTransliteration") private var storedCopyTransliteration = false
+    @AppStorage("copyAyahEnglishSaheeh") private var storedCopyEnglishSaheeh = false
+    @AppStorage("copyAyahEnglishMustafa") private var storedCopyEnglishMustafa = false
     @State private var actionMode: ActionMode = .image
     
     @State private var didInit = false
@@ -59,6 +63,10 @@ struct ShareAyahSheet: View {
     }
 
     private func updatedShareSettings(
+        arabic: Bool? = nil,
+        transliteration: Bool? = nil,
+        englishSaheeh: Bool? = nil,
+        englishMustafa: Bool? = nil,
         includeQiraah: Bool? = nil,
         shareArabicFont: String? = nil,
         cleanArabic: Bool? = nil,
@@ -66,15 +74,29 @@ struct ShareAyahSheet: View {
         showTajweed: Bool? = nil
     ) -> ShareSettings {
         ShareSettings(
-            arabic: shareSettings.arabic,
-            transliteration: shareSettings.transliteration,
-            englishSaheeh: shareSettings.englishSaheeh,
-            englishMustafa: shareSettings.englishMustafa,
+            arabic: arabic ?? shareSettings.arabic,
+            transliteration: transliteration ?? shareSettings.transliteration,
+            englishSaheeh: englishSaheeh ?? shareSettings.englishSaheeh,
+            englishMustafa: englishMustafa ?? shareSettings.englishMustafa,
             includeQiraah: includeQiraah ?? shareSettings.includeQiraah,
             shareArabicFont: shareArabicFont ?? shareSettings.shareArabicFont,
             cleanArabic: cleanArabic ?? shareSettings.cleanArabic,
             hideArabicDots: hideArabicDots ?? shareSettings.hideArabicDots,
             showTajweed: showTajweed ?? shareSettings.showTajweed
+        )
+    }
+
+    private func persistentCopyBinding(
+        get: @escaping () -> Bool,
+        set: @escaping (Bool) -> Void,
+        update: @escaping (Bool) -> ShareSettings
+    ) -> Binding<Bool> {
+        Binding(
+            get: get,
+            set: { newValue in
+                set(newValue)
+                shareSettings = update(newValue)
+            }
         )
     }
 
@@ -125,6 +147,29 @@ struct ShareAyahSheet: View {
         return ranges
     }
 
+    private static func allahHighlightNSRanges(in source: String) -> [NSRange] {
+        var ranges: [NSRange] = []
+
+        var englishStart = source.startIndex
+        while englishStart < source.endIndex,
+              let match = source.range(
+                of: "Allah",
+                options: [.caseInsensitive, .diacriticInsensitive],
+                range: englishStart..<source.endIndex
+              ) {
+            ranges.append(NSRange(match, in: source))
+            englishStart = match.upperBound
+        }
+
+        for start in source.indices {
+            if let range = arabicAllahNSRange(startingAt: start, in: source) {
+                ranges.append(range)
+            }
+        }
+
+        return ranges
+    }
+
     private static func arabicAllahRange(startingAt start: String.Index, in source: String) -> Range<String.Index>? {
         if allahBase(for: source[start]) == "ا",
            let afterAlif = nextNonArabicMarkIndex(after: start, in: source),
@@ -147,6 +192,53 @@ struct ShareAyahSheet: View {
         return nil
     }
 
+    private static func arabicAllahNSRange(startingAt start: String.Index, in source: String) -> NSRange? {
+        if allahBase(for: source[start]) == "ا",
+           let afterAlif = nextNonArabicMarkIndex(after: start, in: source),
+           allahBase(for: source[afterAlif]) == "ل",
+           let secondLam = nextNonArabicMarkIndex(after: afterAlif, in: source),
+           allahBase(for: source[secondLam]) == "ل",
+           let heh = nextNonArabicMarkIndex(after: secondLam, in: source),
+           allahBase(for: source[heh]) == "ه" {
+            return allahNSRange(from: start, throughHehAt: heh, in: source)
+        }
+
+        if allahBase(for: source[start]) == "ل",
+           let secondLam = nextNonArabicMarkIndex(after: start, in: source),
+           allahBase(for: source[secondLam]) == "ل",
+           let heh = nextNonArabicMarkIndex(after: secondLam, in: source),
+           allahBase(for: source[heh]) == "ه" {
+            return allahNSRange(from: start, throughHehAt: heh, in: source)
+        }
+
+        return nil
+    }
+
+    private static func allahNSRange(from start: String.Index, throughHehAt heh: String.Index, in source: String) -> NSRange? {
+        guard var scalarCursor = heh.samePosition(in: source.unicodeScalars) else { return nil }
+
+        let lower = source.utf16.distance(from: source.startIndex, to: start)
+        var upper = source.utf16.distance(from: source.startIndex, to: heh)
+        var foundHeh = false
+
+        while scalarCursor < source.unicodeScalars.endIndex {
+            let scalar = source.unicodeScalars[scalarCursor]
+            if !foundHeh {
+                guard scalar.value == 0x0647 else { break }
+                foundHeh = true
+                upper += scalar.utf16.count
+                scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+                continue
+            }
+            guard isArabicAllahHighlightMarkScalar(scalar) else { break }
+            upper += scalar.utf16.count
+            scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+        }
+
+        guard upper > lower else { return nil }
+        return NSRange(location: lower, length: upper - lower)
+    }
+
     private static func nextNonArabicMarkIndex(after index: String.Index, in source: String) -> String.Index? {
         var cursor = source.index(after: index)
         while cursor < source.endIndex {
@@ -159,11 +251,23 @@ struct ShareAyahSheet: View {
     }
 
     private static func rangeUpperBound(afterBaseAt index: String.Index, in source: String) -> String.Index {
-        var cursor = source.index(after: index)
-        while cursor < source.endIndex, isArabicAllahHighlightMark(source[cursor]) {
-            cursor = source.index(after: cursor)
+        guard var scalarCursor = index.samePosition(in: source.unicodeScalars) else {
+            return source.index(after: index)
         }
-        return cursor
+
+        var foundBase = false
+        while scalarCursor < source.unicodeScalars.endIndex {
+            let scalar = source.unicodeScalars[scalarCursor]
+            if !foundBase {
+                foundBase = scalar.value == 0x0647
+                scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+                continue
+            }
+            guard isArabicAllahHighlightMarkScalar(scalar) else { break }
+            scalarCursor = source.unicodeScalars.index(after: scalarCursor)
+        }
+
+        return scalarCursor.samePosition(in: source) ?? source.index(after: index)
     }
 
     private static func allahBase(for character: Character) -> Character? {
@@ -216,8 +320,8 @@ struct ShareAyahSheet: View {
 
     private static func applyAllahHighlight(to attributed: NSMutableAttributedString, source: String, enabled: Bool) {
         guard enabled, attributed.length > 0 else { return }
-        for range in allahHighlightRanges(in: source) {
-            attributed.addAttribute(.foregroundColor, value: UIColor.red, range: NSRange(range, in: source))
+        for range in allahHighlightNSRanges(in: source) {
+            attributed.addAttribute(.foregroundColor, value: UIColor.red, range: range)
         }
     }
 
@@ -235,13 +339,11 @@ struct ShareAyahSheet: View {
         var attributed = AttributedString(string)
         attributed.foregroundColor = baseColor
         guard enabled else { return attributed }
-        for range in allahHighlightRanges(in: string) {
-            if let start = AttributedString.Index(range.lowerBound, within: attributed),
-               let end = AttributedString.Index(range.upperBound, within: attributed) {
-                attributed[start..<end].foregroundColor = .red
-            }
+        let mutable = NSMutableAttributedString(attributedString: NSAttributedString(attributed))
+        for range in allahHighlightNSRanges(in: string) {
+            mutable.addAttribute(.foregroundColor, value: UIColor.red, range: range)
         }
-        return attributed
+        return AttributedString(mutable)
     }
 
     private static func shareArabicImageAttributedText(
@@ -455,15 +557,31 @@ struct ShareAyahSheet: View {
 
                 ScrollView {
                     VStack(spacing: 2) {
-                        toggle("Arabic", $shareSettings.arabic,
+                        toggle("Arabic", persistentCopyBinding(
+                            get: { storedCopyArabic },
+                            set: { storedCopyArabic = $0 },
+                            update: { updatedShareSettings(arabic: $0) }
+                        ),
                                disabled: !shareSettings.transliteration && !shareSettings.englishSaheeh && !shareSettings.englishMustafa)
 
                         if settings.isHafsDisplay {
-                            toggle("Transliteration", $shareSettings.transliteration,
+                            toggle("Transliteration", persistentCopyBinding(
+                                get: { storedCopyTransliteration },
+                                set: { storedCopyTransliteration = $0 },
+                                update: { updatedShareSettings(transliteration: $0) }
+                            ),
                                    disabled: !shareSettings.arabic && !shareSettings.englishSaheeh && !shareSettings.englishMustafa)
-                            toggle("Translation — Saheeh International", $shareSettings.englishSaheeh,
+                            toggle("Translation — Saheeh International", persistentCopyBinding(
+                                get: { storedCopyEnglishSaheeh },
+                                set: { storedCopyEnglishSaheeh = $0 },
+                                update: { updatedShareSettings(englishSaheeh: $0) }
+                            ),
                                    disabled: !shareSettings.arabic && !shareSettings.transliteration && !shareSettings.englishMustafa)
-                            toggle("Translation — Mustafa Khattab", $shareSettings.englishMustafa,
+                            toggle("Translation — Mustafa Khattab", persistentCopyBinding(
+                                get: { storedCopyEnglishMustafa },
+                                set: { storedCopyEnglishMustafa = $0 },
+                                update: { updatedShareSettings(englishMustafa: $0) }
+                            ),
                                    disabled: !shareSettings.arabic && !shareSettings.transliteration && !shareSettings.englishSaheeh)
                         }
 
@@ -610,10 +728,10 @@ struct ShareAyahSheet: View {
                     storedShareArabicFont = font
                 }
                 shareSettings = ShareSettings(
-                    arabic: settings.showArabicText,
-                    transliteration: settings.isHafsDisplay ? settings.showTransliteration : false,
-                    englishSaheeh: settings.isHafsDisplay ? settings.showEnglishSaheeh : false,
-                    englishMustafa: settings.isHafsDisplay ? settings.showEnglishMustafa : false,
+                    arabic: settings.isHafsDisplay ? storedCopyArabic : true,
+                    transliteration: settings.isHafsDisplay ? storedCopyTransliteration : false,
+                    englishSaheeh: settings.isHafsDisplay ? storedCopyEnglishSaheeh : false,
+                    englishMustafa: settings.isHafsDisplay ? storedCopyEnglishMustafa : false,
                     includeQiraah: settings.showQiraahDetails ? shareIncludeRiwayah : false,
                     shareArabicFont: font,
                     cleanArabic: settings.cleanArabicText,
@@ -986,10 +1104,10 @@ extension ShareAyahSheet {
         let includeRiwayah = settings.showQiraahDetails && UserDefaults.standard.bool(forKey: shareIncludeRiwayahKey)
         let shareFont = UserDefaults.standard.string(forKey: "shareArabicFont") ?? ""
         let shareSettings = ShareSettings(
-            arabic: settings.showArabicText,
-            transliteration: settings.showTransliteration,
-            englishSaheeh: settings.showEnglishSaheeh,
-            englishMustafa: settings.showEnglishMustafa,
+            arabic: settings.isHafsDisplay ? settings.copyAyahArabic : true,
+            transliteration: settings.isHafsDisplay ? settings.copyAyahTransliteration : false,
+            englishSaheeh: settings.isHafsDisplay ? settings.copyAyahEnglishSaheeh : false,
+            englishMustafa: settings.isHafsDisplay ? settings.copyAyahEnglishMustafa : false,
             includeQiraah: includeRiwayah,
             shareArabicFont: Settings.normalizedArabicFontName(shareFont.isEmpty ? settings.fontArabic : shareFont),
             cleanArabic: settings.cleanArabicText,

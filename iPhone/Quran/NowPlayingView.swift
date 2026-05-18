@@ -118,25 +118,14 @@ struct NowPlayingView: View {
 
     @ViewBuilder
     private func transportButtons(isPlaying: Bool) -> some View {
-        if quranPlayer.isPlayingCustomRange {
-            Image(systemName: "gobackward.10")
-                .font(.title2)
-                .foregroundColor(settings.accentColor.color)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    quranPlayer.seek(by: -10)
-                }
-        } else {
-            Image(systemName: "backward.fill")
-                .font(.title2)
-                .foregroundColor(settings.accentColor.color)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    quranPlayer.skipBackward()
-                }
-        }
+        Image(systemName: "backward.fill")
+            .font(.title2)
+            .foregroundColor(settings.accentColor.color)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.skipBackward()
+            }
 
         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
             .font(.title2)
@@ -149,25 +138,14 @@ struct NowPlayingView: View {
                 }
             }
 
-        if quranPlayer.isPlayingCustomRange {
-            Image(systemName: "goforward.10")
-                .font(.title2)
-                .foregroundColor(settings.accentColor.color)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    quranPlayer.seek(by: 10)
-                }
-        } else {
-            Image(systemName: "forward.fill")
-                .font(.title2)
-                .foregroundColor(settings.accentColor.color)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    quranPlayer.skipForward()
-                }
-        }
+        Image(systemName: "forward.fill")
+            .font(.title2)
+            .foregroundColor(settings.accentColor.color)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.skipForward()
+            }
     }
 
     private func customRangeLineOne(start: Int, end: Int) -> String {
