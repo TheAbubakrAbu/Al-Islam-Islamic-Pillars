@@ -1703,10 +1703,25 @@ final class TajweedStore {
                rangeIncludesFirstAyahLetterHamzatWasl(nsRange(for: cluster), clusters: clusters) {
                 continue
             }
+            if isFathataynHelperBeforeIdghamBilaGhunnah(clusters: clusters, index: index) { continue }
             if base == "ل", isLamConnectedToAllahWord(clusters: clusters, index: index) { continue }
             let range = primaryArabicLetterScalarRange(in: cluster) ?? nsRange(for: cluster)
             ops.append(PaintOp(range: range, priority: PaintPriority.droppedLetter, category: .droppedLetter))
         }
+    }
+
+    private func isFathataynHelperBeforeIdghamBilaGhunnah(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard clusters.indices.contains(index),
+              let base = clusters[index].primaryArabicLetter,
+              TajweedRules.fathataynFollowerSkipLetters.contains(base),
+              isSilentFinalLetter(clusters: clusters, index: index),
+              let previous = previousArabicLetterClusterIndex(clusters: clusters, before: index),
+              hasFathatayn(clusters[previous]),
+              let nextIndex = nextArabicLetterClusterIndex(clusters: clusters, after: index),
+              let nextBase = clusters[nextIndex].primaryArabicLetter else {
+            return false
+        }
+        return TajweedRules.noonTanweenSourceOnlyIdghamLetters.contains(nextBase)
     }
 
     private func muqattaatProtectedClusterIndices(surah: Int, ayah: Int, clusters: [CharacterClusterInfo]) -> Set<Int> {
