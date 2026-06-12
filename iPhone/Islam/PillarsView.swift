@@ -56,22 +56,6 @@ struct PillarsView: View {
                 .padding(.vertical, 4)
             }
 
-            Section(header: Text("QURAN AND TAFSIR")) {
-                NavigationLink(destination: QuranPillarView()) {
-                    Text("What is the Quran?")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-
-                NavigationLink(destination: MuqattaatPillarView()) {
-                    Text("Muqatta'at Letters")
-                        .foregroundColor(settings.accentColor.color)
-                        .font(.headline)
-                }
-                .padding(.vertical, 4)
-            }
-
             IslamicPillarsView()
 
             ImanPillarsView()
@@ -2101,7 +2085,7 @@ struct PillarsOtherView: View {
             .padding(.vertical, 4)
         }
         
-        Section(header: Text("QURAN & TAFSIR")) {
+        Section(header: Text("QURAN AND TAFSIR")) {
             NavigationLink(destination: CompileView()) {
                 Text("Compilation of the Quran")
                     .font(.subheadline)
@@ -2110,6 +2094,12 @@ struct PillarsOtherView: View {
             
             NavigationLink(destination: TajweedView()) {
                 Text("Tajweed")
+                    .font(.subheadline)
+            }
+            .padding(.vertical, 4)
+            
+            NavigationLink(destination: MuqattaatPillarView()) {
+                Text("Muqatta'at Letters")
                     .font(.subheadline)
             }
             .padding(.vertical, 4)

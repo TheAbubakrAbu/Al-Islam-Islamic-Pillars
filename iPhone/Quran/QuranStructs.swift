@@ -212,6 +212,14 @@ struct Reciter: Identifiable, Comparable, Codable, Hashable {
         return base
     }
 
+    /// Display name used for the Minshawi ayah fallback feed.
+    static let minshawiAyahFallbackName = "Muhammad Al-Minshawi (Murattal)"
+
+    /// True when this reciter has no ayah-by-ayah feed of its own and falls back to Minshawi (Murattal) for individual ayah audio.
+    var defaultToMinshawi: Bool {
+        ayahIdentifier.contains("minshawi") && !name.contains("Minshawi")
+    }
+
     static func < (lhs: Reciter, rhs: Reciter) -> Bool {
         lhs.name < rhs.name
     }

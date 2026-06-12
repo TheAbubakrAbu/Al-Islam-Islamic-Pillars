@@ -4,12 +4,18 @@ import SwiftUI
 struct PlayCustomRangeSheet: View {
     @EnvironmentObject var settings: Settings
 
+    enum SelectionMode: String, CaseIterable {
+        case ayahs, pages
+        var title: String { self == .ayahs ? "Ayahs" : "Pages" }
+    }
+
     let surah: Surah
     let initialStartAyah: Int
     let initialEndAyah: Int
     let onPlay: (Int, Int, Int, Int) -> Void
     let onCancel: () -> Void
 
+    @State private var selectionMode: SelectionMode = .ayahs
     @State private var startAyah: Int
     @State private var endAyah: Int
     @State private var startAyahText: String
@@ -84,6 +90,117 @@ struct PlayCustomRangeSheet: View {
 
     private var ayahCount: Int {
         max(0, endAyah - startAyah + 1)
+    }
+
+    /// Mushaf pages within this surah (clamped to the active qiraah), each mapped to its first/last ayah. Ordered by page number.
+    private var pageGroups: [(page: Int, firstAyah: Int, lastAyah: Int)] {
+        var bounds: [Int: (first: Int, last: Int)] = [:]
+        var order: [Int] = []
+        for ayah in surah.ayahs where ayah.id <= maxAyah {
+            guard let page = ayah.page else { continue }
+            if let existing = bounds[page] {
+                bounds[page] = (first: Swift.min(existing.first, ayah.id), last: Swift.max(existing.last, ayah.id))
+            } else {
+                bounds[page] = (first: ayah.id, last: ayah.id)
+                order.append(page)
+            }
+        }
+        return order.sorted().map { (page: $0, firstAyah: bounds[$0]!.first, lastAyah: bounds[$0]!.last) }
+    }
+
+    /// True when we have any page data for this surah (drives whether the Ayahs/Pages toggle is shown).
+    private var hasPageData: Bool { !pageGroups.isEmpty }
+
+    /// True when this surah spans more than one mushaf page (drives the page-snap helpers in Ayahs mode).
+    private var hasMultiplePages: Bool { pageGroups.count > 1 }
+
+    /// Index into `pageGroups` of the page containing the given ayah (falls back to the nearest preceding page).
+    private func pageIndex(containing ayah: Int) -> Int? {
+        let groups = pageGroups
+        if let idx = groups.firstIndex(where: { ayah >= $0.firstAyah && ayah <= $0.lastAyah }) {
+            return idx
+        }
+        return groups.lastIndex(where: { $0.firstAyah <= ayah }) ?? (groups.isEmpty ? nil : 0)
+    }
+
+    private var fromPageIndex: Int { pageIndex(containing: startAyah) ?? 0 }
+    private var toPageIndex: Int { pageIndex(containing: endAyah) ?? fromPageIndex }
+
+    /// Mushaf page number that the given ayah falls on, if known.
+    private func pageNumber(forAyah ayah: Int) -> Int? {
+        guard let idx = pageIndex(containing: ayah) else { return nil }
+        return pageGroups[idx].page
+    }
+
+    /// True when the start ayah is already the first ayah of its page (so "Start of page" would be a no-op).
+    private var startAtPageStart: Bool {
+        guard let idx = pageIndex(containing: startAyah) else { return true }
+        return startAyah <= pageGroups[idx].firstAyah
+    }
+
+    /// True when the end ayah is already the last ayah of its page (so "End of page" would be a no-op).
+    private var endAtPageEnd: Bool {
+        guard let idx = pageIndex(containing: endAyah) else { return true }
+        return endAyah >= pageGroups[idx].lastAyah
+    }
+
+    /// Sets the start of the range to the first ayah of `pageGroups[index]` (clamped so start never passes the end page).
+    private func setFromPage(to index: Int) {
+        let groups = pageGroups
+        let clamped = min(Swift.max(0, index), toPageIndex)
+        guard groups.indices.contains(clamped) else { return }
+        let a = groups[clamped].firstAyah
+        withAnimation(.easeInOut(duration: 0.2)) {
+            startAyah = a
+            startAyahText = "\(a)"
+        }
+    }
+
+    /// Sets the end of the range to the last ayah of `pageGroups[index]` (clamped so end never passes the start page).
+    private func setToPage(to index: Int) {
+        let groups = pageGroups
+        let clamped = min(Swift.max(fromPageIndex, index), groups.count - 1)
+        guard groups.indices.contains(clamped) else { return }
+        let a = groups[clamped].lastAyah
+        withAnimation(.easeInOut(duration: 0.2)) {
+            endAyah = a
+            endAyahText = "\(a)"
+        }
+    }
+
+    /// Expands the current ayah range out to whole-page boundaries — used when switching into Pages mode.
+    private func snapRangeToPages() {
+        let groups = pageGroups
+        guard !groups.isEmpty else { return }
+        let lo = min(fromPageIndex, toPageIndex)
+        let hi = Swift.max(fromPageIndex, toPageIndex)
+        let a = groups[lo].firstAyah
+        let b = groups[hi].lastAyah
+        startAyah = a; startAyahText = "\(a)"
+        endAyah = b; endAyahText = "\(b)"
+    }
+
+    /// In Ayahs mode: move the start back to the first ayah of its page.
+    private func snapStartToPageStart() {
+        guard let idx = pageIndex(containing: startAyah) else { return }
+        commitBothAyahFields()
+        let a = pageGroups[idx].firstAyah
+        withAnimation(.easeInOut(duration: 0.2)) {
+            startAyah = a
+            startAyahText = "\(a)"
+            if endAyah < a { endAyah = a; endAyahText = "\(a)" }
+        }
+    }
+
+    /// In Ayahs mode: extend the end out to the last ayah of its page.
+    private func snapEndToPageEnd() {
+        guard let idx = pageIndex(containing: endAyah) else { return }
+        commitBothAyahFields()
+        let a = pageGroups[idx].lastAyah
+        withAnimation(.easeInOut(duration: 0.2)) {
+            endAyah = a
+            endAyahText = "\(a)"
+        }
     }
 
     private var availableAyahReciters: [Reciter] {
@@ -313,6 +430,13 @@ struct PlayCustomRangeSheet: View {
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
+
+                    if selectedRangeReciter?.defaultToMinshawi == true {
+                        Text("Ayahs default to \(Reciter.minshawiAyahFallbackName).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
                 Spacer(minLength: 8)
@@ -332,6 +456,38 @@ struct PlayCustomRangeSheet: View {
 
     private var rangeCard: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if hasPageData {
+                Picker("Selection mode", selection: $selectionMode.animation(.easeInOut)) {
+                    ForEach(SelectionMode.allCases, id: \.self) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: selectionMode) { mode in
+                    settings.hapticFeedback()
+                    if mode == .pages { snapRangeToPages() }
+                }
+            }
+
+            if selectionMode == .pages && hasPageData {
+                pageSelectionSection
+            } else {
+                ayahSelectionSection
+            }
+
+            ayahCountLabel
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(Rectangle())
+        .animation(.easeInOut, value: startAyah)
+        .animation(.easeInOut, value: endAyah)
+    }
+
+    private var ayahSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
             Label("Ayah range", systemImage: "number")
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
@@ -343,11 +499,11 @@ struct PlayCustomRangeSheet: View {
                         startAyahText = "\(endAyah)"
                     }
                 }
-                
+
                 Image(systemName: "arrow.right")
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(Color(.tertiaryLabel))
-                
+
                 rangeField(title: "To", value: $endAyah, text: $endAyahText, isFocused: $endAyahFocused) { new in
                     if new < startAyah {
                         endAyah = startAyah
@@ -361,74 +517,191 @@ struct PlayCustomRangeSheet: View {
             .onChange(of: endAyah) { ayah in
                 endAyahText = "\(endAyah)"
             }
-            
+
             HStack(spacing: 10) {
-                Button {
-                    settings.hapticFeedback()
+                quickActionButton(title: "Go to start", systemImage: "arrow.left.to.line") {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         startAyah = 1
                         startAyahText = "1"
                     }
-                } label: {
-                    Label("Go to start", systemImage: "arrow.left.to.line")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(settings.accentColor.color)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(settings.accentColor.color.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .contentShape(Rectangle())
                 }
 
-                Button {
-                    settings.hapticFeedback()
+                quickActionButton(title: "Go to end", systemImage: "arrow.right.to.line") {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         endAyah = maxAyah
                         endAyahText = "\(maxAyah)"
                     }
-                } label: {
-                    Label("Go to end", systemImage: "arrow.right.to.line")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(settings.accentColor.color)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(settings.accentColor.color.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .contentShape(Rectangle())
                 }
             }
 
-            Button {
-                settings.hapticFeedback()
+            if hasPageData {
+                HStack(spacing: 10) {
+                    quickActionButton(title: "Start of page", systemImage: "arrow.up.to.line", enabled: hasMultiplePages && !startAtPageStart) {
+                        snapStartToPageStart()
+                    }
+
+                    quickActionButton(title: "End of page", systemImage: "arrow.down.to.line", enabled: hasMultiplePages && !endAtPageEnd) {
+                        snapEndToPageEnd()
+                    }
+                }
+            }
+
+            quickActionButton(title: "Whole surah (1–\(maxAyah))", systemImage: "doc.text.fill", prominent: true) {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     startAyah = 1
                     endAyah = maxAyah
                     startAyahText = "1"
                     endAyahText = "\(maxAyah)"
                 }
-            } label: {
-                HStack {
-                    Image(systemName: "doc.text.fill")
-                    Text("Whole surah (1–\(maxAyah))")
-                }
-                .font(.subheadline.weight(.medium))
-                .foregroundColor(settings.accentColor.color)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(settings.accentColor.color.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .contentShape(Rectangle())
             }
 
-            ayahCountLabel
+            pageInfoCaption
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .contentShape(Rectangle())
-        .animation(.easeInOut, value: startAyah)
-        .animation(.easeInOut, value: endAyah)
+    }
+
+    /// Caption shown in Ayahs mode: which page the first/last ayah falls on, plus how many pages the surah spans.
+    @ViewBuilder
+    private var pageInfoCaption: some View {
+        if hasPageData {
+            let groups = pageGroups
+            let pageWord = groups.count == 1 ? "page" : "pages"
+            let detail: String = {
+                guard let sp = pageNumber(forAyah: startAyah), let ep = pageNumber(forAyah: endAyah) else {
+                    return "\(groups.count) \(pageWord) in surah"
+                }
+                if sp == ep {
+                    return "On page \(sp) · \(groups.count) \(pageWord) in surah"
+                }
+                return "Page \(sp) → \(ep) · \(groups.count) \(pageWord) in surah"
+            }()
+
+            Text(detail)
+                .font(.caption)
+                .foregroundColor(Color(.tertiaryLabel))
+        }
+    }
+
+    @ViewBuilder
+    private var pageSelectionSection: some View {
+        let groups = pageGroups
+        let fromIdx = fromPageIndex
+        let toIdx = toPageIndex
+        let pageSpan = Swift.max(0, toIdx - fromIdx + 1)
+
+        VStack(alignment: .leading, spacing: 16) {
+            Label("Page range", systemImage: "doc.text")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 12) {
+                pageField(
+                    title: "From page",
+                    pageNumber: groups.indices.contains(fromIdx) ? groups[fromIdx].page : nil,
+                    canDecrement: fromIdx > 0,
+                    canIncrement: fromIdx < toIdx,
+                    onDecrement: { setFromPage(to: fromIdx - 1) },
+                    onIncrement: { setFromPage(to: fromIdx + 1) }
+                )
+
+                Image(systemName: "arrow.right")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(Color(.tertiaryLabel))
+
+                pageField(
+                    title: "To page",
+                    pageNumber: groups.indices.contains(toIdx) ? groups[toIdx].page : nil,
+                    canDecrement: toIdx > fromIdx,
+                    canIncrement: toIdx < groups.count - 1,
+                    onDecrement: { setToPage(to: toIdx - 1) },
+                    onIncrement: { setToPage(to: toIdx + 1) }
+                )
+            }
+
+            HStack(spacing: 10) {
+                quickActionButton(title: "First page", systemImage: "arrow.left.to.line", enabled: fromIdx > 0) {
+                    setFromPage(to: 0)
+                }
+
+                quickActionButton(title: "Last page", systemImage: "arrow.right.to.line", enabled: toIdx < groups.count - 1) {
+                    setToPage(to: groups.count - 1)
+                }
+            }
+
+            quickActionButton(title: "All pages (\(groups.count))", systemImage: "doc.text.fill", prominent: true, enabled: !(fromIdx == 0 && toIdx == groups.count - 1)) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    startAyah = 1
+                    endAyah = maxAyah
+                    startAyahText = "1"
+                    endAyahText = "\(maxAyah)"
+                }
+            }
+
+            Text("Ayahs \(startAyah)–\(endAyah) · \(pageSpan) page\(pageSpan == 1 ? "" : "s")")
+                .font(.caption)
+                .foregroundColor(Color(.tertiaryLabel))
+        }
+    }
+
+    private func quickActionButton(title: String, systemImage: String, prominent: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+        let tint = enabled ? settings.accentColor.color : Color(UIColor.tertiaryLabel)
+        return Button {
+            settings.hapticFeedback()
+            action()
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(tint)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, prominent ? 12 : 10)
+                .background(tint.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: prominent ? 16 : 14, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .disabled(!enabled)
+    }
+
+    private func pageField(title: String, pageNumber: Int?, canDecrement: Bool, canIncrement: Bool, onDecrement: @escaping () -> Void, onIncrement: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            HStack(spacing: 0) {
+                Button {
+                    settings.hapticFeedback()
+                    onDecrement()
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(canDecrement ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                }
+                .disabled(!canDecrement)
+
+                Spacer()
+
+                Text(pageNumber.map { "\($0)" } ?? "—")
+                    .font(.title2.monospacedDigit().weight(.semibold))
+                    .foregroundColor(.primary)
+                    .frame(minWidth: 44, alignment: .center)
+
+                Spacer()
+
+                Button {
+                    settings.hapticFeedback()
+                    onIncrement()
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(canIncrement ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                }
+                .disabled(!canIncrement)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(UIColor.tertiarySystemFill))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func rangeField(title: String, value: Binding<Int>, text: Binding<String>, isFocused: FocusState<Bool>.Binding, onChange: @escaping (Int) -> Void) -> some View {

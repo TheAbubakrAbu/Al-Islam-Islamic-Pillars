@@ -1651,7 +1651,7 @@ private struct ReciterRow: View {
                             .padding(.top, 2)
                     }
 
-                    if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
+                    if !qiraah && reciter.defaultToMinshawi {
                         Text("This reciter supports surahs only. Ayahs default to Minshawi (Murattal).")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -1792,7 +1792,7 @@ private struct WatchReciterRow: View {
                         .opacity(isSelected ? 1 : 0)
                 }
 
-                if !qiraah && reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
+                if !qiraah && reciter.defaultToMinshawi {
                     Text("This reciter supports surahs only. Ayahs default to Minshawi (Murattal).")
                         .font(.caption)
                         .foregroundColor(.secondary)

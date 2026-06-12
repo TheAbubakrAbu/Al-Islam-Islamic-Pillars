@@ -4,6 +4,11 @@ import SwiftUI
 struct CalendarView: View {
     @EnvironmentObject private var settings: Settings
 
+    enum DisplayMode {
+        case events, calendar
+    }
+
+    @State private var mode: DisplayMode = .events
     @State private var nearestEventId = ""
     @State private var hijriYear = 1445
     @State private var hijriMonth = 1
@@ -24,6 +29,40 @@ struct CalendarView: View {
     }()
 
     var body: some View {
+        Group {
+            if mode == .calendar {
+                HijriMonthCalendarView()
+            } else {
+                eventsList
+            }
+        }
+        .navigationTitle("Hijri Calendar")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        mode = (mode == .calendar) ? .events : .calendar
+                    }
+                } label: {
+                    Image(systemName: mode == .calendar ? "list.bullet" : "calendar")
+                }
+                .accessibilityLabel(mode == .calendar ? "Show Islamic dates list" : "Show Hijri calendar")
+            }
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink {
+                    HijriCalendarView()
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .accessibilityLabel("Learn about the Hijri Calendar")
+            }
+        }
+        .navigationViewStyle(.stack)
+    }
+
+    private var eventsList: some View {
         ScrollViewReader { proxy in
             List {
                 Section(header: Text("WHAT IS HIJRI?")) {
@@ -35,6 +74,17 @@ struct CalendarView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
+                    Button {
+                        settings.hapticFeedback()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            mode = .calendar
+                        }
+                    } label: {
+                        Label("Open Hijri Calendar", systemImage: "calendar")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                    }
+
                     NavigationLink {
                         HijriCalendarView()
                     } label: {
@@ -42,7 +92,7 @@ struct CalendarView: View {
                             .font(.caption.weight(.semibold))
                             .foregroundColor(settings.accentColor.color)
                     }
-                    
+
                     NavigationLink {
                         DateView()
                     } label: {
@@ -77,25 +127,26 @@ struct CalendarView: View {
                 dateOverlayHeader
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
-            .navigationTitle("Hijri Calendar")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink {
-                        HijriCalendarView()
-                    } label: {
-                        Image(systemName: "info.circle")
-                    }
-                    .accessibilityLabel("Learn about the Hijri Calendar")
-                }
-            }
         }
-        .navigationViewStyle(.stack)
     }
 
     private func buildEventRows() -> [HijriEventRowModel] {
-        settings.specialEvents.map { event in
-            let date = settings.hijriCalendar.date(from: event.1)!
-            let components = event.1
+        let baseEvents = settings.specialEvents
+        let todayStart = Calendar.current.startOfDay(for: Date())
+
+        // The Islamic year runs Muharram → Dhul Hijjah. Once every event for the current Hijri
+        // year has already passed (e.g. late Dhul Hijjah), roll the whole set to the next Hijri
+        // year so the list leads with the upcoming Islamic New Year instead of being all grayed out.
+        let allPast = baseEvents.allSatisfy { event in
+            guard let date = settings.hijriCalendar.date(from: event.1) else { return true }
+            return date < todayStart
+        }
+        let yearShift = allPast ? 1 : 0
+
+        return baseEvents.map { event in
+            var components = event.1
+            components.year = (components.year ?? hijriYear) + yearShift
+            let date = settings.hijriCalendar.date(from: components) ?? Date()
             let monthName = Self.monthSymbols[(components.month ?? 1) - 1]
 
             return HijriEventRowModel(
@@ -215,6 +266,7 @@ private struct HijriEventRow: View {
 
     private func copyButton(_ title: String, value: String) -> some View {
         Button {
+            settings.hapticFeedback()
             UIPasteboard.general.string = value
         } label: {
             Label(title, systemImage: "doc.on.doc")
@@ -222,9 +274,334 @@ private struct HijriEventRow: View {
     }
 }
 
+// MARK: - Hijri Month Calendar (grid)
+
+struct HijriMonthCalendarView: View {
+    @EnvironmentObject private var settings: Settings
+
+    @State private var displayedYear = 1445
+    @State private var displayedMonth = 1
+    @State private var selectedDay: Int?
+    @State private var didInitialize = false
+
+    private static let monthSymbols = [
+        "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
+        "Jumada al-Ula", "Jumada al-Thani", "Rajab", "Sha'ban",
+        "Ramadan", "Shawwal", "Dhul Qi'dah", "Dhul Hijjah"
+    ]
+
+    private static let weekdaySymbols = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+    private static let gregFullFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.dateFormat = "EEEE, MMMM d, yyyy"
+        return f
+    }()
+
+    private static let gregMonthYearFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.dateFormat = "MMM yyyy"
+        return f
+    }()
+
+    private var hijriCalendar: Calendar { settings.hijriCalendar }
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                monthHeader
+                weekdayHeader
+                daysGrid
+                selectedDayCard
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+        }
+        .onAppear {
+            settings.updateDates()
+            guard !didInitialize else { return }
+            didInitialize = true
+            let today = todayHijriComponents()
+            displayedYear = today.year ?? displayedYear
+            displayedMonth = today.month ?? displayedMonth
+        }
+    }
+
+    // MARK: Header
+
+    private var monthHeader: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                monthArrow(systemName: "chevron.left") { changeMonth(by: -1) }
+
+                VStack(spacing: 3) {
+                    Text("\(Self.monthSymbols[displayedMonth - 1]) \(String(displayedYear)) AH")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+
+                    if let gregorianRange = gregorianRangeText {
+                        Text(gregorianRange)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                monthArrow(systemName: "chevron.right") { changeMonth(by: 1) }
+            }
+
+            if !isViewingTodayMonth {
+                Button {
+                    settings.hapticFeedback()
+                    goToToday()
+                } label: {
+                    Label("Today", systemImage: "calendar.badge.clock")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(settings.accentColor.color.opacity(0.12))
+                        .clipShape(Capsule())
+                        .contentShape(Capsule())
+                }
+            }
+        }
+    }
+
+    private var isViewingTodayMonth: Bool {
+        let t = todayHijriComponents()
+        return t.year == displayedYear && t.month == displayedMonth
+    }
+
+    private func monthArrow(systemName: String, action: @escaping () -> Void) -> some View {
+        Button {
+            settings.hapticFeedback()
+            action()
+        } label: {
+            Image(systemName: systemName)
+                .font(.body.weight(.semibold))
+                .foregroundColor(settings.accentColor.color)
+                .frame(width: 44, height: 44)
+                .background(settings.accentColor.color.opacity(0.12))
+                .clipShape(Circle())
+                .contentShape(Circle())
+        }
+    }
+
+    private var weekdayHeader: some View {
+        HStack(spacing: 6) {
+            ForEach(Self.weekdaySymbols, id: \.self) { symbol in
+                Text(symbol)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    // MARK: Grid
+
+    private var daysGrid: some View {
+        LazyVGrid(columns: columns, spacing: 6) {
+            ForEach(Array(monthCells.enumerated()), id: \.offset) { _, day in
+                if let day = day {
+                    dayCell(day)
+                } else {
+                    Color.clear.frame(height: 46)
+                }
+            }
+        }
+    }
+
+    private func dayCell(_ day: Int) -> some View {
+        let today = isToday(day)
+        let selected = selectedDay == day
+        let hasEvent = event(forDay: day) != nil
+
+        return Button {
+            settings.hapticFeedback()
+            withAnimation(.easeInOut(duration: 0.15)) {
+                selectedDay = selected ? nil : day
+            }
+        } label: {
+            VStack(spacing: 3) {
+                Text("\(day)")
+                    .font(.subheadline.weight(today ? .bold : .medium))
+                    .foregroundColor(today ? .white : .primary)
+
+                if let g = gregorianDay(forDay: day) {
+                    Text("\(g)")
+                        .font(.system(size: 9))
+                        .foregroundColor(today ? .white.opacity(0.85) : .secondary)
+                }
+
+                Circle()
+                    .fill(hasEvent ? (today ? Color.white : settings.accentColor.color) : Color.clear)
+                    .frame(width: 5, height: 5)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(today ? settings.accentColor.color : (selected ? settings.accentColor.color.opacity(0.15) : Color(UIColor.secondarySystemGroupedBackground)))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(selected && !today ? settings.accentColor.color : Color.clear, lineWidth: 1.5)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Selected day detail
+
+    @ViewBuilder
+    private var selectedDayCard: some View {
+        let day = selectedDay ?? todayDayIfVisible
+        if let day = day, let gregorian = gregorianDate(forDay: day) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("\(day) \(Self.monthSymbols[displayedMonth - 1]) \(String(displayedYear)) AH")
+                        .font(.headline)
+                        .foregroundColor(settings.accentColor.color)
+                    Spacer()
+                    if isToday(day) {
+                        Text("Today")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(settings.accentColor.color)
+                            .clipShape(Capsule())
+                    }
+                }
+
+                Text(Self.gregFullFormatter.string(from: gregorian))
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+
+                if let event = event(forDay: day) {
+                    Divider()
+                    Text(event.0)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.primary)
+                    Text(event.1)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    // MARK: Data helpers
+
+    /// Cells for the displayed month: leading `nil`s for the first weekday offset, then day numbers.
+    private var monthCells: [Int?] {
+        guard let first = hijriCalendar.date(from: DateComponents(year: displayedYear, month: displayedMonth, day: 1)),
+              let range = hijriCalendar.range(of: .day, in: .month, for: first) else { return [] }
+        let leading = hijriCalendar.component(.weekday, from: first) - 1
+        var cells: [Int?] = Array(repeating: nil, count: leading)
+        cells.append(contentsOf: range.map { Optional($0) })
+        while cells.count % 7 != 0 { cells.append(nil) }
+        return cells
+    }
+
+    /// Hijri components for "today", applying the same Maghrib switch and manual offset the rest of the app uses.
+    private func todayHijriComponents() -> DateComponents {
+        let effective = settings.effectiveHijriReferenceDate()
+        let base = hijriCalendar.date(byAdding: .day, value: settings.hijriOffset, to: effective) ?? effective
+        return hijriCalendar.dateComponents([.year, .month, .day], from: base)
+    }
+
+    private func isToday(_ day: Int) -> Bool {
+        let t = todayHijriComponents()
+        return t.year == displayedYear && t.month == displayedMonth && t.day == day
+    }
+
+    private var todayDayIfVisible: Int? {
+        let t = todayHijriComponents()
+        guard t.year == displayedYear, t.month == displayedMonth else { return nil }
+        return t.day
+    }
+
+    /// Gregorian date for a Hijri day in the displayed month, reversing the app's manual offset.
+    private func gregorianDate(forDay day: Int) -> Date? {
+        guard let d = hijriCalendar.date(from: DateComponents(year: displayedYear, month: displayedMonth, day: day)) else { return nil }
+        return hijriCalendar.date(byAdding: .day, value: -settings.hijriOffset, to: d)
+    }
+
+    private func gregorianDay(forDay day: Int) -> Int? {
+        guard let g = gregorianDate(forDay: day) else { return nil }
+        return Calendar(identifier: .gregorian).component(.day, from: g)
+    }
+
+    /// Title/subtitle of an important Islamic event on the given Hijri day, if any.
+    /// Matches on month + day so these recurring annual events appear in every displayed year.
+    private func event(forDay day: Int) -> (String, String)? {
+        for e in settings.specialEvents {
+            let c = e.1
+            if c.month == displayedMonth, c.day == day {
+                return (e.0, e.2)
+            }
+        }
+        return nil
+    }
+
+    private var gregorianRangeText: String? {
+        guard let firstDay = gregorianDate(forDay: 1),
+              let first = hijriCalendar.date(from: DateComponents(year: displayedYear, month: displayedMonth, day: 1)),
+              let range = hijriCalendar.range(of: .day, in: .month, for: first),
+              let lastDay = gregorianDate(forDay: range.count) else { return nil }
+        let start = Self.gregMonthYearFormatter.string(from: firstDay)
+        let end = Self.gregMonthYearFormatter.string(from: lastDay)
+        return start == end ? start : "\(start) – \(end)"
+    }
+
+    // MARK: Actions
+
+    private func changeMonth(by delta: Int) {
+        var month = displayedMonth + delta
+        var year = displayedYear
+        if month < 1 { month = 12; year -= 1 }
+        if month > 12 { month = 1; year += 1 }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            displayedMonth = month
+            displayedYear = year
+            selectedDay = nil
+        }
+    }
+
+    private func goToToday() {
+        let today = todayHijriComponents()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            displayedYear = today.year ?? displayedYear
+            displayedMonth = today.month ?? displayedMonth
+            selectedDay = today.day
+        }
+    }
+}
+
 #Preview {
     AlIslamPreviewContainer(embedInNavigation: false) {
         CalendarView()
+    }
+}
+
+#Preview("Hijri Month Grid") {
+    AlIslamPreviewContainer(embedInNavigation: true) {
+        HijriMonthCalendarView()
     }
 }
 #endif

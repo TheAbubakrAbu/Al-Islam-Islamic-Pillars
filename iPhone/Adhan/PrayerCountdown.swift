@@ -235,6 +235,8 @@ private struct CurrentPrayerCell: View {
         HStack {
             #if os(iOS)
             Image(systemName: prayer.image)
+                .lineLimit(1)
+                .minimumScaleFactor(1)
             #else
             if !prayer.nameTransliteration.contains("/") {
                 Image(systemName: prayer.image)
@@ -276,6 +278,8 @@ private struct UpcomingPrayerCell: View {
             
             #if os(iOS)
             Image(systemName: prayer.image)
+                .lineLimit(1)
+                .minimumScaleFactor(1)
             #else
             if !prayer.nameTransliteration.contains("/") {
                 Image(systemName: prayer.image)

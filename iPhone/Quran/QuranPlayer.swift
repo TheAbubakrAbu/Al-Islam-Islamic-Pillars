@@ -371,8 +371,8 @@ final class QuranPlayer: ObservableObject {
     }
 
     private func ayahNowPlayingReciterName(for reciter: Reciter) -> String {
-        if reciter.ayahIdentifier.contains("minshawi") && !reciter.name.contains("Minshawi") {
-            return "Muhammad Al-Minshawi (Murattal)"
+        if reciter.defaultToMinshawi {
+            return Reciter.minshawiAyahFallbackName
         }
         return reciter.displayNameForNowPlaying
     }
