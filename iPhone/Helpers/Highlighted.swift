@@ -400,9 +400,10 @@ struct HighlightedSnippet: View {
     private func nextNonMarkIndex(after index: String.Index, in source: String) -> String.Index? {
         var cursor = source.index(after: index)
         while cursor < source.endIndex {
+            // Stop at a word boundary: the letters of "Allah" (ل + ل + ه) must all be in the same word.
+            // Skipping whitespace here wrongly matched sequences like سَوَّلَ لَهُمۡ (لـ + لـه across a space).
             if source[cursor].isWhitespace {
-                cursor = source.index(after: cursor)
-                continue
+                return nil
             }
             if !source[cursor].isArabicMark {
                 return cursor

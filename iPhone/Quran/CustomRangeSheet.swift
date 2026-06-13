@@ -456,6 +456,14 @@ struct PlayCustomRangeSheet: View {
 
     private var rangeCard: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if selectionMode == .pages && hasPageData {
+                pageSelectionSection
+            } else {
+                ayahSelectionSection
+            }
+
+            ayahCountLabel
+            
             if hasPageData {
                 Picker("Selection mode", selection: $selectionMode.animation(.easeInOut)) {
                     ForEach(SelectionMode.allCases, id: \.self) { mode in
@@ -468,14 +476,6 @@ struct PlayCustomRangeSheet: View {
                     if mode == .pages { snapRangeToPages() }
                 }
             }
-
-            if selectionMode == .pages && hasPageData {
-                pageSelectionSection
-            } else {
-                ayahSelectionSection
-            }
-
-            ayahCountLabel
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)

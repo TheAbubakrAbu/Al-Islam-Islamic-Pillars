@@ -359,7 +359,9 @@ struct HijriMonthCalendarView: View {
             if !isViewingTodayMonth {
                 Button {
                     settings.hapticFeedback()
-                    goToToday()
+                    withAnimation {
+                        goToToday()
+                    }
                 } label: {
                     Label("Today", systemImage: "calendar.badge.clock")
                         .font(.caption.weight(.semibold))
@@ -382,7 +384,9 @@ struct HijriMonthCalendarView: View {
     private func monthArrow(systemName: String, action: @escaping () -> Void) -> some View {
         Button {
             settings.hapticFeedback()
-            action()
+            withAnimation {
+                action()
+            }
         } label: {
             Image(systemName: systemName)
                 .font(.body.weight(.semibold))

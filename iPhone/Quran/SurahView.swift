@@ -566,13 +566,21 @@ struct SurahView: View {
     }
 
     private func scrollToAyah(_ ayahID: Int, proxy: ScrollViewProxy, animated: Bool = false) {
-        DispatchQueue.main.async {
+        // Lazy list cells for the target may not exist on the first pass (especially right after the view
+        // appears or is reconfigured), so a single scrollTo can silently miss and leave the old position.
+        // Retry across a few runloop ticks so the target reliably lands.
+        func attempt(_ remaining: Int) {
             if animated {
                 withAnimation { proxy.scrollTo(ayahID, anchor: .top) }
             } else {
                 proxy.scrollTo(ayahID, anchor: .top)
             }
+            guard remaining > 0 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                attempt(remaining - 1)
+            }
         }
+        DispatchQueue.main.async { attempt(2) }
     }
 
     private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false, nextAyahID: Int? = nil) -> some View {
@@ -1239,21 +1247,23 @@ struct SurahView: View {
             #endif
             .onAppear {
                 rebuildQiraahCaches()
-                let restoreTarget = rememberedVisibleAyahID()
-                if let restoreTarget {
-                    firstVisibleAyahID = restoreTarget
-                } else if let sel = ayah, ayahByID[sel] != nil {
+                // An explicit target ayah (opened from a search result / deep link) is the user's intent and
+                // must win over any remembered scroll position. Only fall back to the remembered position when
+                // opened without a target (e.g. from the surah list, to continue reading where you left off).
+                if let sel = ayah, ayahByID[sel] != nil {
                     firstVisibleAyahID = sel
+                    if !didScrollDown {
+                        didScrollDown = true
+                        scrollToAyah(sel, proxy: proxy)
+                    }
+                } else if let restoreTarget = rememberedVisibleAyahID() {
+                    firstVisibleAyahID = restoreTarget
+                    if !didScrollDown {
+                        didScrollDown = true
+                        scrollToAyah(restoreTarget, proxy: proxy)
+                    }
                 } else if firstVisibleAyahID == nil {
                     firstVisibleAyahID = ayahsForQiraah.first?.id
-                }
-
-                if let restoreTarget, !didScrollDown {
-                    didScrollDown = true
-                    scrollToAyah(restoreTarget, proxy: proxy)
-                } else if let sel = ayah, !didScrollDown {
-                    didScrollDown = true
-                    scrollToAyah(sel, proxy: proxy)
                 }
             }
             .onChange(of: quranPlayer.currentAyahNumber) { newVal in

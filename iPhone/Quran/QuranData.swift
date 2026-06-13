@@ -851,6 +851,15 @@ final class TajweedStore {
         let words = wordClusterRanges(clusters: clusters)
         let finalAaridCarrier = finalWordMaddAaridCarrierIndex(words: words, clusters: clusters)
 
+        // A lone madd letter at the very end of the last word of the ayah (e.g. the final آ in أَقۡفَالُهَآ)
+        // is read as a natural 2-count madd at waqf, not madd lazim. Don't highlight it — except in the
+        // muqatta'at openings, where a final maddah letter genuinely is madd lazim (e.g. صٓ, نٓ).
+        let muqattaatOpening = TajweedRules.surahsOpeningMuqattaat.contains(surah)
+            && (ayah == 1 || (surah == 42 && ayah == 2))
+        let ayahFinalMaddNaturalIndex: Int? = muqattaatOpening
+            ? nil
+            : indexOfFinalPronouncedArabicLetterCluster(clusters: clusters)
+
         if settings.isTajweedCategoryVisible(.maddNaturalMiniature) {
             appendScalarPaintOps(
                 text: text,
@@ -861,7 +870,7 @@ final class TajweedStore {
             )
         }
 
-        appendExplicitMaddahPaintOps(text: text, clusters: clusters, finalAaridCarrier: finalAaridCarrier, into: &ops)
+        appendExplicitMaddahPaintOps(text: text, clusters: clusters, finalAaridCarrier: finalAaridCarrier, ayahFinalNaturalIndex: ayahFinalMaddNaturalIndex, into: &ops)
 
         if settings.isTajweedCategoryVisible(.maddNecessary) {
             for index in clusters.indices where isLazimCombinedAlifCluster(clusters[index]) {
@@ -960,6 +969,7 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.maddNecessary) {
             for i in clusters.indices where hasMaddah(clusters[i]) {
                 if i == finalAaridCarrier { continue }
+                if i == ayahFinalMaddNaturalIndex { continue }
                 if hasMiniatureMaddScalar(clusters[i]) { continue }
                 if strongerMaddRuleCoversCluster(index: i, ops: ops, clusters: clusters) { continue }
                 appendSpecialMaddPaintOps(
@@ -1059,11 +1069,15 @@ final class TajweedStore {
         return false
     }
 
-    private func appendExplicitMaddahPaintOps(text: String, clusters: [CharacterClusterInfo], finalAaridCarrier: Int?, into ops: inout [PaintOp]) {
+    private func appendExplicitMaddahPaintOps(text: String, clusters: [CharacterClusterInfo], finalAaridCarrier: Int?, ayahFinalNaturalIndex: Int?, into ops: inout [PaintOp]) {
         for index in clusters.indices where hasMaddah(clusters[index]) {
             if index == finalAaridCarrier { continue }
             if hasMiniatureMaddMark(clusters[index]) { continue }
-            let classification = explicitMaddahCategory(clusters: clusters, index: index)
+            var classification = explicitMaddahCategory(clusters: clusters, index: index)
+            // Ayah-final lone madd letter: read as natural madd at waqf, not the highlighted madd lazim catch-all.
+            if index == ayahFinalNaturalIndex, classification.category == .maddNecessary {
+                classification = (.maddNatural, PaintPriority.maddNatural2)
+            }
             guard settings.isTajweedCategoryVisible(classification.category) else { continue }
             appendSpecialMaddPaintOps(
                 text: text,
@@ -1705,6 +1719,11 @@ final class TajweedStore {
             }
             if isFathataynHelperBeforeIdghamBilaGhunnah(clusters: clusters, index: index) { continue }
             if base == "ل", isLamConnectedToAllahWord(clusters: clusters, index: index) { continue }
+            // A word-final bare consonant (e.g. the meem of أَمۡثَٰلَكُم at waqf) has no tashkeel and meets no
+            // other rule — it is pronounced with a waqf sukoon, not dropped. Leave it in the default color.
+            // (Madd letters ا/و/ي can be genuinely silent word-final, so keep their existing behavior.)
+            let isMaddLetter = base == "ا" || base == "ى" || base == "و" || base == "ي"
+            if !isMaddLetter, isEffectiveWordFinalCluster(clusters: clusters, index: index) { continue }
             let range = primaryArabicLetterScalarRange(in: cluster) ?? nsRange(for: cluster)
             ops.append(PaintOp(range: range, priority: PaintPriority.droppedLetter, category: .droppedLetter))
         }
@@ -2249,13 +2268,10 @@ final class TajweedStore {
     }
 
     private func tinyMeemPaintRanges(in cluster: CharacterClusterInfo) -> [NSRange] {
-        if cluster.contains(Self.smallLowMeem) {
-            return [nsRange(for: cluster)]
-        }
-        if let highMeemRange = scalarRange(in: cluster, scalar: Self.smallHighMeem) {
-            return [highMeemRange]
-        }
-        return []
+        // Color the whole carrier letter (e.g. the ة in ةُۢ before baa), not just the small meem mark,
+        // so the iqlaab is actually visible on the letter.
+        guard clusterHasTinyMeemIqlaabMark(cluster) else { return [] }
+        return [nsRange(for: cluster)]
     }
 
     private func hasFathatayn(_ cluster: CharacterClusterInfo) -> Bool {
@@ -2437,8 +2453,9 @@ final class TajweedStore {
             }
 
             // Tanween follows noon-sound rules; color source as tanween mark only.
+            // Note: a tanween cluster that also carries the iqlaab tiny-meem mark (e.g. taa-marbuta ةٌۢ before
+            // baa) still colors its tanween source as iqlaab — the tiny-meem mark above is painted separately.
             if tanweenScalarRange(in: cluster) != nil {
-                if clusterHasTinyMeemIqlaabMark(cluster) { continue }
                 let skipFollower = hasFathatayn(cluster)
                 guard let nextIndex = nextArabicLetterClusterIndex(
                     clusters: clusters,

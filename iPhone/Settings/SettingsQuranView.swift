@@ -160,44 +160,45 @@ struct SettingsQuranView: View {
     private var displaySection: some View {
         Section(header: Text("DISPLAY")) {
             pageAndJuzDividersGroup
-            khatmModeGroup
-            
+
             VStack(alignment: .leading) {
                 Toggle("Show Full Surah Details", isOn: $settings.showFullSurahRow.animation(.easeInOut))
                     .font(.subheadline)
-                
-                Text("Shows each surah's extra information, such as revelation type, ayah count, page count, etc.")
+
+                Text("Adds extra details — revelation type, ayah count, page count, and more — beneath each surah in the main Quran list, the screen where all the surahs are shown.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)
             }
-            
+
             highlightAllahGroup
-            
+
             systemFontSizeToggle
         }
     }
 
-    private var khatmModeGroup: some View {
-        VStack(alignment: .leading) {
-            Toggle("Automatically Mark Khatm Ayahs", isOn: $settings.automaticKhatmCompletion.animation(.easeInOut))
-                .font(.subheadline)
-
-            Text("When Khatm mode is selected, ayahs are marked as viewed as soon as they appear. Turn this off to require manual tapping.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.vertical, 2)
-        }
-    }
-
     private var pageAndJuzDividersGroup: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
-                .font(.subheadline)
-            
-            if settings.showPageJuzDividers {
-                Toggle("Show Floating Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
                     .font(.subheadline)
+
+                Text("Shows a divider inside a surah wherever a new mushaf page or juz begins.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
+
+            if settings.showPageJuzDividers {
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Show Floating Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
+                        .font(.subheadline)
+
+                    Text("Shows a small floating label with the current page and juz while you read inside a specific surah.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 2)
+                }
             }
         }
     }

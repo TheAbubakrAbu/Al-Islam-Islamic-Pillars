@@ -273,7 +273,7 @@ struct AyahRow: View, Equatable {
                     .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
             }
             
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 4) {
                     ZStack(alignment: .topTrailing) {
                         Text("\(surah.id):\(ayah.id)")
@@ -945,6 +945,7 @@ private struct AyahRowPreviewContent: View {
 
 #Preview {
     AlIslamPreviewContainer(embedInNavigation: false) {
-        AyahRowPreviewContent()
+        QuranView()
+        //AyahRowPreviewContent()
     }
 }

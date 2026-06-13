@@ -1402,6 +1402,10 @@ struct QuranView: View {
     private func khatmProgressSection() -> some View {
         Section {
             VStack(alignment: .leading, spacing: 10) {
+                Text("Khatm mode tracks your progress through a complete reading of the Quran. As you read, ayahs are marked as completed so you can see how much of the Quran you have finished by ayah, page, and juz.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
                 HStack(alignment: .firstTextBaseline) {
                     Text("\(khatmPercent)% completed")
                         .font(.headline)
@@ -1459,6 +1463,17 @@ struct QuranView: View {
                         }
                     }
                     .font(.subheadline)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Automatically Mark Ayahs", isOn: $settings.automaticKhatmCompletion.animation(.easeInOut))
+                        .font(.subheadline)
+
+                    Text("When on, ayahs are marked as completed as soon as they appear while you read. Turn this off to mark ayahs only when you tap them.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 if khatmEditMode {
