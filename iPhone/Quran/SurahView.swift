@@ -14,6 +14,7 @@ struct SurahView: View {
     @State private var cachedAyahsForQiraah: [Ayah] = []
     @State private var cachedAyahByID: [Int: Ayah] = [:]
     @State private var cachedSearchBlobByAyahID: [Int: String] = [:]
+    @State private var searchBlobPrewarmKey: String? = nil
     @State private var overlayDividerByAyahID: [Int: BoundaryDividerModel] = [:]
     @State private var cacheQiraahKey: String = ""
     @State private var qiraahCacheSurahID: Int? = nil
@@ -484,25 +485,7 @@ struct SurahView: View {
             return cached
         }
 
-        let displayQiraah = settings.displayQiraahForArabic
-        var searchBlobMap: [Int: String] = [:]
-        searchBlobMap.reserveCapacity(ayahs.count)
-
-        for ayah in ayahs {
-            let searchBlob = [
-                ayah.textArabic(for: displayQiraah),
-                ayah.textCleanArabic(for: displayQiraah),
-                ayah.textTransliteration,
-                ayah.textEnglishSaheeh,
-                ayah.textEnglishMustafa,
-                String(ayah.id),
-                ayah.idArabic
-            ]
-            .map { settings.cleanSearch($0) }
-            .joined(separator: " ")
-            searchBlobMap[ayah.id] = searchBlob
-        }
-
+        let searchBlobMap = buildSearchBlobMap(ayahs: ayahs, displayQiraah: settings.displayQiraahForArabic)
         let prepared = PreparedSurahSearchCache(searchBlobByAyahID: searchBlobMap)
         preparedSurahSearchCache.setObject(prepared, forKey: cacheKey)
         return prepared
@@ -534,6 +517,7 @@ struct SurahView: View {
         cachedAyahByID = prepared.ayahByID
         overlayDividerByAyahID = prepared.overlayDividerByAyahID
         cachedSearchBlobByAyahID = [:]
+        searchBlobPrewarmKey = nil
         cacheQiraahKey = key
         qiraahCacheSurahID = surah.id
 
@@ -545,6 +529,59 @@ struct SurahView: View {
         } else {
             self.firstVisibleAyahID = fallbackID
         }
+
+        prewarmSearchBlobs()
+    }
+
+    /// Builds the per-ayah search blobs for the active surah/qiraah on a background queue and
+    /// publishes them to `cachedSearchBlobByAyahID`. This moves the expensive normalization work
+    /// (thousands of `cleanSearch` calls) off the main thread so the first ayah-search keystroke
+    /// never has to build the blob map synchronously while the user is typing.
+    private func prewarmSearchBlobs() {
+        let qiraahKey = settings.displayQiraahForArabic ?? ""
+        let key = "\(surah.id)|\(qiraahKey)"
+        if searchBlobPrewarmKey == key, !cachedSearchBlobByAyahID.isEmpty { return }
+
+        let surah = self.surah
+        let settings = self.settings
+        let displayQiraah = settings.displayQiraahForArabic
+        let ayahs = cachedAyahsForQiraah.isEmpty
+            ? Self.preparedCache(for: surah, settings: settings).ayahs
+            : cachedAyahsForQiraah
+
+        Task.detached(priority: .utility) {
+            let blobMap = Self.buildSearchBlobMap(ayahs: ayahs, displayQiraah: displayQiraah)
+            await MainActor.run {
+                // Discard if the user moved to another surah/qiraah while we were building.
+                guard "\(self.surah.id)|\(self.settings.displayQiraahForArabic ?? "")" == key else { return }
+                self.cachedSearchBlobByAyahID = blobMap
+                self.searchBlobPrewarmKey = key
+            }
+        }
+    }
+
+    /// Pure, actor-agnostic builder for the per-ayah search-blob map. Marked `nonisolated` so it can run
+    /// on a background task without hopping back to the main actor (SurahView, being a `View`, is otherwise
+    /// `@MainActor`-isolated). It only touches `Settings.shared` config and immutable ayah text.
+    nonisolated private static func buildSearchBlobMap(ayahs: [Ayah], displayQiraah: String?) -> [Int: String] {
+        let settings = Settings.shared
+        var searchBlobMap: [Int: String] = [:]
+        searchBlobMap.reserveCapacity(ayahs.count)
+        for ayah in ayahs {
+            let searchBlob = [
+                ayah.textArabic(for: displayQiraah),
+                ayah.textCleanArabic(for: displayQiraah),
+                ayah.textTransliteration,
+                ayah.textEnglishSaheeh,
+                ayah.textEnglishMustafa,
+                String(ayah.id),
+                ayah.idArabic
+            ]
+            .map { settings.cleanSearch($0) }
+            .joined(separator: " ")
+            searchBlobMap[ayah.id] = searchBlob
+        }
+        return searchBlobMap
     }
 
     private var visibleAyahMemoryRouteKey: String {
@@ -676,8 +713,14 @@ struct SurahView: View {
         
         #if os(iOS)
         if !searchText.isEmpty, let ayahID = nextAyahID {
-            return AnyView(
+            let labeledContent = VStack(spacing: 2) {
                 dividerContent
+                Text("Ayah \(ayahID)")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.secondary)
+            }
+            return AnyView(
+                labeledContent
                     .contentShape(Rectangle())
                     .onTapGesture {
                         settings.hapticFeedback()
@@ -1074,11 +1117,13 @@ struct SurahView: View {
                     .padding(.bottom, -12)
                 }
                 
+                #if !os(watchOS)
                 if let previousSurah {
                     Section {
                         surahNavigationButton(title: "Go to Previous Surah", surah: previousSurah, systemImage: "chevron.up")
                     }
                 }
+                #endif
                  
                 Section {
                     VStack {
@@ -1201,11 +1246,13 @@ struct SurahView: View {
                         }
                     }
 
+                    #if !os(watchOS)
                     if let nextSurah {
                         Section {
                             surahNavigationButton(title: "Go to Next Surah", surah: nextSurah, systemImage: "chevron.down")
                         }
                     }
+                    #endif
 
                     if let trailingSearchBoundaryDivider {
                         Section {
@@ -1220,6 +1267,9 @@ struct SurahView: View {
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .compactListSectionSpacing()
             #if os(iOS)
+            // Animate the filtered-results diff (insert/remove of ayah rows) without animating the
+            // search-field binding itself — filtering stays instant, only the list transition eases.
+            .animation(.easeInOut, value: searchText)
             .onChange(of: scrollDown) { value in
                 guard let target = value else { return }
                 if !searchText.isEmpty {
@@ -1526,7 +1576,7 @@ struct SurahView: View {
         VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             HStack(spacing: 0) {
                 SearchBar(
-                    text: $searchText.animation(.easeInOut),
+                    text: $searchText,
                     onFocusChanged: { focused in
                         withAnimation {
                             isAyahSearchFocused = focused

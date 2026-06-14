@@ -752,12 +752,12 @@ final class QuranPlayer: ObservableObject {
                     self.isLoading = false
                     self.idleTimerSet(true)
                     if itm.status == .readyToPlay {
+                        guard initialIndex >= 0, initialIndex < self.customRangeSequence.count else { return }
                         self.queuePlayer?.playImmediately(atRate: 1.0)
                         self.isPlaying = true
                         self.isPaused = false
                         let (ayahNum, isBismillah) = self.customRangeSequence[initialIndex]
-                        let repeatWithinAyah = ((initialIndex % perAyah) + 1)
-                        let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, repeatWithinAyah: repeatWithinAyah)
+                        let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, zeroBasedIndex: initialIndex)
                         self.nowPlayingTitle = base
                         self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                         self.updateNowPlayingInfo()
@@ -795,7 +795,7 @@ final class QuranPlayer: ObservableObject {
                 let itemsPerSection = numAyahsInRange * self.customRangeRepeatPerAyah
                 let sectionIndex = (zeroBasedIndex / max(1, itemsPerSection)) + 1
 
-                let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, repeatWithinAyah: repeatWithinAyah)
+                let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, zeroBasedIndex: zeroBasedIndex)
                 withAnimation {
                     self.currentAyahNumber = ayahNum
                     self.customRangeCurrentIndex = currentIndex
@@ -853,15 +853,17 @@ final class QuranPlayer: ObservableObject {
         )
     }
 
-    private func customRangeTitle(ayahNum: Int, isBismillah: Bool, repeatWithinAyah: Int) -> String {
+    private func customRangeTitle(ayahNum: Int, isBismillah: Bool, zeroBasedIndex: Int) -> String {
         let base = "\(customRangeSurahName) \(customRangeSurahNumber):\(ayahNum)"
 
-        guard customRangeRepeatPerAyah > 1 else {
-            return base
-        }
+        let perAyah = max(1, customRangeRepeatPerAyah)
+        let sectionTotal = max(1, customRangeRepeatSection)
+        let repeatWithinAyah = (zeroBasedIndex % perAyah) + 1
+        let numAyahsInRange = max(1, (customRangeEndAyah ?? 1) - (customRangeStartAyah ?? 1) + 1)
+        let itemsPerSection = max(1, numAyahsInRange * perAyah)
+        let sectionIndex = (zeroBasedIndex / itemsPerSection) + 1
 
-        let remaining = max(1, customRangeRepeatPerAyah - repeatWithinAyah + 1)
-        return base + repeatSuffix(total: customRangeRepeatPerAyah, remaining: remaining)
+        return base + " (Ayah \(repeatWithinAyah)/\(perAyah)) (Sec \(sectionIndex)/\(sectionTotal))"
     }
 
     private func startAyahPlayback(
@@ -1017,34 +1019,38 @@ final class QuranPlayer: ObservableObject {
             
             guard let newItem = change.newValue as? AVPlayerItem else { return }
 
-            if let s = self.currentSurahNumber,
-               let a = self.currentAyahNumber,
-               let sur = self.quranData.quran.first(where: { $0.id == s }) {
+            // KVO for `currentItem` can fire on a non-main thread; marshal all @Published
+            // mutations to main and avoid force-unwrapping state another path may have reset.
+            DispatchQueue.main.async {
+                guard let s = self.currentSurahNumber,
+                      let a = self.currentAyahNumber,
+                      let sur = self.quranData.quran.first(where: { $0.id == s }) else { return }
 
-                if a < sur.numberOfAyahs {
-                    withAnimation {
-                        self.currentAyahNumber = a + 1
-                        if let recNow = self.playbackReciter ?? self.resolvedSelectedReciter() {
-                            self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(self.currentAyahNumber!)"
-                            self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: recNow)
-                            self.updateNowPlayingInfo()
-                        }
-                    }
-                } else {
+                guard a < sur.numberOfAyahs else {
                     self.stop()
                     return
+                }
+
+                let newAyah = a + 1
+                withAnimation {
+                    self.currentAyahNumber = newAyah
+                    if let recNow = self.playbackReciter ?? self.resolvedSelectedReciter() {
+                        self.nowPlayingTitle = "\(sur.nameTransliteration) \(s):\(newAyah)"
+                        self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: recNow)
+                        self.updateNowPlayingInfo()
+                    }
                 }
 
                 if self.continueRecitationFromAyah,
                    qPlayer.items().count < 2,
                    let rec = self.playbackReciter ?? self.resolvedSelectedReciter() {
 
-                    let nextAyah = self.currentAyahNumber! + 1
+                    let nextAyah = newAyah + 1
                     if nextAyah <= sur.numberOfAyahs,
                        let upcoming = self.makeItem(forSurah: sur, reciter: rec, ayahNumber: nextAyah) {
-                        upcoming.preferredForwardBufferDuration = ayahStartupBuffer
+                        upcoming.preferredForwardBufferDuration = self.ayahStartupBuffer
                         qPlayer.insert(upcoming, after: newItem)
-                    } else {}
+                    }
                 }
             }
         }
@@ -1414,7 +1420,6 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
     private let sessionIdentifier = AppIdentifiers.reciterDownloadsBackgroundSessionIdentifier
     private let fileManager = FileManager.default
     private var activeTasks: [String: URLSessionDownloadTask] = [:]
-    private var taskInfoByIdentifier: [Int: (reciter: Reciter, surahNumber: Int)] = [:]
     private var backgroundCompletionHandler: (() -> Void)?
     private let dedupeQueue = DispatchQueue(label: AppIdentifiers.reciterDownloadDedupeQueueLabel, qos: .utility)
 
@@ -1521,7 +1526,6 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
             activeTasks[reciterID]?.cancel()
         }
         activeTasks.removeAll()
-        taskInfoByIdentifier.removeAll()
 
         do {
             let root = baseDirectoryURL()
@@ -1632,7 +1636,6 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
 
                 DispatchQueue.main.async {
                     self.activeTasks[reciter.id] = downloadTask
-                    self.taskInfoByIdentifier[downloadTask.taskIdentifier] = (reciter, surahNumber)
 
                     let existing = self.statesByReciterID[reciter.id] ?? self.stateSnapshot(for: reciter)
                     var nextState = existing
@@ -1671,7 +1674,6 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
 
             DispatchQueue.main.async {
                 self.activeTasks[reciter.id] = task
-                self.taskInfoByIdentifier[task.taskIdentifier] = (reciter, surahNumber)
                 var state = self.statesByReciterID[reciter.id] ?? self.stateSnapshot(for: reciter)
                 state.isDownloading = true
                 state.currentSurahNumber = surahNumber
@@ -1690,11 +1692,10 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
         "\(reciter.id)|\(surahNumber)"
     }
 
+    /// Resolves a task to its reciter/surah purely from the task's immutable `taskDescription`.
+    /// Intentionally avoids any shared mutable cache so it is safe to call from the background
+    /// URLSession delegate queue without racing the main-thread dictionary writers.
     private func taskContext(for task: URLSessionTask) -> (reciter: Reciter, surahNumber: Int)? {
-        if let existing = taskInfoByIdentifier[task.taskIdentifier] {
-            return existing
-        }
-
         guard let description = task.taskDescription else { return nil }
         let parts = description.split(separator: "|", maxSplits: 1).map(String.init)
         guard parts.count == 2,
@@ -1749,7 +1750,6 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
         guard let context = taskContext(for: task) else { return }
         DispatchQueue.main.async {
             self.activeTasks[context.reciter.id] = nil
-            self.taskInfoByIdentifier[task.taskIdentifier] = nil
         }
 
         if let nsError = error as NSError? {

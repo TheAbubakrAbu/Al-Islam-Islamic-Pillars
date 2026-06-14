@@ -174,6 +174,18 @@ struct Surah: Codable, Identifiable, Equatable {
     }
 }
 
+/// Thread-safe memoization for the diacritic-stripping in `Ayah.textCleanArabic`. The cleaned
+/// result is a pure function of the raw Arabic text + the `removeArabicDots` flag, so the same
+/// ayah rendered repeatedly (SwiftUI re-evaluations, scrolling) reuses the cached string instead
+/// of re-running two O(n) Unicode passes each time. NSCache is thread-safe and self-evicting.
+private enum CleanArabicTextCache {
+    static let cache: NSCache<NSString, NSString> = {
+        let c = NSCache<NSString, NSString>()
+        c.countLimit = AppPerformance.cleanArabicCacheLimit
+        return c
+    }()
+}
+
 struct Ayah: Codable, Identifiable, Equatable {
     let id: Int
     let idArabic: String
@@ -229,8 +241,16 @@ struct Ayah: Codable, Identifiable, Equatable {
     }
     /// Clean (no diacritics) Arabic for the given display qiraah.
     func textCleanArabic(for displayQiraah: String?) -> String {
-        let cleaned = textArabic(for: displayQiraah).removingArabicDiacriticsAndSigns
-        return Settings.shared.removeArabicDots ? cleaned.removingArabicDots : cleaned
+        let raw = textArabic(for: displayQiraah)
+        let removeDots = Settings.shared.removeArabicDots
+        let key = ((removeDots ? "D1:" : "D0:") + raw) as NSString
+        if let cached = CleanArabicTextCache.cache.object(forKey: key) {
+            return cached as String
+        }
+        let base = raw.removingArabicDiacriticsAndSigns
+        let result = removeDots ? base.removingArabicDots : base
+        CleanArabicTextCache.cache.setObject(result as NSString, forKey: key)
+        return result
     }
 
     /// True if this ayah exists as its own verse in the given qiraah. In Hafs every ayah exists; in Warsh/Qaloon/etc. some Hafs ayahs are merged, so we only show ayahs that have qiraah-specific text (e.g. Baqarah has 286 in Hafs but 285 in Warsh).
@@ -1707,6 +1727,7 @@ final class TajweedStore {
 
     private func appendBareConsonantSilentPaintOps(clusters: [CharacterClusterInfo], muqattaatProtectedIndices: Set<Int>, into ops: inout [PaintOp]) {
         guard settings.isTajweedCategoryVisible(.droppedLetter) else { return }
+        let ayahFinalLetterIndex = indexOfFinalArabicLetterCluster(clusters: clusters)
         for index in clusters.indices {
             if muqattaatProtectedIndices.contains(index) { continue }
             let cluster = clusters[index]
@@ -1719,14 +1740,42 @@ final class TajweedStore {
             }
             if isFathataynHelperBeforeIdghamBilaGhunnah(clusters: clusters, index: index) { continue }
             if base == "ل", isLamConnectedToAllahWord(clusters: clusters, index: index) { continue }
-            // A word-final bare consonant (e.g. the meem of أَمۡثَٰلَكُم at waqf) has no tashkeel and meets no
-            // other rule — it is pronounced with a waqf sukoon, not dropped. Leave it in the default color.
-            // (Madd letters ا/و/ي can be genuinely silent word-final, so keep their existing behavior.)
+            // The ayah-FINAL bare consonant (e.g. the meem of أَمۡثَٰلَكُم at waqf) has no tashkeel and meets no
+            // other rule — it is pronounced with a waqf sukoon, not dropped, so leave it in the default color.
+            // This exception is limited to the ayah's final letter: word-final bare consonants elsewhere in the
+            // ayah still get the normal silent/dropped coloring. (Madd letters ا/و/ي can be genuinely silent
+            // word-final, so they keep their existing behavior even at the ayah end.)
             let isMaddLetter = base == "ا" || base == "ى" || base == "و" || base == "ي"
-            if !isMaddLetter, isEffectiveWordFinalCluster(clusters: clusters, index: index) { continue }
+            if !isMaddLetter, index == ayahFinalLetterIndex { continue }
+            // An unmarked alif / alif-maqsura / ya is only genuinely silent when there is a reason for it:
+            //   (A) the next word begins with hamzatul-wasl (ٱ), e.g. فِي ٱلۡأَرۡضِ, or
+            //   (B) the preceding letter carries fathatayn (ً or ٗ), e.g. خُشَّعًا / هُدٗى.
+            // Without either, leave it in the default color (a madd rule may color it instead) rather than
+            // graying these letters at random. (و keeps its existing behavior.)
+            if base == "ا" || base == "ى" || base == "ي" {
+                let justifiedByNextHamzatWasl = nextWordStartsWithHamzatWasl(clusters: clusters, index: index)
+                let justifiedByPrecedingFathatayn = previousArabicLetterClusterIndex(clusters: clusters, before: index)
+                    .map { hasFathatayn(clusters[$0]) } ?? false
+                if !justifiedByNextHamzatWasl, !justifiedByPrecedingFathatayn { continue }
+            }
             let range = primaryArabicLetterScalarRange(in: cluster) ?? nsRange(for: cluster)
             ops.append(PaintOp(range: range, priority: PaintPriority.droppedLetter, category: .droppedLetter))
         }
+    }
+
+    /// True when `index` is a word-final letter whose following word begins with hamzatul-wasl (ٱ),
+    /// e.g. the ya of `فِي ٱلۡأَرۡضِ`. Requires an intervening word boundary so only a *next word* counts.
+    private func nextWordStartsWithHamzatWasl(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        var i = index + 1
+        var sawWordBoundary = false
+        while i < clusters.count {
+            let cl = clusters[i]
+            if isWhitespaceOnly(cl) { sawWordBoundary = true; i += 1; continue }
+            if isAyahEndOrDecorativeCluster(cl) { i += 1; continue }
+            guard cl.primaryArabicLetter != nil else { i += 1; continue }
+            return sawWordBoundary && cl.contains(Self.hamzatWasl)
+        }
+        return false
     }
 
     private func isFathataynHelperBeforeIdghamBilaGhunnah(clusters: [CharacterClusterInfo], index: Int) -> Bool {
@@ -2285,27 +2334,6 @@ final class TajweedStore {
             return true
         }
         return indexOfVerseFinalQalqalahCluster(clusters: clusters) == index
-    }
-
-    private func isEffectiveWordFinalCluster(clusters: [CharacterClusterInfo], index: Int) -> Bool {
-        guard clusters.indices.contains(index), clusters[index].primaryArabicLetter != nil else { return false }
-        var next = index + 1
-        while next < clusters.count {
-            let cluster = clusters[next]
-            if isWhitespaceOnly(cluster) || isAyahEndOrDecorativeCluster(cluster) {
-                return true
-            }
-            guard cluster.primaryArabicLetter != nil else {
-                next += 1
-                continue
-            }
-            if isSilentFinalLetter(clusters: clusters, index: next) {
-                next += 1
-                continue
-            }
-            return false
-        }
-        return true
     }
 
     private func sourceRangeForSpecialNoonProxyMark(in cluster: CharacterClusterInfo) -> NSRange {
@@ -4572,6 +4600,7 @@ final class QuranData: ObservableObject {
         let surahByID = Dictionary(uniqueKeysWithValues: surahs.map { ($0.id, $0) })
         var rows: [JuzSectionData.Row] = []
 
+        guard juz.startSurah <= juz.endSurah else { return rows }
         for surahID in juz.startSurah...juz.endSurah {
             guard let surah = surahByID[surahID] else { continue }
             let totalAyahs = surah.numberOfAyahs

@@ -15,7 +15,7 @@ struct PlayCustomRangeSheet: View {
     let onPlay: (Int, Int, Int, Int) -> Void
     let onCancel: () -> Void
 
-    @State private var selectionMode: SelectionMode = .ayahs
+    @AppStorage("customRangeSelectionMode") private var selectionMode: SelectionMode = .ayahs
     @State private var startAyah: Int
     @State private var endAyah: Int
     @State private var startAyahText: String
@@ -90,6 +90,14 @@ struct PlayCustomRangeSheet: View {
 
     private var ayahCount: Int {
         max(0, endAyah - startAyah + 1)
+    }
+
+    /// "Ayah N" plus the mushaf page it falls on (when page data is available).
+    private func ayahPageLabel(_ ayahID: Int) -> String {
+        if hasPageData, let page = pageNumber(forAyah: ayahID) {
+            return "Ayah \(ayahID) · Page \(page)"
+        }
+        return "Ayah \(ayahID)"
     }
 
     /// Mushaf pages within this surah (clamped to the active qiraah), each mapped to its first/last ayah. Ordered by page number.
@@ -398,7 +406,7 @@ struct PlayCustomRangeSheet: View {
                     .font(.title3.weight(.semibold))
                     .foregroundColor(.primary)
                 
-                Text("Surah \(surah.id) · \(maxAyah) ayahs")
+                Text("Surah \(surah.id) · \(maxAyah) ayahs\(hasPageData ? " · \(pageGroups.count) page\(pageGroups.count == 1 ? "" : "s")" : "")")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -492,6 +500,18 @@ struct PlayCustomRangeSheet: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
 
+            if hasPageData {
+                HStack(spacing: 10) {
+                    quickActionButton(title: "Start of page", systemImage: "arrow.up.to.line", enabled: hasMultiplePages && !startAtPageStart) {
+                        snapStartToPageStart()
+                    }
+
+                    quickActionButton(title: "End of page", systemImage: "arrow.down.to.line", enabled: hasMultiplePages && !endAtPageEnd) {
+                        snapEndToPageEnd()
+                    }
+                }
+            }
+
             HStack(spacing: 12) {
                 rangeField(title: "From", value: $startAyah, text: $startAyahText, isFocused: $startAyahFocused) { new in
                     if new > endAyah {
@@ -518,6 +538,8 @@ struct PlayCustomRangeSheet: View {
                 endAyahText = "\(endAyah)"
             }
 
+            selectionPageCaption
+
             HStack(spacing: 10) {
                 quickActionButton(title: "Go to start", systemImage: "arrow.left.to.line") {
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -530,18 +552,6 @@ struct PlayCustomRangeSheet: View {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         endAyah = maxAyah
                         endAyahText = "\(maxAyah)"
-                    }
-                }
-            }
-
-            if hasPageData {
-                HStack(spacing: 10) {
-                    quickActionButton(title: "Start of page", systemImage: "arrow.up.to.line", enabled: hasMultiplePages && !startAtPageStart) {
-                        snapStartToPageStart()
-                    }
-
-                    quickActionButton(title: "End of page", systemImage: "arrow.down.to.line", enabled: hasMultiplePages && !endAtPageEnd) {
-                        snapEndToPageEnd()
                     }
                 }
             }
@@ -559,23 +569,22 @@ struct PlayCustomRangeSheet: View {
         }
     }
 
-    /// Caption shown in Ayahs mode: which page the first/last ayah falls on, plus how many pages the surah spans.
+    /// Page(s) the currently selected ayah range falls on — shown directly beneath the ayah fields.
+    @ViewBuilder
+    private var selectionPageCaption: some View {
+        if hasPageData, let sp = pageNumber(forAyah: startAyah), let ep = pageNumber(forAyah: endAyah) {
+            Text(sp == ep ? "On page \(sp)" : "Page \(sp) → \(ep)")
+                .font(.caption)
+                .foregroundColor(Color(.tertiaryLabel))
+        }
+    }
+
+    /// Totals for the whole surah: how many ayahs and pages it spans.
     @ViewBuilder
     private var pageInfoCaption: some View {
         if hasPageData {
-            let groups = pageGroups
-            let pageWord = groups.count == 1 ? "page" : "pages"
-            let detail: String = {
-                guard let sp = pageNumber(forAyah: startAyah), let ep = pageNumber(forAyah: endAyah) else {
-                    return "\(groups.count) \(pageWord) in surah"
-                }
-                if sp == ep {
-                    return "On page \(sp) · \(groups.count) \(pageWord) in surah"
-                }
-                return "Page \(sp) → \(ep) · \(groups.count) \(pageWord) in surah"
-            }()
-
-            Text(detail)
+            let pages = pageGroups.count
+            Text("\(maxAyah) ayah\(maxAyah == 1 ? "" : "s") · \(pages) page\(pages == 1 ? "" : "s") in surah")
                 .font(.caption)
                 .foregroundColor(Color(.tertiaryLabel))
         }
@@ -819,7 +828,7 @@ struct PlayCustomRangeSheet: View {
                         .foregroundColor(.secondary)
                     
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Ayah \(startAyah)")
+                        Text(ayahPageLabel(startAyah))
                             .font(.caption2.weight(.medium))
                             .foregroundColor(Color(.tertiaryLabel))
                         
@@ -833,7 +842,7 @@ struct PlayCustomRangeSheet: View {
                     
                     if startAyah != endAyah {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Ayah \(endAyah)")
+                            Text(ayahPageLabel(endAyah))
                                 .font(.caption2.weight(.medium))
                                 .foregroundColor(Color(.tertiaryLabel))
                             

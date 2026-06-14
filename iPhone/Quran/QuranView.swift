@@ -29,9 +29,6 @@ struct QuranView: View {
 
     @State private var verseHits: [VerseIndexEntry] = []
     @State private var hasMoreHits = true
-    @State private var blockAyahSearchAfterZero = false
-    @State private var zeroResultQueryLength = 0
-    @State private var zeroResultQuery = ""
     private let hitPageSize = 5
 
     private static let arFormatter: NumberFormatter = {
@@ -285,8 +282,6 @@ struct QuranView: View {
         withAnimation {
             verseHits = []
             hasMoreHits = false
-            blockAyahSearchAfterZero = false
-            zeroResultQuery = ""
         }
     }
 
@@ -2369,25 +2364,12 @@ struct QuranView: View {
             return
         }
 
-        if blockAyahSearchAfterZero {
-            if !query.hasPrefix(zeroResultQuery) || query.count < zeroResultQueryLength {
-                blockAyahSearchAfterZero = false
-                zeroResultQuery = ""
-            } else if query.count > zeroResultQueryLength {
-                withAnimation {
-                    verseHits = []
-                    hasMoreHits = false
-                }
-                return
-            }
-        }
-
         ayahSearchTask = Task {
             if debounce {
                 #if os(watchOS)
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 #else
-                try? await Task.sleep(nanoseconds: 220_000_000)
+                try? await Task.sleep(nanoseconds: 150_000_000)
                 #endif
             }
             guard !Task.isCancelled else { return }
@@ -2403,14 +2385,6 @@ struct QuranView: View {
                 withAnimation {
                     verseHits = first
                     hasMoreHits = more
-                    if first.isEmpty {
-                        blockAyahSearchAfterZero = true
-                        zeroResultQueryLength = query.count
-                        zeroResultQuery = query
-                    } else {
-                        blockAyahSearchAfterZero = false
-                        zeroResultQuery = ""
-                    }
                 }
             }
         }

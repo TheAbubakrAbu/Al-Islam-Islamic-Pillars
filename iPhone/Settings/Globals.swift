@@ -61,6 +61,14 @@ enum AppPerformance {
         #endif
     }
 
+    static var cleanArabicCacheLimit: Int {
+        #if os(watchOS)
+        400
+        #else
+        isLowMemoryDevice ? 1500 : 4000
+        #endif
+    }
+
     static var prewarmArabicAyahLimit: Int? {
         #if os(watchOS)
         20
@@ -108,7 +116,10 @@ extension EnvironmentValues {
 
 func arabicNumberString(from number: Int) -> String {
     let arabicNumbers = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
-    return String(number).map { arabicNumbers[Int(String($0))!] }.joined()
+    return String(number).map { ch -> String in
+        guard let digit = ch.wholeNumberValue, digit >= 0, digit <= 9 else { return String(ch) }
+        return arabicNumbers[digit]
+    }.joined()
 }
 
 private let quranStripScalars: Set<UnicodeScalar> = {
@@ -268,8 +279,10 @@ extension String {
     }
 
     subscript(_ r: Range<Int>) -> Substring {
-        let start = index(startIndex, offsetBy: r.lowerBound)
-        let end = index(startIndex, offsetBy: r.upperBound)
+        let lower = Swift.max(0, Swift.min(r.lowerBound, count))
+        let upper = Swift.max(lower, Swift.min(r.upperBound, count))
+        let start = index(startIndex, offsetBy: lower, limitedBy: endIndex) ?? endIndex
+        let end = index(startIndex, offsetBy: upper, limitedBy: endIndex) ?? endIndex
         return self[start..<end]
     }
 }

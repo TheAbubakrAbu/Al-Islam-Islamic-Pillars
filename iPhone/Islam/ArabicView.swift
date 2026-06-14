@@ -420,7 +420,7 @@ struct ArabicLetterView: View {
             Section(header: Text("DIFFERENT FORMS")) {
                 VStack {
                     HStack(alignment: .center) {
-                        ForEach(0..<3, id: \.self) { index in
+                        ForEach(0..<min(3, letterData.forms.count), id: \.self) { index in
                             Spacer()
 
                             Text(letterData.forms[index])
