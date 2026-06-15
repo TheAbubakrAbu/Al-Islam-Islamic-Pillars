@@ -942,12 +942,9 @@ struct QuranView: View {
             if quranPlayer.isLoading || quranPlayer.isPlaying || quranPlayer.isPaused {
                 Button {
                     settings.hapticFeedback()
-                    if quranPlayer.isLoading {
-                        quranPlayer.isLoading = false
-                        quranPlayer.pause(saveInfo: false)
-                    } else {
-                        quranPlayer.stop()
-                    }
+                    // Fully stop whether loading or playing — a loading tap used to only pause the in-flight
+                    // load, which could then resume on its own.
+                    quranPlayer.stop()
                 } label: {
                     playbackMenuControlLabel {
                         if quranPlayer.isLoading {
@@ -1050,7 +1047,7 @@ struct QuranView: View {
     @ViewBuilder
     private func primaryHistorySections(context: SearchDisplayContext) -> some View {
         #if os(iOS)
-        if context.isSearching == false, let surah = settings.lastListenedSurah {
+        if context.isSearching == false, settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
             LastListenedSurahRow(
                 lastListenedSurah: surah,
                 favoriteSurahs: context.favoriteSurahs,
@@ -1067,6 +1064,7 @@ struct QuranView: View {
         #endif
 
         if context.isSearching == false,
+           settings.saveLastReadAyah,
            let lastReadSurah,
            let lastReadAyah {
             LastReadAyahRow(
@@ -1079,6 +1077,8 @@ struct QuranView: View {
                 showReadingHistory: $showReadingHistory,
                 onSelectAyah: columnAyahSelectionHandler
             )
+            .animation(.easeInOut, value: settings.lastReadAyah)
+            .animation(.easeInOut, value: settings.lastReadSurah)
         }
     }
 

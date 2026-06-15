@@ -100,37 +100,56 @@ private struct MainTabView: View {
     @EnvironmentObject private var quranPlayer: QuranPlayer
 
     var body: some View {
-        TabView {
-            AdhanView()
-                .withNowPlayingInset()
-                .tabItem {
-                    if #available(iOS 18.0, *) {
-                        Image(systemName: "mecca")
-                    } else {
+        if #available(iOS 18.0, *) {
+            TabView {
+                Tab("Adhan", systemImage: "mecca") {
+                    AdhanView()
+                        .withNowPlayingInset()
+                }
+
+                Tab("Quran", systemImage: "character.book.closed.ar") {
+                    QuranView()
+                }
+
+                Tab("Islam", systemImage: "moon.stars") {
+                    IslamView()
+                        .withNowPlayingInset()
+                }
+
+                Tab("Settings", systemImage: "gearshape", role: .search) {
+                    SettingsView()
+                        .withNowPlayingInset()
+                }
+            }
+        } else {
+            TabView {
+                AdhanView()
+                    .withNowPlayingInset()
+                    .tabItem {
                         Image(systemName: "safari")
+                        Text("Adhan")
                     }
-                    Text("Adhan")
-                }
 
-            QuranView()
-                .tabItem {
-                    Image(systemName: "character.book.closed.ar")
-                    Text("Quran")
-                }
+                QuranView()
+                    .tabItem {
+                        Image(systemName: "character.book.closed.ar")
+                        Text("Quran")
+                    }
 
-            IslamView()
-                .withNowPlayingInset()
-                .tabItem {
-                    Image(systemName: "moon.stars")
-                    Text("Islam")
-                }
+                IslamView()
+                    .withNowPlayingInset()
+                    .tabItem {
+                        Image(systemName: "moon.stars")
+                        Text("Islam")
+                    }
 
-            SettingsView()
-                .withNowPlayingInset()
-                .tabItem {
-                    Image(systemName: "gearshape")
-                    Text("Settings")
-                }
+                SettingsView()
+                    .withNowPlayingInset()
+                    .tabItem {
+                        Image(systemName: "gearshape")
+                        Text("Settings")
+                    }
+            }
         }
     }
 }

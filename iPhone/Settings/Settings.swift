@@ -561,6 +561,10 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
     @AppStorage("lastReadAyah") var lastReadAyah: Int = 0
 
+    /// When off, the app neither saves nor shows the "Last Read Ayah" / "Last Listened Surah" sections.
+    @AppStorage("saveLastReadAyah") var saveLastReadAyah: Bool = true
+    @AppStorage("saveLastListenedSurah") var saveLastListenedSurah: Bool = true
+
     @AppStorage("lastListenedSurahData") private var lastListenedSurahData: Data?
     var lastListenedSurah: LastListenedSurah? {
         get {
@@ -613,7 +617,9 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
             )
         }
 
-        if snapshot.randomPool.isEmpty {
+        // Rebuild the pool when it's empty or built by an older app version (cards missing the font tag),
+        // so the random-ayah widget also gets the Arabic font + tajweed.
+        if snapshot.randomPool.isEmpty || snapshot.randomPool.contains(where: { $0.fontName == nil }) {
             snapshot.randomPool = buildQuranWidgetRandomPool(from: data)
         }
 
@@ -624,12 +630,49 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// Builds a widget ayah card with the Arabic rendered per the user's display settings (clean text /
     /// dots) and tagged with the selected Arabic font so the widget can match the in-app look.
     private func quranWidgetAyahCard(surah: Surah, ayah: Ayah) -> QuranWidgetSnapshot.AyahCard {
-        QuranWidgetSnapshot.AyahCard(
-            arabic: ayah.displayArabicText(surahId: surah.id, clean: cleanArabicText),
+        let arabic = ayah.displayArabicText(surahId: surah.id, clean: cleanArabicText)
+        return QuranWidgetSnapshot.AyahCard(
+            arabic: arabic,
             reference: "Surah \(surah.id):\(ayah.id) • \(surah.nameTransliteration)",
             english: ayah.textEnglishSaheeh,
-            fontName: fontArabic
+            fontName: fontArabic,
+            colorRuns: quranWidgetTajweedRuns(surah: surah, ayah: ayah, displayText: arabic)
         )
+    }
+
+    /// Extracts tajweed color spans (UTF-16 offsets + RGB) over `displayText` so the widget can re-apply
+    /// them without running the tajweed engine. Returns nil when tajweed is off. iOS-only (uses UIKit).
+    private func quranWidgetTajweedRuns(surah: Surah, ayah: Ayah, displayText: String) -> [QuranWidgetSnapshot.ColorRun]? {
+        #if os(iOS)
+        guard showTajweedColors, showArabicText, isHafsDisplay else { return nil }
+        let raw = ayah.displayArabicText(surahId: surah.id, clean: false)
+        guard let attributed = TajweedStore.shared.attributedText(
+            surah: surah.id,
+            ayah: ayah.id,
+            text: raw,
+            displayText: displayText,
+            cleanDisplayText: cleanArabicText
+        ) else { return nil }
+
+        let ns = NSAttributedString(attributed)
+        // Resolve the adaptive base label color so it can be skipped — only the tajweed hues are stored;
+        // the widget keeps un-colored text in its own primary color.
+        let label = UIColor.label.resolvedColor(with: .current)
+        var lr: CGFloat = 0, lg: CGFloat = 0, lb: CGFloat = 0, la: CGFloat = 0
+        label.getRed(&lr, green: &lg, blue: &lb, alpha: &la)
+
+        var runs: [QuranWidgetSnapshot.ColorRun] = []
+        ns.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: ns.length)) { value, range, _ in
+            guard let color = value as? UIColor else { return }
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            guard color.getRed(&r, green: &g, blue: &b, alpha: &a) else { return }
+            if abs(r - lr) < 0.03, abs(g - lg) < 0.03, abs(b - lb) < 0.03 { return }
+            runs.append(QuranWidgetSnapshot.ColorRun(start: range.location, length: range.length, r: Double(r), g: Double(g), b: Double(b)))
+        }
+        return runs.isEmpty ? nil : runs
+        #else
+        return nil
+        #endif
     }
 
     private func buildQuranWidgetRandomPool(from data: QuranData, count: Int = 20) -> [QuranWidgetSnapshot.AyahCard] {

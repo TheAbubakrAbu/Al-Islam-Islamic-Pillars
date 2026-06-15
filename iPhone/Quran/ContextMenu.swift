@@ -317,6 +317,7 @@ struct AyahTafsirSheet: View {
             .navigationTitle("\(surahName) \(surahNumber):\(ayahNumber)")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search tafsir")
+            .dismissKeyboardOnScroll()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -690,6 +691,7 @@ struct AyahQiraahComparisonSheet: View {
             .navigationTitle("Qiraah Comparison")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search riwayat")
+            .dismissKeyboardOnScroll()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -1021,6 +1023,7 @@ struct AyahEnglishComparisonSheet: View {
             .navigationTitle("Translation Comparison")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search translations")
+            .dismissKeyboardOnScroll()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {

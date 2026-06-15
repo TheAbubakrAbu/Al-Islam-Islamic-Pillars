@@ -10,7 +10,9 @@ struct PrayerList: View {
     @State private var selectedDate = Date()
     @State private var compareToday = true
 
-    @AppStorage("prayerDisplayMode") private var prayerDisplayModeRawValue: String = PrayerDisplayMode.list.rawValue
+    // New storage key (V2) so every existing user is reset to the new Tiles default, regardless of what
+    // they had saved under the old "prayerDisplayMode" key.
+    @AppStorage("prayerDisplayModeV2") private var prayerDisplayModeRawValue: String = PrayerDisplayMode.tiles.rawValue
 
     enum PrayerDisplayMode: String, CaseIterable, Identifiable {
         case list = "Prayer List"
@@ -31,7 +33,7 @@ struct PrayerList: View {
     }
 
     private var prayerDisplayMode: PrayerDisplayMode {
-        PrayerDisplayMode(rawValue: prayerDisplayModeRawValue) ?? .list
+        PrayerDisplayMode(rawValue: prayerDisplayModeRawValue) ?? .tiles
     }
 
     private static let selectedDateHeaderFormatter: DateFormatter = {

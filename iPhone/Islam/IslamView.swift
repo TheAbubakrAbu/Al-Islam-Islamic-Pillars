@@ -78,7 +78,11 @@ struct IslamView: View {
 
     @available(iOS 16.0, *)
     private var islamDetail: some View {
+        // Re-identify the detail by the current selection so the split-view detail always rebuilds when the
+        // sidebar selection changes. Without this the detail could get "stuck" on a previous item after the
+        // view disappeared and came back on iPad/Mac.
         destinationView(for: selectedResource ?? .arabicAlphabet)
+            .id(selectedResource ?? .arabicAlphabet)
     }
 
     @available(iOS 16.0, *)

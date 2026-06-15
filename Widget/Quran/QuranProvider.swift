@@ -1,5 +1,6 @@
 import SwiftUI
 import WidgetKit
+import UIKit
 
 enum QuranWidgetKind {
     case lastReadAyah
@@ -35,6 +36,8 @@ struct QuranWidgetEntry: TimelineEntry {
     let fallbackText: String?
     /// When set, `primaryText` is Arabic and should render with this font (e.g. the Uthmani font).
     var arabicFontName: String? = nil
+    /// Tajweed color spans over `primaryText` (Arabic only).
+    var arabicColorRuns: [QuranWidgetSnapshot.ColorRun]? = nil
 }
 
 struct QuranWidgetProvider: TimelineProvider {
@@ -81,7 +84,8 @@ struct QuranWidgetProvider: TimelineProvider {
             tertiaryText: snippet(card.english),
             accentColor: settings.accentColor,
             fallbackText: nil,
-            arabicFontName: card.fontName
+            arabicFontName: card.fontName,
+            arabicColorRuns: card.colorRuns
         )
     }
 
@@ -193,11 +197,12 @@ struct QuranWidgetEntryView: View {
         .foregroundColor(entry.accentColor.color)
     }
 
-    /// Renders `primaryText`: as Arabic in the supplied font when present, otherwise as a plain title.
+    /// Renders `primaryText`: as Arabic in the supplied font (with tajweed colors) when present, otherwise
+    /// as a plain title.
     @ViewBuilder
     private func primaryText(arabicSize: CGFloat, lineLimit: Int) -> some View {
         if let fontName = entry.arabicFontName, !fontName.isEmpty {
-            Text(entry.primaryText)
+            Text(Self.arabicAttributed(entry.primaryText, runs: entry.arabicColorRuns))
                 .font(.custom(fontName, size: arabicSize))
                 .foregroundColor(.primary)
                 .multilineTextAlignment(.trailing)
@@ -211,6 +216,20 @@ struct QuranWidgetEntryView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.7)
         }
+    }
+
+    /// Applies tajweed color spans to the Arabic; un-colored characters keep the view's primary color.
+    private static func arabicAttributed(_ text: String, runs: [QuranWidgetSnapshot.ColorRun]?) -> AttributedString {
+        guard let runs, !runs.isEmpty else { return AttributedString(text) }
+        let ns = NSMutableAttributedString(string: text)
+        for run in runs {
+            let range = NSRange(location: run.start, length: run.length)
+            guard run.start >= 0, NSMaxRange(range) <= ns.length else { continue }
+            ns.addAttribute(.foregroundColor,
+                            value: UIColor(red: CGFloat(run.r), green: CGFloat(run.g), blue: CGFloat(run.b), alpha: 1),
+                            range: range)
+        }
+        return AttributedString(ns)
     }
 
     private var accessoryBody: some View {
@@ -254,4 +273,14 @@ func quranWidgetFamilies() -> [WidgetFamily] {
     }
     #endif
     return [.systemSmall, .systemMedium]
+}
+
+/// Last Listened keeps the small home-screen size plus the lock-screen rectangular accessory (no medium).
+func lastListenedWidgetFamilies() -> [WidgetFamily] {
+    #if os(iOS)
+    if #available(iOS 16.0, *) {
+        return [.systemSmall, .accessoryRectangular]
+    }
+    #endif
+    return [.systemSmall]
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct NowPlayingView: View {
     @EnvironmentObject var settings: Settings
@@ -58,7 +59,10 @@ struct NowPlayingView: View {
                 .cornerRadius(24)
                 .padding(.horizontal, 8)
                 .transition(.opacity)
-                .conditionalGlassEffect(rectangle: quranPlayer.isPlayingCustomRange)
+                // Always use the rounded-rectangle glass shape. Keying it on `isPlayingCustomRange` made the
+                // glass morph between a capsule and a rectangle when state changed, which flashed as a dark
+                // rectangle during the transition.
+                .conditionalGlassEffect(rectangle: true)
             )
         #else
         return
@@ -127,6 +131,18 @@ struct NowPlayingView: View {
                 quranPlayer.skipBackward()
             }
 
+        // Fine seek (±10s) only for full-surah playback, where a continuous timeline is meaningful.
+        if quranPlayer.isPlayingSurah {
+            Image(systemName: "gobackward.10")
+                .font(.title3)
+                .foregroundColor(settings.accentColor.color)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    quranPlayer.seek(by: -10)
+                }
+        }
+
         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
             .font(.title2)
             .foregroundColor(settings.accentColor.color)
@@ -138,6 +154,17 @@ struct NowPlayingView: View {
                 }
             }
 
+        if quranPlayer.isPlayingSurah {
+            Image(systemName: "goforward.10")
+                .font(.title3)
+                .foregroundColor(settings.accentColor.color)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    quranPlayer.seek(by: 10)
+                }
+        }
+
         Image(systemName: "forward.fill")
             .font(.title2)
             .foregroundColor(settings.accentColor.color)
@@ -146,6 +173,41 @@ struct NowPlayingView: View {
                 settings.hapticFeedback()
                 quranPlayer.skipForward()
             }
+    }
+
+    /// Live elapsed/duration progress bar for full-surah playback. Polls the player on a timeline so it
+    /// updates without adding another player observer.
+    @ViewBuilder
+    private var surahProgressView: some View {
+        if quranPlayer.isPlayingSurah {
+            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+                let elapsed = CMTimeGetSeconds(quranPlayer.player?.currentTime() ?? .zero)
+                let rawTotal = CMTimeGetSeconds(quranPlayer.player?.currentItem?.duration ?? .zero)
+                let total = (rawTotal.isFinite && rawTotal > 0) ? rawTotal : 0
+                let safeElapsed = elapsed.isFinite ? max(0, elapsed) : 0
+
+                VStack(spacing: 2) {
+                    TinyProgressBar(
+                        fraction: total > 0 ? safeElapsed / total : 0,
+                        color: settings.accentColor.color
+                    )
+
+                    HStack {
+                        Text(Self.formatMMSS(safeElapsed))
+                        Spacer()
+                        Text(Self.formatMMSS(total))
+                    }
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                }
+                .padding(.top, 3)
+            }
+        }
+    }
+
+    private static func formatMMSS(_ seconds: Double) -> String {
+        let total = max(0, Int(seconds.rounded()))
+        return String(format: "%02d:%02d", total / 60, total % 60)
     }
 
     private func customRangeLineOne(start: Int, end: Int) -> String {
@@ -178,15 +240,19 @@ struct NowPlayingView: View {
     @ViewBuilder
     private func playerRow(isPlaying: Bool) -> some View {
         #if os(iOS)
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                titleBlock
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 4) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    titleBlock
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 10) {
-                transportButtons(isPlaying: isPlaying)
+                HStack(spacing: 10) {
+                    transportButtons(isPlaying: isPlaying)
+                }
             }
+
+            surahProgressView
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)

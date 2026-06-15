@@ -118,7 +118,7 @@ extension Settings {
         static let asimTeacherArabic = "عَاصِم"
         static let nafiTeacherArabic = "نَافِع"
         static let ibnKathirTeacherArabic = "ابنِ كَثِير"
-        static let abiAmrTeacherArabic = "أَبِي عَمرٍو"
+        static let abiAmrTeacherArabic = "أَبُو عَمرٍو"
         static let hamzahTeacherArabic = "حَمزَة"
 
         static let hafsArabic = "حَفص عَن عَاصِم"

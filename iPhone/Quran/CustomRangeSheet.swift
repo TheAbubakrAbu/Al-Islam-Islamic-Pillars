@@ -228,25 +228,20 @@ struct PlayCustomRangeSheet: View {
     ///   line 2 — the whole-surah totals ("M ayahs · N pages in Surah")
     private var rangeSummary: some View {
         let pagesInRange = Swift.max(1, toPageIndex - fromPageIndex + 1)
-        return VStack(alignment: .center, spacing: 2) {
+        return VStack(spacing: 2) {
             rangeSummaryRow(
                 hasPageData
                     ? "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") · \(pagesInRange) page\(pagesInRange == 1 ? "" : "s") in range"
                     : "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") in range"
             )
-            rangeSummaryRow(
-                hasPageData
-                    ? "\(maxAyah) ayah\(maxAyah == 1 ? "" : "s") · \(pageGroups.count) page\(pageGroups.count == 1 ? "" : "s") in Surah"
-                    : "\(maxAyah) ayah\(maxAyah == 1 ? "" : "s") in Surah"
-            )
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
     private func rangeSummaryRow(_ text: String) -> some View {
         let label = Text(text)
-            .font(.caption.monospaced())
+            .font(.caption.monospacedDigit())
             .foregroundColor(Color(.tertiaryLabel))
 
         if #available(iOS 16.0, watchOS 9.0, *) {
@@ -416,26 +411,13 @@ struct PlayCustomRangeSheet: View {
     }
 
     private var surahHeaderCard: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "book.closed.fill")
-                .font(.title2)
-                .foregroundStyle(settings.accentColor.color)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(surah.nameTransliteration)
-                    .font(.title3.weight(.semibold))
-                    .foregroundColor(.primary)
-                
-                Text("Surah \(surah.id) · \(maxAyah) ayahs\(hasPageData ? " · \(pageGroups.count) page\(pageGroups.count == 1 ? "" : "s")" : "")")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .contentShape(Rectangle())
+        SurahRow(surah: surah)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
     }
 
     private var reciterCard: some View {
@@ -490,8 +472,6 @@ struct PlayCustomRangeSheet: View {
                 ayahSelectionSection
             }
 
-            rangeSummary
-
             if hasPageData {
                 Picker("Selection mode", selection: $selectionMode.animation(.easeInOut)) {
                     ForEach(SelectionMode.allCases, id: \.self) { mode in
@@ -504,6 +484,8 @@ struct PlayCustomRangeSheet: View {
                     if mode == .pages { snapRangeToPages() }
                 }
             }
+            
+            rangeSummary
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)

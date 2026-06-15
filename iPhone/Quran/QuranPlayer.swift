@@ -1170,6 +1170,7 @@ final class QuranPlayer: ObservableObject {
     }
 
     func saveLastListenedSurah() {
+        guard settings.saveLastListenedSurah else { return }
         guard
             nowPlayingTitle != nil,
             let num = currentSurahNumber,

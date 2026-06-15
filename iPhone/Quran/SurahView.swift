@@ -1736,14 +1736,9 @@ struct SurahView: View {
         } else {
             Button {
                 settings.hapticFeedback()
-
-                if quranPlayer.isLoading {
-                    quranPlayer.isLoading = false
-                    quranPlayer.pause(saveInfo: false)
-
-                } else if quranPlayer.isPlaying || quranPlayer.isPaused {
-                    quranPlayer.stop()
-                }
+                // A tap while loading OR playing fully stops playback. Previously a loading tap only paused
+                // the in-flight load, which could resume once the item became ready (so it "did nothing").
+                quranPlayer.stop()
             } label: {
                 playbackMenuControlLabel {
                     playIcon()
@@ -1865,6 +1860,8 @@ struct SurahView: View {
 
         guard let targetAyah else { return }
         rememberVisibleAyahID(targetAyah)
+
+        guard settings.saveLastReadAyah else { return }
 
         if settings.lastReadSurah == surah.id, settings.lastReadAyah == targetAyah {
             return

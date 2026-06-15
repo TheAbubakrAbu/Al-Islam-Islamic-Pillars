@@ -3079,7 +3079,7 @@ struct QiraatView: View {
                 Text("Many people hear about 7 and 10 together. Both references are used by scholars: the famous seven canonical recitations (al-Sab'ah) and the full ten canonical Qiraat (7 + 3), all preserved through reliable transmission.")
                     .font(.body)
 
-                Text("The original seven were famously codified by Imam Abu Bakr Ibn Mujahid. Their Imams are: Nafi (Madinah), Ibn Kathir (Makkah), Abi Amr (Basra), Ibn Amir (Damascus), Asim (Kufa), Hamzah (Kufa), and al-Kisai (Kufa).")
+                Text("The original seven were famously codified by Imam Abu Bakr Ibn Mujahid. Their Imams are: Nafi (Madinah), Ibn Kathir (Makkah), Abu Amr (Basra), Ibn Amir (Damascus), Asim (Kufa), Hamzah (Kufa), and al-Kisai (Kufa).")
                     .font(.body)
 
                 Text("Hafs is a riwayah from Asim, and Warsh is a riwayah from Nafi. So when people say Hafs or Warsh, they are naming a narration path within the canonical recitation tradition.")
@@ -3116,17 +3116,18 @@ struct QiraatView: View {
                     .font(.body)
 
                 Group {
-                    Text("• Nafi (نَافِع)").font(.body)
-                    Text("• Ibn Kathir (ابنِ كَثِير)").font(.body)
-                    Text("• Abi Amr (أَبُو عَمرٍو)").font(.body)
-                    Text("• Ibn Amir (ابنُ عَامِر)").font(.body)
-                    Text("• Asim (عَاصِم)").font(.body)
-                    Text("• Hamzah (حَمزَة)").font(.body)
-                    Text("• al-Kisai (الكِسَائِي)").font(.body)
-                    Text("• Abi Jafar (أَبُو جَعفَر)").font(.body)
-                    Text("• Yaqoub (يَعقُوب)").font(.body)
-                    Text("• Khalaf al-Ashir (خَلَف العَاشِر)").font(.body)
+                    Text("• Abu Jafar (أَبُو جَعفَر)")
+                    Text("• Abu Amr (أَبُو عَمرٍو)")
+                    Text("• al-Kisai (الكِسَائِي)")
+                    Text("• Asim (عَاصِم)")
+                    Text("• Hamzah (حَمزَة)")
+                    Text("• Ibn Amir (ابنُ عَامِر)")
+                    Text("• Ibn Kathir (ابنِ كَثِير)")
+                    Text("• Khalaf al-Ashir (خَلَف العَاشِر)")
+                    Text("• Nafi (نَافِع)")
+                    Text("• Yaqoub (يَعقُوب)")
                 }
+                .font(.body)
             }
 
             Section(header: Text("THE 20 RIWAYAAT (روايات)")) {
@@ -3134,38 +3135,47 @@ struct QiraatView: View {
                     .font(.body)
 
                 Group {
-                    Text("• Warsh an Nafi (وَرش عَن نَافِع)").font(.body)
-                    Text("• Qalun an Nafi (قَالُون عَن نَافِع)").font(.body)
+                    // Abu Jafar
+                    Text("• Ibn Wardan an Abi Jafar (ابنُ وَردَان عَن أَبِي جَعفَر)")
+                    Text("• Ibn Jammaz an Abi Jafar (ابنُ جَمَّاز عَن أَبِي جَعفَر)")
 
-                    Text("• al-Bazzi an Ibn Kathir (البَزِّي عَن ابنِ كَثِير)").font(.body)
-                    Text("• Qunbul an Ibn Kathir (قُنبُل عَن ابنِ كَثِير)").font(.body)
+                    // Abu Amr
+                    Text("• ad-Duri an Abi Amr (الدُّورِي عَن أَبِي عَمرٍو)")
+                    Text("• as-Susi an Abi Amr (السُّوسِي عَن أَبِي عَمرٍو)")
 
-                    Text("• ad-Duri an Abi Amr (الدُّورِي عَن أَبِي عَمرٍو)").font(.body)
-                    Text("• as-Susi an Abi Amr (السُّوسِي عَن أَبِي عَمرٍو)").font(.body)
+                    // al-Kisai
+                    Text("• Abu al-Harith an al-Kisai (أَبُو الحَارِث عَن الكِسَائِي)")
+                    Text("• ad-Duri an al-Kisai (الدُّورِي عَن الكِسَائِي)")
 
-                    Text("• Hisham an Ibn Amir (هِشَام عَن ابنِ عَامِر)").font(.body)
-                    Text("• Ibn Dhakwan an Ibn Amir (ابنُ ذَكوَان عَن ابنِ عَامِر)").font(.body)
+                    // Asim
+                    Text("• Shubah an Asim (شُعبَة عَن عَاصِم)")
+                    Text("• Hafs an Asim (حَفص عَن عَاصِم)")
 
-                    Text("• Shubah an Asim (شُعبَة عَن عَاصِم)").font(.body)
-                    Text("• Hafs an Asim (حَفص عَن عَاصِم)").font(.body)
+                    // Hamzah
+                    Text("• Khalaf an Hamzah (خَلَف عَن حَمزَة)")
+                    Text("• Khallad an Hamzah (خَلَّاد عَن حَمزَة)")
+
+                    // Ibn Amir
+                    Text("• Hisham an Ibn Amir (هِشَام عَن ابنِ عَامِر)")
+                    Text("• Ibn Dhakwan an Ibn Amir (ابنُ ذَكوَان عَن ابنِ عَامِر)")
+
+                    // Ibn Kathir
+                    Text("• al-Bazzi an Ibn Kathir (البَزِّي عَن ابنِ كَثِير)")
+                    Text("• Qunbul an Ibn Kathir (قُنبُل عَن ابنِ كَثِير)")
+
+                    // Khalaf al-Ashir
+                    Text("• Ishaq an Khalaf al-Ashir (إِسحَاق عَن خَلَف العَاشِر)")
+                    Text("• Idris an Khalaf al-Ashir (إِدرِيس عَن خَلَف العَاشِر)")
+
+                    // Nafi
+                    Text("• Warsh an Nafi (وَرش عَن نَافِع)")
+                    Text("• Qalun an Nafi (قَالُون عَن نَافِع)")
+
+                    // Yaqoub
+                    Text("• Ruways an Yaqoub (رُوَيس عَن يَعقُوب)")
+                    Text("• Rawh an Yaqoub (رَوح عَن يَعقُوب)")
                 }
-
-                Group {
-                    Text("• Khalaf an Hamzah (خَلَف عَن حَمزَة)").font(.body)
-                    Text("• Khallad an Hamzah (خَلَّاد عَن حَمزَة)").font(.body)
-
-                    Text("• Abu al-Harith an al-Kisai (أَبُو الحَارِث عَن الكِسَائِي)").font(.body)
-                    Text("• ad-Duri an al-Kisai (الدُّورِي عَن الكِسَائِي)").font(.body)
-
-                    Text("• Ibn Wardan an Abi Jafar (ابنُ وَردَان عَن أَبِي جَعفَر)").font(.body)
-                    Text("• Ibn Jammaz an Abi Jafar (ابنُ جَمَّاز عَن أَبِي جَعفَر)").font(.body)
-
-                    Text("• Ruways an Yaqoub (رُوَيس عَن يَعقُوب)").font(.body)
-                    Text("• Rawh an Yaqoub (رَوح عَن يَعقُوب)").font(.body)
-
-                    Text("• Ishaq an Khalaf al-Ashir (إِسحَاق عَن خَلَف العَاشِر)").font(.body)
-                    Text("• Idris an Khalaf al-Ashir (إِدرِيس عَن خَلَف العَاشِر)").font(.body)
-                }
+                .font(.body)
             }
 
             Section(header: Text("OTHER REPORTED QIRAAT")) {

@@ -8,7 +8,7 @@ struct LastReadSurahWidget: Widget {
         StaticConfiguration(kind: kind, provider: QuranWidgetProvider(kind: .lastReadAyah)) { entry in
             QuranWidgetEntryView(entry: entry)
         }
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies(quranWidgetFamilies())
         .configurationDisplayName("Last Read Ayah")
         .description("Shows the ayah you last read")
     }

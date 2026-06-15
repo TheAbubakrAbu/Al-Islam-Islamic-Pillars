@@ -34,6 +34,9 @@ struct SettingsView: View {
                             }
                     } detail: {
                         settingsSplitDetail
+                            // Rebuild the detail on selection change so it can't get stuck on a previous item
+                            // after the split view disappeared and reappeared on iPad/Mac.
+                            .id(selectedDestination ?? .quranSettings)
                             .animation(.easeInOut(duration: 0.25), value: selectedDestination)
                     }
                 } else {

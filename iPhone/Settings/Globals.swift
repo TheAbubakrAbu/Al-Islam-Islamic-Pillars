@@ -29,6 +29,16 @@ enum AppIdentifiers {
 /// can display instantly without loading Quran.json or the (async-loading) `QuranData` in the
 /// extension. The app rebuilds this whenever last-read / last-listened state changes.
 struct QuranWidgetSnapshot: Codable {
+    /// A tajweed color span over the Arabic text, in UTF-16 offsets, with the color as 0–1 RGB. Plain
+    /// `Codable` so it survives the App Group without serializing SwiftUI/UIKit color objects.
+    struct ColorRun: Codable {
+        let start: Int
+        let length: Int
+        let r: Double
+        let g: Double
+        let b: Double
+    }
+
     struct AyahCard: Codable {
         let arabic: String
         let reference: String
@@ -36,6 +46,8 @@ struct QuranWidgetSnapshot: Codable {
         /// PostScript name of the Arabic font to render `arabic` with (e.g. the Uthmani font). Optional so
         /// older snapshots still decode.
         var fontName: String?
+        /// Tajweed color spans over `arabic` (empty/nil when tajweed is off). Base text stays adaptive.
+        var colorRuns: [ColorRun]?
     }
     struct ListenCard: Codable {
         let name: String

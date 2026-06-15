@@ -400,9 +400,9 @@ struct SurahAyahRow: View {
                     #else
                     .font(.caption2)
                     #endif
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
             #if os(iOS)
             .frame(width: 65, alignment: .center)
             #else
@@ -768,13 +768,14 @@ struct LastReadAyahRow: View {
     private var lastReadRowContent: some View {
         VStack(alignment: .leading, spacing: 6) {
             SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             TinyProgressBar(
                 fraction: surah.numberOfAyahs > 0 ? Double(ayah.id) / Double(surah.numberOfAyahs) : 0,
                 color: settings.accentColor.color
             )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .contentShape(Rectangle())
     }
 
