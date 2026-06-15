@@ -223,10 +223,30 @@ struct PlayCustomRangeSheet: View {
         selectedRangeReciter?.displayNameWithEnglishQiraah ?? settings.reciter
     }
 
+    /// Two-line summary shown in both Ayahs and Pages modes:
+    ///   line 1 — the current selection ("X ayahs · Y pages in range")
+    ///   line 2 — the whole-surah totals ("M ayahs · N pages in Surah")
+    private var rangeSummary: some View {
+        let pagesInRange = Swift.max(1, toPageIndex - fromPageIndex + 1)
+        return VStack(alignment: .center, spacing: 2) {
+            rangeSummaryRow(
+                hasPageData
+                    ? "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") · \(pagesInRange) page\(pagesInRange == 1 ? "" : "s") in range"
+                    : "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") in range"
+            )
+            rangeSummaryRow(
+                hasPageData
+                    ? "\(maxAyah) ayah\(maxAyah == 1 ? "" : "s") · \(pageGroups.count) page\(pageGroups.count == 1 ? "" : "s") in Surah"
+                    : "\(maxAyah) ayah\(maxAyah == 1 ? "" : "s") in Surah"
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
     @ViewBuilder
-    private var ayahCountLabel: some View {
-        let label = Text("\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") in range")
-            .font(.caption)
+    private func rangeSummaryRow(_ text: String) -> some View {
+        let label = Text(text)
+            .font(.caption.monospaced())
             .foregroundColor(Color(.tertiaryLabel))
 
         if #available(iOS 16.0, watchOS 9.0, *) {
@@ -470,8 +490,8 @@ struct PlayCustomRangeSheet: View {
                 ayahSelectionSection
             }
 
-            ayahCountLabel
-            
+            rangeSummary
+
             if hasPageData {
                 Picker("Selection mode", selection: $selectionMode.animation(.easeInOut)) {
                     ForEach(SelectionMode.allCases, id: \.self) { mode in
@@ -500,19 +520,7 @@ struct PlayCustomRangeSheet: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
 
-            if hasPageData {
-                HStack(spacing: 10) {
-                    quickActionButton(title: "Start of page", systemImage: "arrow.up.to.line", enabled: hasMultiplePages && !startAtPageStart) {
-                        snapStartToPageStart()
-                    }
-
-                    quickActionButton(title: "End of page", systemImage: "arrow.down.to.line", enabled: hasMultiplePages && !endAtPageEnd) {
-                        snapEndToPageEnd()
-                    }
-                }
-            }
-
-            HStack(spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 rangeField(title: "From", value: $startAyah, text: $startAyahText, isFocused: $startAyahFocused) { new in
                     if new > endAyah {
                         startAyah = endAyah
@@ -538,7 +546,19 @@ struct PlayCustomRangeSheet: View {
                 endAyahText = "\(endAyah)"
             }
 
-            selectionPageCaption
+            if hasPageData {
+                HStack(spacing: 10) {
+                    quickActionButton(title: "Start of page", systemImage: "arrow.up.to.line", enabled: hasMultiplePages && !startAtPageStart) {
+                        snapStartToPageStart()
+                    }
+
+                    quickActionButton(title: "End of page", systemImage: "arrow.down.to.line", enabled: hasMultiplePages && !endAtPageEnd) {
+                        snapEndToPageEnd()
+                    }
+                }
+
+                perFieldPageLabels
+            }
 
             HStack(spacing: 10) {
                 quickActionButton(title: "Go to start", systemImage: "arrow.left.to.line") {
@@ -564,30 +584,27 @@ struct PlayCustomRangeSheet: View {
                     endAyahText = "\(maxAyah)"
                 }
             }
-
-            pageInfoCaption
         }
     }
 
-    /// Page(s) the currently selected ayah range falls on — shown directly beneath the ayah fields.
-    @ViewBuilder
-    private var selectionPageCaption: some View {
-        if hasPageData, let sp = pageNumber(forAyah: startAyah), let ep = pageNumber(forAyah: endAyah) {
-            Text(sp == ep ? "On page \(sp)" : "Page \(sp) → \(ep)")
-                .font(.caption)
-                .foregroundColor(Color(.tertiaryLabel))
+    /// The mushaf page of the From / To ayah, centered directly under each big ayah field.
+    private var perFieldPageLabels: some View {
+        HStack(spacing: 12) {
+            pageLabelColumn(forAyah: startAyah)
+
+            Image(systemName: "arrow.right")
+                .font(.subheadline.weight(.medium))
+                .hidden()
+
+            pageLabelColumn(forAyah: endAyah)
         }
     }
 
-    /// Totals for the whole surah: how many ayahs and pages it spans.
-    @ViewBuilder
-    private var pageInfoCaption: some View {
-        if hasPageData {
-            let pages = pageGroups.count
-            Text("\(maxAyah) ayah\(maxAyah == 1 ? "" : "s") · \(pages) page\(pages == 1 ? "" : "s") in surah")
-                .font(.caption)
-                .foregroundColor(Color(.tertiaryLabel))
-        }
+    private func pageLabelColumn(forAyah ayah: Int) -> some View {
+        Text(pageNumber(forAyah: ayah).map { "Page \($0)" } ?? " ")
+            .font(.caption)
+            .foregroundColor(Color(.tertiaryLabel))
+            .frame(maxWidth: .infinity, alignment: .center)
     }
 
     @ViewBuilder
@@ -595,7 +612,6 @@ struct PlayCustomRangeSheet: View {
         let groups = pageGroups
         let fromIdx = fromPageIndex
         let toIdx = toPageIndex
-        let pageSpan = Swift.max(0, toIdx - fromIdx + 1)
 
         VStack(alignment: .leading, spacing: 16) {
             Label("Page range", systemImage: "doc.text")
@@ -644,10 +660,6 @@ struct PlayCustomRangeSheet: View {
                     endAyahText = "\(maxAyah)"
                 }
             }
-
-            Text("Ayahs \(startAyah)–\(endAyah) · \(pageSpan) page\(pageSpan == 1 ? "" : "s")")
-                .font(.caption)
-                .foregroundColor(Color(.tertiaryLabel))
         }
     }
 

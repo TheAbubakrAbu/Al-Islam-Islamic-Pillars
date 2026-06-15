@@ -1,5 +1,28 @@
 import SwiftUI
 
+/// A slim, unobtrusive progress bar used under the last-read / last-listened rows.
+struct TinyProgressBar: View {
+    let fraction: Double
+    let color: Color
+
+    var body: some View {
+        // The base capsule defines the bar's size (full width, fixed height); the fill is an overlay so it
+        // never collapses to a sliver while the enclosing list row is still computing its layout.
+        Capsule()
+            .fill(color.opacity(0.22))
+            .frame(height: 3)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .leading) {
+                GeometryReader { geo in
+                    Capsule()
+                        .fill(color)
+                        .frame(width: max(0, min(1, fraction)) * geo.size.width, height: 3)
+                }
+            }
+            .accessibilityHidden(true)
+    }
+}
+
 struct SurahRow: View, Equatable {
     @EnvironmentObject var settings: Settings
     
@@ -546,6 +569,12 @@ struct LastListenedSurahRow: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)
                     }
+
+                    TinyProgressBar(
+                        fraction: lastListenedSurah.fullDuration > 0 ? lastListenedSurah.currentDuration / lastListenedSurah.fullDuration : 0,
+                        color: settings.accentColor.color
+                    )
+                    .padding(.top, 3)
                 }
                 .padding(.vertical, 8)
 
@@ -734,6 +763,21 @@ struct LastReadAyahRow: View {
         return (t?.isEmpty == false) ? t : nil
     }
 
+    /// The ayah row plus its progress bar as a single tappable unit, so swipe/context actions cover both
+    /// and there is no stray standalone row (which left a large gap when the ayah had no note).
+    private var lastReadRowContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+
+            TinyProgressBar(
+                fraction: surah.numberOfAyahs > 0 ? Double(ayah.id) / Double(surah.numberOfAyahs) : 0,
+                color: settings.accentColor.color
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
     var body: some View {
         Section(header:
             HStack {
@@ -762,17 +806,13 @@ struct LastReadAyahRow: View {
                         settings.hapticFeedback()
                         onSelectAyah(surah.id, ayah.id)
                     } label: {
-                        SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
+                        lastReadRowContent
                     }
                     .buttonStyle(.plain)
                     .contentShape(Rectangle())
                 } else {
                     NavigationLink(destination: SurahView(surah: surah, ayah: ayah.id)) {
-                        SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
+                        lastReadRowContent
                     }
                     .tag(surah.id)
                     .contentShape(Rectangle())

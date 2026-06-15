@@ -1267,9 +1267,6 @@ struct SurahView: View {
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .compactListSectionSpacing()
             #if os(iOS)
-            // Animate the filtered-results diff (insert/remove of ayah rows) without animating the
-            // search-field binding itself — filtering stays instant, only the list transition eases.
-            .animation(.easeInOut, value: searchText)
             .onChange(of: scrollDown) { value in
                 guard let target = value else { return }
                 if !searchText.isEmpty {
@@ -1576,7 +1573,9 @@ struct SurahView: View {
         VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
             HStack(spacing: 0) {
                 SearchBar(
-                    text: $searchText,
+                    // Animate the filtered results only when the user types (binding-scoped), so the
+                    // list transition eases without the List-level animation that breaks scroll restoration.
+                    text: $searchText.animation(.easeInOut),
                     onFocusChanged: { focused in
                         withAnimation {
                             isAyahSearchFocused = focused
@@ -1873,6 +1872,7 @@ struct SurahView: View {
 
         settings.lastReadSurah = surah.id
         settings.lastReadAyah = targetAyah
+        settings.refreshQuranWidgets()
     }
 
     private func neighboringSurah(before currentSurahID: Int) -> Surah? {

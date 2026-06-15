@@ -7,6 +7,16 @@ struct AppShortcutsRoot: AppShortcutsProvider {
         AppShortcut(
             intent: PlaySurahAppIntent(),
             phrases: [
+                // In-phrase surah ("play surah Al-Fatihah in <app>")
+                "Play surah \(\.$surah) in \(.applicationName)",
+                "Recite surah \(\.$surah) in \(.applicationName)",
+                "Play \(\.$surah) in \(.applicationName)",
+                "\(.applicationName), play surah \(\.$surah)",
+                "\(.applicationName), recite surah \(\.$surah)",
+                "\(.applicationName), play \(\.$surah)",
+                "شغّل سورة \(\.$surah) في \(.applicationName)",
+                "اقرأ سورة \(\.$surah) في \(.applicationName)",
+                // Ask-back ("play surah" → Siri asks which one)
                 "Play a surah in \(.applicationName)",
                 "Recite a surah in \(.applicationName)",
                 "Play surah in \(.applicationName)",

@@ -33,6 +33,8 @@ struct QuranWidgetEntry: TimelineEntry {
     let tertiaryText: String?
     let accentColor: AccentColor
     let fallbackText: String?
+    /// When set, `primaryText` is Arabic and should render with this font (e.g. the Uthmani font).
+    var arabicFontName: String? = nil
 }
 
 struct QuranWidgetProvider: TimelineProvider {
@@ -51,100 +53,61 @@ struct QuranWidgetProvider: TimelineProvider {
 
     private func makeEntry() -> QuranWidgetEntry {
         let settings = Settings.shared
-        let quranData = QuranData.shared
+        let snapshot = QuranWidgetStore.load()
 
         switch kind {
         case .lastReadAyah:
-            return makeLastReadEntry(settings: settings, quranData: quranData)
+            return makeAyahEntry(settings: settings, card: snapshot?.lastRead,
+                                 emptyMessage: "Open the app to set your last read verse.")
         case .lastListenedSurah:
-            return makeLastListenedEntry(settings: settings, quranData: quranData)
+            return makeLastListenedEntry(settings: settings, card: snapshot?.lastListened)
         case .randomAyah:
-            return makeRandomAyahEntry(settings: settings, quranData: quranData)
+            return makeAyahEntry(settings: settings, card: randomCard(from: snapshot),
+                                 emptyMessage: "Open the app to load random ayahs.")
         }
     }
 
-    private func makeLastReadEntry(settings: Settings, quranData: QuranData) -> QuranWidgetEntry {
-        guard settings.lastReadSurah > 0, settings.lastReadAyah > 0,
-              let surah = quranData.surah(settings.lastReadSurah),
-              let ayah = quranData.ayah(surah: settings.lastReadSurah, ayah: settings.lastReadAyah) else {
-            return fallbackEntry(settings: settings, message: "Open the app to set your last read verse.")
+    private func makeAyahEntry(settings: Settings, card: QuranWidgetSnapshot.AyahCard?, emptyMessage: String) -> QuranWidgetEntry {
+        guard let card else {
+            return fallbackEntry(settings: settings, message: emptyMessage)
         }
-
         return QuranWidgetEntry(
             date: Date(),
-            kind: .lastReadAyah,
+            kind: kind,
             title: kind.title,
             icon: kind.icon,
-            primaryText: ayah.displayArabicText(surahId: surah.id, clean: true),
-            secondaryText: "Surah \(surah.id):\(ayah.id) • \(surah.nameTransliteration)",
-            tertiaryText: snippet(ayah.textEnglishSaheeh),
+            primaryText: card.arabic,
+            secondaryText: card.reference,
+            tertiaryText: snippet(card.english),
             accentColor: settings.accentColor,
-            fallbackText: nil
+            fallbackText: nil,
+            arabicFontName: card.fontName
         )
     }
 
-    private func makeLastListenedEntry(settings: Settings, quranData: QuranData) -> QuranWidgetEntry {
-        guard let listened = settings.lastListenedSurah,
-              let surah = quranData.surah(listened.surahNumber) else {
+    private func makeLastListenedEntry(settings: Settings, card: QuranWidgetSnapshot.ListenCard?) -> QuranWidgetEntry {
+        guard let card else {
             return fallbackEntry(settings: settings, message: "Open the app to resume your last listened surah.")
         }
-
         return QuranWidgetEntry(
             date: Date(),
             kind: .lastListenedSurah,
             title: kind.title,
             icon: kind.icon,
-            primaryText: surah.nameTransliteration,
-            secondaryText: listened.reciter.displayNameForNowPlaying,
-            tertiaryText: "\(formatDurationMMSS(listened.currentDuration)) / \(formatDurationMMSS(listened.fullDuration))",
+            primaryText: card.name,
+            secondaryText: card.reciter,
+            tertiaryText: "\(formatDurationMMSS(card.current)) / \(formatDurationMMSS(card.full))",
             accentColor: settings.accentColor,
             fallbackText: nil
         )
     }
 
-    private func makeRandomAyahEntry(settings: Settings, quranData: QuranData) -> QuranWidgetEntry {
-        guard let target = randomSafeAyah(in: quranData) else {
-            return fallbackEntry(settings: settings, message: "Unable to find a random ayah. Please try again.")
-        }
-
-        return QuranWidgetEntry(
-            date: Date(),
-            kind: .randomAyah,
-            title: kind.title,
-            icon: kind.icon,
-            primaryText: target.ayah.displayArabicText(surahId: target.surah.id, clean: true),
-            secondaryText: "Surah \(target.surah.id):\(target.ayah.id) • \(target.surah.nameTransliteration)",
-            tertiaryText: snippet(target.ayah.textEnglishSaheeh),
-            accentColor: settings.accentColor,
-            fallbackText: nil
-        )
-    }
-
-    private func randomSafeAyah(in quranData: QuranData) -> (surah: Surah, ayah: Ayah)? {
-        let allSurahs = quranData.filteredSurahs(query: "")
-        guard !allSurahs.isEmpty else { return nil }
-        
-        // Try up to 10 times to find a surah with safe ayahs
-        for _ in 0..<10 {
-            guard let randomSurah = allSurahs.randomElement() else { return nil }
-            
-            // Filter safe ayahs from that surah
-            let safeAyahs = randomSurah.ayahs.filter { isSafeWidgetAyah($0) }
-            if !safeAyahs.isEmpty, let randomAyah = safeAyahs.randomElement() {
-                return (surah: randomSurah, ayah: randomAyah)
-            }
-        }
-        
-        return nil
-    }
-
-    private func isSafeWidgetAyah(_ ayah: Ayah) -> Bool {
-        let combined = [ayah.textEnglishSaheeh, ayah.textEnglishMustafa, ayah.textTransliteration]
-            .joined(separator: " ")
-            .lowercased()
-
-        let blockedWords = ["kill", "killing", "fight", "fighting", "violence", "violent", "murder", "slay", "slaughter", "battle", "war"]
-        return !blockedWords.contains(where: { combined.contains($0) })
+    /// Rotates through the app-provided pool so the widget shows a different ayah over time
+    /// (deterministic per half-hour bucket, matching the timeline refresh cadence).
+    private func randomCard(from snapshot: QuranWidgetSnapshot?) -> QuranWidgetSnapshot.AyahCard? {
+        guard let pool = snapshot?.randomPool, !pool.isEmpty else { return nil }
+        let bucket = Int(Date().timeIntervalSince1970 / (30 * 60))
+        return pool[((bucket % pool.count) + pool.count) % pool.count]
     }
 
     private func fallbackEntry(settings: Settings, message: String) -> QuranWidgetEntry {
@@ -190,6 +153,14 @@ struct QuranWidgetEntryView: View {
         return false
     }
 
+    /// On iOS 17+ the system applies default content margins (like the Adhan widgets), so we add no extra
+    /// padding; on older iOS we pad manually.
+    private var contentPadding: CGFloat {
+        if isAccessoryRectangularFamily { return 0 }
+        if #available(iOSApplicationExtension 17.0, *) { return 0 }
+        return 14
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             header
@@ -198,17 +169,17 @@ struct QuranWidgetEntryView: View {
                 Text(fallbackText)
                     .font(isAccessoryRectangularFamily ? .caption2 : .caption)
                     .foregroundColor(.secondary)
-                    .lineLimit(isAccessoryRectangularFamily ? 2 : 3)
+                    .lineLimit(isAccessoryRectangularFamily ? 2 : 4)
             } else if isAccessoryRectangularFamily {
                 accessoryBody
             } else {
                 regularBody
             }
+
+            Spacer(minLength: 0)
         }
-        .padding(isAccessoryRectangularFamily ? 0 : 12)
-        .foregroundColor(entry.accentColor.color)
-        .lineLimit(1)
-        .minimumScaleFactor(0.75)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(contentPadding)
     }
 
     private var header: some View {
@@ -222,11 +193,29 @@ struct QuranWidgetEntryView: View {
         .foregroundColor(entry.accentColor.color)
     }
 
+    /// Renders `primaryText`: as Arabic in the supplied font when present, otherwise as a plain title.
+    @ViewBuilder
+    private func primaryText(arabicSize: CGFloat, lineLimit: Int) -> some View {
+        if let fontName = entry.arabicFontName, !fontName.isEmpty {
+            Text(entry.primaryText)
+                .font(.custom(fontName, size: arabicSize))
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .lineLimit(lineLimit)
+                .minimumScaleFactor(0.5)
+        } else {
+            Text(entry.primaryText)
+                .font(.headline)
+                .foregroundColor(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+        }
+    }
+
     private var accessoryBody: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(entry.primaryText)
-                .font(.caption2.weight(.semibold))
-                .lineLimit(2)
+            primaryText(arabicSize: 16, lineLimit: 2)
             if let secondary = entry.secondaryText {
                 Text(secondary)
                     .font(.caption2)
@@ -237,23 +226,22 @@ struct QuranWidgetEntryView: View {
     }
 
     private var regularBody: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(entry.primaryText)
-                .font(.headline)
-                .lineLimit(2)
+        VStack(alignment: .leading, spacing: 5) {
+            primaryText(arabicSize: 22, lineLimit: 3)
 
             if let secondary = entry.secondaryText {
                 Text(secondary)
-                    .font(.caption)
+                    .font(.caption.weight(.medium))
                     .foregroundColor(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
 
             if let tertiary = entry.tertiaryText {
                 Text(tertiary)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                    .foregroundColor(Color(.tertiaryLabel))
+                    .lineLimit(2)
             }
         }
     }

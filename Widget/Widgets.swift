@@ -18,8 +18,8 @@ struct Widgets: WidgetBundle {
         }
         #endif
         
-        /*LastReadSurahWidget()
         LastListenedSurahWidget()
-        RandomAyahWidget()*/
+        LastReadSurahWidget()
+        RandomAyahWidget()
     }
 }

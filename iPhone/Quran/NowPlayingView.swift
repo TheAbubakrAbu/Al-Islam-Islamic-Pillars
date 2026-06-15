@@ -155,6 +155,26 @@ struct NowPlayingView: View {
         return "Ayahs \(start)-\(end) (\(current)/\(total))"
     }
 
+    private func customRangeLineTwo() -> String {
+        let ayahProgress = quranPlayer.customRangeCurrentRepeatWithinAyah ?? 1
+        let ayahTotal = max(1, quranPlayer.customRangeRepeatPerAyah)
+        let sectionProgress = quranPlayer.customRangeRepeatSectionIndex ?? 1
+        let sectionTotal = max(1, quranPlayer.customRangeRepeatSection)
+        return "Ayah \(ayahProgress)/\(ayahTotal) · Section \(sectionProgress)/\(sectionTotal)"
+    }
+
+    /// For a custom range, keep the top title short (just "Name S:A") since the per-ayah/section detail
+    /// shows on its own lines below. Other playback uses the full now-playing title.
+    private var displayTitle: String? {
+        if quranPlayer.isPlayingCustomRange,
+           let surahNumber = quranPlayer.currentSurahNumber,
+           let ayahNumber = quranPlayer.currentAyahNumber,
+           let surah = quranPlayer.quranData.quran.first(where: { $0.id == surahNumber }) {
+            return "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
+        }
+        return quranPlayer.nowPlayingTitle
+    }
+
     @ViewBuilder
     private func playerRow(isPlaying: Bool) -> some View {
         #if os(iOS)
@@ -208,7 +228,7 @@ struct NowPlayingView: View {
 
     @ViewBuilder
     private var titleBlock: some View {
-        if let title = quranPlayer.nowPlayingTitle {
+        if let title = displayTitle {
             Text(title)
                 .foregroundColor(.primary)
                 #if os(iOS)
@@ -236,6 +256,11 @@ struct NowPlayingView: View {
            let end = quranPlayer.customRangeEndAyah {
             VStack(alignment: .leading, spacing: 1) {
                 Text(customRangeLineOne(start: start, end: end))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+
+                Text(customRangeLineTwo())
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .lineLimit(1)

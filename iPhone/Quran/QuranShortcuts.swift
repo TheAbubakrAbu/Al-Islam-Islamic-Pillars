@@ -1,34 +1,63 @@
 import AppIntents
 
+/// A surah as an App Intents entity so Siri can resolve a spoken/typed name or number both in-phrase
+/// ("play surah Al-Fatihah") and via the ask-back flow ("play surah" → "Which surah?").
+@available(iOS 16.0, watchOS 9.0, *)
+struct SurahEntity: AppEntity, Identifiable {
+    let id: Int
+    let name: String
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation { "Surah" }
+    var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(id). \(name)") }
+    static var defaultQuery = SurahEntityQuery()
+}
+
+@available(iOS 16.0, watchOS 9.0, *)
+struct SurahEntityQuery: EntityQuery, EntityStringQuery {
+    private func entity(_ surah: Surah) -> SurahEntity { SurahEntity(id: surah.id, name: surah.nameTransliteration) }
+
+    func entities(for identifiers: [Int]) async throws -> [SurahEntity] {
+        QuranData.shared.quran.filter { identifiers.contains($0.id) }.map(entity)
+    }
+
+    func suggestedEntities() async throws -> [SurahEntity] {
+        QuranData.shared.quran.map(entity)
+    }
+
+    /// Resolves a spoken/typed string (a name, alias, or number) to matching surahs.
+    func entities(matching string: String) async throws -> [SurahEntity] {
+        let normalized = string.normalizedSurahIntentQuery
+        let all = QuranData.shared.quran
+        guard !normalized.isEmpty else { return all.map(entity) }
+
+        if let number = Int(normalized), (1...114).contains(number) {
+            return all.filter { $0.id == number }.map(entity)
+        }
+        return all.filter { surah in
+            surah.normalizedSearchNames.contains { $0.contains(normalized) }
+        }.map(entity)
+    }
+}
+
 @available(iOS 16.0, watchOS 9.0, *)
 struct PlaySurahAppIntent: AppIntent {
     static var title: LocalizedStringResource = "Play Surah"
     static var description = IntentDescription("Play a specific surah by name or number.")
     static var openAppWhenRun = true
-    static var parameterSummary: some ParameterSummary { Summary("Play \(\.$query)") }
+    static var parameterSummary: some ParameterSummary { Summary("Play \(\.$surah)") }
 
     @Parameter(
         title: "Surah",
         requestValueDialog: IntentDialog("Which surah would you like to play? You can say a name or a number.")
     )
-    var query: String
+    var surah: SurahEntity
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let normalizedQuery = query.normalizedSurahIntentQuery
-
-        guard !normalizedQuery.isEmpty else {
-            return .result(dialog: "Please provide a surah name or number.")
-        }
-
-        if let surah = QuranPlaybackRouter.matchedSurah(for: normalizedQuery) {
-            let didStart = await QuranPlaybackRouter.play(surahID: surah.id, name: surah.nameTransliteration)
-            return .result(dialog: didStart
-                ? IntentDialog("Playing Surah \(surah.id): \(surah.nameTransliteration).")
-                : IntentDialog("Sorry, there was a problem starting playback."))
-        }
-
-        return .result(dialog: "Sorry, I couldn't find a match for “\(query)”.")
+        let didStart = await QuranPlaybackRouter.play(surahID: surah.id, name: surah.name)
+        return .result(dialog: didStart
+            ? IntentDialog("Playing Surah \(surah.id): \(surah.name).")
+            : IntentDialog("Sorry, there was a problem starting playback."))
     }
 }
 

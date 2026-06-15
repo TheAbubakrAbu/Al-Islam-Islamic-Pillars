@@ -2,6 +2,7 @@ import SwiftUI
 import os
 import Adhan
 import CoreLocation
+import WidgetKit
 
 let logger = Logger(subsystem: AppIdentifiers.bundleIdentifier, category: "Settings")
 
@@ -582,6 +583,72 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
                 lastListenedSurahData = nil
             }
         }
+    }
+
+    /// Rebuilds the App Group payload the Quran widgets read (last read ayah, last listened surah, and a
+    /// pool of safe random ayahs) and reloads their timelines. Runs only in the main app — the widget
+    /// extension just consumes the snapshot. Cheap to call from lifecycle/save hooks.
+    func refreshQuranWidgets() {
+        guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+        let data = QuranData.shared
+        guard !data.quran.isEmpty else { return }
+
+        // Preserve the existing random pool so this stays cheap when called frequently (e.g. on every
+        // surah navigation) — the widget rotates through the pool over time for variety.
+        var snapshot = QuranWidgetStore.load() ?? QuranWidgetSnapshot()
+        snapshot.lastRead = nil
+
+        if lastReadSurah > 0, lastReadAyah > 0,
+           let surah = data.quran.first(where: { $0.id == lastReadSurah }),
+           let ayah = surah.ayahs.first(where: { $0.id == lastReadAyah }) {
+            snapshot.lastRead = quranWidgetAyahCard(surah: surah, ayah: ayah)
+        }
+
+        if let listened = lastListenedSurah {
+            snapshot.lastListened = QuranWidgetSnapshot.ListenCard(
+                name: listened.surahName,
+                reciter: listened.reciter.displayNameForNowPlaying,
+                current: listened.currentDuration,
+                full: listened.fullDuration
+            )
+        }
+
+        if snapshot.randomPool.isEmpty {
+            snapshot.randomPool = buildQuranWidgetRandomPool(from: data)
+        }
+
+        QuranWidgetStore.save(snapshot)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Builds a widget ayah card with the Arabic rendered per the user's display settings (clean text /
+    /// dots) and tagged with the selected Arabic font so the widget can match the in-app look.
+    private func quranWidgetAyahCard(surah: Surah, ayah: Ayah) -> QuranWidgetSnapshot.AyahCard {
+        QuranWidgetSnapshot.AyahCard(
+            arabic: ayah.displayArabicText(surahId: surah.id, clean: cleanArabicText),
+            reference: "Surah \(surah.id):\(ayah.id) • \(surah.nameTransliteration)",
+            english: ayah.textEnglishSaheeh,
+            fontName: fontArabic
+        )
+    }
+
+    private func buildQuranWidgetRandomPool(from data: QuranData, count: Int = 20) -> [QuranWidgetSnapshot.AyahCard] {
+        let blockedWords = ["kill", "killing", "fight", "fighting", "violence", "violent", "murder", "slay", "slaughter", "battle", "war"]
+        func isSafe(_ ayah: Ayah) -> Bool {
+            let combined = [ayah.textEnglishSaheeh, ayah.textEnglishMustafa, ayah.textTransliteration]
+                .joined(separator: " ").lowercased()
+            return !blockedWords.contains(where: { combined.contains($0) })
+        }
+
+        var cards: [QuranWidgetSnapshot.AyahCard] = []
+        var attempts = 0
+        while cards.count < count, attempts < count * 8 {
+            attempts += 1
+            guard let surah = data.quran.randomElement(),
+                  let ayah = surah.ayahs.filter(isSafe).randomElement() else { continue }
+            cards.append(quranWidgetAyahCard(surah: surah, ayah: ayah))
+        }
+        return cards
     }
 
     /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
