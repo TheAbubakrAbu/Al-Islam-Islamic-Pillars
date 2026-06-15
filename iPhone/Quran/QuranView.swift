@@ -765,7 +765,9 @@ struct QuranView: View {
 
             Button {
                 settings.hapticFeedback()
-                settings.removeQuranSearchHistory(query)
+                withAnimation(.easeInOut) {
+                    settings.removeQuranSearchHistory(query)
+                }
             } label: {
                 Image(systemName: "xmark")
                     .font(.caption2.bold())
@@ -1484,6 +1486,9 @@ struct QuranView: View {
             }
         } header: {
             Text("KHATM PROGRESS")
+        }
+        .onChange(of: settings.automaticKhatmCompletion) { _ in
+            settings.hapticFeedback()
         }
         .onReceive(settings.objectWillChange) { _ in
             computeKhatmStatsIfNeeded(force: false)

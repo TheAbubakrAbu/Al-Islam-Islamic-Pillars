@@ -308,7 +308,9 @@ struct AyahRow: View, Equatable {
                     if shouldShowManualKhatmButton {
                         Button {
                             settings.hapticFeedback()
-                            settings.markKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
+                            withAnimation(.easeInOut) {
+                                settings.markKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
+                            }
                         } label: {
                             Image(systemName: "checkmark.circle")
                                 .resizable()
@@ -864,7 +866,9 @@ struct AyahRow: View, Equatable {
             if !currentNote.isEmpty {
                 Button(role: .destructive) {
                     settings.hapticFeedback()
-                    removeNote()
+                    withAnimation(.easeInOut) {
+                        removeNote()
+                    }
                 } label: {
                     Label("Remove Note", systemImage: "minus.circle")
                 }

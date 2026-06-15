@@ -149,6 +149,7 @@ private struct DuaCollectionView: View {
                 }
                 .pickerStyle(.segmented)
                 .conditionalGlassEffect()
+                .onChange(of: settings.useFontArabic) { _ in settings.hapticFeedback() }
 
                 SearchBar(text: $searchText.animation(.easeInOut))
                     .padding([.horizontal, .top], -8)

@@ -192,6 +192,7 @@ struct ArabicView: View {
         .pickerStyle(.segmented)
         #endif
         .conditionalGlassEffect()
+        .onChange(of: settings.useFontArabic) { _ in settings.hapticFeedback() }
     }
 
     private func letterRow(for letterData: LetterData) -> some View {
@@ -557,6 +558,7 @@ struct ArabicLetterView: View {
         .pickerStyle(.segmented)
         #endif
         .conditionalGlassEffect()
+        .onChange(of: settings.useFontArabic) { _ in settings.hapticFeedback() }
     }
 
     @ViewBuilder
@@ -896,7 +898,9 @@ struct ArabicLetterRow: View, Equatable {
     private func favButton() -> some View {
         Button {
             settings.hapticFeedback()
-            settings.toggleLetterFavorite(letterData: letterData)
+            withAnimation(.easeInOut) {
+                settings.toggleLetterFavorite(letterData: letterData)
+            }
         } label: {
             Image(systemName: isFavorite ? "star.fill" : "star")
         }
@@ -911,22 +915,24 @@ struct ArabicLetterRow: View, Equatable {
 
         Button(role: isFavorite ? .destructive : nil) {
             settings.hapticFeedback()
-            settings.toggleLetterFavorite(letterData: letterData)
+            withAnimation(.easeInOut) {
+                settings.toggleLetterFavorite(letterData: letterData)
+            }
         } label: {
             Label(isFavorite ? "Unfavorite Letter" : "Favorite Letter",
                   systemImage: isFavorite ? "star.fill" : "star")
         }
 
         Button {
-            UIPasteboard.general.string = letterData.letter
             settings.hapticFeedback()
+            UIPasteboard.general.string = letterData.letter
         } label: {
             Label("Copy Letter", systemImage: "doc.on.doc")
         }
 
         Button {
-            UIPasteboard.general.string = letterData.transliteration
             settings.hapticFeedback()
+            UIPasteboard.general.string = letterData.transliteration
         } label: {
             Label("Copy Transliteration", systemImage: "doc.on.doc")
         }

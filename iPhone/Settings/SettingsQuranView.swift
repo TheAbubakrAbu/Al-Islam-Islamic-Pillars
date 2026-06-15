@@ -146,6 +146,7 @@ struct SettingsQuranView: View {
             }
         }
         .font(.subheadline)
+        .onChange(of: settings.reciteType) { _ in settings.hapticFeedback() }
     }
 
     @ViewBuilder
@@ -164,6 +165,7 @@ struct SettingsQuranView: View {
             VStack(alignment: .leading) {
                 Toggle("Show Full Surah Details", isOn: $settings.showFullSurahRow.animation(.easeInOut))
                     .font(.subheadline)
+                    .onChange(of: settings.showFullSurahRow) { _ in settings.hapticFeedback() }
 
                 Text("Adds extra details — revelation type, ayah count, page count, and more — beneath each surah in the main Quran list, the screen where all the surahs are shown.")
                     .font(.caption)
@@ -184,6 +186,7 @@ struct SettingsQuranView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle("Save Last Read Ayah", isOn: $settings.saveLastReadAyah.animation(.easeInOut))
                     .font(.subheadline)
+                    .onChange(of: settings.saveLastReadAyah) { _ in settings.hapticFeedback() }
 
                 Text("Remembers and shows the last ayah you were reading at the top of the Quran tab.")
                     .font(.caption)
@@ -194,6 +197,7 @@ struct SettingsQuranView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle("Save Last Listened Surah", isOn: $settings.saveLastListenedSurah.animation(.easeInOut))
                     .font(.subheadline)
+                    .onChange(of: settings.saveLastListenedSurah) { _ in settings.hapticFeedback() }
 
                 Text("Remembers and shows the last surah you were listening to at the top of the Quran tab.")
                     .font(.caption)
@@ -208,6 +212,7 @@ struct SettingsQuranView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
                     .font(.subheadline)
+                    .onChange(of: settings.showPageJuzDividers) { _ in settings.hapticFeedback() }
 
                 Text("Shows a divider inside a surah wherever a new mushaf page or juz begins.")
                     .font(.caption)
@@ -219,6 +224,7 @@ struct SettingsQuranView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Toggle("Show Floating Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
                         .font(.subheadline)
+                        .onChange(of: settings.showPageJuzOverlay) { _ in settings.hapticFeedback() }
 
                     Text("Shows a small floating label with the current page and juz while you read inside a specific surah.")
                         .font(.caption)
@@ -239,6 +245,7 @@ struct SettingsQuranView: View {
             VStack(alignment: .leading) {
                 Toggle("Ignore Silent Letters in Ayah Search", isOn: $settings.ignoreSilentLettersInQuranSearch.animation(.easeInOut))
                     .font(.subheadline)
+                    .onChange(of: settings.ignoreSilentLettersInQuranSearch) { _ in settings.hapticFeedback() }
 
                 Text("Arabic ayah search also checks a recitation-style version with silent letters removed, such as hamzatul wasl and silent alif, waw, ya, or lam.")
                     .font(.caption)
@@ -290,6 +297,7 @@ struct SettingsQuranView: View {
         Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
             .font(.subheadline)
             .disabled(!settings.showTransliteration && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
+            .onChange(of: settings.showArabicText) { _ in settings.hapticFeedback() }
     }
 
     private var highlightAllahGroup: some View {
@@ -297,6 +305,7 @@ struct SettingsQuranView: View {
             Toggle("Highlight Allah", isOn: $settings.highlightAllahNames.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!settings.showArabicText)
+                .onChange(of: settings.highlightAllahNames) { _ in settings.hapticFeedback() }
 
             Text("Colors the majestic and glorius name الله (Allah) in red throughout the Quran.")
                 .font(.caption)
@@ -317,6 +326,7 @@ struct SettingsQuranView: View {
             Toggle("Show Tajweed Colors", isOn: tajweedToggleBinding.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!tajweedCanRenderNow)
+                .onChange(of: settings.showTajweedColors) { _ in settings.hapticFeedback() }
 
             #if os(iOS)
             NavigationLink(destination: TajweedLegendView(showsDismissButton: false)) {
@@ -351,6 +361,7 @@ struct SettingsQuranView: View {
             Toggle("Hide Arabic Tashkeel (Vowel Diacritics) and Signs", isOn: cleanArabicTextBinding.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!settings.showArabicText)
+                .onChange(of: settings.cleanArabicText) { _ in settings.hapticFeedback() }
 
             #if os(iOS)
             Text("This option removes Tashkeel (like Fatha, Damma, Kasra, and others), while keeping vowel letters like Alif, Yaa, and Waw. It also adjusts \"Mad\" letters and the \"Hamzatul Wasl,\" and removes tiny vowel letters, stopping signs, chapter markers, and prayer indicators. This option is not recommended.")
@@ -363,6 +374,7 @@ struct SettingsQuranView: View {
                 Toggle("Hide Arabic Dots", isOn: $settings.removeArabicDots.animation(.easeInOut))
                     .font(.subheadline)
                     .disabled(!settings.showArabicText)
+                    .onChange(of: settings.removeArabicDots) { _ in settings.hapticFeedback() }
 
                 #if os(iOS)
                 Text("This removes Arabic dots, such as turning ب into ٮ. It is very difficult to read and is not recommended for beginners, but it allows you to experience how some of the earliest Muslims read and wrote the Quran in early manuscripts such as the Birmingham Manuscript.")
@@ -383,6 +395,7 @@ struct SettingsQuranView: View {
         .pickerStyle(SegmentedPickerStyle())
         #endif
         .disabled(!settings.showArabicText)
+        .onChange(of: settings.fontArabic) { _ in settings.hapticFeedback() }
     }
 
     private var arabicFontSizeControls: some View {
@@ -401,6 +414,7 @@ struct SettingsQuranView: View {
             Toggle("Enable Arabic Beginner Mode", isOn: $settings.beginnerMode.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!settings.showArabicText)
+                .onChange(of: settings.beginnerMode) { _ in settings.hapticFeedback() }
 
             Text("Puts a space between each Arabic letter to make it easier for beginners to read the Quran.")
                 .font(.caption)
@@ -429,14 +443,17 @@ struct SettingsQuranView: View {
             Toggle("Show Transliteration", isOn: $settings.showTransliteration.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!settings.showArabicText && !settings.showEnglishSaheeh && !settings.showEnglishMustafa)
+                .onChange(of: settings.showTransliteration) { _ in settings.hapticFeedback() }
 
             Toggle("Show English Translation\nSaheeh International", isOn: $settings.showEnglishSaheeh.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishMustafa)
+                .onChange(of: settings.showEnglishSaheeh) { _ in settings.hapticFeedback() }
 
             Toggle("Show English Translation\nClear Quran (Mustafa Khattab)", isOn: $settings.showEnglishMustafa.animation(.easeInOut))
                 .font(.subheadline)
                 .disabled(!settings.showArabicText && !settings.showTransliteration && !settings.showEnglishSaheeh)
+                .onChange(of: settings.showEnglishMustafa) { _ in settings.hapticFeedback() }
         }
     }
 
@@ -522,6 +539,7 @@ struct SettingsQuranView: View {
             useSimpleIOSPicker: true
         )
         .font(.subheadline)
+        .onChange(of: settings.displayQiraah) { _ in settings.hapticFeedback() }
     }
 
     private var qiraahExplanation: some View {
@@ -561,6 +579,7 @@ struct SettingsQuranView: View {
         VStack(alignment: .leading) {
             Toggle("Comparison mode", isOn: $settings.qiraatComparisonMode.animation(.easeInOut))
                 .font(.subheadline)
+                .onChange(of: settings.qiraatComparisonMode) { _ in settings.hapticFeedback() }
 
             Text("When on, the ayah view shows a riwayah picker above the search bar so you can switch and compare qiraat in that screen.")
                 .font(.caption)
@@ -1167,6 +1186,7 @@ struct ReciterListView: View {
                             Text("Downloaded Only").tag(true)
                         }
                         .pickerStyle(.segmented)
+                        .onChange(of: showDownloadedOnly) { _ in settings.hapticFeedback() }
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Downloads are full-reciter packages (all 114 surahs).")

@@ -26,7 +26,9 @@ struct SurahContextMenu: View {
     var body: some View {
         Button(role: isFavorite ? .destructive : .cancel) {
             settings.hapticFeedback()
-            settings.toggleSurahFavorite(surah: surahID)
+            withAnimation(.easeInOut) {
+                settings.toggleSurahFavorite(surah: surahID)
+            }
         } label: {
             Label(
                 isFavorite ? "Unfavorite Surah" : "Favorite Surah",
@@ -284,6 +286,7 @@ struct AyahTafsirSheet: View {
                             }
                             .pickerStyle(.segmented)
                             .animation(.easeInOut, value: selectedAuthor)
+                            .onChange(of: selectedAuthor) { _ in settings.hapticFeedback() }
 
                             if let tafsirText = selectedTafsirText {
                                 VStack(alignment: .leading, spacing: 12) {
@@ -1257,7 +1260,9 @@ struct AyahContextMenuModifier: ViewModifier {
                 if !currentNote.isEmpty {
                     Button(role: .destructive) {
                         settings.hapticFeedback()
-                        removeNote()
+                        withAnimation(.easeInOut) {
+                            removeNote()
+                        }
                     } label: {
                         Label("Remove Note", systemImage: "minus.circle")
                     }
@@ -1497,7 +1502,9 @@ struct LeftSwipeActions: ViewModifier {
             .swipeActions(edge: .leading) {
                 Button {
                     settings.hapticFeedback()
-                    settings.toggleSurahFavorite(surah: surah)
+                    withAnimation(.easeInOut) {
+                        settings.toggleSurahFavorite(surah: surah)
+                    }
                 } label: {
                     Image(systemName: isFavorite ? "star.fill" : "star")
                 }

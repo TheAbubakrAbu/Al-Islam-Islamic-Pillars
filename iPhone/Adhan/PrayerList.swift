@@ -144,6 +144,7 @@ struct PrayerList: View {
             .font(.caption2)
             .pickerStyle(MenuPickerStyle())
             .padding(.vertical, -12)
+            .onChange(of: prayerDisplayModeRawValue) { _ in settings.hapticFeedback() }
             #endif
         }
     }
@@ -405,6 +406,7 @@ struct PrayerList: View {
             }
         }
         .onChange(of: selectedDate) { value in
+            settings.hapticFeedback()
             updateDisplayedDate(to: value)
         }
         #endif

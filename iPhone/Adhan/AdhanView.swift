@@ -172,48 +172,74 @@ struct AdhanView: View {
         switch showAlert {
         case .travelTurnOnAutomatic:
             Button("Override: Turn Off", role: .destructive) {
-                settings.overrideTravelingMode(keepOn: false)
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    settings.overrideTravelingMode(keepOn: false)
+                }
             }
 
             Button("Confirm: Keep On", role: .cancel) {
-                settings.confirmTravelAutomaticChange()
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    settings.confirmTravelAutomaticChange()
+                }
             }
 
         case .travelTurnOffAutomatic:
             Button("Override: Keep On", role: .destructive) {
-                settings.overrideTravelingMode(keepOn: true)
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    settings.overrideTravelingMode(keepOn: true)
+                }
             }
 
             Button("Confirm: Turn Off", role: .cancel) {
-                settings.confirmTravelAutomaticChange()
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    settings.confirmTravelAutomaticChange()
+                }
             }
 
         case .calculationAutomaticChanged:
             Button("Override: Keep \(settings.calculationAutoPreviousMethod)", role: .destructive) {
-                settings.overrideAutomaticCalculationKeepingPrevious()
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    settings.overrideAutomaticCalculationKeepingPrevious()
+                }
             }
 
             Button("Confirm: Use \(settings.calculationAutoDetectedMethod)", role: .cancel) {
-                settings.confirmAutomaticCalculationChange()
+                settings.hapticFeedback()
+                withAnimation(.easeInOut) {
+                    settings.confirmAutomaticCalculationChange()
+                }
             }
 
         case .locationAlert:
             Button("Open Settings") {
+                settings.hapticFeedback()
                 openAppSettings()
             }
             Button("Never Ask Again", role: .destructive) {
+                settings.hapticFeedback()
                 settings.locationNeverAskAgain = true
             }
-            Button("Ignore", role: .cancel) { }
+            Button("Ignore", role: .cancel) {
+                settings.hapticFeedback()
+            }
 
         case .notificationAlert:
             Button("Open Settings") {
+                settings.hapticFeedback()
                 openAppSettings()
             }
             Button("Never Ask Again", role: .destructive) {
+                settings.hapticFeedback()
                 settings.notificationNeverAskAgain = true
             }
-            Button("Ignore", role: .cancel) { }
+            Button("Ignore", role: .cancel) {
+                settings.hapticFeedback()
+            }
 
         case .none:
             EmptyView()

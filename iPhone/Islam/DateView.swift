@@ -131,6 +131,7 @@ struct DateView: View {
         #if os(iOS)
         .pickerStyle(.segmented)
         #endif
+        .onChange(of: selectedTab) { _ in settings.hapticFeedback() }
     }
 
     private func formatted(_ date: Date, using calendar: Calendar) -> String {

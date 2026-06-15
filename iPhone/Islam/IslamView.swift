@@ -188,7 +188,9 @@ struct IslamView: View {
     ) -> some View {
         Button {
             settings.hapticFeedback()
-            selectedResource = value
+            withAnimation(.easeInOut) {
+                selectedResource = value
+            }
         } label: {
             toolLabel(title, systemImage: systemImage)
         }

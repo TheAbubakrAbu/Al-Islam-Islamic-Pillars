@@ -461,7 +461,9 @@ struct SurahAyahRow: View {
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 settings.hapticFeedback()
-                settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                withAnimation(.easeInOut) {
+                    settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                }
             }
             Button("Cancel") {}
         } message: {
@@ -1276,7 +1278,9 @@ struct AyahSearchRow: View, Equatable {
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 settings.hapticFeedback()
-                settings.toggleBookmark(surah: surah, ayah: ayah)
+                withAnimation(.easeInOut) {
+                    settings.toggleBookmark(surah: surah, ayah: ayah)
+                }
             }
             Button("Cancel") {}
         } message: {

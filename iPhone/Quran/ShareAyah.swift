@@ -27,7 +27,8 @@ struct ShareAyahSheet: View {
     @State private var actionMode: ActionMode = .image
     
     @State private var didInit = false
-    
+    @State private var didFinishInitialSetup = false
+
     @State private var generatedImage: UIImage?
     @State private var activityItems: [Any] = []
     @State private var showingActivityView = false
@@ -742,19 +743,36 @@ struct ShareAyahSheet: View {
                 actionMode = ActionMode(rawValue: storedActionModeRaw) ?? .image
                 generatePreviewImage()
             }
+
+            DispatchQueue.main.async {
+                didFinishInitialSetup = true
+            }
         }
 
         .onChange(of: actionMode) { newValue in
+            if didFinishInitialSetup { settings.hapticFeedback() }
             storedActionModeRaw = newValue.rawValue
             isGeneratingImage = false
             if newValue == .image && generatedImage == nil {
                 generatePreviewImage()
             }
         }
-        .onChange(of: shareSettings) { _ in generatePreviewImage() }
-        .onChange(of: settings.showSurahInformation) { _ in generatePreviewImage() }
-        .onChange(of: settings.showAyahInformation) { _ in generatePreviewImage() }
-        .onChange(of: includeNote) { _ in generatePreviewImage() }
+        .onChange(of: shareSettings) { _ in
+            if didFinishInitialSetup { settings.hapticFeedback() }
+            generatePreviewImage()
+        }
+        .onChange(of: settings.showSurahInformation) { _ in
+            if didFinishInitialSetup { settings.hapticFeedback() }
+            generatePreviewImage()
+        }
+        .onChange(of: settings.showAyahInformation) { _ in
+            if didFinishInitialSetup { settings.hapticFeedback() }
+            generatePreviewImage()
+        }
+        .onChange(of: includeNote) { _ in
+            if didFinishInitialSetup { settings.hapticFeedback() }
+            generatePreviewImage()
+        }
         .onChange(of: shareIncludeRiwayah) { _ in generatePreviewImage() }
         .onChange(of: settings.showQiraahDetails) { show in
             if !show {
@@ -806,9 +824,13 @@ struct ShareAyahSheet: View {
             Text("Copy")
                 .foregroundStyle(.secondary)
 
-            Button { UIPasteboard.general.string = shareText }  label: { Label("Copy Text", systemImage: "doc.on.doc") }
+            Button {
+                settings.hapticFeedback()
+                UIPasteboard.general.string = shareText
+            } label: { Label("Copy Text", systemImage: "doc.on.doc") }
             if let image {
                 Button {
+                    settings.hapticFeedback()
                     UIPasteboard.general.image = image
                 } label: { Label("Copy Image", systemImage: "doc.on.doc.fill") }
             }

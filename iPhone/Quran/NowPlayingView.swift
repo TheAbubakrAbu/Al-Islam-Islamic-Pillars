@@ -389,7 +389,9 @@ struct NowPlayingView: View {
         if !quranPlayer.surahQueue.isEmpty {
             Button(role: .destructive) {
                 settings.hapticFeedback()
-                quranPlayer.clearSurahQueue()
+                withAnimation(.easeInOut) {
+                    quranPlayer.clearSurahQueue()
+                }
             } label: {
                 Label("Clear Queue (\(quranPlayer.surahQueue.count))", systemImage: "text.badge.xmark")
             }
@@ -399,7 +401,9 @@ struct NowPlayingView: View {
 
         Button(role: isFavorite ? .destructive : nil) {
             settings.hapticFeedback()
-            settings.toggleSurahFavorite(surah: context.surah.id)
+            withAnimation(.easeInOut) {
+                settings.toggleSurahFavorite(surah: context.surah.id)
+            }
         } label: {
             Label(
                 isFavorite ? "Unfavorite Surah" : "Favorite Surah",

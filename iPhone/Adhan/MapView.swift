@@ -149,9 +149,9 @@ struct MapView: View {
                     }
                 }
                 .confirmationDialog("Location Access Denied", isPresented: $showAlert) {
-                    Button("Open Settings") { openSettings() }
-                    Button("Never Ask Again", role: .destructive) { settings.locationNeverAskAgain = true }
-                    Button("Ignore", role: .cancel) { }
+                    Button("Open Settings") { settings.hapticFeedback(); openSettings() }
+                    Button("Never Ask Again", role: .destructive) { settings.hapticFeedback(); settings.locationNeverAskAgain = true }
+                    Button("Ignore", role: .cancel) { settings.hapticFeedback() }
                 } message: {
                     Text("Please enable location services to accurately determine prayer times.")
                 }

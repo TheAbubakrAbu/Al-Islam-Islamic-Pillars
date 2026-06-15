@@ -244,6 +244,7 @@ struct NamesView: View {
                 }
                 .pickerStyle(.segmented)
                 .conditionalGlassEffect()
+                .onChange(of: settings.useFontArabic) { _ in settings.hapticFeedback() }
                 
                 SearchBar(text: $searchText.animation(.easeInOut))
                     .padding([.horizontal, .top], -8)
@@ -267,6 +268,7 @@ struct NamesView: View {
             Toggle("Show All Descriptions", isOn: showAllDescriptionsBinding)
                 .font(.caption)
                 .tint(settings.accentColor.color)
+                .onChange(of: settings.showDescription) { _ in settings.hapticFeedback() }
         }
     }
 
@@ -519,7 +521,9 @@ private struct NameRow: View, Equatable {
             .swipeActions(edge: .leading) {
                 Button {
                     settings.hapticFeedback()
-                    settings.toggleNameFavorite(number: name.number)
+                    withAnimation(.easeInOut) {
+                        settings.toggleNameFavorite(number: name.number)
+                    }
                 } label: {
                     Image(systemName: isFavorite ? "star.fill" : "star")
                 }
@@ -528,7 +532,9 @@ private struct NameRow: View, Equatable {
             .swipeActions(edge: .trailing) {
                 Button {
                     settings.hapticFeedback()
-                    settings.toggleNameFavorite(number: name.number)
+                    withAnimation(.easeInOut) {
+                        settings.toggleNameFavorite(number: name.number)
+                    }
                 } label: {
                     Image(systemName: isFavorite ? "star.fill" : "star")
                 }
@@ -618,7 +624,9 @@ private struct NameRow: View, Equatable {
     private var favoriteMenuItem: some View {
         Button(role: isFavorite ? .destructive : nil) {
             settings.hapticFeedback()
-            settings.toggleNameFavorite(number: name.number)
+            withAnimation(.easeInOut) {
+                settings.toggleNameFavorite(number: name.number)
+            }
         } label: {
             Label(isFavorite ? "Unfavorite" : "Favorite", systemImage: isFavorite ? "star.fill" : "star")
         }

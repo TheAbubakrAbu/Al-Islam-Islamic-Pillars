@@ -454,6 +454,7 @@ struct SettingsAppearanceView: View {
         }
         .font(.subheadline)
         .pickerStyle(SegmentedPickerStyle())
+        .onChange(of: settings.colorSchemeString) { _ in settings.hapticFeedback() }
         #endif
         
         VStack(alignment: .leading) {
@@ -494,7 +495,8 @@ struct SettingsAppearanceView: View {
         VStack(alignment: .leading) {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)
-            
+                .onChange(of: settings.defaultView) { _ in settings.hapticFeedback() }
+
             Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting applies everywhere in the app except here in Settings.")
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -505,6 +507,7 @@ struct SettingsAppearanceView: View {
         VStack(alignment: .leading) {
             Toggle("Haptic Feedback", isOn: $settings.hapticOn.animation(.easeInOut))
                 .font(.subheadline)
+                .onChange(of: settings.hapticOn) { _ in settings.hapticFeedback() }
         }
     }
 }

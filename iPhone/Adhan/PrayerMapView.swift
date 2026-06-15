@@ -64,7 +64,7 @@ struct PrayerTimesMapView: View {
         .onAppear { refreshPrayers() }
         .onChange(of: selectedDate) { _ in refreshPrayers() }
         .onChange(of: selectedLocation) { _ in refreshPrayers() }
-        .onChange(of: showCityTime) { _ in refreshTimeZones() }
+        .onChange(of: showCityTime) { _ in settings.hapticFeedback(); refreshTimeZones() }
         .onChange(of: settings.currentLocation) { _ in
             refreshPrayers()
         }
@@ -226,6 +226,7 @@ struct PrayerTimesMapView: View {
                 }
                 .tint(settings.accentColor.color)
                 .disabled(!canCompareAutomaticLocation)
+                .onChange(of: compareAutomaticLocation) { _ in settings.hapticFeedback() }
             } header: {
                 Text("Compare")
             } footer: {

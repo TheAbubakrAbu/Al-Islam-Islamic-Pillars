@@ -756,8 +756,18 @@ struct SurahView: View {
         .environmentObject(quranPlayer)
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { phase in
-            guard phase != .active else { return }
-            saveLastRead()
+            switch phase {
+            case .inactive:
+                // Pulling Control Center / Notification Center down briefly flips the scene to `.inactive`.
+                // Only remember the current spot in memory here — writing `settings.lastRead*` (@AppStorage)
+                // republishes the view tree and can reconstruct this screen mid-scroll, jumping the user
+                // away from where they were. The in-memory anchor is enough to restore on re-appear.
+                rememberCurrentVisibleAyah()
+            case .background:
+                saveLastRead()
+            default:
+                break
+            }
         }
         #if os(iOS)
         .toolbar {
@@ -1294,16 +1304,13 @@ struct SurahView: View {
             #endif
             .onAppear {
                 rebuildQiraahCaches()
-                // An explicit target ayah (opened from a search result / deep link) is the user's intent and
-                // must win over any remembered scroll position. Only fall back to the remembered position when
-                // opened without a target (e.g. from the surah list, to continue reading where you left off).
-                if let sel = ayah, ayahByID[sel] != nil {
-                    firstVisibleAyahID = sel
-                    if !didScrollDown {
-                        didScrollDown = true
-                        scrollToAyah(sel, proxy: proxy)
-                    }
-                } else if let restoreTarget = rememberedVisibleAyahID() {
+                // A remembered position (saved as the user scrolled / when the scene went inactive) reflects
+                // where they actually were, so it must win on re-appear — otherwise a reconstruction would
+                // yank them back up to the originally-opened ayah. The explicit `ayah` target only applies on
+                // a genuine first open, when no position has been remembered for this route yet.
+                let restoreTarget = rememberedVisibleAyahID()
+                    ?? ayah.flatMap { ayahByID[$0] != nil ? $0 : nil }
+                if let restoreTarget {
                     firstVisibleAyahID = restoreTarget
                     if !didScrollDown {
                         didScrollDown = true
@@ -1851,14 +1858,23 @@ struct SurahView: View {
     }
     #endif
     
-    private func saveLastRead() {
-        let topVisible = visibleAyahIDs.min()
-        let targetAyah = topVisible
+    /// The ayah currently anchored at the top of the screen (falling back through the last known anchor).
+    private func currentReadingAyahID() -> Int? {
+        visibleAyahIDs.min()
             ?? firstVisibleAyahID
             ?? ayah
             ?? cachedAyahsForQiraah.first?.id
+    }
 
-        guard let targetAyah else { return }
+    /// Cheap, in-memory only: records where the user is so a re-appear (e.g. after Control Center) can
+    /// restore the spot without the expensive `settings` write that `saveLastRead()` performs.
+    private func rememberCurrentVisibleAyah() {
+        guard let targetAyah = currentReadingAyahID() else { return }
+        rememberVisibleAyahID(targetAyah)
+    }
+
+    private func saveLastRead() {
+        guard let targetAyah = currentReadingAyahID() else { return }
         rememberVisibleAyahID(targetAyah)
 
         guard settings.saveLastReadAyah else { return }
@@ -2092,7 +2108,7 @@ struct ArabicTextRiwayahPicker: View {
     var body: some View {
         #if os(iOS)
         if useSimpleIOSPicker {
-            Picker("Arabic Riwayah", selection: $selection) {
+            Picker("Arabic Riwayah", selection: $selection.animation(.easeInOut)) {
                 ForEach(Settings.Riwayah.groups) { group in
                     Section {
                         ForEach(group.options, id: \.tag) { option in
@@ -2104,6 +2120,7 @@ struct ArabicTextRiwayahPicker: View {
                     }
                 }
             }
+            .onChange(of: selection) { _ in settings.hapticFeedback() }
         } else {
             Menu {
                 Text("Arabic Riwayah")
@@ -2132,7 +2149,7 @@ struct ArabicTextRiwayahPicker: View {
             }
         }
         #else
-        Picker("Arabic Riwayah", selection: $selection) {
+        Picker("Arabic Riwayah", selection: $selection.animation(.easeInOut)) {
             ForEach(Settings.Riwayah.groups) { group in
                 Section {
                     ForEach(group.options, id: \.tag) { option in
@@ -2144,12 +2161,14 @@ struct ArabicTextRiwayahPicker: View {
                 }
             }
         }
+        .onChange(of: selection) { _ in settings.hapticFeedback() }
         #endif
     }
 
     @ViewBuilder
     private func qiraahButton(_ option: Settings.Riwayah.Option) -> some View {
         Button {
+            settings.hapticFeedback()
             withAnimation {
                 selection = option.tag
             }

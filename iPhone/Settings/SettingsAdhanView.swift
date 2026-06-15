@@ -124,28 +124,34 @@ struct SettingsAdhanView: View {
             switch showAlert {
             case .travelTurnOnAutomatic:
                 Button("Override: Turn Off", role: .destructive) {
+                    settings.hapticFeedback()
                     settings.overrideTravelingMode(keepOn: false)
                 }
-                
+
                 Button("Confirm: Keep On", role: .cancel) {
+                    settings.hapticFeedback()
                     settings.confirmTravelAutomaticChange()
                 }
-                
+
             case .travelTurnOffAutomatic:
                 Button("Override: Keep On", role: .destructive) {
+                    settings.hapticFeedback()
                     settings.overrideTravelingMode(keepOn: true)
                 }
-                
+
                 Button("Confirm: Turn Off", role: .cancel) {
+                    settings.hapticFeedback()
                     settings.confirmTravelAutomaticChange()
                 }
 
             case .calculationAutomaticChanged:
                 Button("Override: Keep \(settings.calculationAutoPreviousMethod)", role: .destructive) {
+                    settings.hapticFeedback()
                     settings.overrideAutomaticCalculationKeepingPrevious()
                 }
 
                 Button("Confirm: Use \(settings.calculationAutoDetectedMethod)", role: .cancel) {
+                    settings.hapticFeedback()
                     settings.confirmAutomaticCalculationChange()
                 }
                 
@@ -224,6 +230,7 @@ struct SettingsAdhanView: View {
         }
         .font(.subheadline)
         .tint(settings.accentColor.color)
+        .onChange(of: isOn.wrappedValue) { _ in settings.hapticFeedback() }
     }
 
     private var prayerCalculationSection: some View {
@@ -238,6 +245,7 @@ struct SettingsAdhanView: View {
         Toggle("Automatic Prayer Calculation", isOn: $settings.calculationAutomatic.animation(.easeInOut))
             .font(.subheadline)
             .tint(settings.accentColor.color)
+            .onChange(of: settings.calculationAutomatic) { _ in settings.hapticFeedback() }
     }
 
     private var calculationPickerGroup: some View {
@@ -255,6 +263,7 @@ struct SettingsAdhanView: View {
             }
             .font(.subheadline)
             .disabled(settings.calculationAutomatic)
+            .onChange(of: settings.prayerCalculation) { _ in settings.hapticFeedback() }
 
             Text("Fajr and Isha timings vary by calculation method, as they are based on twilight. If automatic mode is on, \(AppIdentifiers.appName) picks a method based on your location (for example, North America or Turkey). If your country is not mapped, it defaults to Muslim World League.")
                 .font(.caption)
@@ -281,6 +290,7 @@ struct SettingsAdhanView: View {
             Toggle("Hanafi Calculation for Asr", isOn: $settings.hanafiMadhab.animation(.easeInOut))
                 .font(.subheadline)
                 .tint(settings.accentColor.color)
+                .onChange(of: settings.hanafiMadhab) { _ in settings.hapticFeedback() }
 
             Text("The Hanafi madhab uses the shadow ratio of 2 to 1 for Asr, while many other schools use 1 to 1. Enable this only if you follow the Hanafi method.")
                 .font(.caption)
@@ -332,6 +342,7 @@ struct SettingsAdhanView: View {
         Toggle("Automatic Traveling Mode", isOn: $settings.travelAutomatic.animation(.easeInOut))
             .font(.subheadline)
             .tint(settings.accentColor.color)
+            .onChange(of: settings.travelAutomatic) { _ in settings.hapticFeedback() }
         #endif
     }
 
@@ -341,6 +352,7 @@ struct SettingsAdhanView: View {
                 .font(.subheadline)
                 .tint(settings.accentColor.color)
                 .disabled(settings.travelAutomatic && !isWatch)
+                .onChange(of: settings.travelingMode) { _ in settings.hapticFeedback() }
 
             #if os(iOS)
             Text("If you are traveling more than 48 mi (77.25 km), then it is obligatory to pray Qasr, where you combine Dhuhr and Asr (2 rakahs each) and Maghrib and Isha (3 and 2 rakahs). Allah said in the Quran, “When you travel through the land, it is permissible for you to shorten the prayer” [Quran 4:101]. \(settings.travelAutomatic ? "This feature turns on and off automatically, but you can also control it manually here." : "You can control traveling mode manually here.")")
@@ -437,6 +449,7 @@ struct PrayerOffsetsView: View {
                 Toggle("Switch Hijri Date at Maghrib", isOn: $settings.switchHijriDateAtMaghrib.animation(.easeInOut))
                     .font(.subheadline)
                     .tint(settings.accentColor.color)
+                    .onChange(of: settings.switchHijriDateAtMaghrib) { _ in settings.hapticFeedback() }
 
                 Text("When enabled, the displayed Hijri date changes at the calculated Maghrib time instead of at midnight. Off by default.")
                     .font(.caption)
@@ -497,6 +510,7 @@ struct NotificationView: View {
             Section(header: Text("HIJRI CALENDAR")) {
                 Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
                     .font(.subheadline)
+                    .onChange(of: settings.dateNotifications) { _ in settings.hapticFeedback() }
             }
 
             Section(header: Text("ADHAN SOUND")) {
@@ -510,6 +524,7 @@ struct NotificationView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .onChange(of: settings.adhanNotificationSound) { _ in settings.hapticFeedback() }
 
                 if notificationSoundsDisabled {
                     Label("Notification sounds are off in iPhone Settings, so the adhan will be silent.", systemImage: "speaker.slash.fill")
@@ -547,7 +562,10 @@ struct NotificationView: View {
         }
         .onChange(of: scenePhase) { _ in requestAuthorizationAndFetchPrayerTimes() }
         .confirmationDialog("Notifications Off", isPresented: $showAlert, titleVisibility: .visible) {
-            Button("Open Settings") { openSystemSettings() }
+            Button("Open Settings") {
+                settings.hapticFeedback()
+                openSystemSettings()
+            }
             Button("Ignore", role: .cancel) { }
         } message: {
             Text("Please go to Settings and enable notifications to be notified of prayer times.")
@@ -558,6 +576,7 @@ struct NotificationView: View {
         ), titleVisibility: .visible) {
             Button("OK", role: .cancel) { requestAccessAlertMessage = nil }
             Button("Open Settings") {
+                settings.hapticFeedback()
                 requestAccessAlertMessage = nil
                 openSystemSettings()
             }
@@ -846,7 +865,8 @@ struct MoreNotificationView: View {
                 ).animation(.easeInOut))
                 .font(.subheadline)
                 .tint(settings.accentColor.color)
-                
+                .onChange(of: settings.naggingMode) { _ in settings.hapticFeedback() }
+
                 if settings.naggingMode {
                     Picker("Starting Time", selection: $settings.naggingStartOffset.animation(.easeInOut)) {
                         Text("45 mins").tag(45)
@@ -857,6 +877,7 @@ struct MoreNotificationView: View {
                     #if os(iOS)
                     .pickerStyle(.segmented)
                     #endif
+                    .onChange(of: settings.naggingStartOffset) { _ in settings.hapticFeedback() }
                     
                     Group {
                         Toggle("Nagging before Fajr", isOn: Binding(
@@ -866,7 +887,8 @@ struct MoreNotificationView: View {
                                 turnOffNaggingModeIfAllOff()
                             }
                         ).animation(.easeInOut))
-                        
+                        .onChange(of: settings.naggingFajr) { _ in settings.hapticFeedback() }
+
                         Toggle("Nagging before Sunrise", isOn: Binding(
                             get: { settings.naggingSunrise },
                             set: { newValue in
@@ -874,7 +896,8 @@ struct MoreNotificationView: View {
                                 turnOffNaggingModeIfAllOff()
                             }
                         ).animation(.easeInOut))
-                        
+                        .onChange(of: settings.naggingSunrise) { _ in settings.hapticFeedback() }
+
                         Toggle("Nagging before Dhuhr", isOn: Binding(
                             get: { settings.naggingDhuhr },
                             set: { newValue in
@@ -882,7 +905,8 @@ struct MoreNotificationView: View {
                                 turnOffNaggingModeIfAllOff()
                             }
                         ).animation(.easeInOut))
-                        
+                        .onChange(of: settings.naggingDhuhr) { _ in settings.hapticFeedback() }
+
                         Toggle("Nagging before Asr", isOn: Binding(
                             get: { settings.naggingAsr },
                             set: { newValue in
@@ -890,7 +914,8 @@ struct MoreNotificationView: View {
                                 turnOffNaggingModeIfAllOff()
                             }
                         ).animation(.easeInOut))
-                        
+                        .onChange(of: settings.naggingAsr) { _ in settings.hapticFeedback() }
+
                         Toggle("Nagging before Maghrib", isOn: Binding(
                             get: { settings.naggingMaghrib },
                             set: { newValue in
@@ -898,7 +923,8 @@ struct MoreNotificationView: View {
                                 turnOffNaggingModeIfAllOff()
                             }
                         ).animation(.easeInOut))
-                        
+                        .onChange(of: settings.naggingMaghrib) { _ in settings.hapticFeedback() }
+
                         Toggle("Nagging before Isha", isOn: Binding(
                             get: { settings.naggingIsha },
                             set: { newValue in
@@ -906,6 +932,7 @@ struct MoreNotificationView: View {
                                 turnOffNaggingModeIfAllOff()
                             }
                         ).animation(.easeInOut))
+                        .onChange(of: settings.naggingIsha) { _ in settings.hapticFeedback() }
                     }
                     .tint(settings.accentColor.color)
                 }
@@ -935,7 +962,8 @@ struct MoreNotificationView: View {
                     ).animation(.easeInOut))
                     .font(.subheadline)
                     .tint(settings.accentColor.color)
-                    
+                    .onChange(of: settings.notificationFajr) { _ in settings.hapticFeedback() }
+
                     Stepper(value: Binding(
                         get: { settings.preNotificationFajr },
                         set: { newValue in
@@ -1032,6 +1060,7 @@ struct MoreNotificationView: View {
         }
         .confirmationDialog("Notifications Off", isPresented: $showAlert, titleVisibility: .visible) {
             Button("Open Settings") {
+                settings.hapticFeedback()
                 #if os(iOS)
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -1070,7 +1099,8 @@ struct NotificationSettingsSection: View {
         Section(header: Text(prayerName.uppercased())) {
             Toggle("Notification", isOn: $isNotificationOn.animation(.easeInOut))
                 .font(.subheadline)
-            
+                .onChange(of: isNotificationOn) { _ in settings.hapticFeedback() }
+
             if isNotificationOn {
                 Stepper(value: $preNotificationTime.animation(.easeInOut), in: 0...30, step: 5) {
                     Text("Prenotification Time:")

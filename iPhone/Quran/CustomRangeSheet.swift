@@ -543,14 +543,14 @@ struct PlayCustomRangeSheet: View {
             }
 
             HStack(spacing: 10) {
-                quickActionButton(title: "Go to start", systemImage: "arrow.left.to.line") {
+                quickActionButton(title: "Go to start", systemImage: "arrow.left.to.line", enabled: startAyah > 1) {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         startAyah = 1
                         startAyahText = "1"
                     }
                 }
 
-                quickActionButton(title: "Go to end", systemImage: "arrow.right.to.line") {
+                quickActionButton(title: "Go to end", systemImage: "arrow.right.to.line", enabled: endAyah < maxAyah) {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         endAyah = maxAyah
                         endAyahText = "\(maxAyah)"
@@ -558,7 +558,7 @@ struct PlayCustomRangeSheet: View {
                 }
             }
 
-            quickActionButton(title: "Whole surah (1–\(maxAyah))", systemImage: "doc.text.fill", prominent: true) {
+            quickActionButton(title: "Whole surah (1–\(maxAyah))", systemImage: "doc.text.fill", prominent: true, enabled: !(startAyah == 1 && endAyah == maxAyah)) {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     startAyah = 1
                     endAyah = maxAyah
