@@ -57,11 +57,23 @@ struct QuranWidgetSnapshot: Codable {
     }
     var lastRead: AyahCard?
     var lastListened: ListenCard?
+    /// The last individual ayah listened to (single ayah / custom range). Optional so older snapshots decode.
+    var lastListenedAyah: AyahCard?
+    /// Today's deterministic Ayah of the Day. Optional so older snapshots decode.
+    var ayahOfTheDay: AyahCard?
     var randomPool: [AyahCard]
 
-    init(lastRead: AyahCard? = nil, lastListened: ListenCard? = nil, randomPool: [AyahCard] = []) {
+    init(
+        lastRead: AyahCard? = nil,
+        lastListened: ListenCard? = nil,
+        lastListenedAyah: AyahCard? = nil,
+        ayahOfTheDay: AyahCard? = nil,
+        randomPool: [AyahCard] = []
+    ) {
         self.lastRead = lastRead
         self.lastListened = lastListened
+        self.lastListenedAyah = lastListenedAyah
+        self.ayahOfTheDay = ayahOfTheDay
         self.randomPool = randomPool
     }
 }

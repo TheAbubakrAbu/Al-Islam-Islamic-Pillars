@@ -97,16 +97,25 @@ struct ConditionalListStyle: ViewModifier {
         .topContentMargin(0)
     }
 
+    #if os(iOS)
     @ViewBuilder
     private func styledContent(_ content: Content) -> some View {
-        if defaultView {
-            content
+        let base = defaultView ? AnyView(content) : AnyView(content.listStyle(.plain))
+
+        if settings.hasCustomThemeColors, #available(iOS 16.0, *) {
+            // Sepia / Gray reading themes: hide the system list background and paint our own warm/neutral
+            // background and row colors so the look carries across every screen that uses this list style.
+            base
+                .scrollContentBackground(.hidden)
+                .listRowBackground(settings.themeRowBackgroundColor ?? Color(.secondarySystemGroupedBackground))
+                .background((settings.themeBackgroundColor ?? Color(.systemGroupedBackground)).ignoresSafeArea())
+        } else if defaultView {
+            base
         } else {
-            content
-                .listStyle(.plain)
-                .background(currentColorScheme == .dark ? Color.black : Color.white)
+            base.background(currentColorScheme == .dark ? Color.black : Color.white)
         }
     }
+    #endif
 }
 
 struct DismissKeyboardOnScrollModifier: ViewModifier {

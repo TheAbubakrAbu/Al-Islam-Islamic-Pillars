@@ -19,7 +19,8 @@ struct Widgets: WidgetBundle {
         #endif
         
         LastListenedSurahWidget()
+        LastListenedAyahWidget()
         LastReadSurahWidget()
-        RandomAyahWidget()
+        AyahOfTheDayWidget()
     }
 }

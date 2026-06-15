@@ -162,6 +162,31 @@ struct LastListenedSurah: Identifiable, Codable {
     let fullDuration: Double
 }
 
+/// One bundled "About this Surah" write-up (e.g. Maududi, Ibn Ashur). `contents` is lightweight markdown
+/// (## headings + paragraphs) pre-converted from the source HTML so it renders without runtime HTML parsing.
+struct SurahInfoSource: Codable, Identifiable, Equatable {
+    let name: String
+    let contents: String
+
+    var id: String { name }
+}
+
+/// One surah's entry in SurahInfos.json: the surah id plus its available info sources.
+struct SurahInfoEntry: Codable {
+    let id: Int
+    let sources: [SurahInfoSource]
+}
+
+/// The last individual ayah (single ayah or custom-range playback) the user listened to. Full-surah
+/// playback is tracked separately by `LastListenedSurah`.
+struct LastListenedAyah: Identifiable, Codable {
+    var id = UUID()
+    let surahNumber: Int
+    let surahName: String
+    let ayahNumber: Int
+    let reciter: Reciter
+}
+
 struct ListeningHistoryItem: Identifiable, Codable {
     var id = UUID()
     let surahNumber: Int
@@ -175,6 +200,16 @@ struct ReadingHistoryItem: Identifiable, Codable {
     let surahNumber: Int
     let surahName: String
     let ayahNumber: Int
+    var timestamp: Date = Date()
+}
+
+/// A previously listened individual ayah (single ayah / custom range), shown under the Last Listened Ayah row.
+struct AyahListeningHistoryItem: Identifiable, Codable {
+    var id = UUID()
+    let surahNumber: Int
+    let surahName: String
+    let ayahNumber: Int
+    let reciter: Reciter
     var timestamp: Date = Date()
 }
 

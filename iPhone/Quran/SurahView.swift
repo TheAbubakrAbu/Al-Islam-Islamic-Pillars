@@ -25,6 +25,7 @@ struct SurahView: View {
     @State private var showFloatingHeader = false
     @State private var showAlert = false
     @State private var showCustomRangeSheet = false
+    @State private var showSurahInfoSheet = false
     @State private var showReciterPickerSheet = false
     @State private var showSurahPickerSheet = false
     @State private var confirmConvertQiraahToHafs = false
@@ -602,6 +603,13 @@ struct SurahView: View {
         Self.visibleAyahMemoryByRoute[visibleAyahMemoryRouteKey] = ayahID
     }
 
+    /// Clamps a requested ayah to the nearest verse that actually exists in the active qiraah. Bookmarks /
+    /// deep links are stored in Hafs numbering, but qiraat merge/omit some ayahs (e.g. Baqarah ends at 285
+    /// in Warsh, 286 in Hafs), so a target may not exist — land on the closest one instead of the top.
+    private func nearestExistingAyahID(_ requested: Int, in ids: [Int]) -> Int? {
+        ids.min(by: { abs($0 - requested) < abs($1 - requested) })
+    }
+
     private func scrollToAyah(_ ayahID: Int, proxy: ScrollViewProxy, animated: Bool = false) {
         // Lazy list cells for the target may not exist on the first pass (especially right after the view
         // appears or is reconfigured), so a single scrollTo can silently miss and leave the old position.
@@ -749,7 +757,8 @@ struct SurahView: View {
         )
     }
     
-    var body: some View {
+    // Extracted from `body` so the large modifier chain stays under the Swift type-checker limit.
+    private var surahCoreBody: some View {
         ScrollViewReader { proxy in
             ayahListScreen(proxy: proxy)
         }
@@ -769,26 +778,24 @@ struct SurahView: View {
                 break
             }
         }
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                surahTitlePickerButton
-                    .onLongPressGesture(minimumDuration: 0.45) {
-                        settings.hapticFeedback()
-                        surahInfoDialog = surahInfoDialog(for: surah)
-                    }
-            }
+    }
 
-            ToolbarItem(placement: .navigationBarTrailing) {
-                navBarTitle
-            }
-        }
+    var body: some View {
+        #if os(iOS)
+        // `applySurahToolbar` branches at the view level (not inside the toolbar builder) so the iOS 26
+        // ToolbarSpacer stays optional without `if #available` inside a @ToolbarContentBuilder (< iOS 16).
+        applySurahToolbar(to: surahCoreBody)
         .onAppear {
             quranPlayer.recordReadingHistory(surahNumber: surah.id, surahName: surah.nameTransliteration, ayahNumber: ayah ?? 1)
         }
         .sheet(isPresented: $showingSettingsSheet) {
             settingsSheet
                 .smallMediumSheetPresentation()
+        }
+        .sheet(isPresented: $showSurahInfoSheet) {
+            SurahInfoSheet(surahName: surah.nameTransliteration, surahNumber: surah.id)
+                .environmentObject(settings)
+                .environmentObject(quranData)
         }
         .sheet(isPresented: $showSurahPickerSheet) {
             SurahPickerSheet(currentSurahID: surah.id) { selectedSurah in
@@ -899,7 +906,8 @@ struct SurahView: View {
             .hidden()
         )
         #else
-        .navigationTitle("\(surah.id) - \(surah.nameTransliteration)")
+        surahCoreBody
+            .navigationTitle("\(surah.id) - \(surah.nameTransliteration)")
         #endif
     }
 
@@ -1309,7 +1317,7 @@ struct SurahView: View {
                 // yank them back up to the originally-opened ayah. The explicit `ayah` target only applies on
                 // a genuine first open, when no position has been remembered for this route yet.
                 let restoreTarget = rememberedVisibleAyahID()
-                    ?? ayah.flatMap { ayahByID[$0] != nil ? $0 : nil }
+                    ?? ayah.flatMap { nearestExistingAyahID($0, in: ayahsForQiraah.map { $0.id }) }
                 if let restoreTarget {
                     firstVisibleAyahID = restoreTarget
                     if !didScrollDown {
@@ -1338,16 +1346,17 @@ struct SurahView: View {
                 visibleBoundaryAyahIDs.removeAll()
                 didScrollDown = false
                 let prepared = Self.preparedCache(for: surah, settings: settings)
-                if let sel = ayah, prepared.ayahByID[sel] != nil {
-                    firstVisibleAyahID = sel
-                    scrollToAyah(sel, proxy: proxy)
+                if let sel = ayah, let target = nearestExistingAyahID(sel, in: prepared.ayahs.map { $0.id }) {
+                    firstVisibleAyahID = target
+                    scrollToAyah(target, proxy: proxy)
                 } else if let top = prepared.ayahs.first?.id {
                     firstVisibleAyahID = top
                     scrollToAyah(top, proxy: proxy)
                 }
             }
             .onChange(of: ayah) { newValue in
-                guard let target = newValue, cachedAyahByID[target] != nil else { return }
+                guard let newValue,
+                      let target = nearestExistingAyahID(newValue, in: cachedAyahsForQiraah.map { $0.id }) else { return }
                 firstVisibleAyahID = target
                 didScrollDown = true
                 scrollToAyah(target, proxy: proxy)
@@ -1840,6 +1849,49 @@ struct SurahView: View {
             showingSettingsSheet = true
         } label: {
             Image(systemName: "gear")
+        }
+    }
+
+    @ViewBuilder
+    private func applySurahToolbar(to base: some View) -> some View {
+        if #available(iOS 26.0, *) {
+            base.toolbar {
+                surahPrincipalAndInfoToolbar
+                ToolbarSpacer(.fixed, placement: .navigationBarTrailing)
+                surahSettingsToolbarItem
+            }
+        } else {
+            base.toolbar {
+                surahPrincipalAndInfoToolbar
+                surahSettingsToolbarItem
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var surahPrincipalAndInfoToolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            surahTitlePickerButton
+                .onLongPressGesture(minimumDuration: 0.45) {
+                    settings.hapticFeedback()
+                    surahInfoDialog = surahInfoDialog(for: surah)
+                }
+        }
+
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button {
+                settings.hapticFeedback()
+                showSurahInfoSheet = true
+            } label: {
+                Image(systemName: "info.circle")
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var surahSettingsToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            navBarTitle
         }
     }
 

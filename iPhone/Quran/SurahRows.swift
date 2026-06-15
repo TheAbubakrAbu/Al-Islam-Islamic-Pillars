@@ -501,6 +501,8 @@ struct LastListenedSurahRow: View {
     @Binding var showListeningHistory: Bool
     var onSelectSurah: ((Int) -> Void)? = nil
 
+    @State private var confirmDeleteForever = false
+
     var body: some View {
         guard let surah = quranData.quran.first(where: { $0.id == lastListenedSurah.surahNumber })
         else { return AnyView(EmptyView()) }
@@ -628,6 +630,13 @@ struct LastListenedSurahRow: View {
                     Label("Remove", systemImage: "minus.circle")
                 }
 
+                Button(role: .destructive) {
+                    settings.hapticFeedback()
+                    confirmDeleteForever = true
+                } label: {
+                    Label("Delete Forever", systemImage: "trash")
+                }
+
                 Divider()
 
                 Button {
@@ -661,6 +670,18 @@ struct LastListenedSurahRow: View {
                     scrollToSurahID: $scrollToSurahID,
                     lastListened: true
                 )
+            }
+            .confirmationDialog("Are you sure?", isPresented: $confirmDeleteForever, titleVisibility: .visible) {
+                Button("Delete Forever", role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.lastListenedSurah = nil
+                        settings.saveLastListenedSurah = false
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You can re-enable Last Listened Surah later in Quran Settings.")
             }
             #endif
             .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
@@ -910,6 +931,322 @@ struct LastReadAyahRow: View {
         }
     }
 }
+
+#if os(iOS)
+/// The last individual ayah the user listened to (single ayah or custom range). Mirrors LastReadAyahRow.
+struct LastListenedAyahRow: View {
+    @EnvironmentObject private var settings: Settings
+    @EnvironmentObject private var quranPlayer: QuranPlayer
+    @EnvironmentObject private var quranData: QuranData
+
+    let surah: Surah
+    let ayah: Ayah
+    let favoriteSurahs: Set<Int>
+    let bookmarkedAyahs: Set<String>
+
+    @Binding var searchText: String
+    @Binding var scrollToSurahID: Int
+    @Binding var showAyahListeningHistory: Bool
+    var onSelectAyah: ((Int, Int) -> Void)? = nil
+
+    @State private var confirmDeleteForever = false
+
+    private var rowContent: some View {
+        SurahAyahRow(surah: surah, ayah: ayah)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func historyRow(_ item: AyahListeningHistoryItem) -> some View {
+        if let histSurah = quranData.surah(item.surahNumber),
+           let histAyah = histSurah.ayahs.first(where: { $0.id == item.ayahNumber }) {
+            Group {
+                if let onSelectAyah {
+                    Button {
+                        settings.hapticFeedback()
+                        onSelectAyah(histSurah.id, histAyah.id)
+                    } label: {
+                        SurahAyahRow(surah: histSurah, ayah: histAyah)
+                            .opacity(0.6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                } else {
+                    NavigationLink(destination: SurahView(surah: histSurah, ayah: histAyah.id)) {
+                        SurahAyahRow(surah: histSurah, ayah: histAyah)
+                            .opacity(0.6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .tag(histSurah.id)
+                    .contentShape(Rectangle())
+                }
+            }
+            .rightSwipeActions(
+                surahID: histSurah.id,
+                surahName: histSurah.nameTransliteration,
+                ayahID: histAyah.id,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(
+                surah: histSurah.id,
+                favoriteSurahs: favoriteSurahs,
+                bookmarkedAyahs: bookmarkedAyahs,
+                bookmarkedSurah: histSurah.id,
+                bookmarkedAyah: histAyah.id
+            )
+        }
+    }
+
+    var body: some View {
+        Section(header:
+            HStack {
+                Text("LAST LISTENED AYAH")
+
+                Spacer()
+
+                if !quranPlayer.ayahListeningHistory.isEmpty {
+                    Image(systemName: showAyahListeningHistory ? "minus.circle" : "plus.circle")
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(4)
+                        .conditionalGlassEffect()
+                        .onTapGesture {
+                            settings.hapticFeedback()
+                            withAnimation {
+                                showAyahListeningHistory.toggle()
+                            }
+                        }
+                }
+            }
+        ) {
+            Group {
+                if let onSelectAyah {
+                    Button {
+                        settings.hapticFeedback()
+                        onSelectAyah(surah.id, ayah.id)
+                    } label: {
+                        rowContent
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                } else {
+                    NavigationLink(destination: SurahView(surah: surah, ayah: ayah.id)) {
+                        rowContent
+                    }
+                    .tag(surah.id)
+                    .contentShape(Rectangle())
+                }
+            }
+            .rightSwipeActions(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                ayahID: ayah.id,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(
+                surah: surah.id,
+                favoriteSurahs: favoriteSurahs,
+                bookmarkedAyahs: bookmarkedAyahs,
+                bookmarkedSurah: surah.id,
+                bookmarkedAyah: ayah.id
+            )
+            .contextMenu {
+                Text("Last Listened Ayah")
+                    .foregroundStyle(.secondary)
+
+                Button(role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.lastListenedAyah = nil
+                    }
+                } label: {
+                    Label("Remove", systemImage: "minus.circle")
+                }
+
+                Button(role: .destructive) {
+                    settings.hapticFeedback()
+                    confirmDeleteForever = true
+                } label: {
+                    Label("Delete Forever", systemImage: "trash")
+                }
+
+                Divider()
+
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+                } label: {
+                    Label("Play This Ayah", systemImage: "play.circle")
+                }
+
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
+                } label: {
+                    Label("Play From Ayah", systemImage: "play.circle.fill")
+                }
+            }
+            .confirmationDialog("Are you sure?", isPresented: $confirmDeleteForever, titleVisibility: .visible) {
+                Button("Delete Forever", role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.lastListenedAyah = nil
+                        settings.saveLastListenedAyah = false
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You can re-enable Last Listened Ayah later in Quran Settings.")
+            }
+
+            if showAyahListeningHistory && !quranPlayer.ayahListeningHistory.isEmpty {
+                ForEach(quranPlayer.ayahListeningHistory) { item in
+                    historyRow(item)
+                }
+            }
+        }
+    }
+}
+
+/// The deterministic daily "Ayah of the Day" card shown at the top of the Quran tab.
+struct AyahOfTheDayRow: View {
+    @EnvironmentObject private var settings: Settings
+    @EnvironmentObject private var quranPlayer: QuranPlayer
+
+    let surah: Surah
+    let ayah: Ayah
+    let favoriteSurahs: Set<Int>
+    let bookmarkedAyahs: Set<String>
+
+    @Binding var searchText: String
+    @Binding var scrollToSurahID: Int
+    var onSelectAyah: ((Int, Int) -> Void)? = nil
+
+    @State private var confirmRemovePermanently = false
+
+    /// A featured card (accent-tinted glass, larger centered Arabic + translation) so the daily ayah looks
+    /// distinct from the compact Last Read / Last Listened rows.
+    private var rowContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if settings.showArabicText {
+                Text(ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: settings.displayQiraahForArabic))
+                    .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize))
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .lineSpacing(6)
+            }
+
+            Text("Surah \(surah.id):\(ayah.id) · \(surah.nameTransliteration)")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(settings.accentColor.color)
+
+            Text(ayah.textEnglishSaheeh.isEmpty ? ayah.textEnglishMustafa : ayah.textEnglishSaheeh)
+                .font(.subheadline)
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .conditionalGlassEffect(rectangle: true, useColor: 0.18)
+        .contentShape(Rectangle())
+    }
+
+    var body: some View {
+        Section(header:
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                Text("AYAH OF THE DAY")
+            }
+            .foregroundColor(settings.accentColor.color)
+        ) {
+            Group {
+                if let onSelectAyah {
+                    Button {
+                        settings.hapticFeedback()
+                        onSelectAyah(surah.id, ayah.id)
+                    } label: {
+                        rowContent
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                } else {
+                    NavigationLink(destination: SurahView(surah: surah, ayah: ayah.id)) {
+                        rowContent
+                    }
+                    .tag(surah.id)
+                    .contentShape(Rectangle())
+                }
+            }
+            .rightSwipeActions(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                ayahID: ayah.id,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(
+                surah: surah.id,
+                favoriteSurahs: favoriteSurahs,
+                bookmarkedAyahs: bookmarkedAyahs,
+                bookmarkedSurah: surah.id,
+                bookmarkedAyah: ayah.id
+            )
+            .contextMenu {
+                Text("Ayah of the Day")
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
+                } label: {
+                    Label("Play This Ayah", systemImage: "play.circle")
+                }
+
+                Button {
+                    settings.hapticFeedback()
+                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
+                } label: {
+                    Label("Play From Ayah", systemImage: "play.circle.fill")
+                }
+
+                Divider()
+
+                Button(role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.ayahOfTheDayHiddenDate = Settings.dayKey()
+                    }
+                } label: {
+                    Label("Hide for Today", systemImage: "eye.slash")
+                }
+
+                Button(role: .destructive) {
+                    settings.hapticFeedback()
+                    confirmRemovePermanently = true
+                } label: {
+                    Label("Remove Permanently", systemImage: "trash")
+                }
+            }
+            .confirmationDialog("Are you sure?", isPresented: $confirmRemovePermanently, titleVisibility: .visible) {
+                Button("Remove Permanently", role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.showAyahOfTheDay = false
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You can re-enable Ayah of the Day later in Quran Settings.")
+            }
+        }
+    }
+}
+#endif
 
 struct AyahSearchResultRow: View {
     @EnvironmentObject private var settings: Settings

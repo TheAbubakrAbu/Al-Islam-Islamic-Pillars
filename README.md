@@ -70,6 +70,23 @@ Al-Islam is a simply designed and feature-rich app that helps Muslims strengthen
 - Widgets and Apple Watch support for quick prayer time access.
 - Simple and clean interface for effortless navigation.
 
+## Surah Info Download
+
+To download all 114 surah info records for Maududi English (`58`), Ibn Ashur English (`1030`), and Ibn Ashur Arabic (`1028`), use the repo script at `scripts/download_surah_info.sh`.
+
+```bash
+export TOKEN="YOUR_PRODUCTION_ACCESS_TOKEN"
+export CLIENT_ID="3472161f-5c37-4cb7-b824-73792dec834d"
+./scripts/download_surah_info.sh
+```
+
+By default it writes:
+
+- `surah_infos_combined.json`
+- `quran-surah-info/` with the 342 raw API responses
+
+Set `WRITE_INDIVIDUAL_FILES=0` if you only want the combined JSON output.
+
 ## 100% Free, Ad-Free, and Privacy-Focused
 - No ads, fees, or subscriptions.
 - Your data never leaves your device, ensuring complete privacy and security.

@@ -451,6 +451,8 @@ struct SettingsAppearanceView: View {
             Text("System").tag("system")
             Text("Light").tag("light")
             Text("Dark").tag("dark")
+            Text("Sepia").tag("sepia")
+            Text("Gray").tag("gray")
         }
         .font(.subheadline)
         .pickerStyle(SegmentedPickerStyle())

@@ -3206,6 +3206,44 @@ struct QiraatView: View {
                     .foregroundColor(settings.accentColor.color)
             }
 
+            Section(header: Text("VISUAL GUIDE")) {
+                VStack(spacing: 12) {
+                    Image("Qiraat1")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                    Image("Qiraat2")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .padding(.vertical, 4)
+
+                Link(destination: URL(string: "https://www.instagram.com/p/DZhwEM4Es0b/")!) {
+                    Label("View the original post on Instagram", systemImage: "link")
+                }
+                .font(.caption)
+            }
+
+            Section(header: Text("IMAGE CREDITS")) {
+                Text("The two infographics above are shared with credit to the original creators on Instagram. Please follow and support their work:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Group {
+                    qiraatCreditLink(handle: "orthodox__muslim_badr_deen")
+                    qiraatCreditLink(handle: "abdul_quddus_khan_")
+                    qiraatCreditLink(handle: "lets.think.deeply")
+                    qiraatCreditLink(handle: "khan_ayaan_2008")
+                    qiraatCreditLink(handle: "imaanxlogy")
+                    qiraatCreditLink(handle: "truth_seeker_of_god")
+                }
+                .font(.caption)
+            }
+
             Section(header: Text("USEFUL LINKS")) {
                 Text("Learn More about Ahruf and Qiraat: https://www.youtube.com/watch?v=8hj7u0F3yEg&t=34s")
                     .font(.caption)
@@ -3216,6 +3254,13 @@ struct QiraatView: View {
         }
         .navigationTitle("10 Qiraat (Recitations)")
         .applyConditionalListStyle(defaultView: settings.defaultView)
+    }
+
+    /// A tappable Instagram handle that opens the creator's profile, used for the infographic credits.
+    private func qiraatCreditLink(handle: String) -> some View {
+        Link(destination: URL(string: "https://www.instagram.com/\(handle)/")!) {
+            Label("@\(handle)", systemImage: "at")
+        }
     }
 }
 

@@ -462,6 +462,174 @@ struct AyahTafsirSheet: View {
     }
 }
 
+/// "About this Surah" sheet — bundled surah background, mirroring the Tafsir sheet: a source picker
+/// (Maududi / Ibn Ashur), searchable content, and the same accent-foreground search match (no highlight box).
+struct SurahInfoSheet: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
+    @Environment(\.dismiss) private var dismiss
+
+    let surahName: String
+    let surahNumber: Int
+
+    @State private var searchText = ""
+    @AppStorage("quran.surahInfo.source") private var selectedSourceName = ""
+
+    private var sources: [SurahInfoSource] {
+        quranData.surahInfoSources(for: surahNumber)
+    }
+
+    private var selectedSource: SurahInfoSource? {
+        sources.first(where: { $0.name == selectedSourceName }) ?? sources.first
+    }
+
+    private var selectedSourceBinding: Binding<String> {
+        Binding(
+            get: { selectedSource?.name ?? "" },
+            set: { selectedSourceName = $0 }
+        )
+    }
+
+    /// True when the text is mostly Arabic script, so the sheet can lay it out right-to-left.
+    private static func isArabic(_ text: String) -> Bool {
+        var arabic = 0, latin = 0
+        for scalar in text.unicodeScalars {
+            let v = scalar.value
+            if (0x0600...0x06FF).contains(v) || (0x0750...0x077F).contains(v) || (0x08A0...0x08FF).contains(v) {
+                arabic += 1
+            } else if (0x41...0x5A).contains(v) || (0x61...0x7A).contains(v) {
+                latin += 1
+            }
+        }
+        return arabic > latin
+    }
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if sources.isEmpty {
+                    infoPlaceholder
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            noticeCard
+                            surahHeaderCard
+
+                            if sources.count > 1 {
+                                Picker("Source", selection: selectedSourceBinding.animation(.easeInOut)) {
+                                    ForEach(sources) { source in
+                                        Text(source.name).tag(source.name)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                                .animation(.easeInOut, value: selectedSource)
+                                .onChange(of: selectedSourceName) { _ in settings.hapticFeedback() }
+                            }
+
+                            if let source = selectedSource {
+                                let arabic = Self.isArabic(source.contents)
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text(source.name)
+                                        .font(.headline)
+
+                                    TafsirMarkdownView(markdown: source.contents, searchText: searchText, accent: settings.accentColor.color)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .environment(\.layoutDirection, arabic ? .rightToLeft : .leftToRight)
+                                .multilineTextAlignment(arabic ? .trailing : .leading)
+                                .id(source.name)
+                                .textSelection(.enabled)
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .navigationTitle("Surah \(surahNumber): \(surahName)")
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText.animation(.easeInOut), prompt: "Search info")
+            .dismissKeyboardOnScroll()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
+                    }
+                }
+            }
+        }
+        .modifier(TafsirSheetPresentationModifier())
+    }
+
+    private var noticeCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("About this Surah", systemImage: "book.closed")
+                .font(.subheadline.weight(.semibold))
+
+            Text("Background on this surah — its name, period of revelation, and themes. Switch between sources with the picker.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.secondary.opacity(0.1))
+        )
+    }
+
+    @ViewBuilder
+    private var surahHeaderCard: some View {
+        if let surah = quranData.surah(surahNumber) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(surah.nameArabic)
+                    .font(
+                        settings.useFontArabic
+                            ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
+                            : .title2
+                    )
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Text("\(surah.nameTransliteration) · \(surah.nameEnglish)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text("\(surah.type.capitalized) · \(surah.numberOfAyahs) ayahs")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .conditionalGlassEffect(rectangle: true, useColor: 0.08)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(settings.accentColor.color.opacity(0.18), lineWidth: 1)
+            )
+        }
+    }
+
+    private var infoPlaceholder: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "text.book.closed")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+
+            Text("No Info Found")
+                .font(.headline)
+
+            Text("No background information is available for this surah.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    }
+}
+
 private struct TafsirMarkdownView: View {
     let markdown: String
     let searchText: String
@@ -575,7 +743,7 @@ private struct TafsirMarkdownBlock {
               ) {
             if let lower = AttributedString.Index(found.lowerBound, within: attributed),
                let upper = AttributedString.Index(found.upperBound, within: attributed) {
-                attributed[lower..<upper].backgroundColor = accent.opacity(0.28)
+                // Tint matches with the accent foreground only — no background highlight box.
                 attributed[lower..<upper].foregroundColor = accent
             }
             searchStart = found.upperBound
@@ -1210,6 +1378,7 @@ struct AyahContextMenuModifier: ViewModifier {
     }
     
     @State private var confirmRemoveNote = false
+    @State private var confirmDeleteForever = false
 
     private func toggleBookmarkWithNoteGuard() {
         if !settings.toggleBookmarkIfNoNoteLoss(surah: surah, ayah: ayah) {
@@ -1232,7 +1401,12 @@ struct AyahContextMenuModifier: ViewModifier {
                             settings.lastReadAyah = 0
                         }
                     } label: { Label("Remove", systemImage: "minus.circle") }
-                    
+
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        confirmDeleteForever = true
+                    } label: { Label("Delete Forever", systemImage: "trash") }
+
                     Divider()
                 }
                 
@@ -1422,6 +1596,19 @@ struct AyahContextMenuModifier: ViewModifier {
                 Button("Cancel") {}
             } message: {
                 Text(Settings.bookmarkNoteRemovalDialogMessage)
+            }
+            .confirmationDialog("Are you sure?", isPresented: $confirmDeleteForever, titleVisibility: .visible) {
+                Button("Delete Forever", role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.lastReadSurah = 0
+                        settings.lastReadAyah = 0
+                        settings.saveLastReadAyah = false
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You can re-enable Last Read Ayah later in Quran Settings.")
             }
         #else
         content

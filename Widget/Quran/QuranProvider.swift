@@ -5,13 +5,15 @@ import UIKit
 enum QuranWidgetKind {
     case lastReadAyah
     case lastListenedSurah
-    case randomAyah
+    case lastListenedAyah
+    case ayahOfTheDay
 
     var title: String {
         switch self {
         case .lastReadAyah: return "Last Read Ayah"
         case .lastListenedSurah: return "Last Listened Surah"
-        case .randomAyah: return "Random Ayah"
+        case .lastListenedAyah: return "Last Listened Ayah"
+        case .ayahOfTheDay: return "Ayah of the Day"
         }
     }
 
@@ -19,7 +21,8 @@ enum QuranWidgetKind {
         switch self {
         case .lastReadAyah: return "book.closed"
         case .lastListenedSurah: return "play.fill"
-        case .randomAyah: return "sparkles"
+        case .lastListenedAyah: return "play.circle"
+        case .ayahOfTheDay: return "sparkles"
         }
     }
 }
@@ -64,9 +67,12 @@ struct QuranWidgetProvider: TimelineProvider {
                                  emptyMessage: "Open the app to set your last read verse.")
         case .lastListenedSurah:
             return makeLastListenedEntry(settings: settings, card: snapshot?.lastListened)
-        case .randomAyah:
-            return makeAyahEntry(settings: settings, card: randomCard(from: snapshot),
-                                 emptyMessage: "Open the app to load random ayahs.")
+        case .lastListenedAyah:
+            return makeAyahEntry(settings: settings, card: snapshot?.lastListenedAyah,
+                                 emptyMessage: "Open the app to set your last listened ayah.")
+        case .ayahOfTheDay:
+            return makeAyahEntry(settings: settings, card: snapshot?.ayahOfTheDay ?? ayahOfTheDayCard(from: snapshot),
+                                 emptyMessage: "Open the app to load the Ayah of the Day.")
         }
     }
 
@@ -106,11 +112,11 @@ struct QuranWidgetProvider: TimelineProvider {
         )
     }
 
-    /// Rotates through the app-provided pool so the widget shows a different ayah over time
-    /// (deterministic per half-hour bucket, matching the timeline refresh cadence).
-    private func randomCard(from snapshot: QuranWidgetSnapshot?) -> QuranWidgetSnapshot.AyahCard? {
+    /// Fallback when the app hasn't written today's `ayahOfTheDay` card yet: pick deterministically from the
+    /// app-provided pool by day, so the widget still shows one stable ayah per day.
+    private func ayahOfTheDayCard(from snapshot: QuranWidgetSnapshot?) -> QuranWidgetSnapshot.AyahCard? {
         guard let pool = snapshot?.randomPool, !pool.isEmpty else { return nil }
-        let bucket = Int(Date().timeIntervalSince1970 / (30 * 60))
+        let bucket = Int(Date().timeIntervalSince1970 / 86_400)
         return pool[((bucket % pool.count) + pool.count) % pool.count]
     }
 

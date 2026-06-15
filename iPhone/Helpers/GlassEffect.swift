@@ -88,7 +88,11 @@ struct ConditionalGlassEffect: ViewModifier {
         if let customTint {
             return customTint.opacity(useColor ?? 0.35)
         }
-        return useColor.map { settings.accentColor.color.opacity($0) }
+        if let useColor {
+            return settings.accentColor.color.opacity(useColor)
+        }
+        // Untinted glass picks up the active reading theme so cards aren't plain white/black in Sepia/Gray.
+        return settings.themeGlassTint
     }
 }
 

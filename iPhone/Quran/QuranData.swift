@@ -4637,6 +4637,32 @@ final class QuranData: ObservableObject {
         surahIndex[number].map { quran[$0] }
     }
 
+    // MARK: - Surah Info (bundled, lazily loaded)
+
+    private var surahInfosCache: [Int: [SurahInfoSource]]? = nil
+
+    /// The available info sources (e.g. Maududi, Ibn Ashur) for a surah, loaded once from SurahInfos.json
+    /// and cached. Returns an empty array when no info is bundled for that surah.
+    func surahInfoSources(for surahNumber: Int) -> [SurahInfoSource] {
+        if surahInfosCache == nil {
+            surahInfosCache = Self.loadSurahInfos()
+        }
+        return surahInfosCache?[surahNumber] ?? []
+    }
+
+    private static func loadSurahInfos() -> [Int: [SurahInfoSource]] {
+        guard let url = Bundle.main.url(forResource: "SurahInfos", withExtension: "json", subdirectory: "JSONs")
+            ?? Bundle.main.url(forResource: "SurahInfos", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let entries = try? JSONDecoder().decode([SurahInfoEntry].self, from: data) else { return [:] }
+
+        var result: [Int: [SurahInfoSource]] = [:]
+        for entry in entries {
+            result[entry.id] = entry.sources
+        }
+        return result
+    }
+
     func ayah(surah: Int, ayah: Int) -> Ayah? {
         guard let sIdx = surahIndex[surah], let aIdx = ayahIndex[sIdx][ayah] else { return nil }
         return quran[sIdx].ayahs[aIdx]

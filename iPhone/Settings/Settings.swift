@@ -564,6 +564,92 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// When off, the app neither saves nor shows the "Last Read Ayah" / "Last Listened Surah" sections.
     @AppStorage("saveLastReadAyah") var saveLastReadAyah: Bool = true
     @AppStorage("saveLastListenedSurah") var saveLastListenedSurah: Bool = true
+    /// When off, the app neither saves nor shows the "Last Listened Ayah" section. Off by default.
+    @AppStorage("saveLastListenedAyah") var saveLastListenedAyah: Bool = false
+    /// When on, the Quran tab shows the daily "Ayah of the Day" card. Off by default.
+    @AppStorage("showAyahOfTheDay") var showAyahOfTheDay: Bool = false
+    /// Day key (yyyy-MM-dd) for which the Ayah of the Day card has been hidden via "Hide for Today".
+    @AppStorage("ayahOfTheDayHiddenDate") var ayahOfTheDayHiddenDate: String = ""
+
+    /// Stable yyyy-MM-dd key for a date, used to seed the Ayah of the Day and gate "Hide for Today".
+    static func dayKey(_ date: Date = Date()) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = Calendar(identifier: .gregorian)
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: date)
+    }
+
+    /// True when the user tapped "Hide for Today" on the Ayah of the Day card for the current day.
+    var isAyahOfTheDayHiddenToday: Bool {
+        ayahOfTheDayHiddenDate == Self.dayKey()
+    }
+
+    /// Words that keep an ayah out of the Ayah of the Day rotation — not because anything is wrong with
+    /// them, just to keep the daily card gentle/uplifting (matches the widget's safe-pool filter).
+    private static let ayahOfTheDayBlockedWords = [
+        "kill", "killing", "fight", "fighting", "violence", "violent",
+        "murder", "slay", "slaughter", "battle", "war"
+    ]
+
+    private static func isAyahGentle(_ ayah: Ayah) -> Bool {
+        let combined = [ayah.textEnglishSaheeh, ayah.textEnglishMustafa, ayah.textTransliteration]
+            .joined(separator: " ").lowercased()
+        return !ayahOfTheDayBlockedWords.contains { !$0.isEmpty && combined.contains($0) }
+    }
+
+    private static var gentleAyahRefsCache: [(surahID: Int, ayahID: Int)]? = nil
+
+    /// All (surahID, ayahID) pairs eligible for Ayah of the Day, filtered to gentle ayahs. Built once.
+    private static func gentleAyahRefs(_ data: QuranData) -> [(surahID: Int, ayahID: Int)] {
+        if let cached = gentleAyahRefsCache { return cached }
+        var refs: [(surahID: Int, ayahID: Int)] = []
+        for surah in data.quran {
+            for ayah in surah.ayahs where isAyahGentle(ayah) {
+                refs.append((surah.id, ayah.id))
+            }
+        }
+        guard !refs.isEmpty else { return [] }   // don't cache before Quran data is loaded
+        gentleAyahRefsCache = refs
+        return refs
+    }
+
+    /// Deterministic (surahID, ayahID) for the Ayah of the Day on the given day. Same input day always
+    /// yields the same ayah, so the in-app card and the widget agree. Picks from the gentle-ayah pool
+    /// using a day-seeded multiplicative hash.
+    func ayahOfTheDayReference(for date: Date = Date(), data: QuranData = .shared) -> (surahID: Int, ayahID: Int)? {
+        let refs = Self.gentleAyahRefs(data)
+        guard !refs.isEmpty else { return nil }
+
+        let day = UInt64(bitPattern: Int64(date.timeIntervalSince1970 / 86_400))
+        // Knuth multiplicative hash (UInt64 to stay valid on 32-bit Int platforms like older watchOS).
+        let index = Int((day &* 2_654_435_761) % UInt64(refs.count))
+        return refs[index]
+    }
+
+    @AppStorage("lastListenedAyahData") private var lastListenedAyahData: Data?
+    var lastListenedAyah: LastListenedAyah? {
+        get {
+            guard let data = lastListenedAyahData else { return nil }
+            do {
+                return try Self.decoder.decode(LastListenedAyah.self, from: data)
+            } catch {
+                logger.debug("Failed to decode last listened ayah: \(error)")
+                return nil
+            }
+        }
+        set {
+            if let newValue = newValue {
+                do {
+                    lastListenedAyahData = try Self.encoder.encode(newValue)
+                } catch {
+                    logger.debug("Failed to encode last listened ayah: \(error)")
+                }
+            } else {
+                lastListenedAyahData = nil
+            }
+        }
+    }
 
     @AppStorage("lastListenedSurahData") private var lastListenedSurahData: Data?
     var lastListenedSurah: LastListenedSurah? {
@@ -617,8 +703,24 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
             )
         }
 
+        snapshot.lastListenedAyah = nil
+        if saveLastListenedAyah,
+           let listenedAyah = lastListenedAyah,
+           let surah = data.quran.first(where: { $0.id == listenedAyah.surahNumber }),
+           let ayah = surah.ayahs.first(where: { $0.id == listenedAyah.ayahNumber }) {
+            snapshot.lastListenedAyah = quranWidgetAyahCard(surah: surah, ayah: ayah)
+        }
+
+        snapshot.ayahOfTheDay = nil
+        if showAyahOfTheDay,
+           let ref = ayahOfTheDayReference(data: data),
+           let surah = data.quran.first(where: { $0.id == ref.surahID }),
+           let ayah = surah.ayahs.first(where: { $0.id == ref.ayahID }) {
+            snapshot.ayahOfTheDay = quranWidgetAyahCard(surah: surah, ayah: ayah)
+        }
+
         // Rebuild the pool when it's empty or built by an older app version (cards missing the font tag),
-        // so the random-ayah widget also gets the Arabic font + tajweed.
+        // so the ayah-of-the-day widget can fall back to it.
         if snapshot.randomPool.isEmpty || snapshot.randomPool.contains(where: { $0.fontName == nil }) {
             snapshot.randomPool = buildQuranWidgetRandomPool(from: data)
         }
@@ -927,12 +1029,50 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     func colorSchemeFromString(_ colorScheme: String) -> ColorScheme? {
         switch colorScheme {
-        case "light":
+        case "light", "sepia":
             return .light
-        case "dark":
+        case "dark", "gray":
             return .dark
         default:
             return nil
+        }
+    }
+
+    // MARK: - Reading themes (Sepia / Gray)
+    // These layer custom background + row colors on top of a light (Sepia) or dark (Gray) base, so the app
+    // offers warm/neutral reading looks beyond plain Light / Dark / System. Light/Dark/System return nil here
+    // and keep the standard system grouped colors (no behavior change for existing users).
+
+    /// True when the active theme paints its own background/row colors instead of the system grouped colors.
+    var hasCustomThemeColors: Bool {
+        colorSchemeString == "sepia" || colorSchemeString == "gray"
+    }
+
+    /// Background shown behind list content for custom themes (warm cream / neutral charcoal).
+    var themeBackgroundColor: Color? {
+        switch colorSchemeString {
+        case "sepia": return Color(red: 0.93, green: 0.90, blue: 0.82)
+        case "gray":  return Color(red: 0.13, green: 0.13, blue: 0.14)
+        default:      return nil
+        }
+    }
+
+    /// Row / card color for plain (non-glass) list rows in custom themes, set apart from the background.
+    var themeRowBackgroundColor: Color? {
+        switch colorSchemeString {
+        case "sepia": return Color(red: 0.96, green: 0.92, blue: 0.83)
+        case "gray":  return Color(red: 0.19, green: 0.19, blue: 0.20)
+        default:      return nil
+        }
+    }
+
+    /// Tint blended into Liquid Glass cards/controls for custom themes, so glass reads as warm cream
+    /// (Sepia) or neutral charcoal (Gray) instead of plain white/black. Nil = untinted system glass.
+    var themeGlassTint: Color? {
+        switch colorSchemeString {
+        case "sepia": return Color(red: 0.85, green: 0.74, blue: 0.50).opacity(0.55)
+        case "gray":  return Color(red: 0.33, green: 0.33, blue: 0.35).opacity(0.55)
+        default:      return nil
         }
     }
 

@@ -411,7 +411,8 @@ struct PlayCustomRangeSheet: View {
     }
 
     private var surahHeaderCard: some View {
-        SurahRow(surah: surah)
+        // Always show the full surah details here regardless of the global "Show Full Surah Details" setting.
+        SurahRow(surah: surah, hideInfo: false)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)

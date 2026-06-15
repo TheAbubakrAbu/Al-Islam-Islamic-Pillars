@@ -14,6 +14,7 @@ final class QuranPlayer: ObservableObject {
     static let shared = QuranPlayer()
     private static let listeningHistoryKey = "quranListeningHistoryData"
     private static let readingHistoryKey = "quranReadingHistoryData"
+    private static let ayahListeningHistoryKey = "quranAyahListeningHistoryData"
     
     @ObservedObject var settings = Settings.shared
     @ObservedObject var quranData = QuranData.shared
@@ -47,7 +48,10 @@ final class QuranPlayer: ObservableObject {
     @Published var readingHistory: [ReadingHistoryItem] = [] {
         didSet { persistReadingHistory() }
     }
-    
+    @Published var ayahListeningHistory: [AyahListeningHistoryItem] = [] {
+        didSet { persistAyahListeningHistory() }
+    }
+
     private var lastSavedListeningSurahNumber: Int?
     private var lastSavedReadingPosition: (surahNumber: Int, ayahNumber: Int)?
 
@@ -281,7 +285,7 @@ final class QuranPlayer: ObservableObject {
     }
     
     func pause(saveInfo: Bool = true) {
-        if saveInfo { saveLastListenedSurah() }
+        if saveInfo { saveLastListenedSurah(); saveLastListenedAyah() }
         player?.pause()
         withAnimation { isPlaying = false; isPaused = true }
         updateNowPlayingInfo()
@@ -298,7 +302,7 @@ final class QuranPlayer: ObservableObject {
         guard let p = player else { return }
         let newTime = CMTimeGetSeconds(p.currentTime()) + seconds
         p.seek(to: CMTime(seconds: newTime, preferredTimescale: 1)) { _ in
-            self.updateNowPlayingInfo(); self.saveLastListenedSurah()
+            self.updateNowPlayingInfo(); self.saveLastListenedSurah(); self.saveLastListenedAyah()
         }
     }
     
@@ -314,9 +318,10 @@ final class QuranPlayer: ObservableObject {
 
         withAnimation {
             isLoading = false
-            
+
             saveLastListenedSurah()
-            
+            saveLastListenedAyah()
+
             player?.currentItem?.cancelPendingSeeks()
             player?.currentItem?.asset.cancelLoading()
 
@@ -637,6 +642,7 @@ final class QuranPlayer: ObservableObject {
 
         continueRecitationFromAyah = continueRecitation
         didHandleSingleAyahEnd = false
+        if !isBismillah { saveLastListenedAyah() }
         startAyahPlayback(
             surahNumber: surahNumber,
             ayahNumber: ayahNumber,
@@ -805,6 +811,7 @@ final class QuranPlayer: ObservableObject {
                     self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                     self.updateNowPlayingInfo()
                 }
+                self.saveLastListenedAyah()
 
                 // Keep only a lightweight queue (current + next) to prevent large-memory lag spikes.
                 if qPlayer.items().count < 2 {
@@ -1214,6 +1221,76 @@ final class QuranPlayer: ObservableObject {
         }
     }
 
+    /// Persists the current single-ayah / custom-range position as the "Last Listened Ayah". Full-surah
+    /// playback is handled by `saveLastListenedSurah()` instead, so this no-ops during surah playback.
+    func saveLastListenedAyah() {
+        guard settings.saveLastListenedAyah else { return }
+        guard !isPlayingSurah,
+              let surahNum = currentSurahNumber,
+              let ayahNum = currentAyahNumber,
+              let surah = quranData.quran.first(where: { $0.id == surahNum })
+        else { return }
+        let rec = playbackReciter ?? settings.resolvedSelectedReciterIgnoringRandom()
+        guard let rec else { return }
+
+        // When moving to a new ayah, push the previous one into the listening history below the row.
+        if let previous = settings.lastListenedAyah,
+           !(previous.surahNumber == surahNum && previous.ayahNumber == ayahNum) {
+            recordAyahListeningHistory(previous)
+        }
+
+        settings.lastListenedAyah = LastListenedAyah(
+            surahNumber: surahNum,
+            surahName: surah.nameTransliteration,
+            ayahNumber: ayahNum,
+            reciter: rec
+        )
+    }
+
+    /// Adds a previously listened ayah to the history (deduped by surah:ayah, newest first, capped).
+    func recordAyahListeningHistory(_ entry: LastListenedAyah) {
+        if ayahListeningHistory.contains(where: { $0.surahNumber == entry.surahNumber && $0.ayahNumber == entry.ayahNumber }) {
+            return
+        }
+        let item = AyahListeningHistoryItem(
+            surahNumber: entry.surahNumber,
+            surahName: entry.surahName,
+            ayahNumber: entry.ayahNumber,
+            reciter: entry.reciter
+        )
+        withAnimation {
+            ayahListeningHistory.insert(item, at: 0)
+            ayahListeningHistory = normalizeAyahListeningHistory(ayahListeningHistory)
+        }
+    }
+
+    private func normalizeAyahListeningHistory(_ items: [AyahListeningHistoryItem]) -> [AyahListeningHistoryItem] {
+        var seenKeys = Set<String>()
+        var normalized: [AyahListeningHistoryItem] = []
+        for item in items {
+            let key = "\(item.surahNumber)-\(item.ayahNumber)"
+            if seenKeys.insert(key).inserted {
+                normalized.append(item)
+            }
+        }
+        return Array(normalized.prefix(5))
+    }
+
+    private func persistAyahListeningHistory() {
+        let normalized = normalizeAyahListeningHistory(ayahListeningHistory)
+        let hasChanged = normalized.count != ayahListeningHistory.count ||
+            normalized.map { "\($0.surahNumber)-\($0.ayahNumber)" } !=
+            ayahListeningHistory.map { "\($0.surahNumber)-\($0.ayahNumber)" }
+        if hasChanged {
+            ayahListeningHistory = normalized
+            return
+        }
+
+        if let data = try? Settings.encoder.encode(normalized) {
+            UserDefaults.standard.set(data, forKey: Self.ayahListeningHistoryKey)
+        }
+    }
+
     /// Records listening history with surah-based deduplication.
     /// Saves only if the surah is not already present in history.
     func recordListeningHistory(surahNumber: Int, surahName: String, reciter: String) {
@@ -1378,6 +1455,11 @@ final class QuranPlayer: ObservableObject {
             if let firstReading = readingHistory.first {
                 lastSavedReadingPosition = (firstReading.surahNumber, firstReading.ayahNumber)
             }
+        }
+
+        if let ayahListeningData = UserDefaults.standard.data(forKey: Self.ayahListeningHistoryKey),
+           let decodedAyahListening = try? Settings.decoder.decode([AyahListeningHistoryItem].self, from: ayahListeningData) {
+            ayahListeningHistory = normalizeAyahListeningHistory(decodedAyahListening)
         }
     }
 

@@ -184,11 +184,11 @@ struct SettingsQuranView: View {
     private var lastReadAndListenedGroup: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Save Last Read Ayah", isOn: $settings.saveLastReadAyah.animation(.easeInOut))
+                Toggle("Ayah of the Day", isOn: $settings.showAyahOfTheDay.animation(.easeInOut))
                     .font(.subheadline)
-                    .onChange(of: settings.saveLastReadAyah) { _ in settings.hapticFeedback() }
+                    .onChange(of: settings.showAyahOfTheDay) { _ in settings.hapticFeedback() }
 
-                Text("Remembers and shows the last ayah you were reading at the top of the Quran tab.")
+                Text("Shows a different ayah each day at the top of the Quran tab.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)
@@ -200,6 +200,28 @@ struct SettingsQuranView: View {
                     .onChange(of: settings.saveLastListenedSurah) { _ in settings.hapticFeedback() }
 
                 Text("Remembers and shows the last surah you were listening to at the top of the Quran tab.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Save Last Listened Ayah", isOn: $settings.saveLastListenedAyah.animation(.easeInOut))
+                    .font(.subheadline)
+                    .onChange(of: settings.saveLastListenedAyah) { _ in settings.hapticFeedback() }
+
+                Text("Remembers and shows the last single ayah or custom range you were listening to at the top of the Quran tab.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Save Last Read Ayah", isOn: $settings.saveLastReadAyah.animation(.easeInOut))
+                    .font(.subheadline)
+                    .onChange(of: settings.saveLastReadAyah) { _ in settings.hapticFeedback() }
+
+                Text("Remembers and shows the last ayah you were reading at the top of the Quran tab.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)

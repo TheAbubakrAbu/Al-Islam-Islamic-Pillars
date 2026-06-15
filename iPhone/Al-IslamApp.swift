@@ -61,6 +61,7 @@ struct AlIslamApp: App {
         }
         .onChange(of: scenePhase) { _ in
             quranPlayer.saveLastListenedSurah()
+            quranPlayer.saveLastListenedAyah()
             settings.refreshQuranWidgets()
         }
     }

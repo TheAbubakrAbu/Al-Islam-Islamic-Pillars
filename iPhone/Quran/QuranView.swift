@@ -13,6 +13,7 @@ struct QuranView: View {
     @State private var showReciterPickerSheet = false
     @State private var showListeningHistory = false
     @State private var showReadingHistory = false
+    @State private var showAyahListeningHistory = false
     @State private var searchTextAtFocusStart = ""
     @State private var lastSavedSearchQuery = ""
     @State private var isListMoving = false
@@ -48,7 +49,25 @@ struct QuranView: View {
     var lastReadAyah: Ayah? {
         lastReadSurah?.ayahs.first(where: { $0.id == settings.lastReadAyah })
     }
-    
+
+    /// The (surah, ayah) for the last individually-listened ayah, resolved against loaded Quran data.
+    var lastListenedAyahPair: (surah: Surah, ayah: Ayah)? {
+        guard let saved = settings.lastListenedAyah,
+              let surah = quranData.surah(saved.surahNumber),
+              let ayah = surah.ayahs.first(where: { $0.id == saved.ayahNumber })
+        else { return nil }
+        return (surah, ayah)
+    }
+
+    /// The deterministic (surah, ayah) for today's Ayah of the Day, resolved against loaded Quran data.
+    var ayahOfTheDayPair: (surah: Surah, ayah: Ayah)? {
+        guard let ref = settings.ayahOfTheDayReference(),
+              let surah = quranData.surah(ref.surahID),
+              let ayah = surah.ayahs.first(where: { $0.id == ref.ayahID })
+        else { return nil }
+        return (surah, ayah)
+    }
+
     func getSurahAndAyah(from searchText: String) -> (surah: Surah?, ayah: Ayah?) {
         let surahAyahPair = searchText.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: ":").map(String.init)
         var surahNumber: Int? = nil
@@ -1049,6 +1068,22 @@ struct QuranView: View {
     @ViewBuilder
     private func primaryHistorySections(context: SearchDisplayContext) -> some View {
         #if os(iOS)
+        // Order: Ayah of the Day · Last Listened Surah · Last Listened Ayah · Last Read Ayah.
+        if context.isSearching == false,
+           settings.showAyahOfTheDay,
+           settings.isAyahOfTheDayHiddenToday == false,
+           let pair = ayahOfTheDayPair {
+            AyahOfTheDayRow(
+                surah: pair.surah,
+                ayah: pair.ayah,
+                favoriteSurahs: context.favoriteSurahs,
+                bookmarkedAyahs: context.bookmarkedAyahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID,
+                onSelectAyah: columnAyahSelectionHandler
+            )
+        }
+
         if context.isSearching == false, settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
             LastListenedSurahRow(
                 lastListenedSurah: surah,
@@ -1059,6 +1094,21 @@ struct QuranView: View {
                 onSelectSurah: usesColumnNavigation ? { surahID in
                     selectedRoute = .ayahs(surahID: surahID, ayah: nil)
                 } : nil
+            )
+        }
+
+        if context.isSearching == false,
+           settings.saveLastListenedAyah,
+           let pair = lastListenedAyahPair {
+            LastListenedAyahRow(
+                surah: pair.surah,
+                ayah: pair.ayah,
+                favoriteSurahs: context.favoriteSurahs,
+                bookmarkedAyahs: context.bookmarkedAyahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID,
+                showAyahListeningHistory: $showAyahListeningHistory,
+                onSelectAyah: columnAyahSelectionHandler
             )
         }
         #else

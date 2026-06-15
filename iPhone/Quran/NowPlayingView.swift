@@ -122,8 +122,9 @@ struct NowPlayingView: View {
 
     @ViewBuilder
     private func transportButtons(isPlaying: Bool) -> some View {
+        // Skip (previous/next ayah or surah) is the smaller control so the ±10s seek can be the prominent one.
         Image(systemName: "backward.fill")
-            .font(.title2)
+            .font(.body)
             .foregroundColor(settings.accentColor.color)
             .contentShape(Rectangle())
             .onTapGesture {
@@ -131,17 +132,17 @@ struct NowPlayingView: View {
                 quranPlayer.skipBackward()
             }
 
-        // Fine seek (±10s) only for full-surah playback, where a continuous timeline is meaningful.
-        if quranPlayer.isPlayingSurah {
-            Image(systemName: "gobackward.10")
-                .font(.title3)
-                .foregroundColor(settings.accentColor.color)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    quranPlayer.seek(by: -10)
-                }
-        }
+        #if os(iOS)
+        // Fine seek (±10s) is the emphasized control in the in-app player, for both surah and ayah playback.
+        Image(systemName: "gobackward.10")
+            .font(.title)
+            .foregroundColor(settings.accentColor.color)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.seek(by: -10)
+            }
+        #endif
 
         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
             .font(.title2)
@@ -154,19 +155,19 @@ struct NowPlayingView: View {
                 }
             }
 
-        if quranPlayer.isPlayingSurah {
-            Image(systemName: "goforward.10")
-                .font(.title3)
-                .foregroundColor(settings.accentColor.color)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    settings.hapticFeedback()
-                    quranPlayer.seek(by: 10)
-                }
-        }
+        #if os(iOS)
+        Image(systemName: "goforward.10")
+            .font(.title)
+            .foregroundColor(settings.accentColor.color)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.seek(by: 10)
+            }
+        #endif
 
         Image(systemName: "forward.fill")
-            .font(.title2)
+            .font(.body)
             .foregroundColor(settings.accentColor.color)
             .contentShape(Rectangle())
             .onTapGesture {
@@ -175,32 +176,34 @@ struct NowPlayingView: View {
             }
     }
 
-    /// Live elapsed/duration progress bar for full-surah playback. Polls the player on a timeline so it
-    /// updates without adding another player observer.
+    /// Live elapsed/duration progress bar for any in-app playback (surah, single ayah, or custom range).
+    /// Polls the player on a timeline so it updates without adding another player observer.
     @ViewBuilder
     private var surahProgressView: some View {
-        if quranPlayer.isPlayingSurah {
+        if quranPlayer.isPlaying || quranPlayer.isPaused {
             TimelineView(.periodic(from: .now, by: 0.5)) { _ in
                 let elapsed = CMTimeGetSeconds(quranPlayer.player?.currentTime() ?? .zero)
                 let rawTotal = CMTimeGetSeconds(quranPlayer.player?.currentItem?.duration ?? .zero)
                 let total = (rawTotal.isFinite && rawTotal > 0) ? rawTotal : 0
                 let safeElapsed = elapsed.isFinite ? max(0, elapsed) : 0
 
-                VStack(spacing: 2) {
-                    TinyProgressBar(
-                        fraction: total > 0 ? safeElapsed / total : 0,
-                        color: settings.accentColor.color
-                    )
+                if total > 0 {
+                    VStack(spacing: 2) {
+                        TinyProgressBar(
+                            fraction: safeElapsed / total,
+                            color: settings.accentColor.color
+                        )
 
-                    HStack {
-                        Text(Self.formatMMSS(safeElapsed))
-                        Spacer()
-                        Text(Self.formatMMSS(total))
+                        HStack {
+                            Text(Self.formatMMSS(safeElapsed))
+                            Spacer()
+                            Text(Self.formatMMSS(total))
+                        }
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                     }
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .padding(.top, 3)
                 }
-                .padding(.top, 3)
             }
         }
     }
