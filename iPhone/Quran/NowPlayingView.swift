@@ -12,6 +12,9 @@ struct NowPlayingView: View {
 
     @State private var confirmRemoveNote = false
 
+    /// Small (default) vs. big player. Persisted so the choice sticks across screens and launches.
+    @AppStorage("nowPlayingExpanded") private var isExpanded: Bool = false
+
     init(
         quranView: Bool = false,
         scrollDown: Binding<Int> = .constant(-1),
@@ -53,16 +56,18 @@ struct NowPlayingView: View {
                         playerRow(isPlaying: quranPlayer.isPlaying)
                     }
                 }
+                .overlay(alignment: .topTrailing) {
+                    expandToggleButton
+                }
                 .contextMenu {
                     contextMenu(for: playbackContext)
                 }
                 .cornerRadius(24)
                 .padding(.horizontal, 8)
                 .transition(.opacity)
-                // Always use the rounded-rectangle glass shape. Keying it on `isPlayingCustomRange` made the
-                // glass morph between a capsule and a rectangle when state changed, which flashed as a dark
-                // rectangle during the transition.
-                .conditionalGlassEffect(rectangle: true)
+                // Big player uses the rounded-rectangle glass; small player is a capsule (rectangle: false)
+                // unless it's a custom range, which needs the taller rectangle to fit its detail lines.
+                .conditionalGlassEffect(rectangle: isExpanded || quranPlayer.isPlayingCustomRange)
             )
         #else
         return
@@ -135,7 +140,7 @@ struct NowPlayingView: View {
         #if os(iOS)
         // Fine seek (±10s) is the emphasized control in the in-app player, for both surah and ayah playback.
         Image(systemName: "gobackward.10")
-            .font(.title)
+            .font(.title3)
             .foregroundColor(settings.accentColor.color)
             .contentShape(Rectangle())
             .onTapGesture {
@@ -145,7 +150,7 @@ struct NowPlayingView: View {
         #endif
 
         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-            .font(.title2)
+            .font(.title)
             .foregroundColor(settings.accentColor.color)
             .contentShape(Rectangle())
             .onTapGesture {
@@ -157,7 +162,7 @@ struct NowPlayingView: View {
 
         #if os(iOS)
         Image(systemName: "goforward.10")
-            .font(.title)
+            .font(.title3)
             .foregroundColor(settings.accentColor.color)
             .contentShape(Rectangle())
             .onTapGesture {
@@ -240,27 +245,36 @@ struct NowPlayingView: View {
         return quranPlayer.nowPlayingTitle
     }
 
+    /// Top-right button that toggles between the small and big player.
+    private var expandToggleButton: some View {
+        Button {
+            settings.hapticFeedback()
+            withAnimation(.easeInOut) { isExpanded.toggle() }
+        } label: {
+            Image(systemName: isExpanded
+                  ? "arrow.down.right.and.arrow.up.left"
+                  : "arrow.up.left.and.arrow.down.right")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+                .padding(8)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     @ViewBuilder
     private func playerRow(isPlaying: Bool) -> some View {
         #if os(iOS)
-        VStack(spacing: 4) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    titleBlock
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                HStack(spacing: 10) {
-                    transportButtons(isPlaying: isPlaying)
-                }
+        Group {
+            if isExpanded {
+                expandedPlayerRow(isPlaying: isPlaying)
+            } else {
+                compactPlayerRow(isPlaying: isPlaying)
             }
-
-            surahProgressView
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+        .animation(.easeInOut, value: isExpanded)
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 let surah = quranPlayer.currentSurahNumber ?? 1
@@ -275,7 +289,7 @@ struct NowPlayingView: View {
         }
         #else
         VStack(alignment: .center, spacing: 6) {
-            titleBlock
+            titleBlock(expanded: false)
 
             HStack(spacing: 12) {
                 transportButtons(isPlaying: isPlaying)
@@ -295,9 +309,86 @@ struct NowPlayingView: View {
         #endif
     }
 
+    #if os(iOS)
+    /// Big player: centered title, full transport row (with ±10s seek), and the live progress bar.
+    private func expandedPlayerRow(isPlaying: Bool) -> some View {
+        VStack(spacing: 6) {
+            VStack(alignment: .center, spacing: 1) {
+                titleBlock(expanded: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .multilineTextAlignment(.center)
+            // Horizontal inset keeps the centered title clear of the top-right expand button.
+            .padding(.horizontal, 24)
+
+            HStack(spacing: 22) {
+                transportButtons(isPlaying: isPlaying)
+            }
+            .frame(maxWidth: .infinity)
+
+            surahProgressView
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+    }
+
+    /// Small player (matches 4.4.4): one row, three controls, no seek, no progress bar.
+    private func compactPlayerRow(isPlaying: Bool) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                titleBlock(expanded: false)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 10) {
+                compactTransportButtons(isPlaying: isPlaying)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.leading, 12)
+        // Extra trailing room so the controls clear the top-right expand button.
+        .padding(.trailing, 30)
+    }
+
     @ViewBuilder
-    private var titleBlock: some View {
-        if let title = displayTitle {
+    private func compactTransportButtons(isPlaying: Bool) -> some View {
+        Image(systemName: "backward.fill")
+            .font(.title2)
+            .foregroundColor(settings.accentColor.color)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.skipBackward()
+            }
+
+        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+            .font(.title2)
+            .foregroundColor(settings.accentColor.color)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                withAnimation {
+                    isPlaying ? quranPlayer.pause() : quranPlayer.resume()
+                }
+            }
+
+        Image(systemName: "forward.fill")
+            .font(.title2)
+            .foregroundColor(settings.accentColor.color)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                settings.hapticFeedback()
+                quranPlayer.skipForward()
+            }
+    }
+    #endif
+
+    @ViewBuilder
+    private func titleBlock(expanded: Bool) -> some View {
+        // Big player mirrors Control Center exactly (full title, with the custom-range ayah/section detail
+        // already inline). Small player uses the short title and breaks the detail out onto its own lines.
+        let titleText = expanded ? quranPlayer.nowPlayingTitle : displayTitle
+        if let title = titleText {
             Text(title)
                 .foregroundColor(.primary)
                 #if os(iOS)
@@ -320,7 +411,7 @@ struct NowPlayingView: View {
                 #endif
         }
 
-        if quranPlayer.isPlayingCustomRange,
+        if !expanded, quranPlayer.isPlayingCustomRange,
            let start = quranPlayer.customRangeStartAyah,
            let end = quranPlayer.customRangeEndAyah {
             VStack(alignment: .leading, spacing: 1) {

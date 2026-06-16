@@ -21,7 +21,10 @@ struct WallpaperView: View {
 
     var body: some View {
         List {
-            wallpaperSections
+            Group {
+                wallpaperSections
+            }
+            .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Wallpapers")

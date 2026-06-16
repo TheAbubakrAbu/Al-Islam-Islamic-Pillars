@@ -62,15 +62,18 @@ struct AdhanView: View {
 
     private var adhanContent: some View {
         List {
-            DateAndLocationSection(showBigQibla: $showBigQibla)
+            Group {
+                DateAndLocationSection(showBigQibla: $showBigQibla)
 
-            prayersSection
+                prayersSection
 
-            #if os(iOS)
-            Section(header: Text("LOCATION AND CALCULATION")) {
-                LocationCalculationCard()
+                #if os(iOS)
+                Section(header: Text("LOCATION AND CALCULATION")) {
+                    LocationCalculationCard()
+                }
+                #endif
             }
-            #endif
+            .themedListRowBackground()
         }
         .refreshable {
             prayerTimeRefresh(force: true)
@@ -103,6 +106,7 @@ struct AdhanView: View {
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
+        .withNowPlayingInset()
     }
 
     @ViewBuilder
@@ -415,7 +419,7 @@ private struct CurrentLocationRow: View {
                         }
                 }
                 .padding(12)
-                .conditionalGlassEffect()
+                .conditionalGlassEffect(themeTint: false)
                 .cornerRadius(8)
             }
             .buttonStyle(.plain)

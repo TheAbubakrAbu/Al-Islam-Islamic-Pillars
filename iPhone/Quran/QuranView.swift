@@ -457,7 +457,13 @@ struct QuranView: View {
                 NavigationSplitView {
                     content
                 } detail: {
-                    quranSelectedDetail
+                    // Detail needs its own NavigationStack so NavigationLinks inside a surah push within
+                    // the detail column instead of hijacking the split. `.id` resets it when the selected
+                    // surah changes.
+                    NavigationStack {
+                        quranSelectedDetail
+                    }
+                    .id((selectedRoute ?? defaultDetailRoute).surahID)
                 }
             } else if #available(iOS 16.0, *) {
                 pathNavigation
@@ -607,15 +613,18 @@ struct QuranView: View {
             let context = searchDisplayContext
 
             List {
-                primaryHistorySections(context: context)
-                bookmarkSection(context: context)
-                favoriteSection(context: context)
-                if context.explicitPageOrJuzMode && context.isSearching {
-                    pageSearchSection(context: context)
-                    juzSearchSection(context: context)
+                Group {
+                    primaryHistorySections(context: context)
+                    bookmarkSection(context: context)
+                    favoriteSection(context: context)
+                    if context.explicitPageOrJuzMode && context.isSearching {
+                        pageSearchSection(context: context)
+                        juzSearchSection(context: context)
+                    }
+                    surahContentSections(context: context)
+                    searchResultSections(context: context)
                 }
-                surahContentSections(context: context)
-                searchResultSections(context: context)
+                .themedListRowBackground()
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .compactListSectionSpacing()

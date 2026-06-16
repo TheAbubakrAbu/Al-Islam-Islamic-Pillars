@@ -528,16 +528,20 @@ struct SurahInfoSheet: View {
 
                             if let source = selectedSource {
                                 let arabic = Self.isArabic(source.contents)
-                                VStack(alignment: .leading, spacing: 12) {
+                                VStack(alignment: arabic ? .trailing : .leading, spacing: 12) {
                                     Text(source.name)
                                         .font(.headline)
+                                        .frame(maxWidth: .infinity, alignment: arabic ? .trailing : .leading)
 
-                                    TafsirMarkdownView(markdown: source.contents, searchText: searchText, accent: settings.accentColor.color)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    TafsirMarkdownView(
+                                        markdown: source.contents,
+                                        searchText: searchText,
+                                        accent: settings.accentColor.color,
+                                        textAlignment: arabic ? .trailing : .leading
+                                    )
+                                    .frame(maxWidth: .infinity, alignment: arabic ? .trailing : .leading)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .environment(\.layoutDirection, arabic ? .rightToLeft : .leftToRight)
-                                .multilineTextAlignment(arabic ? .trailing : .leading)
+                                .frame(maxWidth: .infinity, alignment: arabic ? .trailing : .leading)
                                 .id(source.name)
                                 .textSelection(.enabled)
                             }
@@ -561,7 +565,7 @@ struct SurahInfoSheet: View {
                 }
             }
         }
-        .modifier(TafsirSheetPresentationModifier())
+        .modifier(SheetPresentationModifier())
     }
 
     private var noticeCard: some View {
@@ -634,6 +638,24 @@ private struct TafsirMarkdownView: View {
     let markdown: String
     let searchText: String
     let accent: Color
+    /// Text/line alignment for the rendered blocks. Pass `.trailing` for Arabic so it reads right-to-left.
+    var textAlignment: TextAlignment = .leading
+
+    private var frameAlignment: Alignment {
+        switch textAlignment {
+        case .leading:  return .leading
+        case .center:   return .center
+        case .trailing: return .trailing
+        }
+    }
+
+    private var stackAlignment: HorizontalAlignment {
+        switch textAlignment {
+        case .leading:  return .leading
+        case .center:   return .center
+        case .trailing: return .trailing
+        }
+    }
 
     private var blocks: [TafsirMarkdownBlock] {
         normalizedMarkdown
@@ -654,32 +676,33 @@ private struct TafsirMarkdownView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: stackAlignment, spacing: 14) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                 switch block.kind {
                 case .heading:
                     Text(block.highlightedDisplayText(searchText: searchText, accent: accent))
                         .font(.title3.bold())
                         .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: frameAlignment)
                 case .body:
                     if let attributed = block.attributedText(searchText: searchText, accent: accent) {
                         Text(attributed)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity, alignment: frameAlignment)
                             .textSelection(.enabled)
                             .lineSpacing(5)
                     } else {
                         Text(block.displayText)
                             .font(.body)
                             .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity, alignment: frameAlignment)
                             .textSelection(.enabled)
                             .lineSpacing(5)
                     }
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: frameAlignment)
+        .multilineTextAlignment(textAlignment)
         .textSelection(.enabled)
     }
 }
@@ -827,35 +850,38 @@ struct AyahQiraahComparisonSheet: View {
     var body: some View {
         NavigationView {
             List {
-                Section {
-                    Text("Compare this ayah across the Arabic riwayat available in the app. Some riwayat merge or omit Hafs ayah numbers, so unavailable rows are dimmed.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                if !favoriteOptions.isEmpty {
-                    Section(header: Text("FAVORITES")) {
-                        ForEach(favoriteOptions) { option in
-                            qiraahRow(option)
-                        }
-                    }
-                }
-
-                ForEach(groupedOptions, id: \.teacher) { group in
-                    Section(header: Text("\(group.teacher.uppercased()) - \(group.teacherArabic)")) {
-                        ForEach(group.options) { option in
-                            qiraahRow(option)
-                        }
-                    }
-                }
-
-                if filteredOptions.isEmpty {
+                Group {
                     Section {
-                        Text("No riwayat found.")
+                        Text("Compare this ayah across the Arabic riwayat available in the app. Some riwayat merge or omit Hafs ayah numbers, so unavailable rows are dimmed.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
+
+                    if !favoriteOptions.isEmpty {
+                        Section(header: Text("FAVORITES")) {
+                            ForEach(favoriteOptions) { option in
+                                qiraahRow(option)
+                            }
+                        }
+                    }
+
+                    ForEach(groupedOptions, id: \.teacher) { group in
+                        Section(header: Text("\(group.teacher.uppercased()) - \(group.teacherArabic)")) {
+                            ForEach(group.options) { option in
+                                qiraahRow(option)
+                            }
+                        }
+                    }
+
+                    if filteredOptions.isEmpty {
+                        Section {
+                            Text("No riwayat found.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
+                .themedListRowBackground()
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .compactListSectionSpacing()
@@ -1120,74 +1146,77 @@ struct AyahEnglishComparisonSheet: View {
     var body: some View {
         NavigationView {
             List {
-                Section {
-                    Text("Compare this ayah across several English Qur'an translations. Results are loaded from alquran.cloud.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                if shouldShowQuranText,
-                   let ayah = quranData.ayah(surah: surahNumber, ayah: ayahNumber) {
-                    Section(header: Text("QURAN TEXT")) {
-                        comparisonRow(
-                            title: nil,
-                            text: ayah.displayArabicText(surahId: surahNumber, clean: settings.cleanArabicText),
-                            isArabic: true
-                        )
-
-                        if settings.showTransliteration {
-                            comparisonRow(title: "Transliteration", text: ayah.textTransliteration)
-                        }
+                Group {
+                    Section {
+                        Text("Compare this ayah across several English Qur'an translations. Results are loaded from alquran.cloud.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
-                }
 
-                Section(header: Text("DOWNLOADED TRANSLATIONS")) {
-                    if let ayah = quranData.ayah(surah: surahNumber, ayah: ayahNumber) {
-                        ForEach(filteredInAppEditions) { edition in
+                    if shouldShowQuranText,
+                       let ayah = quranData.ayah(surah: surahNumber, ayah: ayahNumber) {
+                        Section(header: Text("QURAN TEXT")) {
                             comparisonRow(
-                                title: edition.name,
-                                text: inAppTranslationText(for: edition.id, ayah: ayah),
-                                editionID: edition.id,
-                                isDownloaded: true
+                                title: nil,
+                                text: ayah.displayArabicText(surahId: surahNumber, clean: settings.cleanArabicText),
+                                isArabic: true
                             )
-                        }
 
-                        if filteredInAppEditions.isEmpty {
-                            Text("No downloaded translations found.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            if settings.showTransliteration {
+                                comparisonRow(title: "Transliteration", text: ayah.textTransliteration)
+                            }
+                        }
+                    }
+
+                    Section(header: Text("DOWNLOADED TRANSLATIONS")) {
+                        if let ayah = quranData.ayah(surah: surahNumber, ayah: ayahNumber) {
+                            ForEach(filteredInAppEditions) { edition in
+                                comparisonRow(
+                                    title: edition.name,
+                                    text: inAppTranslationText(for: edition.id, ayah: ayah),
+                                    editionID: edition.id,
+                                    isDownloaded: true
+                                )
+                            }
+
+                            if filteredInAppEditions.isEmpty {
+                                Text("No downloaded translations found.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+
+                    Section(header: Text("ONLINE TRANSLATIONS")) {
+                        if viewModel.isLoading && viewModel.translations.isEmpty {
+                            HStack {
+                                ProgressView()
+                                Text("Loading translations...")
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else if let errorMessage = viewModel.errorMessage, viewModel.translations.isEmpty {
+                                Text(errorMessage)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                            ForEach(filteredOnlineEditions) { edition in
+                                comparisonRow(
+                                    title: edition.name,
+                                    text: viewModel.translations[edition.id] ?? "Unavailable",
+                                    editionID: edition.id
+                                )
+                                .opacity(viewModel.translations[edition.id] == nil ? 0.55 : 1)
+                            }
+
+                            if filteredOnlineEditions.isEmpty {
+                                Text("No translations found.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
-
-                Section(header: Text("ONLINE TRANSLATIONS")) {
-                    if viewModel.isLoading && viewModel.translations.isEmpty {
-                        HStack {
-                            ProgressView()
-                            Text("Loading translations...")
-                                .foregroundStyle(.secondary)
-                        }
-                    } else if let errorMessage = viewModel.errorMessage, viewModel.translations.isEmpty {
-                            Text(errorMessage)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        } else {
-                        ForEach(filteredOnlineEditions) { edition in
-                            comparisonRow(
-                                title: edition.name,
-                                text: viewModel.translations[edition.id] ?? "Unavailable",
-                                editionID: edition.id
-                            )
-                            .opacity(viewModel.translations[edition.id] == nil ? 0.55 : 1)
-                        }
-
-                        if filteredOnlineEditions.isEmpty {
-                            Text("No translations found.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
+                .themedListRowBackground()
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .compactListSectionSpacing()

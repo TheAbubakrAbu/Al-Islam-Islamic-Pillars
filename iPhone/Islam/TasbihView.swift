@@ -18,10 +18,13 @@ struct TasbihView: View {
 
     var body: some View {
         List {
-            dhikrSelectionSection
-            #if os(watchOS)
-            activeTasbihSection
-            #endif
+            Group {
+                dhikrSelectionSection
+                #if os(watchOS)
+                activeTasbihSection
+                #endif
+            }
+            .themedListRowBackground()
         }
         #if os(iOS)
         .adaptiveSafeArea(edge: .bottom) {

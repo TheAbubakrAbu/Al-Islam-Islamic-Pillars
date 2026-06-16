@@ -69,12 +69,26 @@ struct SettingsQuranView: View {
     
     var body: some View {
         List {
-            recitationSection
-            displaySection
-            //searchSection
-            arabicTextSection
-            englishTextSection
-            qiraahSection
+            Group {
+                Section {
+                    quranSettingsLink(title: "Recitation", systemImage: "headphones") {
+                        recitationDestination
+                    }
+                    quranSettingsLink(title: "Quran Tab View", systemImage: "list.bullet.rectangle") {
+                        quranTabViewDestination
+                    }
+                    quranSettingsLink(title: "Surah Reading View", systemImage: "book") {
+                        surahReadingDestination
+                    }
+                    quranSettingsLink(title: "Arabic Text", systemImage: "character.book.closed.ar") {
+                        arabicTextDestination
+                    }
+                    quranSettingsLink(title: "English Text", systemImage: "textformat") {
+                        englishTextDestination
+                    }
+                }
+            }
+            .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Quran Settings")
@@ -94,6 +108,72 @@ struct SettingsQuranView: View {
             }
         }
         #endif
+    }
+
+    private func quranSettingsLink<Destination: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder destination: () -> Destination
+    ) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            Label(title, systemImage: systemImage)
+        }
+        .tint(settings.accentColor.color)
+    }
+
+    /// Shared scaffold for each Quran settings sub-screen: themed list + standard style + title.
+    @ViewBuilder
+    private func quranSettingsSubList<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        List {
+            Group {
+                content()
+            }
+            .themedListRowBackground()
+        }
+        .applyConditionalListStyle(defaultView: true)
+        .navigationTitle(title)
+    }
+
+    private var recitationDestination: some View {
+        quranSettingsSubList(title: "Recitation") {
+            recitationSection
+        }
+    }
+
+    private var quranTabViewDestination: some View {
+        quranSettingsSubList(title: "Quran Tab View") {
+            quranTabViewSection
+        }
+    }
+
+    private var surahReadingDestination: some View {
+        quranSettingsSubList(title: "Surah Reading View") {
+            surahReadingSection
+        }
+    }
+
+    private var englishTextDestination: some View {
+        quranSettingsSubList(title: "English Text") {
+            englishTextSection
+        }
+    }
+
+    // Arabic Text keeps Qiraah nested inside it (and owns the qiraah-reset confirmation dialog).
+    private var arabicTextDestination: some View {
+        List {
+            Group {
+                arabicTextSection
+                qiraahSection
+            }
+            .themedListRowBackground()
+        }
+        .applyConditionalListStyle(defaultView: true)
+        .navigationTitle("Arabic Text")
         .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmHideQiraahDetails, titleVisibility: .visible) {
             Button("Yes") {
                 settings.hapticFeedback()
@@ -158,10 +238,9 @@ struct SettingsQuranView: View {
         #endif
     }
 
-    private var displaySection: some View {
-        Section(header: Text("DISPLAY")) {
-            pageAndJuzDividersGroup
-
+    // Options that affect the main Quran tab / surah list screen.
+    private var quranTabViewSection: some View {
+        Section(header: Text("QURAN TAB")) {
             VStack(alignment: .leading) {
                 Toggle("Show Full Surah Details", isOn: $settings.showFullSurahRow.animation(.easeInOut))
                     .font(.subheadline)
@@ -174,6 +253,13 @@ struct SettingsQuranView: View {
             }
 
             lastReadAndListenedGroup
+        }
+    }
+
+    // Options that affect the in-surah reading screen.
+    private var surahReadingSection: some View {
+        Section(header: Text("READING")) {
+            pageAndJuzDividersGroup
 
             highlightAllahGroup
 
@@ -1180,6 +1266,7 @@ struct ReciterListView: View {
     var body: some View {
         ScrollViewReader { scrollProxy in
             List {
+                Group {
                 if isSearchingReciters {
                     searchResultsBanner()
 
@@ -1440,7 +1527,9 @@ struct ReciterListView: View {
                         }
                     }
             #endif
-        }
+                }
+            }
+            .themedListRowBackground()
         }
             .navigationTitle("Select Reciter")
             #if os(iOS)

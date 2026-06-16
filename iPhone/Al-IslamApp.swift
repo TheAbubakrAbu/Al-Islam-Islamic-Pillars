@@ -105,7 +105,6 @@ private struct MainTabView: View {
             TabView {
                 Tab("Adhan", systemImage: "mecca") {
                     AdhanView()
-                        .withNowPlayingInset()
                 }
 
                 Tab("Quran", systemImage: "character.book.closed.ar") {
@@ -114,18 +113,15 @@ private struct MainTabView: View {
 
                 Tab("Islam", systemImage: "moon.stars") {
                     IslamView()
-                        .withNowPlayingInset()
                 }
 
                 Tab("Settings", systemImage: "gearshape", role: .search) {
                     SettingsView()
-                        .withNowPlayingInset()
                 }
             }
         } else {
             TabView {
                 AdhanView()
-                    .withNowPlayingInset()
                     .tabItem {
                         Image(systemName: "safari")
                         Text("Adhan")
@@ -138,14 +134,12 @@ private struct MainTabView: View {
                     }
 
                 IslamView()
-                    .withNowPlayingInset()
                     .tabItem {
                         Image(systemName: "moon.stars")
                         Text("Islam")
                     }
 
                 SettingsView()
-                    .withNowPlayingInset()
                     .tabItem {
                         Image(systemName: "gearshape")
                         Text("Settings")
@@ -155,26 +149,3 @@ private struct MainTabView: View {
     }
 }
 
-private struct NowPlayingInsetModifier: ViewModifier {
-    @EnvironmentObject private var quranPlayer: QuranPlayer
-
-    func body(content: Content) -> some View {
-        content.safeAreaInset(edge: .bottom) {
-            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                if quranPlayer.isPlaying || quranPlayer.isPaused {
-                    NowPlayingView()
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 8)
-            .background(Color.white.opacity(0.00001))
-            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
-        }
-    }
-}
-
-private extension View {
-    func withNowPlayingInset() -> some View {
-        modifier(NowPlayingInsetModifier())
-    }
-}

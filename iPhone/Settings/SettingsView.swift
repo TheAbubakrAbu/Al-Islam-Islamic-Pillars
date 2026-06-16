@@ -33,11 +33,14 @@ struct SettingsView: View {
                                 }
                             }
                     } detail: {
-                        settingsSplitDetail
-                            // Rebuild the detail on selection change so it can't get stuck on a previous item
-                            // after the split view disappeared and reappeared on iPad/Mac.
-                            .id(selectedDestination ?? .quranSettings)
-                            .animation(.easeInOut(duration: 0.25), value: selectedDestination)
+                        // Detail gets its own NavigationStack so the sub-screen NavigationLinks
+                        // (e.g. Quran settings → Recitation) push within the detail column instead of
+                        // replacing the whole split. `.id` rebuilds it when the sidebar selection changes.
+                        NavigationStack {
+                            settingsSplitDetail
+                        }
+                        .id(selectedDestination ?? .quranSettings)
+                        .animation(.easeInOut(duration: 0.25), value: selectedDestination)
                     }
                 } else {
                     NavigationStack {
@@ -61,30 +64,37 @@ struct SettingsView: View {
 
     private var settingsList: some View {
         List {
-            notificationSection
-            manualOffsetsSection
-            adhanSection
-            quranSection
-            appearanceSection
-            creditsSection
-            
-            AlIslamAppsSection()
+            Group {
+                notificationSection
+                manualOffsetsSection
+                adhanSection
+                quranSection
+                appearanceSection
+                creditsSection
+
+                AlIslamAppsSection()
+            }
+            .themedListRowBackground()
         }
         .navigationTitle("Settings")
         .applyConditionalListStyle(defaultView: true)
+        .withNowPlayingInset()
     }
 
     #if os(iOS)
     @available(iOS 16.0, *)
     private var settingsSplitList: some View {
         List(selection: $selectedDestination) {
-            notificationSectionSplit
-            manualOffsetsSectionSplit
-            adhanSectionSplit
-            quranSectionSplit
-            appearanceSection
-            creditsSection
-            AlIslamAppsSection()
+            Group {
+                notificationSectionSplit
+                manualOffsetsSectionSplit
+                adhanSectionSplit
+                quranSectionSplit
+                appearanceSection
+                creditsSection
+                AlIslamAppsSection()
+            }
+            .themedListRowBackground()
         }
         .navigationTitle("Settings")
         .applyConditionalListStyle(defaultView: true)
@@ -92,16 +102,19 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsSplitDetail: some View {
-        switch selectedDestination ?? .quranSettings {
-        case .notification:
-            NotificationView()
-        case .manualOffsets:
-            manualOffsetDestination
-        case .prayerSettings:
-            SettingsAdhanView(showNotifications: false)
-        case .quranSettings:
-            SettingsQuranView(showEdits: true)
+        Group {
+            switch selectedDestination ?? .quranSettings {
+            case .notification:
+                NotificationView()
+            case .manualOffsets:
+                manualOffsetDestination
+            case .prayerSettings:
+                SettingsAdhanView(showNotifications: false)
+            case .quranSettings:
+                SettingsQuranView(showEdits: true)
+            }
         }
+        .withNowPlayingInset()
     }
     #endif
 
@@ -182,43 +195,46 @@ struct SettingsView: View {
 
     private var manualOffsetDestination: some View {
         List {
-            Section(header: Text("HIJRI OFFSET")) {
-                Stepper(value: $settings.hijriOffset, in: -3...3) {
-                    HStack {
-                        Text("Hijri Offset:")
-                            .foregroundColor(.primary)
-                        
-                        Text("\(settings.hijriOffset) days")
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                }
-                .font(.subheadline)
+            Group {
+                Section(header: Text("HIJRI OFFSET")) {
+                    Stepper(value: $settings.hijriOffset, in: -3...3) {
+                        HStack {
+                            Text("Hijri Offset:")
+                                .foregroundColor(.primary)
 
-                if let hijriDate = settings.hijriDate {
-                    HStack {
-                        Text("English:")
-                            .foregroundColor(.primary)
-                        
-                        Text(hijriDate.english)
-                            .foregroundColor(settings.accentColor.color)
+                            Text("\(settings.hijriOffset) days")
+                                .foregroundColor(settings.accentColor.color)
+                        }
                     }
                     .font(.subheadline)
 
-                    HStack {
-                        Text("Arabic: ")
-                            .foregroundColor(.primary)
-                        
-                        Text(hijriDate.arabic)
-                            .foregroundColor(settings.accentColor.color)
-                    }
-                    .font(.subheadline)
-                }
-            }
-            .onAppear {
-                settings.fetchPrayerTimes()
-            }
+                    if let hijriDate = settings.hijriDate {
+                        HStack {
+                            Text("English:")
+                                .foregroundColor(.primary)
 
-            PrayerOffsetsView()
+                            Text(hijriDate.english)
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                        .font(.subheadline)
+
+                        HStack {
+                            Text("Arabic: ")
+                                .foregroundColor(.primary)
+
+                            Text(hijriDate.arabic)
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                        .font(.subheadline)
+                    }
+                }
+                .onAppear {
+                    settings.fetchPrayerTimes()
+                }
+
+                PrayerOffsetsView()
+            }
+            .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Manual Offset Settings")
@@ -444,15 +460,38 @@ struct SettingsView: View {
 
 struct SettingsAppearanceView: View {
     @EnvironmentObject var settings: Settings
-    
+
+    /// Reads/writes the stored custom hex; picking a color also switches the active accent to `.custom`.
+    private var customAccentColorBinding: Binding<Color> {
+        Binding(
+            get: { Color(hex: settings.customAccentColorHex) ?? .green },
+            set: { newColor in
+                settings.customAccentColorHex = newColor.hexString
+                withAnimation { settings.accentColor = .custom }
+            }
+        )
+    }
+
+    /// On = custom accent is active (color picker enabled). Off = revert to the app's default accent.
+    private var customColorEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { settings.accentColor == .custom },
+            set: { isOn in
+                withAnimation {
+                    settings.accentColor = isOn ? .custom : AppIdentifiers.mainColor
+                }
+            }
+        )
+    }
+
     var body: some View {
         #if os(iOS)
         Picker("Color Theme", selection: $settings.colorSchemeString.animation(.easeInOut)) {
             Text("System").tag("system")
             Text("Light").tag("light")
             Text("Dark").tag("dark")
-            Text("Sepia").tag("sepia")
             Text("Gray").tag("gray")
+            Text("Sepia").tag("sepia")
         }
         .font(.subheadline)
         .pickerStyle(SegmentedPickerStyle())
@@ -476,7 +515,7 @@ struct SettingsAppearanceView: View {
                         )
                         .onTapGesture {
                             settings.hapticFeedback()
-                            
+
                             withAnimation {
                                 settings.accentColor = accentColor
                             }
@@ -484,6 +523,19 @@ struct SettingsAppearanceView: View {
                 }
             }
             .padding(.vertical)
+
+            #if os(iOS)
+            // Toggle selects the custom accent; the color picker below is only enabled while it's on.
+            Toggle("Custom Color", isOn: customColorEnabledBinding.animation(.easeInOut))
+                .font(.subheadline)
+                .onChange(of: settings.accentColor) { _ in settings.hapticFeedback() }
+
+            ColorPicker(selection: customAccentColorBinding, supportsOpacity: false) {
+                Text("Choose Color")
+                    .font(.subheadline)
+            }
+            .disabled(settings.accentColor != .custom)
+            #endif
             
             #if os(iOS)
             Text("Anas ibn Malik (may Allah be pleased with him) said, “The most beloved of colors to the Messenger of Allah (peace be upon him) was green.”")

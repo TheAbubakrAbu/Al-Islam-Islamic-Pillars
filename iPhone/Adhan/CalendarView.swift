@@ -65,49 +65,52 @@ struct CalendarView: View {
     private var eventsList: some View {
         ScrollViewReader { proxy in
             List {
-                Section(header: Text("WHAT IS HIJRI?")) {
-                    Text("The Hijri calendar is the Islamic lunar calendar. It tracks months by moon cycles, so dates shift through the solar year and are primarily used for Islamic worship and sacred days.")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
+                Group {
+                    Section(header: Text("WHAT IS HIJRI?")) {
+                        Text("The Hijri calendar is the Islamic lunar calendar. It tracks months by moon cycles, so dates shift through the solar year and are primarily used for Islamic worship and sacred days.")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
 
-                    Text("Islamic events are calculated using the Umm al-Qura Hijri method selected in app settings.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Text("Islamic events are calculated using the Umm al-Qura Hijri method selected in app settings.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                    Button {
-                        settings.hapticFeedback()
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            mode = .calendar
+                        Button {
+                            settings.hapticFeedback()
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                mode = .calendar
+                            }
+                        } label: {
+                            Label("Open Hijri Calendar", systemImage: "calendar")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(settings.accentColor.color)
                         }
-                    } label: {
-                        Label("Open Hijri Calendar", systemImage: "calendar")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
+
+                        NavigationLink {
+                            HijriCalendarView()
+                        } label: {
+                            Label("Learn About the Hijri Calendar", systemImage: "book.pages")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(settings.accentColor.color)
+                        }
+
+                        NavigationLink {
+                            DateView()
+                        } label: {
+                            Label("Open Hijri Date Converter", systemImage: "calendar.badge.clock")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(settings.accentColor.color)
+                        }
                     }
 
-                    NavigationLink {
-                        HijriCalendarView()
-                    } label: {
-                        Label("Learn About the Hijri Calendar", systemImage: "book.pages")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                    }
-
-                    NavigationLink {
-                        DateView()
-                    } label: {
-                        Label("Open Hijri Date Converter", systemImage: "calendar.badge.clock")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
+                    Section(header: Text("IMPORTANT ISLAMIC DATES")) {
+                        ForEach(eventRows, id: \.id) { row in
+                            HijriEventRow(row: row, isPast: isPastEvent(row))
+                                .id(row.id)
+                        }
                     }
                 }
-
-                Section(header: Text("IMPORTANT ISLAMIC DATES")) {
-                    ForEach(eventRows, id: \.id) { row in
-                        HijriEventRow(row: row, isPast: isPastEvent(row))
-                            .id(row.id)
-                    }
-                }
+                .themedListRowBackground()
             }
             .onAppear {
                 updateInformation()

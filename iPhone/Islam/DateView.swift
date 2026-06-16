@@ -40,8 +40,11 @@ struct DateView: View {
         VStack {
             #if os(iOS)
             List {
+                Group {
                 selectionSection
                 convertedDateSection
+                }
+                .themedListRowBackground()
             }
             #endif
         }

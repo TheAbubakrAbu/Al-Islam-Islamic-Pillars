@@ -31,7 +31,14 @@ struct IslamView: View {
                 NavigationSplitView {
                     islamSidebar
                 } detail: {
-                    islamDetail
+                    // The detail needs its own NavigationStack so NavigationLinks inside a destination
+                    // (e.g. tapping a letter in ArabicView) push within the detail column instead of
+                    // hijacking the whole split. `.id` rebuilds the stack when the sidebar selection
+                    // changes, so switching sections always resets to that section's root.
+                    NavigationStack {
+                        islamDetail
+                    }
+                    .id(selectedResource ?? .arabicAlphabet)
                 }
             } else if #available(iOS 16.0, *) {
                 NavigationStack {
@@ -56,21 +63,28 @@ struct IslamView: View {
 
     private var islamList: some View {
         List {
+            Group {
             resourcesSection
             ProphetQuote()
             AlIslamAppsSection()
+            }
+            .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle(AppIdentifiers.toolsView)
+        .withNowPlayingInset()
     }
 
     #if os(iOS)
     @available(iOS 16.0, *)
     private var islamSidebar: some View {
         List(selection: $selectedResource) {
+            Group {
             resourcesSectionSplit
             ProphetQuote()
             AlIslamAppsSection()
+            }
+            .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle(AppIdentifiers.toolsView)
@@ -83,6 +97,7 @@ struct IslamView: View {
         // view disappeared and came back on iPad/Mac.
         destinationView(for: selectedResource ?? .arabicAlphabet)
             .id(selectedResource ?? .arabicAlphabet)
+            .withNowPlayingInset()
     }
 
     @available(iOS 16.0, *)

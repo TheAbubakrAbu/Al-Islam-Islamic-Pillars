@@ -226,11 +226,14 @@ struct NamesView: View {
 
         ScrollViewReader { proxy in
             List {
-                descriptionSection
-                favoriteNamesSection(hasActiveSearch: hasActiveSearch, proxy: proxy)
-                namesHeaderSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
-                namesSections(filteredNames: filteredNames, hasActiveSearch: hasActiveSearch, proxy: proxy)
-                finalInvocationSection
+                Group {
+                    descriptionSection
+                    favoriteNamesSection(hasActiveSearch: hasActiveSearch, proxy: proxy)
+                    namesHeaderSection(resultCount: filteredNames.count, hasActiveSearch: hasActiveSearch)
+                    namesSections(filteredNames: filteredNames, hasActiveSearch: hasActiveSearch, proxy: proxy)
+                    finalInvocationSection
+                }
+                .themedListRowBackground()
             }
         }
         #if os(watchOS)

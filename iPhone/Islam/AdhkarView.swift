@@ -116,10 +116,13 @@ struct AdhkarView: View {
 
     var body: some View {
         List {
-            introductionSection
-            adhkarRows
-            etymologySection
-            virtuesSection
+            Group {
+                introductionSection
+                adhkarRows
+                etymologySection
+                virtuesSection
+            }
+            .themedListRowBackground()
         }
         #if os(iOS)
         .adaptiveSafeArea(edge: .bottom) {

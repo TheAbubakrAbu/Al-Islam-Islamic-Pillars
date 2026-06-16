@@ -235,7 +235,7 @@ struct SurahView: View {
             message += "\n\nExceptions: \(exceptions)"
         }
 
-        return SurahInfoDialog(title: "Surah Info", message: message)
+        return SurahInfoDialog(title: "Revelation Info", message: message)
     }
 
     /// Ayah row id to scroll to after clearing search (first ayah following this boundary).
@@ -782,8 +782,8 @@ struct SurahView: View {
 
     var body: some View {
         #if os(iOS)
-        // `applySurahToolbar` branches at the view level (not inside the toolbar builder) so the iOS 26
-        // ToolbarSpacer stays optional without `if #available` inside a @ToolbarContentBuilder (< iOS 16).
+        // The centered title is now a Menu (Surah List / Surah Info / Revelation Info), so the toolbar
+        // only carries the principal title and the trailing settings gear.
         applySurahToolbar(to: surahCoreBody)
         .onAppear {
             quranPlayer.recordReadingHistory(surahNumber: surah.id, surahName: surah.nameTransliteration, ayahNumber: ayah ?? 1)
@@ -1091,6 +1091,7 @@ struct SurahView: View {
 
         return
             List {
+                Group {
                 khatmProgressSection()
                 qiraahNoticeSection()
 
@@ -1281,6 +1282,8 @@ struct SurahView: View {
                         }
                     }
                 }
+                }
+                .themedListRowBackground()
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .compactListSectionSpacing()
@@ -1803,9 +1806,27 @@ struct SurahView: View {
     }
     
     private var surahTitlePickerButton: some View {
-        Button {
-            settings.hapticFeedback()
-            showSurahPickerSheet = true
+        Menu {
+            Button {
+                settings.hapticFeedback()
+                showSurahPickerSheet = true
+            } label: {
+                Label("Surah List", systemImage: "list.bullet")
+            }
+
+            Button {
+                settings.hapticFeedback()
+                showSurahInfoSheet = true
+            } label: {
+                Label("Surah Info", systemImage: "info.circle")
+            }
+
+            Button {
+                settings.hapticFeedback()
+                surahInfoDialog = surahInfoDialog(for: surah)
+            } label: {
+                Label("Revelation Info", systemImage: "book.closed")
+            }
         } label: {
             VStack(spacing: 0) {
                 HStack {
@@ -1854,37 +1875,16 @@ struct SurahView: View {
 
     @ViewBuilder
     private func applySurahToolbar(to base: some View) -> some View {
-        if #available(iOS 26.0, *) {
-            base.toolbar {
-                surahPrincipalAndInfoToolbar
-                ToolbarSpacer(.fixed, placement: .navigationBarTrailing)
-                surahSettingsToolbarItem
-            }
-        } else {
-            base.toolbar {
-                surahPrincipalAndInfoToolbar
-                surahSettingsToolbarItem
-            }
+        base.toolbar {
+            surahPrincipalToolbar
+            surahSettingsToolbarItem
         }
     }
 
     @ToolbarContentBuilder
-    private var surahPrincipalAndInfoToolbar: some ToolbarContent {
+    private var surahPrincipalToolbar: some ToolbarContent {
         ToolbarItem(placement: .principal) {
             surahTitlePickerButton
-                .onLongPressGesture(minimumDuration: 0.45) {
-                    settings.hapticFeedback()
-                    surahInfoDialog = surahInfoDialog(for: surah)
-                }
-        }
-
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button {
-                settings.hapticFeedback()
-                showSurahInfoSheet = true
-            } label: {
-                Image(systemName: "info.circle")
-            }
         }
     }
 
@@ -2083,31 +2083,34 @@ private struct SurahPickerSheet: View {
         NavigationView {
             ScrollViewReader { proxy in
                 List {
-                    ForEach(filteredSurahs, id: \.id) { surah in
-                        Section {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(
-                                        surah.id == currentSurahID
-                                        ? settings.accentColor.color.opacity(0.15)
-                                        : .clear
-                                    )
-                                    .padding(.horizontal, -12)
-                                    .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
-                                
-                                Button {
-                                    settings.hapticFeedback()
-                                    withAnimation {
-                                        select(surah)
+                    Group {
+                        ForEach(filteredSurahs, id: \.id) { surah in
+                            Section {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(
+                                            surah.id == currentSurahID
+                                            ? settings.accentColor.color.opacity(0.15)
+                                            : .clear
+                                        )
+                                        .padding(.horizontal, -12)
+                                        .padding(.vertical, ayahHighlightBackgroundVerticalPadding)
+
+                                    Button {
+                                        settings.hapticFeedback()
+                                        withAnimation {
+                                            select(surah)
+                                        }
+                                    } label: {
+                                        SurahRow(surah: surah, hideInfo: settings.showSurahInformation)
+                                            .contentShape(Rectangle())
                                     }
-                                } label: {
-                                    SurahRow(surah: surah, hideInfo: settings.showSurahInformation)
-                                        .contentShape(Rectangle())
+                                    .id(surah.id)
                                 }
-                                .id(surah.id)
                             }
                         }
                     }
+                    .themedListRowBackground()
                 }
                 .applyConditionalListStyle(defaultView: true)
                 .compactListSectionSpacing()

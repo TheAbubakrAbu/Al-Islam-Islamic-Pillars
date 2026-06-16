@@ -25,6 +25,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     private override init() {
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? AppIdentifiers.mainColorString) ?? AppIdentifiers.mainColor
+        self.customAccentColorHex = appGroupUserDefaults?.string(forKey: "customAccentColorHex") ?? "34C759"
         
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
@@ -82,6 +83,14 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         didSet {
             guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
             appGroupUserDefaults?.setValue(accentColor.rawValue, forKey: "accentColor")
+        }
+    }
+
+    /// Hex ("RRGGBB") backing `AccentColor.custom`, set via the Appearance color picker.
+    @Published var customAccentColorHex: String {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(customAccentColorHex, forKey: "customAccentColorHex")
         }
     }
 
@@ -1060,7 +1069,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// Row / card color for plain (non-glass) list rows in custom themes, set apart from the background.
     var themeRowBackgroundColor: Color? {
         switch colorSchemeString {
-        case "sepia": return Color(red: 0.96, green: 0.92, blue: 0.83)
+        case "sepia": return Color(red: 0.90, green: 0.83, blue: 0.69)
         case "gray":  return Color(red: 0.19, green: 0.19, blue: 0.20)
         default:      return nil
         }

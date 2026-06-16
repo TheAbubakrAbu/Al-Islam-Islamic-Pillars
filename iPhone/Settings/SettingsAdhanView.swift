@@ -46,11 +46,24 @@ struct SettingsAdhanView: View {
     
     var body: some View {
         List {
-            notificationsSection
-            prayerCalculationSection
-            travelingModeSection
-            optionalTimesSection
-            prayerOffsetsSection
+            Group {
+                notificationsSection
+                Section {
+                    adhanSettingsLink(title: "Prayer Calculation", systemImage: "function") {
+                        prayerCalculationDestination
+                    }
+                    adhanSettingsLink(title: "Traveling Mode", systemImage: "airplane") {
+                        travelingModeDestination
+                    }
+                    adhanSettingsLink(title: "Optional Prayers", systemImage: "moon.stars") {
+                        optionalTimesDestination
+                    }
+                    adhanSettingsLink(title: "Prayer Offsets", systemImage: "slider.horizontal.3") {
+                        prayerOffsetsDestination
+                    }
+                }
+            }
+            .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Al-Adhan Settings")
@@ -169,6 +182,59 @@ struct SettingsAdhanView: View {
             case .none:
                 EmptyView()
             }
+        }
+    }
+
+    private func adhanSettingsLink<Destination: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder destination: () -> Destination
+    ) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            Label(title, systemImage: systemImage)
+        }
+        .tint(settings.accentColor.color)
+    }
+
+    /// Shared scaffold for each Adhan settings sub-screen: themed list + standard style + title.
+    @ViewBuilder
+    private func adhanSettingsSubList<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        List {
+            Group {
+                content()
+            }
+            .themedListRowBackground()
+        }
+        .applyConditionalListStyle(defaultView: true)
+        .navigationTitle(title)
+    }
+
+    private var prayerCalculationDestination: some View {
+        adhanSettingsSubList(title: "Prayer Calculation") {
+            prayerCalculationSection
+        }
+    }
+
+    private var travelingModeDestination: some View {
+        adhanSettingsSubList(title: "Traveling Mode") {
+            travelingModeSection
+        }
+    }
+
+    private var optionalTimesDestination: some View {
+        adhanSettingsSubList(title: "Optional Prayers") {
+            optionalTimesSection
+        }
+    }
+
+    private var prayerOffsetsDestination: some View {
+        adhanSettingsSubList(title: "Prayer Offsets") {
+            prayerOffsetsSection
         }
     }
 
@@ -502,58 +568,61 @@ struct NotificationView: View {
     
     var body: some View {
         List {
-            #if os(iOS)
-            Section {
-                permissionCard
-            }
-            
-            Section(header: Text("HIJRI CALENDAR")) {
-                Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
-                    .font(.subheadline)
-                    .onChange(of: settings.dateNotifications) { _ in settings.hapticFeedback() }
-            }
-
-            Section(header: Text("ADHAN SOUND")) {
-                Picker("Adhan Sound", selection: $settings.adhanNotificationSound.animation(.easeInOut)) {
-                    Section {
-                        ForEach(Settings.supportedAdhanSounds) { option in
-                            Text(option.title).tag(option.id)
-                        }
-                    } header: {
-                        Text("Adhan Sound")
-                            .foregroundStyle(.secondary)
-                    }
+            Group {
+                #if os(iOS)
+                Section {
+                    permissionCard
                 }
-                .onChange(of: settings.adhanNotificationSound) { _ in settings.hapticFeedback() }
 
-                if notificationSoundsDisabled {
-                    Label("Notification sounds are off in iPhone Settings, so the adhan will be silent.", systemImage: "speaker.slash.fill")
+                Section(header: Text("HIJRI CALENDAR")) {
+                    Toggle("Islamic Calendar Notifications", isOn: $settings.dateNotifications.animation(.easeInOut))
+                        .font(.subheadline)
+                        .onChange(of: settings.dateNotifications) { _ in settings.hapticFeedback() }
+                }
+
+                Section(header: Text("ADHAN SOUND")) {
+                    Picker("Adhan Sound", selection: $settings.adhanNotificationSound.animation(.easeInOut)) {
+                        Section {
+                            ForEach(Settings.supportedAdhanSounds) { option in
+                                Text(option.title).tag(option.id)
+                            }
+                        } header: {
+                            Text("Adhan Sound")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .onChange(of: settings.adhanNotificationSound) { _ in settings.hapticFeedback() }
+
+                    if notificationSoundsDisabled {
+                        Label("Notification sounds are off in iPhone Settings, so the adhan will be silent.", systemImage: "speaker.slash.fill")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if settings.adhanNotificationSound != "default" {
+                        Label("Preview Sound", systemImage: "play.circle.fill")
+                            .font(.subheadline)
+                            .foregroundColor(settings.accentColor.color)
+                            .onTapGesture {
+                                settings.hapticFeedback()
+                                playAdhanPreview()
+                            }
+                    }
+
+                    Text("Used only for the actual prayer-time notification. Prenotifications and nagging reminders still use the default sound.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                #endif
 
-                if settings.adhanNotificationSound != "default" {                    
-                    Label("Preview Sound", systemImage: "play.circle.fill")
-                        .font(.subheadline)
-                        .foregroundColor(settings.accentColor.color)
-                        .onTapGesture {
-                            settings.hapticFeedback()
-                            playAdhanPreview()
-                        }
-                }
-
-                Text("Used only for the actual prayer-time notification. Prenotifications and nagging reminders still use the default sound.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            #endif
-            
-            Section(header: Text("PRAYER REMINDERS")) {
-                NavigationLink(destination: MoreNotificationView()) {
-                    Label("Prayer Notifications", systemImage: "bell.fill")
-                        .font(.subheadline)
+                Section(header: Text("PRAYER REMINDERS")) {
+                    NavigationLink(destination: MoreNotificationView()) {
+                        Label("Prayer Notifications", systemImage: "bell.fill")
+                            .font(.subheadline)
+                    }
                 }
             }
+            .themedListRowBackground()
         }
         .task { await refresh() }
         .onAppear {
@@ -827,6 +896,7 @@ struct MoreNotificationView: View {
     
     var body: some View {
         List {
+            Group {
             Section(header: Text("NAGGING MODE")) {
                 Text("Nagging mode helps those who struggle to pray on time. Once enabled, you'll get a notification at the chosen start time before each prayer, then another every 15 minutes, plus final reminders at 10 and 5 minutes remaining.")
                     .font(.caption)
@@ -1032,6 +1102,8 @@ struct MoreNotificationView: View {
                     NotificationSettingsSection(prayerName: "Last Third", preNotificationTime: $settings.preNotificationLastThird, isNotificationOn: $settings.notificationLastThird)
                 }
             }
+            }
+            .themedListRowBackground()
         }
         .onAppear {
             settings.requestNotificationAuthorization {

@@ -24,6 +24,19 @@ extension View {
         modifier(ConditionalListStyle(defaultView: defaultView))
     }
 
+    /// Pins the Now Playing bar to the bottom of a view as a real safe-area inset (so list content insets
+    /// instead of being covered). No-op on watchOS, which surfaces Now Playing as its own list section.
+    func withNowPlayingInset() -> some View {
+        modifier(NowPlayingInsetModifier())
+    }
+
+    /// Tints list rows for the Sepia / Gray reading themes. Apply this to the rows/sections INSIDE a `List`
+    /// (not to the `List` itself) — `.listRowBackground` only propagates when attached to row content, which
+    /// is why the list-level version in `ConditionalListStyle` couldn't color the cells.
+    func themedListRowBackground() -> some View {
+        modifier(ThemedListRowBackground())
+    }
+
     @ViewBuilder
     func compactListSectionSpacing() -> some View {
         #if os(iOS)
@@ -116,6 +129,47 @@ struct ConditionalListStyle: ViewModifier {
         }
     }
     #endif
+}
+
+/// Bottom Now Playing inset for iOS. On watchOS this is a no-op (Now Playing is shown as a list section),
+/// which keeps `withNowPlayingInset()` callable from the shared views compiled into the Watch target.
+struct NowPlayingInsetModifier: ViewModifier {
+    #if os(iOS)
+    @EnvironmentObject private var quranPlayer: QuranPlayer
+    #endif
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content.safeAreaInset(edge: .bottom) {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                if quranPlayer.isPlaying || quranPlayer.isPaused {
+                    NowPlayingView()
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+            .background(Color.white.opacity(0.00001))
+            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+        }
+        #else
+        content
+        #endif
+    }
+}
+
+/// Paints the per-row background for the Sepia / Gray reading themes. Must be applied to rows/sections inside
+/// a `List` so `.listRowBackground` actually reaches the cells. No-op for Light/Dark/System (system colors).
+struct ThemedListRowBackground: ViewModifier {
+    @EnvironmentObject private var settings: Settings
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if settings.hasCustomThemeColors, let rowColor = settings.themeRowBackgroundColor {
+            content.listRowBackground(rowColor)
+        } else {
+            content
+        }
+    }
 }
 
 struct DismissKeyboardOnScrollModifier: ViewModifier {

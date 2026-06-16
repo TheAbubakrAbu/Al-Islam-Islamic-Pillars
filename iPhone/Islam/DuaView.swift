@@ -43,6 +43,7 @@ struct DuaView: View {
     
     var body: some View {
         List {
+            Group {
             Section(header: Text("SUPPLICATIONS TO ALLAH")) {
                 Text("Short, daily supplications that keep your heart connected to Allah in every situation. \"Call upon Me; I will respond to you.\" (Quran 40:60)")
                     .font(.subheadline)
@@ -123,6 +124,8 @@ struct DuaView: View {
                     accent: settings.accentColor.color
                 )
             }
+            }
+            .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Dua & Supplications")
@@ -137,8 +140,11 @@ private struct DuaCollectionView: View {
 
     var body: some View {
         List {
+            Group {
             introductionSection
             duaRows
+            }
+            .themedListRowBackground()
         }
         #if os(iOS)
         .adaptiveSafeArea(edge: .bottom) {

@@ -95,12 +95,15 @@ struct ArabicView: View {
 
     var body: some View {
         List {
-            #if os(watchOS)
-            arabicFontPickerSection
-            #endif
-            favoriteLettersSection
-            mainLetterSections
-            searchResultsSection
+            Group {
+                #if os(watchOS)
+                arabicFontPickerSection
+                #endif
+                favoriteLettersSection
+                mainLetterSections
+                searchResultsSection
+            }
+            .themedListRowBackground()
         }
         #if os(watchOS)
         .searchable(text: $searchText.animation(.easeInOut))
@@ -369,6 +372,7 @@ struct ArabicLetterView: View {
 
     var body: some View {
         List {
+            Group {
             #if os(watchOS)
             arabicFontPickerSection
             #endif
@@ -524,6 +528,8 @@ struct ArabicLetterView: View {
                         .font(.body)
                 }
             }
+            }
+            .themedListRowBackground()
         }
         #if !os(watchOS)
         .adaptiveSafeArea(edge: .bottom) {
