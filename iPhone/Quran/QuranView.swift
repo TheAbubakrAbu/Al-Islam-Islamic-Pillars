@@ -425,18 +425,22 @@ struct QuranView: View {
             settings.favoriteSurahs.first.map { QuranRoute.ayahs(surahID: $0, ayah: nil) }
         ].compactMap { $0 }
 
-        var seen = Set<Int>()
-        for route in priorityRoutes {
-            if case let .ayahs(surahID, _) = route,
-               seen.insert(surahID).inserted,
-               let surah = quranData.surah(surahID) {
-                SurahView.prewarm(surah: surah, settings: settings)
-            }
-        }
-
-        guard shouldPrewarmAllQuranDestinations else { return }
-
+        // Prewarm off the initial render entirely (with yields between each) so opening the Quran tab isn't
+        // blocked by building surah caches. Priority routes (default/last-read/first bookmark/favorite) warm
+        // first so the most likely next tap is ready, then the rest fill in slowly in the background.
         Task(priority: .utility) { @MainActor in
+            var seen = Set<Int>()
+            for route in priorityRoutes {
+                if case let .ayahs(surahID, _) = route,
+                   seen.insert(surahID).inserted,
+                   let surah = quranData.surah(surahID) {
+                    SurahView.prewarm(surah: surah, settings: settings)
+                    await Task.yield()
+                }
+            }
+
+            guard shouldPrewarmAllQuranDestinations else { return }
+
             for surah in quranData.quran {
                 guard seen.insert(surah.id).inserted else { continue }
                 SurahView.prewarm(surah: surah, settings: settings)
@@ -500,8 +504,10 @@ struct QuranView: View {
     @ViewBuilder
     private var quranSelectedDetail: some View {
         let route = selectedRoute ?? defaultDetailRoute
+        // Key by the full route (surah + ayah) so picking a different ayah in the same surah recreates the
+        // detail and scrolls to that ayah, rather than reusing the view at its previous scroll position.
         routeDestination(route)
-            .id(route.surahID)
+            .id(route)
     }
 
     private var defaultDetailRoute: QuranRoute {
@@ -1077,52 +1083,75 @@ struct QuranView: View {
     @ViewBuilder
     private func primaryHistorySections(context: SearchDisplayContext) -> some View {
         #if os(iOS)
-        // Order: Ayah of the Day · Last Listened Surah · Last Listened Ayah · Last Read Ayah.
-        if context.isSearching == false,
-           settings.showAyahOfTheDay,
-           settings.isAyahOfTheDayHiddenToday == false,
-           let pair = ayahOfTheDayPair {
-            AyahOfTheDayRow(
-                surah: pair.surah,
-                ayah: pair.ayah,
-                favoriteSurahs: context.favoriteSurahs,
-                bookmarkedAyahs: context.bookmarkedAyahs,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID,
-                onSelectAyah: columnAyahSelectionHandler
-            )
-        }
+        if settings.quranSummaryMode {
+            if context.isSearching == false {
+                summaryTilesSection(context: context)
+            }
+        } else {
+            // Order: Ayah of the Day · Last Listened Surah · Last Listened Ayah · Last Read Ayah.
+            if context.isSearching == false,
+               settings.showAyahOfTheDay,
+               settings.isAyahOfTheDayHiddenToday == false,
+               let pair = ayahOfTheDayPair {
+                AyahOfTheDayRow(
+                    surah: pair.surah,
+                    ayah: pair.ayah,
+                    favoriteSurahs: context.favoriteSurahs,
+                    bookmarkedAyahs: context.bookmarkedAyahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID,
+                    onSelectAyah: columnAyahSelectionHandler
+                )
+            }
 
-        if context.isSearching == false, settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
-            LastListenedSurahRow(
-                lastListenedSurah: surah,
-                favoriteSurahs: context.favoriteSurahs,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID,
-                showListeningHistory: $showListeningHistory,
-                onSelectSurah: usesColumnNavigation ? { surahID in
-                    selectedRoute = .ayahs(surahID: surahID, ayah: nil)
-                } : nil
-            )
-        }
+            if context.isSearching == false, settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
+                LastListenedSurahRow(
+                    lastListenedSurah: surah,
+                    favoriteSurahs: context.favoriteSurahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID,
+                    showListeningHistory: $showListeningHistory,
+                    onSelectSurah: usesColumnNavigation ? { surahID in
+                        selectedRoute = .ayahs(surahID: surahID, ayah: nil)
+                    } : nil
+                )
+            }
 
-        if context.isSearching == false,
-           settings.saveLastListenedAyah,
-           let pair = lastListenedAyahPair {
-            LastListenedAyahRow(
-                surah: pair.surah,
-                ayah: pair.ayah,
-                favoriteSurahs: context.favoriteSurahs,
-                bookmarkedAyahs: context.bookmarkedAyahs,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID,
-                showAyahListeningHistory: $showAyahListeningHistory,
-                onSelectAyah: columnAyahSelectionHandler
-            )
+            if context.isSearching == false,
+               settings.saveLastListenedAyah,
+               let pair = lastListenedAyahPair {
+                LastListenedAyahRow(
+                    surah: pair.surah,
+                    ayah: pair.ayah,
+                    favoriteSurahs: context.favoriteSurahs,
+                    bookmarkedAyahs: context.bookmarkedAyahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID,
+                    showAyahListeningHistory: $showAyahListeningHistory,
+                    onSelectAyah: columnAyahSelectionHandler
+                )
+            }
+
+            if context.isSearching == false,
+               settings.saveLastReadAyah,
+               let lastReadSurah,
+               let lastReadAyah {
+                LastReadAyahRow(
+                    surah: lastReadSurah,
+                    ayah: lastReadAyah,
+                    favoriteSurahs: context.favoriteSurahs,
+                    bookmarkedAyahs: context.bookmarkedAyahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID,
+                    showReadingHistory: $showReadingHistory,
+                    onSelectAyah: columnAyahSelectionHandler
+                )
+                .animation(.easeInOut, value: settings.lastReadAyah)
+                .animation(.easeInOut, value: settings.lastReadSurah)
+            }
         }
         #else
         NowPlayingView(quranView: true)
-        #endif
 
         if context.isSearching == false,
            settings.saveLastReadAyah,
@@ -1138,10 +1167,74 @@ struct QuranView: View {
                 showReadingHistory: $showReadingHistory,
                 onSelectAyah: columnAyahSelectionHandler
             )
-            .animation(.easeInOut, value: settings.lastReadAyah)
-            .animation(.easeInOut, value: settings.lastReadSurah)
+        }
+        #endif
+    }
+
+    #if os(iOS)
+    /// Compact "summary mode": all enabled history items as tappable tiles in a single section.
+    @ViewBuilder
+    private func summaryTilesSection(context: SearchDisplayContext) -> some View {
+        let showAyah = settings.showAyahOfTheDay && settings.isAyahOfTheDayHiddenToday == false
+        Section(header: Text("SUMMARY")) {
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                spacing: 10
+            ) {
+                if showAyah, let pair = ayahOfTheDayPair {
+                    summaryTile(icon: "sparkles", title: "Ayah of the Day", detail: "\(pair.surah.id):\(pair.ayah.id)") {
+                        push(surahID: pair.surah.id, ayahID: pair.ayah.id)
+                    }
+                }
+                if settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
+                    summaryTile(icon: "headphones", title: "Last Listened", detail: surah.surahName) {
+                        push(surahID: surah.surahNumber, ayahID: nil)
+                    }
+                }
+                if settings.saveLastListenedAyah, let pair = lastListenedAyahPair {
+                    summaryTile(icon: "headphones.circle", title: "Listened Ayah", detail: "\(pair.surah.id):\(pair.ayah.id)") {
+                        push(surahID: pair.surah.id, ayahID: pair.ayah.id)
+                    }
+                }
+                if settings.saveLastReadAyah, let lastReadSurah, let lastReadAyah {
+                    summaryTile(icon: "book", title: "Last Read", detail: "\(lastReadSurah.id):\(lastReadAyah.id)") {
+                        push(surahID: lastReadSurah.id, ayahID: lastReadAyah.id)
+                    }
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
+
+    private func summaryTile(icon: String, title: String, detail: String, action: @escaping () -> Void) -> some View {
+        Button {
+            settings.hapticFeedback()
+            action()
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+                    Text(title)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                Text(detail)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+    #endif
 
     @ViewBuilder
     private func bookmarkSection(context: SearchDisplayContext) -> some View {

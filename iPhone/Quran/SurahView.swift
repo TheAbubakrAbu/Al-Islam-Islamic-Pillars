@@ -590,15 +590,6 @@ struct SurahView: View {
     }
 
     @MainActor
-    private func rememberedVisibleAyahID() -> Int? {
-        guard let remembered = Self.visibleAyahMemoryByRoute[visibleAyahMemoryRouteKey],
-              cachedAyahByID[remembered] != nil else {
-            return nil
-        }
-        return remembered
-    }
-
-    @MainActor
     private func rememberVisibleAyahID(_ ayahID: Int) {
         Self.visibleAyahMemoryByRoute[visibleAyahMemoryRouteKey] = ayahID
     }
@@ -1315,17 +1306,15 @@ struct SurahView: View {
             #endif
             .onAppear {
                 rebuildQiraahCaches()
-                // A remembered position (saved as the user scrolled / when the scene went inactive) reflects
-                // where they actually were, so it must win on re-appear — otherwise a reconstruction would
-                // yank them back up to the originally-opened ayah. The explicit `ayah` target only applies on
-                // a genuine first open, when no position has been remembered for this route yet.
-                let restoreTarget = rememberedVisibleAyahID()
-                    ?? ayah.flatMap { nearestExistingAyahID($0, in: ayahsForQiraah.map { $0.id }) }
-                if let restoreTarget {
-                    firstVisibleAyahID = restoreTarget
+                // Always open at the requested ayah (or the top for a whole-surah open). Navigating to a
+                // surah/ayah should refresh to that target rather than restoring wherever the user last
+                // scrolled on a previous visit.
+                let target = ayah.flatMap { nearestExistingAyahID($0, in: ayahsForQiraah.map { $0.id }) }
+                if let target {
+                    firstVisibleAyahID = target
                     if !didScrollDown {
                         didScrollDown = true
-                        scrollToAyah(restoreTarget, proxy: proxy)
+                        scrollToAyah(target, proxy: proxy)
                     }
                 } else if firstVisibleAyahID == nil {
                     firstVisibleAyahID = ayahsForQiraah.first?.id
@@ -1535,7 +1524,7 @@ struct SurahView: View {
             SurahSectionHeader(surah: surah)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
-                .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 0)
                 .conditionalGlassEffect()
 
             if let floatingDividerModel {
@@ -1543,7 +1532,7 @@ struct SurahView: View {
                     .id(boundaryDividerID(floatingDividerModel))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                    .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 0)
                     .conditionalGlassEffect()
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     .animation(.easeInOut(duration: 0.18), value: floatingDividerAnimationKey)
@@ -1846,7 +1835,7 @@ struct SurahView: View {
                             .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .headline).pointSize + 2))
                         
                         Text(surah.idArabic)
-                            .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .headline).pointSize + 2))
+                            .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .headline).pointSize + 4))
                             .foregroundColor(settings.accentColor.color)
                     }
                 }
@@ -2112,7 +2101,7 @@ private struct SurahPickerSheet: View {
                     }
                     .themedListRowBackground()
                 }
-                .applyConditionalListStyle(defaultView: true)
+                .applyConditionalListStyle(defaultView: settings.defaultView)
                 .compactListSectionSpacing()
                 .searchable(text: $searchText.animation(.easeInOut), prompt: "Search surah")
                 .navigationTitle("Choose Surah")
@@ -2199,7 +2188,7 @@ struct ArabicTextRiwayahPicker: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
-                .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 0)
                 .conditionalGlassEffect()
             }
         }

@@ -108,25 +108,38 @@ struct ConditionalListStyle: ViewModifier {
         .tint(settings.accentColor.color)
         .dismissKeyboardOnScroll()
         .topContentMargin(0)
+        // Force the theme's light/dark base here (not just at the app root) so sheets — which are their own
+        // presentation contexts and don't inherit the root's preferredColorScheme — also adopt the theme.
+        .preferredColorScheme(settings.colorScheme)
     }
 
     #if os(iOS)
+    // Single, structurally-constant modifier chain (only the VALUES change with the theme). Switching to/from
+    // Sepia/Gray used to flip between if/else branches, which changed the view tree and recreated the List —
+    // scrolling it back to the top. Keeping one branch preserves the List, so no theme change resets scroll.
+    // (Row colors are handled separately by `themedListRowBackground()` applied inside each List.)
     @ViewBuilder
     private func styledContent(_ content: Content) -> some View {
         let base = defaultView ? AnyView(content) : AnyView(content.listStyle(.plain))
 
-        if settings.hasCustomThemeColors, #available(iOS 16.0, *) {
-            // Sepia / Gray reading themes: hide the system list background and paint our own warm/neutral
-            // background and row colors so the look carries across every screen that uses this list style.
+        if #available(iOS 16.0, *) {
             base
-                .scrollContentBackground(.hidden)
-                .listRowBackground(settings.themeRowBackgroundColor ?? Color(.secondarySystemGroupedBackground))
-                .background((settings.themeBackgroundColor ?? Color(.systemGroupedBackground)).ignoresSafeArea())
-        } else if defaultView {
-            base
+                .scrollContentBackground(settings.hasCustomThemeColors ? .hidden : .automatic)
+                .background(resolvedListBackground.ignoresSafeArea())
         } else {
-            base.background(currentColorScheme == .dark ? Color.black : Color.white)
+            base
+                .background(resolvedListBackground.ignoresSafeArea())
         }
+    }
+
+    private var resolvedListBackground: Color {
+        if settings.hasCustomThemeColors {
+            return settings.themeBackgroundColor ?? Color(.systemGroupedBackground)
+        }
+        if defaultView {
+            return Color(.systemGroupedBackground)
+        }
+        return currentColorScheme == .dark ? .black : .white
     }
     #endif
 }

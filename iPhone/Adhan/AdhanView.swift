@@ -419,8 +419,9 @@ private struct CurrentLocationRow: View {
                         }
                 }
                 .padding(12)
-                .conditionalGlassEffect(themeTint: false)
-                .cornerRadius(8)
+                // Clean capsule glass — no .cornerRadius() clip, which previously cut the capsule into a
+                // hard-edged box that looked wrong in Sepia.
+                .conditionalGlassEffect()
             }
             .buttonStyle(.plain)
         } else {

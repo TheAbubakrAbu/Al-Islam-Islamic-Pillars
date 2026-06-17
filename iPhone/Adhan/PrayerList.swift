@@ -328,7 +328,7 @@ struct PrayerList: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .conditionalGlassEffect(
                     rectangle: true,
-                    useColor: isCurrent ? 0.22 : 0.12,
+                    useColor: isCurrent ? 0.25 : 0.10,
                     customTint: isCurrent ? settings.accentColor.color : nil
                 )
                 .contentShape(Rectangle())

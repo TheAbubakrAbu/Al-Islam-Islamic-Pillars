@@ -140,7 +140,7 @@ struct QiblaView: View {
             }
 
             if let distanceToKaabaMiles {
-                Text(String(format: "%.1f miles from the Kaaba", distanceToKaabaMiles))
+                Text(String(format: "%.1f miles away", distanceToKaabaMiles))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

@@ -581,6 +581,7 @@ struct LastListenedSurahRow: View {
                     .padding(.top, 3)
                 }
                 .padding(.vertical, 8)
+                .contentShape(Rectangle())
 
                 if showListeningHistory && !quranPlayer.listeningHistory.isEmpty {
                     ForEach(quranPlayer.listeningHistory) { item in
@@ -672,7 +673,7 @@ struct LastListenedSurahRow: View {
                 )
             }
             .confirmationDialog("Are you sure?", isPresented: $confirmDeleteForever, titleVisibility: .visible) {
-                Button("Delete Forever", role: .destructive) {
+                Button("Remove Permanently", role: .destructive) {
                     settings.hapticFeedback()
                     withAnimation {
                         settings.lastListenedSurah = nil
@@ -1092,7 +1093,7 @@ struct LastListenedAyahRow: View {
                 }
             }
             .confirmationDialog("Are you sure?", isPresented: $confirmDeleteForever, titleVisibility: .visible) {
-                Button("Delete Forever", role: .destructive) {
+                Button("Remove Permanently", role: .destructive) {
                     settings.hapticFeedback()
                     withAnimation {
                         settings.lastListenedAyah = nil
@@ -1126,8 +1127,6 @@ struct AyahOfTheDayRow: View {
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
     var onSelectAyah: ((Int, Int) -> Void)? = nil
-
-    @State private var confirmRemovePermanently = false
 
     /// A featured card (accent-tinted glass, larger centered Arabic + translation) so the daily ayah looks
     /// distinct from the compact Last Read / Last Listened rows.
@@ -1196,53 +1195,15 @@ struct AyahOfTheDayRow: View {
                 bookmarkedSurah: surah.id,
                 bookmarkedAyah: ayah.id
             )
-            .contextMenu {
-                Text("Ayah of the Day")
-                    .foregroundStyle(.secondary)
-
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id)
-                } label: {
-                    Label("Play This Ayah", systemImage: "play.circle")
-                }
-
-                Button {
-                    settings.hapticFeedback()
-                    quranPlayer.playAyah(surahNumber: surah.id, ayahNumber: ayah.id, continueRecitation: true)
-                } label: {
-                    Label("Play From Ayah", systemImage: "play.circle.fill")
-                }
-
-                Divider()
-
-                Button(role: .destructive) {
-                    settings.hapticFeedback()
-                    withAnimation {
-                        settings.ayahOfTheDayHiddenDate = Settings.dayKey()
-                    }
-                } label: {
-                    Label("Hide for Today", systemImage: "eye.slash")
-                }
-
-                Button(role: .destructive) {
-                    settings.hapticFeedback()
-                    confirmRemovePermanently = true
-                } label: {
-                    Label("Remove Permanently", systemImage: "trash")
-                }
-            }
-            .confirmationDialog("Are you sure?", isPresented: $confirmRemovePermanently, titleVisibility: .visible) {
-                Button("Remove Permanently", role: .destructive) {
-                    settings.hapticFeedback()
-                    withAnimation {
-                        settings.showAyahOfTheDay = false
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("You can re-enable Ayah of the Day later in Quran Settings.")
-            }
+            .ayahContextMenuModifier(
+                surah: surah.id,
+                ayah: ayah.id,
+                favoriteSurahs: favoriteSurahs,
+                bookmarkedAyahs: bookmarkedAyahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID,
+                ayahOfTheDay: true
+            )
         }
     }
 }

@@ -77,7 +77,7 @@ struct SettingsView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Settings")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .withNowPlayingInset()
     }
 
@@ -97,7 +97,7 @@ struct SettingsView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Settings")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 
     @ViewBuilder
@@ -236,7 +236,7 @@ struct SettingsView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Manual Offset Settings")
     }
 
@@ -486,16 +486,23 @@ struct SettingsAppearanceView: View {
 
     var body: some View {
         #if os(iOS)
-        Picker("Color Theme", selection: $settings.colorSchemeString.animation(.easeInOut)) {
-            Text("System").tag("system")
-            Text("Light").tag("light")
-            Text("Dark").tag("dark")
-            Text("Gray").tag("gray")
-            Text("Sepia").tag("sepia")
+        VStack(alignment: .leading) {
+            Picker("Color Theme", selection: $settings.colorSchemeString.animation(.easeInOut)) {
+                Text("System").tag("system")
+                Text("Light").tag("light")
+                Text("Dark").tag("dark")
+                Text("Gray").tag("gray")
+                Text("Sepia").tag("sepia")
+            }
+            .font(.subheadline)
+            .pickerStyle(SegmentedPickerStyle())
+            .onChange(of: settings.colorSchemeString) { _ in settings.hapticFeedback() }
+            
+            Text("System only affects Light and Dark.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
         }
-        .font(.subheadline)
-        .pickerStyle(SegmentedPickerStyle())
-        .onChange(of: settings.colorSchemeString) { _ in settings.hapticFeedback() }
         #endif
         
         VStack(alignment: .leading) {
@@ -525,16 +532,21 @@ struct SettingsAppearanceView: View {
             .padding(.vertical)
 
             #if os(iOS)
-            // Toggle selects the custom accent; the color picker below is only enabled while it's on.
-            Toggle("Custom Color", isOn: customColorEnabledBinding.animation(.easeInOut))
-                .font(.subheadline)
-                .onChange(of: settings.accentColor) { _ in settings.hapticFeedback() }
+            // One line: color well, label, then a toggle tinted with the custom color itself (not the accent).
+            HStack(spacing: 12) {
+                ColorPicker("", selection: customAccentColorBinding, supportsOpacity: false)
+                    .labelsHidden()
 
-            ColorPicker(selection: customAccentColorBinding, supportsOpacity: false) {
-                Text("Choose Color")
+                Text("Custom Color")
                     .font(.subheadline)
+
+                Spacer()
+
+                Toggle("", isOn: customColorEnabledBinding.animation(.easeInOut))
+                    .labelsHidden()
+                    .tint(Color(hex: settings.customAccentColorHex) ?? .green)
             }
-            .disabled(settings.accentColor != .custom)
+            .onChange(of: settings.accentColor) { _ in settings.hapticFeedback() }
             #endif
             
             #if os(iOS)
@@ -551,7 +563,7 @@ struct SettingsAppearanceView: View {
                 .font(.subheadline)
                 .onChange(of: settings.defaultView) { _ in settings.hapticFeedback() }
 
-            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting applies everywhere in the app except here in Settings.")
+            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)

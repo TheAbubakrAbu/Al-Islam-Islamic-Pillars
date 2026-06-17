@@ -26,6 +26,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     private override init() {
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? AppIdentifiers.mainColorString) ?? AppIdentifiers.mainColor
         self.customAccentColorHex = appGroupUserDefaults?.string(forKey: "customAccentColorHex") ?? "34C759"
+        self.nowPlayingExpanded = appGroupUserDefaults?.bool(forKey: "nowPlayingExpanded") ?? false
         
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
@@ -91,6 +92,14 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         didSet {
             guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
             appGroupUserDefaults?.setValue(customAccentColorHex, forKey: "customAccentColorHex")
+        }
+    }
+
+    /// Big vs. small in-app Now Playing player. A @Published (not @AppStorage) so `withAnimation` animates it.
+    @Published var nowPlayingExpanded: Bool {
+        didSet {
+            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+            appGroupUserDefaults?.setValue(nowPlayingExpanded, forKey: "nowPlayingExpanded")
         }
     }
 
@@ -577,6 +586,9 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     @AppStorage("saveLastListenedAyah") var saveLastListenedAyah: Bool = false
     /// When on, the Quran tab shows the daily "Ayah of the Day" card. Off by default.
     @AppStorage("showAyahOfTheDay") var showAyahOfTheDay: Bool = false
+    /// When on, the Quran tab collapses the Ayah of the Day / Last Listened / Last Read cards into one
+    /// compact section of tiles. Off by default.
+    @AppStorage("quranSummaryMode") var quranSummaryMode: Bool = false
     /// Day key (yyyy-MM-dd) for which the Ayah of the Day card has been hidden via "Hide for Today".
     @AppStorage("ayahOfTheDayHiddenDate") var ayahOfTheDayHiddenDate: String = ""
 
@@ -607,6 +619,12 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         return !ayahOfTheDayBlockedWords.contains { !$0.isEmpty && combined.contains($0) }
     }
 
+    /// Keeps the daily card to roughly two lines by skipping long ayahs. Caps are approximate — tuned so
+    /// both the Arabic and the English translation fit a compact card without overflowing.
+    private static func isAyahShort(_ ayah: Ayah) -> Bool {
+        ayah.textHafs.count <= 120 && ayah.textEnglishSaheeh.count <= 150
+    }
+
     private static var gentleAyahRefsCache: [(surahID: Int, ayahID: Int)]? = nil
 
     /// All (surahID, ayahID) pairs eligible for Ayah of the Day, filtered to gentle ayahs. Built once.
@@ -614,7 +632,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         if let cached = gentleAyahRefsCache { return cached }
         var refs: [(surahID: Int, ayahID: Int)] = []
         for surah in data.quran {
-            for ayah in surah.ayahs where isAyahGentle(ayah) {
+            for ayah in surah.ayahs where isAyahGentle(ayah) && isAyahShort(ayah) {
                 refs.append((surah.id, ayah.id))
             }
         }
@@ -787,19 +805,14 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     }
 
     private func buildQuranWidgetRandomPool(from data: QuranData, count: Int = 20) -> [QuranWidgetSnapshot.AyahCard] {
-        let blockedWords = ["kill", "killing", "fight", "fighting", "violence", "violent", "murder", "slay", "slaughter", "battle", "war"]
-        func isSafe(_ ayah: Ayah) -> Bool {
-            let combined = [ayah.textEnglishSaheeh, ayah.textEnglishMustafa, ayah.textTransliteration]
-                .joined(separator: " ").lowercased()
-            return !blockedWords.contains(where: { combined.contains($0) })
-        }
-
         var cards: [QuranWidgetSnapshot.AyahCard] = []
         var attempts = 0
         while cards.count < count, attempts < count * 8 {
             attempts += 1
+            // Same gentle + short filter as the in-app Ayah of the Day pool, so the widget's fallback matches.
             guard let surah = data.quran.randomElement(),
-                  let ayah = surah.ayahs.filter(isSafe).randomElement() else { continue }
+                  let ayah = surah.ayahs.filter({ Self.isAyahGentle($0) && Self.isAyahShort($0) }).randomElement()
+            else { continue }
             cards.append(quranWidgetAyahCard(surah: surah, ayah: ayah))
         }
         return cards
@@ -1060,7 +1073,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// Background shown behind list content for custom themes (warm cream / neutral charcoal).
     var themeBackgroundColor: Color? {
         switch colorSchemeString {
-        case "sepia": return Color(red: 0.93, green: 0.90, blue: 0.82)
+        case "sepia": return Color(red: 0.90, green: 0.83, blue: 0.69)
         case "gray":  return Color(red: 0.13, green: 0.13, blue: 0.14)
         default:      return nil
         }
@@ -1069,7 +1082,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// Row / card color for plain (non-glass) list rows in custom themes, set apart from the background.
     var themeRowBackgroundColor: Color? {
         switch colorSchemeString {
-        case "sepia": return Color(red: 0.90, green: 0.83, blue: 0.69)
+        case "sepia": return Color(red: 0.93, green: 0.90, blue: 0.82)
         case "gray":  return Color(red: 0.19, green: 0.19, blue: 0.20)
         default:      return nil
         }

@@ -65,7 +65,7 @@ struct SettingsAdhanView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Al-Adhan Settings")
         #if os(iOS)
         .toolbar {
@@ -210,7 +210,7 @@ struct SettingsAdhanView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle(title)
     }
 
@@ -654,7 +654,7 @@ struct NotificationView: View {
                 Text(msg)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Notification Settings")
     }
     
@@ -1143,7 +1143,7 @@ struct MoreNotificationView: View {
         } message: {
             Text("Please go to Settings and enable notifications to be notified of prayer times.")
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Prayer Notifications")
     }
 }

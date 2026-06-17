@@ -12,8 +12,8 @@ struct NowPlayingView: View {
 
     @State private var confirmRemoveNote = false
 
-    /// Small (default) vs. big player. Persisted so the choice sticks across screens and launches.
-    @AppStorage("nowPlayingExpanded") private var isExpanded: Bool = false
+    /// Small (default) vs. big player. Stored on `settings` (not @AppStorage) so `withAnimation` animates it.
+    private var isExpanded: Bool { settings.nowPlayingExpanded }
 
     init(
         quranView: Bool = false,
@@ -181,34 +181,38 @@ struct NowPlayingView: View {
             }
     }
 
-    /// Live elapsed/duration progress bar for any in-app playback (surah, single ayah, or custom range).
-    /// Polls the player on a timeline so it updates without adding another player observer.
+    /// Big-player transport row with the live progress bar on top and the elapsed/duration times sharing the
+    /// same line as the controls (saves vertical space vs. a separate progress block). Polls on a timeline.
     @ViewBuilder
-    private var surahProgressView: some View {
-        if quranPlayer.isPlaying || quranPlayer.isPaused {
-            TimelineView(.periodic(from: .now, by: 0.5)) { _ in
-                let elapsed = CMTimeGetSeconds(quranPlayer.player?.currentTime() ?? .zero)
-                let rawTotal = CMTimeGetSeconds(quranPlayer.player?.currentItem?.duration ?? .zero)
-                let total = (rawTotal.isFinite && rawTotal > 0) ? rawTotal : 0
-                let safeElapsed = elapsed.isFinite ? max(0, elapsed) : 0
+    private func transportRowWithProgress(isPlaying: Bool) -> some View {
+        TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+            let elapsed = CMTimeGetSeconds(quranPlayer.player?.currentTime() ?? .zero)
+            let rawTotal = CMTimeGetSeconds(quranPlayer.player?.currentItem?.duration ?? .zero)
+            let total = (rawTotal.isFinite && rawTotal > 0) ? rawTotal : 0
+            let safeElapsed = elapsed.isFinite ? max(0, elapsed) : 0
 
+            VStack(spacing: 4) {
                 if total > 0 {
-                    VStack(spacing: 2) {
-                        TinyProgressBar(
-                            fraction: safeElapsed / total,
-                            color: settings.accentColor.color
-                        )
-
-                        HStack {
-                            Text(Self.formatMMSS(safeElapsed))
-                            Spacer()
-                            Text(Self.formatMMSS(total))
-                        }
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 3)
+                    TinyProgressBar(fraction: safeElapsed / total, color: settings.accentColor.color)
                 }
+
+                HStack(spacing: 10) {
+                    Text(total > 0 ? Self.formatMMSS(safeElapsed) : "")
+                        .frame(width: 40, alignment: .leading)
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: 18) {
+                        transportButtons(isPlaying: isPlaying)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Text(total > 0 ? Self.formatMMSS(total) : "")
+                        .frame(width: 40, alignment: .trailing)
+                }
+                .font(.caption2)
+                .foregroundColor(.secondary)
             }
         }
     }
@@ -249,7 +253,9 @@ struct NowPlayingView: View {
     private var expandToggleButton: some View {
         Button {
             settings.hapticFeedback()
-            withAnimation(.easeInOut) { isExpanded.toggle() }
+            withAnimation(.easeInOut) {
+                settings.nowPlayingExpanded.toggle()
+            }
         } label: {
             Image(systemName: isExpanded
                   ? "arrow.down.right.and.arrow.up.left"
@@ -310,9 +316,9 @@ struct NowPlayingView: View {
     }
 
     #if os(iOS)
-    /// Big player: centered title, full transport row (with ±10s seek), and the live progress bar.
+    /// Big player: centered title, then a transport row with the progress bar on top and the times inline.
     private func expandedPlayerRow(isPlaying: Bool) -> some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             VStack(alignment: .center, spacing: 1) {
                 titleBlock(expanded: true)
             }
@@ -321,12 +327,14 @@ struct NowPlayingView: View {
             // Horizontal inset keeps the centered title clear of the top-right expand button.
             .padding(.horizontal, 24)
 
-            HStack(spacing: 22) {
-                transportButtons(isPlaying: isPlaying)
+            if quranPlayer.isPlaying || quranPlayer.isPaused {
+                transportRowWithProgress(isPlaying: isPlaying)
+            } else {
+                HStack(spacing: 22) {
+                    transportButtons(isPlaying: isPlaying)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
-
-            surahProgressView
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -411,15 +419,17 @@ struct NowPlayingView: View {
                 #endif
         }
 
-        if !expanded, quranPlayer.isPlayingCustomRange,
+        // Custom range: the "Ayahs X-Y (n/total)" line shows under the reciter in BOTH sizes; the
+        // per-ayah/section breakdown line is small-player only.
+        if quranPlayer.isPlayingCustomRange,
            let start = quranPlayer.customRangeStartAyah,
            let end = quranPlayer.customRangeEndAyah {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(customRangeLineOne(start: start, end: end))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+            Text(customRangeLineOne(start: start, end: end))
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
 
+            if !expanded {
                 Text(customRangeLineTwo())
                     .font(.caption2)
                     .foregroundColor(.secondary)

@@ -90,7 +90,7 @@ struct SettingsQuranView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Al-Quran Settings")
         #if os(iOS)
         .toolbar {
@@ -135,7 +135,7 @@ struct SettingsQuranView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle(title)
     }
 
@@ -172,7 +172,7 @@ struct SettingsQuranView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Arabic Text")
         .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmHideQiraahDetails, titleVisibility: .visible) {
             Button("Yes") {
@@ -252,6 +252,17 @@ struct SettingsQuranView: View {
                     .padding(.vertical, 2)
             }
 
+            VStack(alignment: .leading) {
+                Toggle("Summary Mode", isOn: $settings.quranSummaryMode.animation(.easeInOut))
+                    .font(.subheadline)
+                    .onChange(of: settings.quranSummaryMode) { _ in settings.hapticFeedback() }
+
+                Text("Collapses Ayah of the Day, Last Listened, and Last Read into one compact section of tiles at the top of the Quran tab.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
+
             lastReadAndListenedGroup
         }
     }
@@ -270,7 +281,7 @@ struct SettingsQuranView: View {
     private var lastReadAndListenedGroup: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Ayah of the Day", isOn: $settings.showAyahOfTheDay.animation(.easeInOut))
+                Toggle("Show Ayah of the Day", isOn: $settings.showAyahOfTheDay.animation(.easeInOut))
                     .font(.subheadline)
                     .onChange(of: settings.showAyahOfTheDay) { _ in settings.hapticFeedback() }
 
@@ -281,7 +292,7 @@ struct SettingsQuranView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Save Last Listened Surah", isOn: $settings.saveLastListenedSurah.animation(.easeInOut))
+                Toggle("Show Last Listened Surah", isOn: $settings.saveLastListenedSurah.animation(.easeInOut))
                     .font(.subheadline)
                     .onChange(of: settings.saveLastListenedSurah) { _ in settings.hapticFeedback() }
 
@@ -292,7 +303,7 @@ struct SettingsQuranView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Save Last Listened Ayah", isOn: $settings.saveLastListenedAyah.animation(.easeInOut))
+                Toggle("Show Last Listened Ayah", isOn: $settings.saveLastListenedAyah.animation(.easeInOut))
                     .font(.subheadline)
                     .onChange(of: settings.saveLastListenedAyah) { _ in settings.hapticFeedback() }
 
@@ -303,7 +314,7 @@ struct SettingsQuranView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Toggle("Save Last Read Ayah", isOn: $settings.saveLastReadAyah.animation(.easeInOut))
+                Toggle("Show Last Read Ayah", isOn: $settings.saveLastReadAyah.animation(.easeInOut))
                     .font(.subheadline)
                     .onChange(of: settings.saveLastReadAyah) { _ in settings.hapticFeedback() }
 
@@ -1542,7 +1553,7 @@ struct ReciterListView: View {
             #elseif os(watchOS)
             .searchable(text: $searchText.animation(.easeInOut))
             #endif
-            .applyConditionalListStyle(defaultView: true)
+            .applyConditionalListStyle(defaultView: settings.defaultView)
             .confirmationDialog(qiraahChangeDialogTitle, isPresented: Binding(
                 get: { pendingQiraahReciter != nil },
                 set: {

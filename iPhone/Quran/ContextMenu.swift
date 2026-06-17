@@ -1316,9 +1316,11 @@ struct AyahContextMenuModifier: ViewModifier {
     
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
-    
+
     let lastRead: Bool
-    
+    /// When true, the menu leads with "Hide for Today" + "Delete Forever" (the Ayah of the Day card).
+    var ayahOfTheDay: Bool = false
+
     @State var showAyahSheet = false
     
     @State private var showingNoteSheet = false
@@ -1422,7 +1424,21 @@ struct AyahContextMenuModifier: ViewModifier {
         #if os(iOS)
         content
             .contextMenu {
-                if lastRead {
+                if ayahOfTheDay {
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        withAnimation {
+                            settings.ayahOfTheDayHiddenDate = Settings.dayKey()
+                        }
+                    } label: { Label("Hide for Today", systemImage: "eye.slash") }
+
+                    Button(role: .destructive) {
+                        settings.hapticFeedback()
+                        confirmDeleteForever = true
+                    } label: { Label("Delete Forever", systemImage: "trash") }
+
+                    Divider()
+                } else if lastRead {
                     Button(role: .destructive) {
                         settings.hapticFeedback()
                         withAnimation {
@@ -1438,7 +1454,7 @@ struct AyahContextMenuModifier: ViewModifier {
 
                     Divider()
                 }
-                
+
                 Button(role: isBookmarked ? .destructive : .cancel) {
                     settings.hapticFeedback()
                     toggleBookmarkWithNoteGuard()
@@ -1627,17 +1643,23 @@ struct AyahContextMenuModifier: ViewModifier {
                 Text(Settings.bookmarkNoteRemovalDialogMessage)
             }
             .confirmationDialog("Are you sure?", isPresented: $confirmDeleteForever, titleVisibility: .visible) {
-                Button("Delete Forever", role: .destructive) {
+                Button("Remove Permanently", role: .destructive) {
                     settings.hapticFeedback()
                     withAnimation {
-                        settings.lastReadSurah = 0
-                        settings.lastReadAyah = 0
-                        settings.saveLastReadAyah = false
+                        if ayahOfTheDay {
+                            settings.showAyahOfTheDay = false
+                        } else {
+                            settings.lastReadSurah = 0
+                            settings.lastReadAyah = 0
+                            settings.saveLastReadAyah = false
+                        }
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("You can re-enable Last Read Ayah later in Quran Settings.")
+                Text(ayahOfTheDay
+                     ? "You can re-enable Ayah of the Day later in Quran Settings."
+                     : "You can re-enable Last Read Ayah later in Quran Settings.")
             }
         #else
         content
@@ -1653,7 +1675,8 @@ extension View {
         bookmarkedAyahs: Set<String>,
         searchText: Binding<String>,
         scrollToSurahID: Binding<Int>,
-        lastRead: Bool = false
+        lastRead: Bool = false,
+        ayahOfTheDay: Bool = false
     ) -> some View {
         self.modifier(AyahContextMenuModifier(
             surah: surah,
@@ -1662,7 +1685,8 @@ extension View {
             bookmarkedAyahs: bookmarkedAyahs,
             searchText: searchText,
             scrollToSurahID: scrollToSurahID,
-            lastRead: lastRead
+            lastRead: lastRead,
+            ayahOfTheDay: ayahOfTheDay
         ))
     }
 }
