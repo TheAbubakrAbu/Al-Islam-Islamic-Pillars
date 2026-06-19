@@ -52,12 +52,18 @@ struct SettingsAdhanView: View {
                     adhanSettingsLink(title: "Prayer Calculation", systemImage: "function") {
                         prayerCalculationDestination
                     }
+                }
+                Section {
                     adhanSettingsLink(title: "Traveling Mode", systemImage: "airplane") {
                         travelingModeDestination
                     }
+                }
+                Section {
                     adhanSettingsLink(title: "Optional Prayers", systemImage: "moon.stars") {
                         optionalTimesDestination
                     }
+                }
+                Section {
                     adhanSettingsLink(title: "Prayer Offsets", systemImage: "slider.horizontal.3") {
                         prayerOffsetsDestination
                     }
@@ -66,6 +72,7 @@ struct SettingsAdhanView: View {
             .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
+        .compactListSectionSpacing()
         .navigationTitle("Al-Adhan Settings")
         #if os(iOS)
         .toolbar {
@@ -194,6 +201,7 @@ struct SettingsAdhanView: View {
             destination()
         } label: {
             Label(title, systemImage: systemImage)
+                .padding(.vertical, 4)
         }
         .tint(settings.accentColor.color)
     }

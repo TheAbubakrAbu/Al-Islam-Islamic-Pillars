@@ -4,11 +4,19 @@ import SwiftUI
 struct CalendarView: View {
     @EnvironmentObject private var settings: Settings
 
-    enum DisplayMode {
+    enum DisplayMode: String {
         case events, calendar
     }
 
-    @State private var mode: DisplayMode = .events
+    // Persisted so the tab remembers its last mode. Kept in @State (not bound directly to @AppStorage)
+    // so toggling stays animated; we just mirror the value into storage on change.
+    @AppStorage("hijriCalendarDisplayMode") private var savedModeRaw = DisplayMode.events.rawValue
+    @State private var mode: DisplayMode
+
+    init() {
+        let raw = UserDefaults.standard.string(forKey: "hijriCalendarDisplayMode") ?? DisplayMode.events.rawValue
+        _mode = State(initialValue: DisplayMode(rawValue: raw) ?? .events)
+    }
     @State private var nearestEventId = ""
     @State private var hijriYear = 1445
     @State private var hijriMonth = 1
@@ -29,37 +37,58 @@ struct CalendarView: View {
     }()
 
     var body: some View {
-        Group {
-            if mode == .calendar {
-                HijriMonthCalendarView()
-            } else {
-                eventsList
-            }
-        }
-        .navigationTitle("Hijri Calendar")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    settings.hapticFeedback()
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        mode = (mode == .calendar) ? .events : .calendar
-                    }
-                } label: {
-                    Image(systemName: mode == .calendar ? "list.bullet" : "calendar")
+        applyToolbar(to:
+            Group {
+                if mode == .calendar {
+                    HijriMonthCalendarView()
+                } else {
+                    eventsList
                 }
-                .accessibilityLabel(mode == .calendar ? "Show Islamic dates list" : "Show Hijri calendar")
             }
-
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    HijriCalendarView()
-                } label: {
-                    Image(systemName: "info.circle")
-                }
-                .accessibilityLabel("Learn about the Hijri Calendar")
+            .navigationTitle("Hijri Calendar")
+            .onChange(of: mode) { newValue in
+                savedModeRaw = newValue.rawValue
             }
-        }
+        )
         .navigationViewStyle(.stack)
+    }
+
+    private var calendarModeButton: some View {
+        Button {
+            settings.hapticFeedback()
+            withAnimation(.easeInOut(duration: 0.2)) {
+                mode = (mode == .calendar) ? .events : .calendar
+            }
+        } label: {
+            Image(systemName: mode == .calendar ? "list.bullet" : "calendar")
+        }
+        .accessibilityLabel(mode == .calendar ? "Show Islamic dates list" : "Show Hijri calendar")
+    }
+
+    private var hijriInfoButton: some View {
+        NavigationLink {
+            HijriCalendarView()
+        } label: {
+            Image(systemName: "info.circle")
+        }
+        .accessibilityLabel("Learn about the Hijri Calendar")
+    }
+
+    @ViewBuilder
+    private func applyToolbar(to base: some View) -> some View {
+        base.toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 10) {
+                    hijriInfoButton
+
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.4))
+                        .frame(width: 1, height: 18)
+
+                    calendarModeButton
+                }
+            }
+        }
     }
 
     private var eventsList: some View {

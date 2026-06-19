@@ -553,6 +553,10 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
+    /// When on, the bookmarked ayahs section is shown as a grid of tiles instead of a list.
+    @AppStorage("bookmarksGridMode") var bookmarksGridMode = false
+    /// When on, the favorite surahs section is shown as a grid of tiles instead of a list.
+    @AppStorage("favoritesGridMode") var favoritesGridMode = false
 
     @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
     @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
@@ -582,13 +586,13 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// When off, the app neither saves nor shows the "Last Read Ayah" / "Last Listened Surah" sections.
     @AppStorage("saveLastReadAyah") var saveLastReadAyah: Bool = true
     @AppStorage("saveLastListenedSurah") var saveLastListenedSurah: Bool = true
-    /// When off, the app neither saves nor shows the "Last Listened Ayah" section. Off by default.
-    @AppStorage("saveLastListenedAyah") var saveLastListenedAyah: Bool = false
-    /// When on, the Quran tab shows the daily "Ayah of the Day" card. Off by default.
-    @AppStorage("showAyahOfTheDay") var showAyahOfTheDay: Bool = false
+    /// When off, the app neither saves nor shows the "Last Listened Ayah" section.
+    @AppStorage("saveLastListenedAyah") var saveLastListenedAyah: Bool = true
+    /// When on, the Quran tab shows the daily "Ayah of the Day" card.
+    @AppStorage("showAyahOfTheDay") var showAyahOfTheDay: Bool = true
     /// When on, the Quran tab collapses the Ayah of the Day / Last Listened / Last Read cards into one
-    /// compact section of tiles. Off by default.
-    @AppStorage("quranSummaryMode") var quranSummaryMode: Bool = false
+    /// compact section of tiles. On by default.
+    @AppStorage("quranSummaryMode") var quranSummaryMode: Bool = true
     /// Day key (yyyy-MM-dd) for which the Ayah of the Day card has been hidden via "Hide for Today".
     @AppStorage("ayahOfTheDayHiddenDate") var ayahOfTheDayHiddenDate: String = ""
 
@@ -881,7 +885,6 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     @AppStorage("copyAyahEnglishSaheeh") var copyAyahEnglishSaheeh: Bool = false
     @AppStorage("copyAyahEnglishMustafa") var copyAyahEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
-    @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = false
     @AppStorage("showFullSurahRow") var showFullSurahRow: Bool = false
 
     @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()

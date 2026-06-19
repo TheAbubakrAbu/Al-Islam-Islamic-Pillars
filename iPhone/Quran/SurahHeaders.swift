@@ -136,33 +136,56 @@ struct SurahSectionHeader: View {
     var compact: Bool = false
 
     var body: some View {
-        HStack {
+        // Revelation symbol on the left, ayah/page info centered, favorite star on the right.
+        // The symbol and star share the same size so the centered text sits exactly in the middle.
+        ZStack {
             ayahSummary
+                .padding(.horizontal, 34)
+                .frame(maxWidth: .infinity, alignment: .center)
 
-            Spacer()
+            HStack {
+                revelationSymbol
 
-            #if os(watchOS)
-            watchPlaybackButton
-            #endif
+                Spacer()
 
-            favoriteToggle
+                #if os(watchOS)
+                watchPlaybackButton
+                #endif
+
+                favoriteToggle
+            }
         }
     }
 
+    private var symbolFont: Font {
+        #if os(iOS)
+        compact ? .caption : .subheadline
+        #else
+        .title3
+        #endif
+    }
+
+    /// The favorite star is a touch larger than the revelation emoji.
+    private var starFont: Font {
+        #if os(iOS)
+        compact ? .subheadline : .body
+        #else
+        .title2
+        #endif
+    }
+
+    private var revelationSymbol: some View {
+        Text(surah.type == "makkan" ? "🕋" : "🕌")
+            .font(symbolFont)
+            .lineLimit(1)
+    }
+
     private var ayahSummary: some View {
-        Group {
-            let revelationEmoji = surah.type == "makkan" ? "🕋" : "🕌"
-            
-            #if os(iOS)
-            Text("\(surah.ayahCountLabel(for: settings.displayQiraahForArabic)) - \(surah.pageCountLabel) \(revelationEmoji)")
-            #else
-            Text("\(surah.ayahCountLabel(for: settings.displayQiraahForArabic)) - \(surah.pageCountLabel) \(revelationEmoji)")
-            #endif
-        }
-        .textCase(.uppercase)
-        .font(compact ? .caption.weight(.semibold) : .subheadline)
-        .lineLimit(1)
-        .minimumScaleFactor(compact ? 0.6 : 0.25)
+        Text("\(surah.ayahCountLabel(for: settings.displayQiraahForArabic)) - \(surah.pageCountLabel)")
+            .textCase(.uppercase)
+            .font(compact ? .caption.weight(.semibold) : .subheadline)
+            .lineLimit(1)
+            .minimumScaleFactor(compact ? 0.6 : 0.25)
     }
     #if os(watchOS)
     private var watchPlaybackButton: some View {
@@ -200,11 +223,7 @@ struct SurahSectionHeader: View {
     private var favoriteToggle: some View {
         Image(systemName: settings.isSurahFavorite(surah: surah.id) ? "star.fill" : "star")
             .foregroundColor(settings.accentColor.color)
-            #if os(iOS)
-            .font(compact ? .caption : .subheadline)
-            #else
-            .font(.title3)
-            #endif
+            .font(starFont)
             .onTapGesture {
                 settings.hapticFeedback()
                 settings.toggleSurahFavorite(surah: surah.id)

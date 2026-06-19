@@ -588,22 +588,28 @@ struct SurahInfoSheet: View {
     @ViewBuilder
     private var surahHeaderCard: some View {
         if let surah = quranData.surah(surahNumber) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(surah.nameArabic)
-                    .font(
-                        settings.useFontArabic
-                            ? .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title2).pointSize)
-                            : .title2
-                    )
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+            VStack(alignment: .leading, spacing: 10) {
+                // Always show the full surah row details.
+                SurahRow(surah: surah, hideInfo: false).equatable()
 
-                Text("\(surah.nameTransliteration) · \(surah.nameEnglish)")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
+                Divider()
 
-                Text("\(surah.type.capitalized) · \(surah.numberOfAyahs) ayahs")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Revelation Info", systemImage: "book.closed")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(settings.accentColor.color)
+
+                    Text("Revelation order: #\(surah.revelationOrder.map(String.init) ?? "Unknown")")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if let exceptions = surah.revelationExceptions?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !exceptions.isEmpty {
+                        Text("Exceptions: \(exceptions)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -316,11 +316,14 @@ final class QuranPlayer: ObservableObject {
         ayahRepeatCount = 1
         ayahRepeatRemaining = 1
 
+        // Persist position OUTSIDE withAnimation: these write @AppStorage-backed settings, which republish
+        // observing screens (e.g. SurahView). Animating that republish mid-scroll makes the reading view
+        // visibly "jump"/scroll a little when playback ends, so keep the save un-animated.
+        saveLastListenedSurah()
+        saveLastListenedAyah()
+
         withAnimation {
             isLoading = false
-
-            saveLastListenedSurah()
-            saveLastListenedAyah()
 
             player?.currentItem?.cancelPendingSeeks()
             player?.currentItem?.asset.cancelLoading()
@@ -1198,25 +1201,23 @@ final class QuranPlayer: ObservableObject {
                 : nil
 
             if let nxt = nextSurahNumber, let nSur = quranData.quran.first(where: { $0.id == nxt }) {
-                withAnimation {
-                    settings.lastListenedSurah = LastListenedSurah(
-                        surahNumber: nxt,
-                        surahName: nSur.nameTransliteration,
-                        reciter: rec,
-                        currentDuration: 0,
-                        fullDuration: getSurahDuration(surahNumber: nxt)
-                    )
-                }
+                // No withAnimation: this republishes observing screens (e.g. SurahView); animating it
+                // mid-scroll causes a visible jump when playback ends.
+                settings.lastListenedSurah = LastListenedSurah(
+                    surahNumber: nxt,
+                    surahName: nSur.nameTransliteration,
+                    reciter: rec,
+                    currentDuration: 0,
+                    fullDuration: getSurahDuration(surahNumber: nxt)
+                )
             } else {
-                withAnimation {
-                    settings.lastListenedSurah = LastListenedSurah(
-                        surahNumber: num,
-                        surahName: sur.nameTransliteration,
-                        reciter: rec,
-                        currentDuration: currDur,
-                        fullDuration: fullDur
-                    )
-                }
+                settings.lastListenedSurah = LastListenedSurah(
+                    surahNumber: num,
+                    surahName: sur.nameTransliteration,
+                    reciter: rec,
+                    currentDuration: currDur,
+                    fullDuration: fullDur
+                )
             }
         }
     }

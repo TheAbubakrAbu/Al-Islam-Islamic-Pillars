@@ -1173,90 +1173,101 @@ struct QuranView: View {
 
     #if os(iOS)
     /// Compact "summary mode": all enabled history items as tappable tiles in a single section.
+    /// Order: Last Read Ayah · Ayah of the Day, then Last Listened Ayah · Last Listened Surah.
     @ViewBuilder
     private func summaryTilesSection(context: SearchDisplayContext) -> some View {
         let showAyah = settings.showAyahOfTheDay && settings.isAyahOfTheDayHiddenToday == false
-        Section(header: Text("SUMMARY")) {
+        Section(header: Text("YOUR SUMMARY")) {
             LazyVGrid(
                 columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                alignment: .leading,
                 spacing: 10
             ) {
-                if showAyah, let pair = ayahOfTheDayPair {
-                    summaryTile(icon: "sparkles", title: "Ayah of the Day", detail: "\(pair.surah.id):\(pair.ayah.id)") {
-                        push(surahID: pair.surah.id, ayahID: pair.ayah.id)
+                if settings.saveLastReadAyah, let lastReadSurah, let lastReadAyah {
+                    SummaryAyahTile(title: "Last Read Ayah", icon: "book", surah: lastReadSurah, ayah: lastReadAyah) {
+                        push(surahID: lastReadSurah.id, ayahID: lastReadAyah.id)
                     }
                 }
-                if settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
-                    summaryTile(icon: "headphones", title: "Last Listened", detail: surah.surahName) {
-                        push(surahID: surah.surahNumber, ayahID: nil)
+                if showAyah, let pair = ayahOfTheDayPair {
+                    SummaryAyahTile(title: "Ayah of the Day", icon: "sparkles", surah: pair.surah, ayah: pair.ayah) {
+                        push(surahID: pair.surah.id, ayahID: pair.ayah.id)
                     }
                 }
                 if settings.saveLastListenedAyah, let pair = lastListenedAyahPair {
-                    summaryTile(icon: "headphones.circle", title: "Listened Ayah", detail: "\(pair.surah.id):\(pair.ayah.id)") {
+                    SummaryAyahTile(title: "Last Listened Ayah", icon: "headphones.circle", surah: pair.surah, ayah: pair.ayah) {
                         push(surahID: pair.surah.id, ayahID: pair.ayah.id)
                     }
                 }
-                if settings.saveLastReadAyah, let lastReadSurah, let lastReadAyah {
-                    summaryTile(icon: "book", title: "Last Read", detail: "\(lastReadSurah.id):\(lastReadAyah.id)") {
-                        push(surahID: lastReadSurah.id, ayahID: lastReadAyah.id)
+                if settings.saveLastListenedSurah,
+                   let last = settings.lastListenedSurah,
+                   let surah = quranData.surah(last.surahNumber) {
+                    SummarySurahTile(title: "Last Listened Surah", icon: "headphones", surah: surah, lastListenedSurah: last) {
+                        push(surahID: surah.id, ayahID: nil)
                     }
                 }
             }
             .padding(.vertical, 4)
         }
     }
-
-    private func summaryTile(icon: String, title: String, detail: String, action: @escaping () -> Void) -> some View {
-        Button {
-            settings.hapticFeedback()
-            action()
-        } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Image(systemName: icon)
-                        .font(.caption)
-                        .foregroundColor(settings.accentColor.color)
-                    Text(title)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-                Text(detail)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
     #endif
 
     @ViewBuilder
     private func bookmarkSection(context: SearchDisplayContext) -> some View {
         if !settings.bookmarkedAyahs.isEmpty && !context.isSearching {
-            Section(header: bookmarkHeader) {
+            let sortedBookmarks = settings.bookmarkedAyahs.sorted {
+                $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
+            }
+            Section(header: bookmarkHeader(count: sortedBookmarks.count)) {
                 if settings.showBookmarks {
-                    ForEach(settings.bookmarkedAyahs.sorted {
-                        $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
-                    }, id: \.id) { bookmarkedAyah in
-                        bookmarkRow(bookmarkedAyah, context: context)
+                    if settings.bookmarksGridMode {
+                        LazyVGrid(
+                            columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                            alignment: .leading,
+                            spacing: 10
+                        ) {
+                            ForEach(sortedBookmarks, id: \.id) { bookmarkedAyah in
+                                bookmarkGridTile(bookmarkedAyah)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    } else {
+                        ForEach(sortedBookmarks, id: \.id) { bookmarkedAyah in
+                            bookmarkRow(bookmarkedAyah, context: context)
+                        }
                     }
                 }
             }
         }
     }
 
-    private var bookmarkHeader: some View {
-        HStack {
+    private func bookmarkHeader(count: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "bookmark.fill")
+                .foregroundStyle(settings.accentColor.color)
+
             Text("BOOKMARKED AYAHS")
 
+            Text("\(count)")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .conditionalGlassEffect()
+
             Spacer()
-            
+
+            if settings.showBookmarks {
+                Image(systemName: settings.bookmarksGridMode ? "list.bullet" : "square.grid.2x2")
+                    .foregroundColor(settings.accentColor.color)
+                    .padding(4)
+                    .conditionalGlassEffect()
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        withAnimation { settings.bookmarksGridMode.toggle() }
+                    }
+            }
+
             Image(systemName: settings.showBookmarks ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
                 .padding(4)
@@ -1265,6 +1276,42 @@ struct QuranView: View {
                     settings.hapticFeedback()
                     withAnimation { settings.showBookmarks.toggle() }
                 }
+        }
+    }
+
+    @ViewBuilder
+    private func bookmarkGridTile(_ bookmarkedAyah: BookmarkedAyah) -> some View {
+        if let surah = quranData.surah(bookmarkedAyah.surah),
+           let ayah = quranData.ayah(surah: bookmarkedAyah.surah, ayah: bookmarkedAyah.ayah) {
+            Button {
+                settings.hapticFeedback()
+                push(surahID: surah.id, ayahID: ayah.id)
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    Text("\(surah.id):\(ayah.id)")
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .conditionalGlassEffect(
+                            useColor: 0.3,
+                            customTint: settings.accentColor.color,
+                            interactive: false
+                        )
+
+                    Image(systemName: "bookmark.fill")
+                        .font(.caption2)
+                        .foregroundStyle(settings.accentColor.color)
+                        .padding(4)
+                        .offset(x: 6, y: -6)
+                }
+                .padding(.top, 4)
+                .padding(.trailing, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -1307,21 +1354,57 @@ struct QuranView: View {
     @ViewBuilder
     private func favoriteSection(context: SearchDisplayContext) -> some View {
         if !settings.favoriteSurahs.isEmpty && !context.isSearching {
-            Section(header: favoriteHeader) {
+            let sortedFavorites = settings.favoriteSurahs.sorted()
+            Section(header: favoriteHeader(count: sortedFavorites.count)) {
                 if settings.showFavorites {
-                    ForEach(settings.favoriteSurahs.sorted(), id: \.self) { surahID in
-                        favoriteRow(surahID: surahID, context: context)
+                    if settings.favoritesGridMode {
+                        LazyVGrid(
+                            columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                            alignment: .leading,
+                            spacing: 10
+                        ) {
+                            ForEach(sortedFavorites, id: \.self) { surahID in
+                                favoriteGridTile(surahID: surahID, context: context)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    } else {
+                        ForEach(sortedFavorites, id: \.self) { surahID in
+                            favoriteRow(surahID: surahID, context: context)
+                        }
                     }
                 }
             }
         }
     }
 
-    private var favoriteHeader: some View {
-        HStack {
+    private func favoriteHeader(count: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "star.fill")
+                .foregroundStyle(settings.accentColor.color)
+
             Text("FAVORITE SURAHS")
 
+            Text("\(count)")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .conditionalGlassEffect()
+
             Spacer()
+
+            if settings.showFavorites {
+                Image(systemName: settings.favoritesGridMode ? "list.bullet" : "square.grid.2x2")
+                    .foregroundColor(settings.accentColor.color)
+                    .padding(4)
+                    .conditionalGlassEffect()
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        withAnimation { settings.favoritesGridMode.toggle() }
+                    }
+            }
 
             Image(systemName: settings.showFavorites ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
@@ -1331,6 +1414,41 @@ struct QuranView: View {
                     settings.hapticFeedback()
                     withAnimation { settings.showFavorites.toggle() }
                 }
+        }
+    }
+
+    @ViewBuilder
+    private func favoriteGridTile(surahID: Int, context: SearchDisplayContext) -> some View {
+        if let surah = quranData.surah(surahID) {
+            Button {
+                settings.hapticFeedback()
+                push(surahID: surah.id, ayahID: nil)
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    Text("\(surah.id)")
+                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .conditionalGlassEffect(
+                            useColor: 0.3,
+                            customTint: settings.accentColor.color,
+                            interactive: false
+                        )
+
+                    Image(systemName: "star.fill")
+                        .font(.caption2)
+                        .foregroundStyle(settings.accentColor.color)
+                        .padding(4)
+                        .offset(x: 6, y: -6)
+                }
+                .padding(.top, 4)
+                .padding(.trailing, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 

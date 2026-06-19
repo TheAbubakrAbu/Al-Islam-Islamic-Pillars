@@ -706,7 +706,7 @@ struct SurahView: View {
             #endif
         }
         .padding(.vertical, isOverlay ? 4 : 6)
-        .padding(.horizontal, isOverlay ? 10 : 0)
+        .padding(.horizontal, 0)
         .frame(maxWidth: isOverlay ? .infinity : nil)
         .contentShape(Rectangle())
         
@@ -1019,7 +1019,9 @@ struct SurahView: View {
         }()
         let previousSurah = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? neighboringSurah(before: surah.id) : nil
         let nextSurah = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? neighboringSurah(after: surah.id) : nil
-        let shouldShowFloatingPageJuzOverlay = showBoundaryDividers && settings.showPageJuzOverlay && searchText.isEmpty
+        // The floating page/juz overlay is always shown when boundary dividers exist; there is no
+        // separate opt-in setting for it anymore.
+        let shouldShowFloatingPageJuzOverlay = showBoundaryDividers && searchText.isEmpty
         let shouldUpdateFloatingPageJuzOverlay = shouldShowFloatingPageJuzOverlay && surah.pageOrJuzChangesWithinSurah
         let currentFloatingAyah = shouldUpdateFloatingPageJuzOverlay
             ? (firstVisibleAyahID
@@ -1520,32 +1522,28 @@ struct SurahView: View {
         floatingDividerModel: BoundaryDividerModel?,
         floatingDividerAnimationKey: String
     ) -> some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 2) {
             SurahSectionHeader(surah: surah)
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 0)
-                .conditionalGlassEffect()
 
             if let floatingDividerModel {
                 boundaryDivider(model: floatingDividerModel, isOverlay: true)
                     .id(boundaryDividerID(floatingDividerModel))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 0)
-                    .conditionalGlassEffect()
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     .animation(.easeInOut(duration: 0.18), value: floatingDividerAnimationKey)
             }
         }
+        .padding(.horizontal)
+        .padding(.vertical, 4)
+        .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 0)
+        // When both the surah header and the page/juz divider are stacked, use a rounded rectangle;
+        // a lone header reads better as a capsule.
+        .conditionalGlassEffect(rectangle: floatingDividerModel != nil)
         .padding(.top, 4)
         .padding(.horizontal, settings.defaultView ? 20 : 16)
         .background(Color.clear)
         .opacity(showFloatingHeader ? 1 : 0)
-        .padding(.horizontal, 50)
         .zIndex(1)
         .offset(y: showFloatingHeader ? 0 : -80)
-        .opacity(showFloatingHeader ? 1 : 0)
     }
 
     #if os(iOS)
@@ -1795,28 +1793,20 @@ struct SurahView: View {
     }
     
     private var surahTitlePickerButton: some View {
-        Menu {
-            Button {
+        // Tap opens the Surah list; long-press shows Revelation Info (no longer a menu).
+        surahTitleLabel
+            .onTapGesture {
                 settings.hapticFeedback()
                 showSurahPickerSheet = true
-            } label: {
-                Label("Surah List", systemImage: "list.bullet")
             }
-
-            Button {
-                settings.hapticFeedback()
-                showSurahInfoSheet = true
-            } label: {
-                Label("Surah Info", systemImage: "info.circle")
-            }
-
-            Button {
+            .onLongPressGesture(minimumDuration: 0.45) {
                 settings.hapticFeedback()
                 surahInfoDialog = surahInfoDialog(for: surah)
-            } label: {
-                Label("Revelation Info", systemImage: "book.closed")
             }
-        } label: {
+    }
+
+    private var surahTitleLabel: some View {
+        Group {
             VStack(spacing: 0) {
                 HStack {
                     HStack {
@@ -1842,13 +1832,13 @@ struct SurahView: View {
                 
                 Text(surah.nameEnglish)
                     .font(.caption2)
-                    .padding(.top, -4)
+                    .padding(.top, -8)
             }
             .lineLimit(1)
             .foregroundColor(.primary)
             .contentShape(Rectangle())
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.bottom, 6)
             .conditionalGlassEffect()
         }
     }
@@ -1866,7 +1856,13 @@ struct SurahView: View {
     private func applySurahToolbar(to base: some View) -> some View {
         base.toolbar {
             surahPrincipalToolbar
-            surahSettingsToolbarItem
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack {
+                    surahInfoButton
+                    navBarTitle
+                }
+            }
         }
     }
 
@@ -1877,11 +1873,14 @@ struct SurahView: View {
         }
     }
 
-    @ToolbarContentBuilder
-    private var surahSettingsToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            navBarTitle
+    private var surahInfoButton: some View {
+        Button {
+            settings.hapticFeedback()
+            showSurahInfoSheet = true
+        } label: {
+            Image(systemName: "info.circle")
         }
+        .tint(settings.accentColor.color)
     }
 
     @ViewBuilder

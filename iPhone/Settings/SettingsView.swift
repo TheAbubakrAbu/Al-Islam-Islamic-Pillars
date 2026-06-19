@@ -498,7 +498,7 @@ struct SettingsAppearanceView: View {
             .pickerStyle(SegmentedPickerStyle())
             .onChange(of: settings.colorSchemeString) { _ in settings.hapticFeedback() }
             
-            Text("System only affects Light and Dark.")
+            Text("System follows your device — Light theme in Light Mode, Dark theme in Dark Mode. Gray and Sepia are fixed and ignore your device setting.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)

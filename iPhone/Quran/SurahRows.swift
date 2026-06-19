@@ -472,18 +472,17 @@ struct SurahAyahRow: View {
     }
 }
 
-private enum _FmtCache {
-    static let mmss: DateComponentsFormatter = {
-        let f = DateComponentsFormatter()
-        f.allowedUnits = [.minute, .second]
-        f.zeroFormattingBehavior = .pad
-        return f
-    }()
-}
-
+/// Formats a duration as H:MM:SS once it reaches an hour, otherwise MM:SS.
 @inline(__always)
 func formatMMSS(_ seconds: Double) -> String {
-    _FmtCache.mmss.string(from: seconds) ?? "00:00"
+    let total = max(0, Int(seconds.rounded()))
+    let h = total / 3600
+    let m = (total % 3600) / 60
+    let s = total % 60
+    if h > 0 {
+        return String(format: "%d:%02d:%02d", h, m, s)
+    }
+    return String(format: "%02d:%02d", m, s)
 }
 
 #if os(iOS)
@@ -579,6 +578,8 @@ struct LastListenedSurahRow: View {
                         color: settings.accentColor.color
                     )
                     .padding(.top, 3)
+                    .opacity(quranPlayer.isPlaying || quranPlayer.isPaused ? 0.35 : 1)
+                    .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
                 }
                 .padding(.vertical, 8)
                 .contentShape(Rectangle())
@@ -728,7 +729,7 @@ struct LastListenedSurahRow: View {
                     .foregroundColor(settings.accentColor.color)
                     .minimumScaleFactor(0.75)
                     .transition(.opacity)
-                    .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0)
+                    .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0.35)
                     .animation(.easeInOut, value: quranPlayer.isPlaying)
                     .animation(.easeInOut, value: quranPlayer.isPaused)
             }
@@ -751,6 +752,179 @@ struct LastListenedSurahRow: View {
                 .minimumScaleFactor(0.5)
         }
         .padding(.vertical, 4)
+    }
+}
+
+/// Compact summary-mode tile that previews a single ayah (Arabic / transliteration / English),
+/// each limited to two lines — like a normal AyahRow but trimmed to fit a tile.
+struct SummaryAyahTile: View {
+    @EnvironmentObject var settings: Settings
+
+    let title: String
+    let icon: String
+    let surah: Surah
+    let ayah: Ayah
+    let onTap: () -> Void
+
+    /// e.g. "Al-Fatiha 1:5"
+    private var detail: String { "\(surah.nameTransliteration) \(surah.id):\(ayah.id)" }
+
+    private func arabicDisplayText() -> String {
+        let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
+        return settings.beginnerMode ? text.map { String($0) }.joined(separator: " ") : text
+    }
+
+    var body: some View {
+        Button {
+            settings.hapticFeedback()
+            onTap()
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+                    Text(title)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                Text(detail)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                ayahPreview
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var ayahPreview: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if settings.showArabicText {
+                Text(arabicDisplayText())
+                    .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+
+            if settings.showTransliteration, settings.isHafsDisplay {
+                Text(ayah.textTransliteration)
+                    .font(.footnote)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if settings.showEnglishSaheeh, settings.isHafsDisplay {
+                Text(ayah.textEnglishSaheeh)
+                    .font(.footnote)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if settings.showEnglishMustafa, settings.isHafsDisplay {
+                Text(ayah.textEnglishMustafa)
+                    .font(.footnote)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+
+/// Compact summary-mode tile for the last-listened surah. There is no ayah, so it shows the reciter,
+/// duration, a play button, and a tiny progress bar instead — sized to match the ayah tile beside it.
+struct SummarySurahTile: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranPlayer: QuranPlayer
+
+    let title: String
+    let icon: String
+    let surah: Surah
+    let lastListenedSurah: LastListenedSurah
+    let onTap: () -> Void
+
+    /// e.g. "1 - Al-Fatiha"
+    private var detail: String { "\(surah.id) - \(surah.nameTransliteration)" }
+
+    var body: some View {
+        Button {
+            settings.hapticFeedback()
+            onTap()
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+                    Text(title)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                Text(detail)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                Text(lastListenedSurah.reciter.displayNameWithEnglishQiraah)
+                    .font(.caption2)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(spacing: 6) {
+                    Text("\(formatMMSS(lastListenedSurah.currentDuration)) / \(formatMMSS(lastListenedSurah.fullDuration))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+
+                    Spacer()
+
+                    Image(systemName: "play.fill")
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor.color)
+                        .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0.35)
+                        .onTapGesture {
+                            guard !quranPlayer.isPlaying, !quranPlayer.isPaused else { return }
+                            settings.hapticFeedback()
+                            quranPlayer.playSurah(
+                                surahNumber: lastListenedSurah.surahNumber,
+                                surahName: lastListenedSurah.surahName,
+                                certainReciter: true
+                            )
+                        }
+                }
+
+                TinyProgressBar(
+                    fraction: lastListenedSurah.fullDuration > 0 ? lastListenedSurah.currentDuration / lastListenedSurah.fullDuration : 0,
+                    color: settings.accentColor.color
+                )
+                .padding(.top, 1)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 #endif

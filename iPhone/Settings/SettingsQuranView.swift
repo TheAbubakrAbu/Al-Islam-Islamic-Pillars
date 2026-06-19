@@ -47,9 +47,6 @@ struct SettingsQuranView: View {
             set: { newValue in
                 withAnimation {
                     settings.showPageJuzDividers = newValue
-                    if newValue {
-                        settings.showPageJuzOverlay = true
-                    }
                 }
             }
         )
@@ -74,15 +71,23 @@ struct SettingsQuranView: View {
                     quranSettingsLink(title: "Recitation", systemImage: "headphones") {
                         recitationDestination
                     }
+                }
+                Section {
                     quranSettingsLink(title: "Quran Tab View", systemImage: "list.bullet.rectangle") {
                         quranTabViewDestination
                     }
+                }
+                Section {
                     quranSettingsLink(title: "Surah Reading View", systemImage: "book") {
                         surahReadingDestination
                     }
-                    quranSettingsLink(title: "Arabic Text", systemImage: "character.book.closed.ar") {
+                }
+                Section {
+                    quranSettingsLink(title: "Arabic Text", systemImage: "textformat.ar") {
                         arabicTextDestination
                     }
+                }
+                Section {
                     quranSettingsLink(title: "English Text", systemImage: "textformat") {
                         englishTextDestination
                     }
@@ -91,6 +96,7 @@ struct SettingsQuranView: View {
             .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
+        .compactListSectionSpacing()
         .navigationTitle("Al-Quran Settings")
         #if os(iOS)
         .toolbar {
@@ -119,6 +125,7 @@ struct SettingsQuranView: View {
             destination()
         } label: {
             Label(title, systemImage: systemImage)
+                .padding(.vertical, 4)
         }
         .tint(settings.accentColor.color)
     }
@@ -327,30 +334,15 @@ struct SettingsQuranView: View {
     }
 
     private var pageAndJuzDividersGroup: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
-                    .font(.subheadline)
-                    .onChange(of: settings.showPageJuzDividers) { _ in settings.hapticFeedback() }
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Show Page and Juz Dividers", isOn: pageJuzDividers.animation(.easeInOut))
+                .font(.subheadline)
+                .onChange(of: settings.showPageJuzDividers) { _ in settings.hapticFeedback() }
 
-                Text("Shows a divider inside a surah wherever a new mushaf page or juz begins.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.vertical, 2)
-            }
-
-            if settings.showPageJuzDividers {
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Show Floating Overlay", isOn: $settings.showPageJuzOverlay.animation(.easeInOut))
-                        .font(.subheadline)
-                        .onChange(of: settings.showPageJuzOverlay) { _ in settings.hapticFeedback() }
-
-                    Text("Shows a small floating label with the current page and juz while you read inside a specific surah.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                }
-            }
+            Text("Shows a divider inside a surah wherever a new mushaf page or juz begins, plus a small floating label with the current page and juz while you read.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
         }
     }
 
