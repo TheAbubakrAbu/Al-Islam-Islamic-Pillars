@@ -11,9 +11,13 @@ import Foundation
 ///   the tajweed engine keys madd-lāzim colouring off, so the spelled-out names colour like the real ayah.
 /// - The remaining letters (حي طهر → ح ي ط ه ر) take an ordinary 2-count madd, so they get the plain
 ///   long vowel with no maddah sign.
-/// - The shaddah on a final consonant is contextual idghām between adjacent letters, not part of an
-///   isolated name. It is applied only where that idghām genuinely happens (e.g. لام → ميم in الٓمٓ
-///   gives لَآمّ), and a sukūn is used everywhere else.
+/// - No shaddah is written on the names. The idghām gemination between adjacent letters (e.g. لام → ميم
+///   in الٓمٓ) is treated as madd lāzim via the maddah sign, but not shown as a shaddah.
+/// - The "no vowel" mark is the Uthmani U+06E1 (small high dotless head of khah), not the plain sukūn.
+/// - A final nūn or mīm that meets a following letter triggering a noon/meem rule (ikhfāʾ, idghām, …) is
+///   left BARE (no sukūn). The mushaf does the same, and it lets the engine colour the rule — e.g. the
+///   nūn of سِين before قَاف in عٓسٓقٓ is ikhfāʾ, so it carries no sukūn. A sukūn is kept only when the
+///   letter is final or its rule is iẓhār (clear), where the nūn/mīm really is plainly silent/clear.
 enum Muqattaat {
     struct LetterName {
         let letter: Character       // ا
@@ -73,53 +77,56 @@ enum Muqattaat {
     ]
 
     // Combining marks (kept explicit so the vocalization is unambiguous).
-    private static let fatha   = "\u{064E}"
-    private static let kasra   = "\u{0650}"
-    private static let damma   = "\u{064F}"
-    private static let maddah  = "\u{0653}" // the mushaf's madd-lāzim sign, e.g. الٓمٓ
-    private static let shaddah = "\u{0651}"
-    private static let sukoon  = "\u{0652}"
+    private static let fatha  = "\u{064E}"
+    private static let kasra  = "\u{0650}"
+    private static let damma  = "\u{064F}"
+    private static let maddah = "\u{0653}" // the mushaf's madd-lāzim sign, e.g. الٓمٓ
+    private static let sukoon = "\u{06E1}" // ARABIC SMALL HIGH DOTLESS HEAD OF KHAH (Uthmani "no vowel")
 
-    // Fully vocalized letter names.
-    // Madd-lāzim letters: long vowel + maddah, final consonant sukūn (…ّ when it idghāms into the next).
-    private static let alif      = "\u{0623}" + fatha + "\u{0644}" + kasra + "\u{0641}" + sukoon            // أَلِفْ (no madd)
-    private static let lamSukoon = "\u{0644}" + fatha + "\u{0627}" + maddah + "\u{0645}" + sukoon           // لَآمْ
-    private static let lamIdgham = "\u{0644}" + fatha + "\u{0627}" + maddah + "\u{0645}" + shaddah          // لَآمّ (→ mīm)
-    private static let mim       = "\u{0645}" + kasra + "\u{064A}" + maddah + "\u{0645}" + sukoon           // مِيٓمْ
-    private static let sad       = "\u{0635}" + fatha + "\u{0627}" + maddah + "\u{062F}" + sukoon           // صَآدْ
-    private static let kaf       = "\u{0643}" + fatha + "\u{0627}" + maddah + "\u{0641}" + sukoon           // كَآفْ
-    private static let sin       = "\u{0633}" + kasra + "\u{064A}" + maddah + "\u{0646}" + sukoon           // سِيٓنْ
-    private static let ayn       = "\u{0639}" + fatha + "\u{064A}" + maddah + "\u{0646}" + sukoon           // عَيٓنْ
-    private static let qaf       = "\u{0642}" + fatha + "\u{0627}" + maddah + "\u{0641}" + sukoon           // قَآفْ
-    private static let nun       = "\u{0646}" + damma + "\u{0648}" + maddah + "\u{0646}" + sukoon           // نُوٓنْ
+    // Fully vocalized letter names. The long vowel + maddah marks (and colours) madd lāzim; no shaddah is
+    // written. A final nūn/mīm keeps its sukūn only when it is iẓhār or word-final — when a noon/meem rule
+    // applies it is left bare (…Bare) so the engine colours the ikhfāʾ / idghām instead.
+    private static let alif    = "\u{0623}" + fatha + "\u{0644}" + kasra + "\u{0641}" + sukoon   // a-li-f (no madd)
+    private static let lam     = "\u{0644}" + fatha + "\u{0627}" + maddah + "\u{0645}" + sukoon  // lā-m, iẓhār (before rā)
+    private static let lamBare = "\u{0644}" + fatha + "\u{0627}" + maddah + "\u{0645}"           // lā-m, idghām into mīm
+    private static let mim     = "\u{0645}" + kasra + "\u{064A}" + maddah + "\u{0645}" + sukoon  // mī-m (iẓhār / final)
+    private static let sad     = "\u{0635}" + fatha + "\u{0627}" + maddah + "\u{062F}" + sukoon  // ṣā-d
+    private static let kaf     = "\u{0643}" + fatha + "\u{0627}" + maddah + "\u{0641}" + sukoon  // kā-f
+    private static let sin     = "\u{0633}" + kasra + "\u{064A}" + maddah + "\u{0646}" + sukoon  // sī-n (iẓhār / final)
+    private static let sinBare = "\u{0633}" + kasra + "\u{064A}" + maddah + "\u{0646}"           // sī-n, ikhfāʾ / idghām
+    private static let ayn     = "\u{0639}" + fatha + "\u{064A}" + maddah + "\u{0646}"           // ʿay-n, always ikhfāʾ here
+    private static let qaf     = "\u{0642}" + fatha + "\u{0627}" + maddah + "\u{0641}" + sukoon  // qā-f
+    private static let nun     = "\u{0646}" + damma + "\u{0648}" + maddah + "\u{0646}" + sukoon  // nū-n (final)
     // Natural 2-count madd letters: plain long vowel, no maddah sign.
-    private static let ra        = "\u{0631}" + fatha + "\u{0627}"                                          // رَا
-    private static let ha        = "\u{0647}" + fatha + "\u{0627}"                                          // هَا
-    private static let ya        = "\u{064A}" + fatha + "\u{0627}"                                          // يَا
-    private static let taa       = "\u{0637}" + fatha + "\u{0627}"                                          // طَا
-    private static let haa       = "\u{062D}" + fatha + "\u{0627}"                                          // حَا
+    private static let ra      = "\u{0631}" + fatha + "\u{0627}"  // rā
+    private static let ha      = "\u{0647}" + fatha + "\u{0627}"  // hā
+    private static let ya      = "\u{064A}" + fatha + "\u{0627}"  // yā
+    private static let taa     = "\u{0637}" + fatha + "\u{0627}"  // ṭā
+    private static let haa     = "\u{062D}" + fatha + "\u{0627}"  // ḥā
 
     /// Fully vocalized recitation of each distinct combination, keyed by the bare letters joined.
+    /// Bare nūn/mīm are chosen per the noon/meem rule with the following letter:
+    /// لام→ميم idghām, عين/سين→(ص/س/ق) ikhfāʾ, سين→ميم idghām bi-ghunnah.
     private static let vocalizedByLetters: [String: String] = [
-        "الم":   [alif, lamIdgham, mim].joined(separator: " "),
-        "المص":  [alif, lamIdgham, mim, sad].joined(separator: " "),
-        "الر":   [alif, lamSukoon, ra].joined(separator: " "),
-        "المر":  [alif, lamIdgham, mim, ra].joined(separator: " "),
+        "الم":   [alif, lamBare, mim].joined(separator: " "),
+        "المص":  [alif, lamBare, mim, sad].joined(separator: " "),
+        "الر":   [alif, lam, ra].joined(separator: " "),
+        "المر":  [alif, lamBare, mim, ra].joined(separator: " "),
         "كهيعص": [kaf, ha, ya, ayn, sad].joined(separator: " "),
         "طه":    [taa, ha].joined(separator: " "),
-        "طسم":   [taa, sin, mim].joined(separator: " "),
+        "طسم":   [taa, sinBare, mim].joined(separator: " "),
         "طس":    [taa, sin].joined(separator: " "),
         "يس":    [ya, sin].joined(separator: " "),
         "ص":     sad,
         "حم":    [haa, mim].joined(separator: " "),
-        "عسق":   [ayn, sin, qaf].joined(separator: " "),
+        "عسق":   [ayn, sinBare, qaf].joined(separator: " "),
         "ق":     qaf,
         "ن":     nun,
     ]
 
     struct Pronunciation {
         let letters: [LetterName]
-        /// Fully vocalized letter names, e.g. "أَلِفْ لَآمّ مِيٓمْ".
+        /// Fully vocalized letter names, e.g. "أَلِفۡ لَآم مِيٓمۡ".
         let spelledOutArabic: String
         /// Individual letters separated for clarity, e.g. "ا ل م".
         var individualLetters: String { letters.map { String($0.letter) }.joined(separator: " ") }

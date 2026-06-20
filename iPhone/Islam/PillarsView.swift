@@ -612,6 +612,11 @@ struct MuqattaatPillarView: View {
                         muqattaatRow(row)
                     }
                 }
+
+                Section(header: Text("LEARN MORE")) {
+                    Text("How the muqatta'at are recited: https://www.youtube.com/watch?v=6_gKg6PByOI")
+                        .font(.caption)
+                }
             }
             .themedListRowBackground()
         }

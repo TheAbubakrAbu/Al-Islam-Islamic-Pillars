@@ -799,14 +799,16 @@ struct SummaryAyahTile: View {
             onTap()
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: icon)
-                        .font(.caption)
-                        .foregroundColor(settings.accentColor.color)
-                    Text(title)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                if !title.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: icon)
+                            .font(.caption)
+                            .foregroundColor(settings.accentColor.color)
+                        Text(title)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
 
                 Text(detail)
@@ -972,7 +974,7 @@ struct SummarySurahTile: View {
 }
 
 /// Compact summary-mode tile for a favorite surah. Favorites are whole surahs (no single ayah),
-/// so it shows the surah number, names, and revelation type — sized to match the ayah tiles beside it.
+/// so it shows the surah number with its Arabic name, transliteration, and English meaning.
 struct SummarySurahNameTile: View {
     @EnvironmentObject var settings: Settings
 
@@ -981,31 +983,35 @@ struct SummarySurahNameTile: View {
     let surah: Surah
     let onTap: () -> Void
 
-    /// e.g. "1 - Al-Fatiha"
-    private var detail: String { "\(surah.id) - \(surah.nameTransliteration)" }
-    private var typeLabel: String { surah.type == "makkan" ? "🕋 Makkan" : "🕌 Madinan" }
-
     var body: some View {
         Button {
             settings.hapticFeedback()
             onTap()
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: icon)
-                        .font(.caption)
-                        .foregroundColor(settings.accentColor.color)
-                    Text(title)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                if !title.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: icon)
+                            .font(.caption)
+                            .foregroundColor(settings.accentColor.color)
+                        Text(title)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
 
-                Text(detail)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(settings.accentColor.color)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                HStack(spacing: 6) {
+                    Text("\(surah.id)")
+                        .font(.subheadline.monospacedDigit().weight(.bold))
+                        .foregroundColor(settings.accentColor.color)
+
+                    Text(surah.nameTransliteration)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
 
                 Text(surah.nameArabic)
                     .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
@@ -1013,6 +1019,75 @@ struct SummarySurahNameTile: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Text(surah.nameEnglish)
+                    .font(.footnote)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Grid tile for the surah / juz browse list — shows everything a row does except the Arabic name:
+/// number, transliteration, English meaning, and the revelation type with ayah count.
+struct SurahGridTile: View {
+    @EnvironmentObject var settings: Settings
+
+    let surah: Surah
+    let isFavorite: Bool
+    var positionNote: String? = nil
+    let onTap: () -> Void
+
+    private var typeLabel: String { surah.type == "makkan" ? "🕋 Makkan" : "🕌 Madinan" }
+
+    var body: some View {
+        Button {
+            settings.hapticFeedback()
+            onTap()
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text("\(surah.id)")
+                        .font(.subheadline.monospacedDigit().weight(.bold))
+                        .foregroundColor(settings.accentColor.color)
+
+                    Spacer(minLength: 0)
+
+                    if isFavorite {
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                            .foregroundStyle(settings.accentColor.color)
+                    }
+                }
+
+                Text(surah.nameTransliteration)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                Text(surah.nameEnglish)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                if let positionNote {
+                    Text(positionNote)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
 
                 Text("\(typeLabel) · \(surah.numberOfAyahs) ayahs")
                     .font(.caption2)

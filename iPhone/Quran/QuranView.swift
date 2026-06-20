@@ -682,17 +682,11 @@ struct QuranView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     settings.hapticFeedback()
-                    let turningOff = settings.quranSummaryMode
-                    withAnimation { settings.quranSummaryMode.toggle() }
-                    // When leaving summary mode, jump to where the user left off listening.
-                    if turningOff, settings.saveLastListenedSurah,
-                       let last = settings.lastListenedSurah {
-                        scrollToSurahID = last.surahNumber
-                    }
+                    withAnimation { settings.quranGridMode.toggle() }
                 } label: {
-                    Image(systemName: settings.quranSummaryMode ? "list.bullet" : "rectangle.grid.1x2")
+                    Image(systemName: settings.quranGridMode ? "list.bullet" : "square.grid.2x2")
                 }
-                .accessibilityLabel(settings.quranSummaryMode ? "Show full list" : "Show summary")
+                .accessibilityLabel(settings.quranGridMode ? "Show lists" : "Show grids")
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -1197,7 +1191,14 @@ struct QuranView: View {
     @ViewBuilder
     private func summaryTilesSection(context: SearchDisplayContext) -> some View {
         let showAyah = settings.showAyahOfTheDay && settings.isAyahOfTheDayHiddenToday == false
-        Section(header: Text("YOUR SUMMARY")) {
+        Section(header:
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(settings.accentColor.color)
+                Text("YOUR SUMMARY")
+                    .foregroundStyle(settings.accentColor.color)
+            }
+        ) {
             LazyVGrid(
                 columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
                 alignment: .leading,
@@ -1239,14 +1240,14 @@ struct QuranView: View {
             }
             Section(header: bookmarkHeader(count: sortedBookmarks.count)) {
                 if settings.showBookmarks {
-                    if settings.bookmarksGridMode {
+                    if settings.quranGridMode {
                         LazyVGrid(
                             columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
                             alignment: .leading,
                             spacing: 10
                         ) {
                             ForEach(sortedBookmarks, id: \.id) { bookmarkedAyah in
-                                bookmarkGridTile(bookmarkedAyah)
+                                bookmarkGridTile(bookmarkedAyah, context: context)
                             }
                         }
                         .padding(.vertical, 4)
@@ -1277,17 +1278,6 @@ struct QuranView: View {
 
             Spacer()
 
-            if settings.showBookmarks {
-                Image(systemName: settings.bookmarksGridMode ? "list.bullet" : "square.grid.2x2")
-                    .foregroundColor(settings.accentColor.color)
-                    .padding(4)
-                    .conditionalGlassEffect()
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        withAnimation { settings.bookmarksGridMode.toggle() }
-                    }
-            }
-
             Image(systemName: settings.showBookmarks ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
                 .padding(4)
@@ -1300,13 +1290,21 @@ struct QuranView: View {
     }
 
     @ViewBuilder
-    private func bookmarkGridTile(_ bookmarkedAyah: BookmarkedAyah) -> some View {
+    private func bookmarkGridTile(_ bookmarkedAyah: BookmarkedAyah, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(bookmarkedAyah.surah),
            let ayah = quranData.ayah(surah: bookmarkedAyah.surah, ayah: bookmarkedAyah.ayah) {
             #if os(iOS)
-            SummaryAyahTile(title: "Bookmark", icon: "bookmark.fill", surah: surah, ayah: ayah) {
+            SummaryAyahTile(title: "", icon: "", surah: surah, ayah: ayah) {
                 push(surahID: surah.id, ayahID: ayah.id)
             }
+            .ayahContextMenuModifier(
+                surah: surah.id,
+                ayah: ayah.id,
+                favoriteSurahs: context.favoriteSurahs,
+                bookmarkedAyahs: context.bookmarkedAyahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
             #else
             Button {
                 settings.hapticFeedback()
@@ -1383,7 +1381,7 @@ struct QuranView: View {
             let sortedFavorites = settings.favoriteSurahs.sorted()
             Section(header: favoriteHeader(count: sortedFavorites.count)) {
                 if settings.showFavorites {
-                    if settings.favoritesGridMode {
+                    if settings.quranGridMode {
                         LazyVGrid(
                             columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
                             alignment: .leading,
@@ -1421,17 +1419,6 @@ struct QuranView: View {
 
             Spacer()
 
-            if settings.showFavorites {
-                Image(systemName: settings.favoritesGridMode ? "list.bullet" : "square.grid.2x2")
-                    .foregroundColor(settings.accentColor.color)
-                    .padding(4)
-                    .conditionalGlassEffect()
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        withAnimation { settings.favoritesGridMode.toggle() }
-                    }
-            }
-
             Image(systemName: settings.showFavorites ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
                 .padding(4)
@@ -1447,8 +1434,17 @@ struct QuranView: View {
     private func favoriteGridTile(surahID: Int, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(surahID) {
             #if os(iOS)
-            SummarySurahNameTile(title: "Favorite", icon: "star.fill", surah: surah) {
+            SummarySurahNameTile(title: "", icon: "", surah: surah) {
                 push(surahID: surah.id, ayahID: nil)
+            }
+            .contextMenu {
+                SurahContextMenu(
+                    surahID: surah.id,
+                    surahName: surah.nameTransliteration,
+                    favoriteSurahs: context.favoriteSurahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID
+                )
             }
             #else
             Button {
@@ -1927,16 +1923,57 @@ struct QuranView: View {
         Section(header: surahBrowseHeader(showsRevelationOrder: showsRevelationOrder)) { }
             .padding(.bottom, -12)
 
-        ForEach(browsedSurahs, id: \.id) { surah in
-            #if os(iOS)
+        #if os(iOS)
+        if settings.quranGridMode {
             Section {
-                surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
+                surahGrid(browsedSurahs, context: context)
             }
-            #else
-            surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
-            #endif
+        } else {
+            ForEach(browsedSurahs, id: \.id) { surah in
+                Section {
+                    surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
+                }
+            }
         }
+        #else
+        ForEach(browsedSurahs, id: \.id) { surah in
+            surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
+        }
+        #endif
     }
+
+    #if os(iOS)
+    private var surahGridColumns: [GridItem] {
+        [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+    }
+
+    @ViewBuilder
+    private func surahGrid(_ surahs: [Surah], context: SearchDisplayContext) -> some View {
+        LazyVGrid(columns: surahGridColumns, alignment: .leading, spacing: 10) {
+            ForEach(surahs, id: \.id) { surah in
+                SurahGridTile(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)) {
+                    push(surahID: surah.id, ayahID: nil)
+                }
+                .contextMenu {
+                    SurahContextMenu(
+                        surahID: surah.id,
+                        surahName: surah.nameTransliteration,
+                        favoriteSurahs: context.favoriteSurahs,
+                        searchText: $searchText,
+                        scrollToSurahID: $scrollToSurahID
+                    )
+                }
+                .id("surah_\(surah.id)")
+                .onAppear {
+                    if surah.id == scrollToSurahID {
+                        withAnimation { scrollToSurahID = -1 }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    #endif
 
     @ViewBuilder
     private func surahBrowseHeader(showsRevelationOrder: Bool) -> some View {
@@ -2049,13 +2086,57 @@ struct QuranView: View {
         ForEach(sections) { sectionData in
             let juz = sectionData.juz
             Section(header: JuzHeader(juz: juz)) {
+                #if os(iOS)
+                if settings.quranGridMode {
+                    LazyVGrid(columns: surahGridColumns, alignment: .leading, spacing: 10) {
+                        ForEach(sectionData.rows) { row in
+                            juzGridTile(row: row, context: context)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                } else {
+                    ForEach(sectionData.rows) { row in
+                        preprocessedJuzRow(row: row, context: context)
+                    }
+                }
+                #else
                 ForEach(sectionData.rows) { row in
                     preprocessedJuzRow(row: row, context: context)
                 }
+                #endif
             }
             .sectionIndexLabelWhenAvailable("\(juz.id)")
         }
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private func juzGridTile(row: QuranData.JuzSectionData.Row, context: SearchDisplayContext) -> some View {
+        if let surah = quranData.surah(row.surahID) {
+            let note: String? = {
+                switch row.kind {
+                case .plain: return nil
+                case .start(let ayah): return ayah > 1 ? "From \(surah.id):\(ayah)" : nil
+                case .end(let ayah): return ayah < surah.numberOfAyahs ? "To \(surah.id):\(ayah)" : nil
+                }
+            }()
+            let route = preprocessedJuzRoute(row: row, surah: surah)
+            let ayahID: Int? = { if case let .ayahs(_, ayah) = route { return ayah } else { return nil } }()
+            SurahGridTile(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id), positionNote: note) {
+                push(surahID: surah.id, ayahID: ayahID)
+            }
+            .contextMenu {
+                SurahContextMenu(
+                    surahID: surah.id,
+                    surahName: surah.nameTransliteration,
+                    favoriteSurahs: context.favoriteSurahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID
+                )
+            }
+        }
+    }
+    #endif
 
     @ViewBuilder
     private func preprocessedJuzRow(row: QuranData.JuzSectionData.Row, context: SearchDisplayContext) -> some View {

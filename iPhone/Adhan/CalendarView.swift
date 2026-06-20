@@ -81,10 +81,6 @@ struct CalendarView: View {
                 HStack(spacing: 10) {
                     hijriInfoButton
 
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.4))
-                        .frame(width: 1, height: 18)
-
                     calendarModeButton
                 }
             }

@@ -4,9 +4,9 @@ struct SurahsHeader: View {
     @EnvironmentObject var quranData: QuranData
 
     @State private var randomSurah: Surah?
-    
+
     var headerText: String
-    
+
     init(text: String = "SURAHS") {
         headerText = text
     }
@@ -17,7 +17,7 @@ struct SurahsHeader: View {
 
             #if os(iOS)
             Spacer()
-            
+
             goToSurah
             randomSurahLink
             #endif
@@ -74,7 +74,7 @@ struct JuzHeader: View {
 
             #if os(iOS)
             Spacer()
-            
+
             randomSurahLink
             #endif
         }

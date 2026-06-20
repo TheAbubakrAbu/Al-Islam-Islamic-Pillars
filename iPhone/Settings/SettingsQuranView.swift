@@ -264,7 +264,7 @@ struct SettingsQuranView: View {
                     .font(.subheadline)
                     .onChange(of: settings.quranSummaryMode) { _ in settings.hapticFeedback() }
 
-                Text("Collapses Ayah of the Day, Last Listened, and Last Read into one compact section of tiles at the top of the Quran tab.")
+                Text("Bundles Ayah of the Day, Last Listened, and Last Read into one compact \"Your Summary\" section of tiles at the top of the Quran tab — it's all one thing. Turn it off to show each as its own full-width section instead, which is clearer but takes up a lot more space. (Summary is separate from the grid button, so you can keep this on while everything else stays a list.)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)

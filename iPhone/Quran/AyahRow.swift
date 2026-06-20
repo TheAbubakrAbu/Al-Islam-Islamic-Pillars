@@ -221,22 +221,31 @@ struct AyahRow: View, Equatable {
         if settings.showArabicText, let p = Muqattaat.pronunciation(surah: surah.id, ayah: ayah.id) {
             let arabicFont = Font.custom(settings.fontArabic, size: settings.fontArabicSize * 0.62)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Actual Pronunciation")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(.secondary)
+                HStack {
+                    Text("ACTUAL PRONUNCIATION")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.secondary)
 
-                Text(p.individualLetters)
-                    .font(arabicFont)
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    Spacer()
 
-                muqattaatNamesView(p, font: arabicFont)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    Image(systemName: settings.showMuqattaatHelper ? "chevron.down.circle" : "chevron.up.circle")
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+                        .onTapGesture {
+                            settings.hapticFeedback()
+                            withAnimation { settings.showMuqattaatHelper.toggle() }
+                        }
+                }
 
-                Text(p.transliteration)
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if settings.showMuqattaatHelper {
+                    Text(p.individualLetters)
+                        .font(arabicFont)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+
+                    muqattaatNamesView(p, font: arabicFont)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)

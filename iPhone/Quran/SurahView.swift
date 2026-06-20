@@ -1855,7 +1855,9 @@ struct SurahView: View {
     @ViewBuilder
     private func applySurahToolbar(to base: some View) -> some View {
         base.toolbar {
-            surahPrincipalToolbar
+            ToolbarItem(placement: .navigationBarLeading) {
+                surahPrincipalToolbar
+            }
 
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {

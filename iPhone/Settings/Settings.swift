@@ -553,10 +553,11 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
-    /// When on, the bookmarked ayahs section is shown as a grid of tiles instead of a list.
-    @AppStorage("bookmarksGridMode") var bookmarksGridMode = false
-    /// When on, the favorite surahs section is shown as a grid of tiles instead of a list.
-    @AppStorage("favoritesGridMode") var favoritesGridMode = false
+    /// One master grid toggle (driven by the toolbar button) for every list on the Quran tab except the
+    /// summary: bookmarked ayahs, favorite surahs, and the surah / juz browse list.
+    @AppStorage("quranGridMode") var quranGridMode = false
+    /// Shows the spelled-out pronunciation aid above muqatta'at ayahs (e.g. أَلِفۡ لَآم مِيٓمۡ). Off by default.
+    @AppStorage("showMuqattaatHelper") var showMuqattaatHelper = false
 
     @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
     @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
