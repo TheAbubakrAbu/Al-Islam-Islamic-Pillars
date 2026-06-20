@@ -200,19 +200,21 @@ struct NowPlayingView: View {
                     Text(total > 0 ? Self.formatMMSS(safeElapsed) : "")
                         .frame(width: 40, alignment: .leading)
 
-                    Spacer(minLength: 0)
+                    Spacer()
 
                     HStack(spacing: 18) {
                         transportButtons(isPlaying: isPlaying)
                     }
 
-                    Spacer(minLength: 0)
+                    Spacer()
 
                     Text(total > 0 ? Self.formatMMSS(total) : "")
                         .frame(width: 40, alignment: .trailing)
                 }
                 .font(.caption2)
                 .foregroundColor(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
             }
         }
     }
@@ -367,7 +369,7 @@ struct NowPlayingView: View {
     @ViewBuilder
     private func compactTransportButtons(isPlaying: Bool) -> some View {
         Image(systemName: "backward.fill")
-            .font(.title2)
+            .font(.title3)
             .foregroundColor(settings.accentColor.color)
             .contentShape(Rectangle())
             .onTapGesture {
@@ -387,7 +389,7 @@ struct NowPlayingView: View {
             }
 
         Image(systemName: "forward.fill")
-            .font(.title2)
+            .font(.title3)
             .foregroundColor(settings.accentColor.color)
             .contentShape(Rectangle())
             .onTapGesture {

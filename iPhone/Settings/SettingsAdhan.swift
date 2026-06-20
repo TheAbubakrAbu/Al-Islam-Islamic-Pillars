@@ -46,10 +46,34 @@ extension Settings {
 
     static let locationManager: CLLocationManager = {
         let lm = CLLocationManager()
-        lm.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        lm.distanceFilter = 500
+        lm.desiredAccuracy = kCLLocationAccuracyBest
+        lm.distanceFilter = halfMile
         return lm
     }()
+
+    // MARK: - Location accuracy / refinement state
+    //
+    // iOS uses coarse significant-location-change monitoring in the background (battery friendly), so a
+    // single, possibly-rough fix tends to "stick" while you stay in one place. When an accuracy-sensitive
+    // view is open we briefly switch to high-accuracy continuous updates to lock in the exact spot, then
+    // stop. While actually moving (road trip / walk / flight) we throttle commits so prayer times and the
+    // city label don't churn on every cell-tower hop.
+    private static var isRefiningLocation = false
+    private static var refinementStartedAt: Date?
+    private static var refinementTimeout: DispatchWorkItem?
+    private static var lastLocationCommitAt: Date?
+    private static var lastFixAccuracy: CLLocationDistance?
+
+    /// Stop the high-accuracy burst once a fix this good arrives.
+    private static let refinementTargetAccuracy: CLLocationDistance = 12   // m
+    /// Hard cap on how long the burst runs, in case a good fix never arrives.
+    private static let refinementMaxDuration: TimeInterval = 25            // s
+    /// Ignore sub-jitter coordinate changes when refining in place.
+    private static let refineMinMove: CLLocationDistance = 8               // m
+    /// While moving, don't recompute more often than this even past the distance threshold.
+    private static let movingCommitMinInterval: TimeInterval = 30          // s
+    /// Refinements that move at least this far also recompute prayer times (smaller moves don't matter).
+    private static let prayerRecomputeDistance: CLLocationDistance = 75    // m
     
     private static let geocoder = CLGeocoder()
     private static var cachedPlacemark: (coord: CLLocationCoordinate2D, city: String, countryCode: String)?
@@ -147,16 +171,104 @@ extension Settings {
         let isFresh = abs(loc.timestamp.timeIntervalSinceNow) <= 300
         guard isValid && isFresh else { return }
 
-        if let cur = currentLocation {
-            let prev = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
-            let distance = prev.distance(from: loc)
-            if distance < Self.halfMile { return }
+        if Self.isRefiningLocation {
+            commitLocation(loc, refining: true)
+            let elapsed = Date().timeIntervalSince(Self.refinementStartedAt ?? Date())
+            if loc.horizontalAccuracy <= Self.refinementTargetAccuracy || elapsed >= Self.refinementMaxDuration {
+                endLocationRefinement()
+            }
+        } else {
+            commitLocation(loc, refining: false)
+        }
+    }
+
+    /// Decide whether a new reading is worth saving, and update only as much as needed.
+    /// - `refining`: true during a high-accuracy burst (accept small accuracy improvements in place);
+    ///   false for passive significant-change updates while moving (only real, throttled moves commit).
+    private func commitLocation(_ loc: CLLocation, refining: Bool) {
+        let newCoord = loc.coordinate
+
+        guard let cur = currentLocation else {
+            Self.lastLocationCommitAt = Date()
+            Self.lastFixAccuracy = loc.horizontalAccuracy
+            Task { @MainActor in
+                await updateCity(latitude: newCoord.latitude, longitude: newCoord.longitude)
+                fetchPrayerTimes(force: false)
+            }
+            return
         }
 
-        Task { @MainActor in
-            await updateCity(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude)
-            fetchPrayerTimes(force: false)
+        let prev = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
+        let moved = prev.distance(from: loc)
+
+        if refining {
+            // Sitting in one place: accept a meaningfully better fix (or a small genuine move) so the
+            // saved coordinate converges on the exact spot instead of keeping the first rough fix.
+            let moreAccurate = loc.horizontalAccuracy + 5 < (Self.lastFixAccuracy ?? .greatestFiniteMagnitude)
+            guard moved >= Self.refineMinMove || moreAccurate else { return }
+        } else {
+            // Moving: only commit once you've actually relocated, and not more than once per interval,
+            // so a road trip / walk / flight doesn't constantly recompute.
+            guard moved >= Self.halfMile else { return }
+            if let last = Self.lastLocationCommitAt,
+               Date().timeIntervalSince(last) < Self.movingCommitMinInterval { return }
         }
+
+        Self.lastLocationCommitAt = Date()
+        Self.lastFixAccuracy = loc.horizontalAccuracy
+
+        let cityLikelyChanged = moved >= Self.halfMile
+        let shouldRecomputePrayers = !refining || moved >= Self.prayerRecomputeDistance
+
+        Task { @MainActor in
+            if cityLikelyChanged {
+                await updateCity(latitude: newCoord.latitude, longitude: newCoord.longitude)
+            } else {
+                // Same place, just a sharper fix — keep the city label, sharpen the coordinates so the
+                // Qibla bearing and display use the most accurate position available.
+                withAnimation {
+                    currentLocation = Location(city: cur.city, latitude: newCoord.latitude, longitude: newCoord.longitude)
+                }
+            }
+            if shouldRecomputePrayers {
+                fetchPrayerTimes(force: false)
+            }
+        }
+    }
+
+    /// Briefly switch to high-accuracy continuous updates to lock in a precise fix, then auto-stop.
+    /// Call when an accuracy-sensitive view appears (Qibla / prayer times). Bounded by accuracy target
+    /// and a hard timeout so it never drains battery; coarse significant-change monitoring keeps running.
+    func beginLocationRefinement() {
+        #if os(iOS)
+        let status = Self.locationManager.authorizationStatus
+        guard status == .authorizedAlways || status == .authorizedWhenInUse else { return }
+        guard !Self.isRefiningLocation else { return }
+
+        Self.isRefiningLocation = true
+        Self.refinementStartedAt = Date()
+        Self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        Self.locationManager.distanceFilter = kCLDistanceFilterNone
+        Self.locationManager.startUpdatingLocation()
+
+        let timeout = DispatchWorkItem { [weak self] in self?.endLocationRefinement() }
+        Self.refinementTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.refinementMaxDuration, execute: timeout)
+        #endif
+    }
+
+    func endLocationRefinement() {
+        #if os(iOS)
+        guard Self.isRefiningLocation else { return }
+        Self.isRefiningLocation = false
+        Self.refinementStartedAt = nil
+        Self.refinementTimeout?.cancel()
+        Self.refinementTimeout = nil
+
+        // Stop the continuous burst; significant-change monitoring stays active for background movement.
+        Self.locationManager.stopUpdatingLocation()
+        Self.locationManager.distanceFilter = Self.halfMile
+        #endif
     }
 
     // ERROR HANDLER

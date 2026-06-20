@@ -453,9 +453,12 @@ final class QuranPlayer: ObservableObject {
             DispatchQueue.main.async {
                 switch itm.status {
                 case .readyToPlay:
-                    self.isLoading = false
                     self.player?.playImmediately(atRate: 1.0)
+                    // Flip isLoading off in the SAME transaction that turns isPlaying on, otherwise
+                    // there's a frame where all of isLoading/isPlaying/isPaused are false and the
+                    // control briefly flashes the play icon before showing the stop button.
                     withAnimation {
+                        self.isLoading = false
                         self.isPlaying = true
                         self.isPaused = false
                         self.nowPlayingTitle  = "Surah \(surahNumber): \(surahName)" +
@@ -914,11 +917,13 @@ final class QuranPlayer: ObservableObject {
             statusObserver = firstItem.observe(\.status) { [weak self] itm, _ in
                 guard let self = self else { return }
                 DispatchQueue.main.async {
-                    self.isLoading = false
                     self.idleTimerSet(true)
                     if itm.status == .readyToPlay {
                         self.player?.playImmediately(atRate: 1.0)
+                        // Clear isLoading in the same transaction that sets isPlaying to avoid a
+                        // one-frame play-icon flash before the stop button appears.
                         withAnimation {
+                            self.isLoading = false
                             self.isPlaying = true
                             self.isPaused  = false
                             let base = "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
@@ -927,6 +932,7 @@ final class QuranPlayer: ObservableObject {
                             self.updateNowPlayingInfo()
                         }
                     } else {
+                        self.isLoading = false
                         self.presentPlaybackFailure("Unable to start ayah playback. Check your internet connection and try again.")
                     }
                 }
@@ -998,20 +1004,22 @@ final class QuranPlayer: ObservableObject {
         statusObserver = firstItem.observe(\.status) { [weak self] itm, _ in
             guard let self = self else { return }
             DispatchQueue.main.async {
-                self.isLoading = false
                 self.idleTimerSet(true)
                 if itm.status == .readyToPlay {
                     self.queuePlayer?.playImmediately(atRate: 1.0)
-                    self.isPlaying = true
-                    self.isPaused  = false
-
                     let base = "\(surah.nameTransliteration) \(surahNumber):\(ayahNumber)"
+                    // Clear isLoading together with isPlaying so the control never flashes the play
+                    // icon during the loading -> playing transition.
                     withAnimation {
+                        self.isLoading = false
+                        self.isPlaying = true
+                        self.isPaused  = false
                         self.nowPlayingTitle = base
                         self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                         self.updateNowPlayingInfo()
                     }
                 } else {
+                    self.isLoading = false
                     self.presentPlaybackFailure("Unable to continue ayah playback. Check your internet connection and try again.")
                 }
             }

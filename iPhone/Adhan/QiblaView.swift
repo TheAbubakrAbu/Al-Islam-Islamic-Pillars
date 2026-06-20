@@ -101,10 +101,12 @@ struct QiblaView: View {
         .animation(nil, value: compass.direction)
         .onAppear {
             compass.start()
+            settings.beginLocationRefinement()
             prepareHaptics()
         }
         .onDisappear {
             compass.stop()
+            settings.endLocationRefinement()
         }
         #if os(iOS)
         .onChange(of: compass.direction) { newAngle in
@@ -356,16 +358,21 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
 
     private let locationManager = CLLocationManager()
     private let locationProvider: () -> Location?
-    private let minStep: Double = 1.0
     private var started = false
     private var cachedLocationKey: String?
     private var cachedQiblaDirection: Double?
+    /// Continuous (unwrapped) low-pass accumulator of the heading→qibla delta. Published `direction`
+    /// is this normalized to 0..<360. Smoothing here keeps the needle sharp but free of compass jitter.
+    private var smoothedDelta: Double?
 
     init(locationProvider: @escaping () -> Location?) {
         self.locationProvider = locationProvider
         super.init()
         locationManager.delegate = self
-        locationManager.headingFilter = 1
+        // Take every heading sample and do our own smoothing — gives a steadier, sharper needle than
+        // letting Core Location drop sub-degree changes.
+        locationManager.headingFilter = kCLHeadingFilterNone
+        locationManager.headingOrientation = .portrait
     }
 
     func start() {
@@ -394,15 +401,33 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
             cachedLocationKey = locationKey
             cachedQiblaDirection = qiblaDirection
         }
+        // Prefer the true (geographic) heading; magnetic is the fallback when declination is unknown.
         let heading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magneticHeading
 
-        var delta = qiblaDirection - heading
-        delta.formTruncatingRemainder(dividingBy: 360)
-        if delta < 0 { delta += 360 }
+        var target = qiblaDirection - heading
+        target.formTruncatingRemainder(dividingBy: 360)
+        if target < 0 { target += 360 }
 
-        if abs(delta - direction) >= minStep {
-            direction = delta
+        guard let current = smoothedDelta else {
+            smoothedDelta = target
+            direction = target
+            return
         }
+
+        // Move along the shortest arc so crossing north never spins the needle the long way around.
+        var diff = target - current
+        diff.formTruncatingRemainder(dividingBy: 360)
+        if diff > 180 { diff -= 360 } else if diff < -180 { diff += 360 }
+
+        // Adaptive low-pass: snap quickly on real turns, damp tiny jitter for a steady needle.
+        let magnitude = abs(diff)
+        let alpha: Double = magnitude > 45 ? 0.55 : (magnitude > 12 ? 0.32 : 0.16)
+        let updated = current + diff * alpha
+        smoothedDelta = updated
+
+        var normalized = updated.truncatingRemainder(dividingBy: 360)
+        if normalized < 0 { normalized += 360 }
+        direction = normalized
     }
 
     deinit {

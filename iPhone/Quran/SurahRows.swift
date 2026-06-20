@@ -774,6 +774,25 @@ struct SummaryAyahTile: View {
         return settings.beginnerMode ? text.map { String($0) }.joined(separator: " ") : text
     }
 
+    private var shouldShowTajweedColors: Bool {
+        settings.showTajweedColors && settings.showArabicText && settings.isHafsDisplay
+    }
+
+    private func arabicTajweedText() -> AttributedString? {
+        guard shouldShowTajweedColors else { return nil }
+        let text = ayah.displayArabicText(surahId: surah.id, clean: false)
+        let displayText = settings.cleanArabicText ? ayah.displayArabicText(surahId: surah.id, clean: true) : text
+        let renderedDisplayText = settings.beginnerMode ? displayText.map { String($0) }.joined(separator: " ") : displayText
+        return TajweedStore.shared.attributedText(
+            surah: surah.id,
+            ayah: ayah.id,
+            text: text,
+            displayText: renderedDisplayText,
+            cleanDisplayText: settings.cleanArabicText,
+            beginnerSpacing: settings.beginnerMode
+        )
+    }
+
     var body: some View {
         Button {
             settings.hapticFeedback()
@@ -812,12 +831,18 @@ struct SummaryAyahTile: View {
     private var ayahPreview: some View {
         VStack(alignment: .leading, spacing: 6) {
             if settings.showArabicText {
-                Text(arabicDisplayText())
-                    .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                HighlightedSnippet(
+                    source: arabicDisplayText(),
+                    term: "",
+                    font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1),
+                    accent: settings.accentColor.color,
+                    fg: .primary,
+                    preStyledSource: arabicTajweedText(),
+                    beginnerMode: settings.beginnerMode,
+                    lineLimit: 1
+                )
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
 
             if settings.showTransliteration, settings.isHafsDisplay {
@@ -898,19 +923,37 @@ struct SummarySurahTile: View {
 
                     Spacer()
 
-                    Image(systemName: "play.fill")
-                        .font(.subheadline)
-                        .foregroundColor(settings.accentColor.color)
-                        .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0.35)
-                        .onTapGesture {
-                            guard !quranPlayer.isPlaying, !quranPlayer.isPaused else { return }
+                    Menu {
+                        Text("Last Listened")
+                            .foregroundStyle(.secondary)
+
+                        Button {
                             settings.hapticFeedback()
                             quranPlayer.playSurah(
                                 surahNumber: lastListenedSurah.surahNumber,
                                 surahName: lastListenedSurah.surahName,
                                 certainReciter: true
                             )
+                        } label: {
+                            Label("Play Last Listened", systemImage: "play.fill")
                         }
+
+                        Button {
+                            settings.hapticFeedback()
+                            quranPlayer.playSurah(
+                                surahNumber: lastListenedSurah.surahNumber,
+                                surahName: surah.nameTransliteration
+                            )
+                        } label: {
+                            Label("Play from Beginning", systemImage: "memories")
+                        }
+                    } label: {
+                        Image(systemName: "play.fill")
+                            .font(.subheadline)
+                            .foregroundColor(settings.accentColor.color)
+                            .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0.35)
+                    }
+                    .disabled(quranPlayer.isPlaying || quranPlayer.isPaused)
                 }
 
                 TinyProgressBar(
@@ -918,6 +961,66 @@ struct SummarySurahTile: View {
                     color: settings.accentColor.color
                 )
                 .padding(.top, 1)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Compact summary-mode tile for a favorite surah. Favorites are whole surahs (no single ayah),
+/// so it shows the surah number, names, and revelation type — sized to match the ayah tiles beside it.
+struct SummarySurahNameTile: View {
+    @EnvironmentObject var settings: Settings
+
+    let title: String
+    let icon: String
+    let surah: Surah
+    let onTap: () -> Void
+
+    /// e.g. "1 - Al-Fatiha"
+    private var detail: String { "\(surah.id) - \(surah.nameTransliteration)" }
+    private var typeLabel: String { surah.type == "makkan" ? "🕋 Makkan" : "🕌 Madinan" }
+
+    var body: some View {
+        Button {
+            settings.hapticFeedback()
+            onTap()
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+                    Text(title)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                Text(detail)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                Text(surah.nameArabic)
+                    .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Text("\(typeLabel) · \(surah.numberOfAyahs) ayahs")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .padding(12)

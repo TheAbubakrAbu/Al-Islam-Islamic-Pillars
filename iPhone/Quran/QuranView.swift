@@ -682,6 +682,22 @@ struct QuranView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     settings.hapticFeedback()
+                    let turningOff = settings.quranSummaryMode
+                    withAnimation { settings.quranSummaryMode.toggle() }
+                    // When leaving summary mode, jump to where the user left off listening.
+                    if turningOff, settings.saveLastListenedSurah,
+                       let last = settings.lastListenedSurah {
+                        scrollToSurahID = last.surahNumber
+                    }
+                } label: {
+                    Image(systemName: settings.quranSummaryMode ? "list.bullet" : "rectangle.grid.1x2")
+                }
+                .accessibilityLabel(settings.quranSummaryMode ? "Show full list" : "Show summary")
+            }
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    settings.hapticFeedback()
                     showingSettingsSheet = true
                 } label: {
                     Image(systemName: "gear")
@@ -715,6 +731,10 @@ struct QuranView: View {
             withAnimation {
                 persistQuranSearchHistoryIfNeeded(searchText)
             }
+        }
+        .onChange(of: settings.showOtherQiraatReciters) { enabled in
+            // Qiraat overlays are skipped at launch when off; load them in the background once enabled.
+            if enabled { quranData.reloadForQiraahAvailabilityChange() }
         }
         .overlay(alignment: .top) {
             searchHelpOverlay
@@ -1283,6 +1303,11 @@ struct QuranView: View {
     private func bookmarkGridTile(_ bookmarkedAyah: BookmarkedAyah) -> some View {
         if let surah = quranData.surah(bookmarkedAyah.surah),
            let ayah = quranData.ayah(surah: bookmarkedAyah.surah, ayah: bookmarkedAyah.ayah) {
+            #if os(iOS)
+            SummaryAyahTile(title: "Bookmark", icon: "bookmark.fill", surah: surah, ayah: ayah) {
+                push(surahID: surah.id, ayahID: ayah.id)
+            }
+            #else
             Button {
                 settings.hapticFeedback()
                 push(surahID: surah.id, ayahID: ayah.id)
@@ -1312,6 +1337,7 @@ struct QuranView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            #endif
         }
     }
 
@@ -1420,6 +1446,11 @@ struct QuranView: View {
     @ViewBuilder
     private func favoriteGridTile(surahID: Int, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(surahID) {
+            #if os(iOS)
+            SummarySurahNameTile(title: "Favorite", icon: "star.fill", surah: surah) {
+                push(surahID: surah.id, ayahID: nil)
+            }
+            #else
             Button {
                 settings.hapticFeedback()
                 push(surahID: surah.id, ayahID: nil)
@@ -1449,6 +1480,7 @@ struct QuranView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            #endif
         }
     }
 

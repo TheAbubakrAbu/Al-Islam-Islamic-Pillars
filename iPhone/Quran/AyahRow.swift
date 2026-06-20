@@ -214,6 +214,58 @@ struct AyahRow: View, Equatable {
         )
     }
 
+    /// For surahs that open with the disconnected letters (muqatta'at, e.g. الٓمٓ), shows a small aid
+    /// above the ayah with the letters spaced out, their recited Arabic names, and a transliteration.
+    @ViewBuilder
+    private func muqattaatPronunciationBlock() -> some View {
+        if settings.showArabicText, let p = Muqattaat.pronunciation(surah: surah.id, ayah: ayah.id) {
+            let arabicFont = Font.custom(settings.fontArabic, size: settings.fontArabicSize * 0.62)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Actual Pronunciation")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.secondary)
+
+                Text(p.individualLetters)
+                    .font(arabicFont)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+
+                muqattaatNamesView(p, font: arabicFont)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+
+                Text(p.transliteration)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(settings.accentColor.color.opacity(0.06))
+            )
+        }
+    }
+
+    /// The recited letter names (e.g. أَلِف لَام مِيم), tajweed-coloured when tajweed colours are on.
+    /// Uses surah/ayah 0 so the cache and rule lookups don't collide with the real ayah's coloring.
+    @ViewBuilder
+    private func muqattaatNamesView(_ p: Muqattaat.Pronunciation, font: Font) -> some View {
+        if settings.showTajweedColors,
+           let styled = TajweedStore.shared.attributedText(
+               surah: 0,
+               ayah: 0,
+               text: p.spelledOutArabic,
+               displayText: p.spelledOutArabic
+           ) {
+            Text(styled).font(font)
+        } else {
+            Text(p.spelledOutArabic)
+                .font(font)
+                .foregroundColor(.primary)
+        }
+    }
+
     private var tajweedAnimationKey: String {
         let categorySignature = TajweedLegendCategory.allCases
             .map { settings.isTajweedCategoryVisible($0) ? "1" : "0" }
@@ -591,6 +643,8 @@ struct AyahRow: View, Equatable {
                 #endif
                 .padding(.top, 4)
             }
+
+            muqattaatPronunciationBlock()
 
             if showArabic {
                 let beginner = settings.beginnerMode || ayahBeginnerMode

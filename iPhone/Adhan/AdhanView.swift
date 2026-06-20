@@ -80,10 +80,15 @@ struct AdhanView: View {
         }
         .onAppear {
             prayerTimeRefresh(force: false)
+            settings.beginLocationRefinement()
+        }
+        .onDisappear {
+            settings.endLocationRefinement()
         }
         .onChange(of: scenePhase) { newScenePhase in
             if newScenePhase == .active {
                 prayerTimeRefresh(force: false)
+                settings.beginLocationRefinement()
             }
         }
         .navigationTitle("Al-Adhan")

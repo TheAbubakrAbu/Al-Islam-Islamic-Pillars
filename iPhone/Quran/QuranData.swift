@@ -3728,6 +3728,19 @@ final class QuranData: ObservableObject {
         }
     }
 
+    /// Re-merge the data when the user toggles "show qiraah" on (qiraat overlays are skipped at launch
+    /// for speed when it is off). Runs in the background and keeps the already-shown data visible until
+    /// the new data is ready, so there is no lag or launch-screen flash. No-op until the first load finishes.
+    func reloadForQiraahAvailabilityChange() {
+        guard loadState == .ready || loadState == .failed else { return }
+        loadTask?.cancel()
+        loadTask = Task(priority: .utility) { [weak self] in
+            guard let self else { return }
+            try? await self.loadAttempt()
+            await MainActor.run { self.loadTask = nil }
+        }
+    }
+
     private func invalidateDerivedResultCaches() {
         cachedSajdahAyahResults = nil
         cachedMuqattaatAyahResults = nil
@@ -4004,12 +4017,18 @@ final class QuranData: ObservableObject {
             throw NSError(domain: "QuranData", code: 1, userInfo: [NSLocalizedDescriptionKey: "Quran.json missing"])
         }
 
+        // Most users never look at other qiraat, so loading + merging the 7 overlay JSONs on every
+        // launch is wasted work. Only load them when the user actually shows qiraah (or has a non-Hafs
+        // display selected). When they later enable it, `reloadForQiraahAvailabilityChange()` re-runs
+        // this in the background so there is no lag. The signature suffix keeps the with/without-overlay
+        // disk caches separate.
+        let includeQiraat = await MainActor.run { settings.showQiraahDetails || settings.displayQiraahForArabic != nil }
         let qiraahKey = await MainActor.run { settings.displayQiraahForArabic ?? "" }
-        let qiraatURLs = Self.qiraatKeys.compactMap { filename, _ in
+        let qiraatURLs = includeQiraat ? Self.qiraatKeys.compactMap { filename, _ in
             Bundle.main.url(forResource: filename, withExtension: "json", subdirectory: "JSONs/Qiraat")
                 ?? Bundle.main.url(forResource: filename, withExtension: "json")
-        }
-        let cacheSignature = resourceSignature(for: [url] + qiraatURLs)
+        } : []
+        let cacheSignature = resourceSignature(for: [url] + qiraatURLs) + (includeQiraat ? "-q" : "-noq")
 
         if let staticCache = loadStaticCache(resourceSignature: cacheSignature) {
             await MainActor.run {
@@ -4069,7 +4088,7 @@ final class QuranData: ObservableObject {
         let data = try Data(contentsOf: url, options: .mappedIfSafe)
         var surahs = try JSONDecoder().decode([Surah].self, from: data)
 
-        let overlay = loadQiraatOverlay()
+        let overlay = includeQiraat ? loadQiraatOverlay() : [:]
         if !overlay.isEmpty {
             surahs = surahs.map { surah in
                 let baseAyahsByID = Dictionary(uniqueKeysWithValues: surah.ayahs.map { ($0.id, $0) })
