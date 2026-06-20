@@ -741,7 +741,8 @@ private struct MurattalSectionHeader: View {
 
 struct ReciterListView: View {
     /// When `true`, dismisses the sheet (or pops navigation) after the user picks a reciter or Random.
-    var dismissAfterSelectingReciter = false
+    /// Dismissal still waits until any confirmation dialog (qiraah change / Minshawi fallback) is resolved.
+    var dismissAfterSelectingReciter = true
     /// When `false`, list opens at top without scrolling to the selected reciter.
     var autoScrollToInitialSelection = true
 
@@ -751,6 +752,7 @@ struct ReciterListView: View {
     @State private var searchText = ""
     @State private var pendingQiraahReciter: Reciter?
     @State private var pendingDisplayQiraahTag: String?
+    @State private var pendingMinshawiReciter: Reciter?
     @State private var pendingScrollToReciterID: String? = nil
     @State private var confirmHideQiraahDetails = false
     @AppStorage("splitMurattalRecitersByGroup") private var splitMurattalRecitersByGroup = false
@@ -1202,6 +1204,25 @@ struct ReciterListView: View {
         return normalized(reciter.name).contains(query)
     }
 
+    /// Entry point for a reciter tap. Reciters with no ayah feed (they fall back to Minshawi for ayahs)
+    /// first get a confirmation dialog; everything else applies immediately.
+    private func handleReciterTap(_ reciter: Reciter) {
+        if reciter.defaultToMinshawi {
+            pendingMinshawiReciter = reciter
+        } else {
+            applyReciterSelection(reciter)
+        }
+    }
+
+    private func applyReciterSelection(_ reciter: Reciter) {
+        withAnimation {
+            let selectedImmediately = selectReciter(reciter)
+            if selectedImmediately && dismissAfterSelectingReciter {
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
+    }
+
     @discardableResult
     private func selectReciter(_ reciter: Reciter) -> Bool {
         settings.setSelectedReciter(reciter)
@@ -1567,6 +1588,24 @@ struct ReciterListView: View {
             } message: {
                 Text(qiraahChangeDialogMessage)
             }
+            .confirmationDialog("Ayahs Will Use Minshawi (Murattal)", isPresented: Binding(
+                get: { pendingMinshawiReciter != nil },
+                set: { if !$0 { pendingMinshawiReciter = nil } }
+            ), titleVisibility: .visible) {
+                Button("Select This Reciter") {
+                    settings.hapticFeedback()
+                    if let reciter = pendingMinshawiReciter {
+                        pendingMinshawiReciter = nil
+                        applyReciterSelection(reciter)
+                    }
+                }
+
+                Button("Cancel", role: .cancel) {
+                    pendingMinshawiReciter = nil
+                }
+            } message: {
+                Text("\(pendingMinshawiReciter?.name ?? "This reciter") only has full-surah recitation. Individual ayahs and custom ranges will play in \(Reciter.minshawiAyahFallbackName).")
+            }
             .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmHideQiraahDetails, titleVisibility: .visible) {
                 Button("Yes") {
                     settings.hapticFeedback()
@@ -1723,12 +1762,7 @@ struct ReciterListView: View {
             searchQuery: searchText,
             onSelect: {
                 settings.hapticFeedback()
-                withAnimation {
-                    let selectedImmediately = selectReciter(reciter)
-                    if selectedImmediately && dismissAfterSelectingReciter {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
+                handleReciterTap(reciter)
             },
             onScrollToReciter: {
                 settings.hapticFeedback()
@@ -1776,6 +1810,8 @@ private struct ReciterRow: View {
     let searchQuery: String
     let onSelect: () -> Void
     let onScrollToReciter: () -> Void
+
+    @State private var confirmDownload = false
 
     var body: some View {
         let hasDownloads = downloadState.completedSurahs > 0
@@ -1852,9 +1888,7 @@ private struct ReciterRow: View {
                                 .foregroundColor(.secondary)
                                 .onTapGesture {
                                     settings.hapticFeedback()
-                                    withAnimation {
-                                        downloadManager.beginDownloadAll(for: reciter)
-                                    }
+                                    confirmDownload = true
                                 }
                         }
                     }
@@ -1908,6 +1942,18 @@ private struct ReciterRow: View {
                     .font(.caption)
                     .foregroundColor(.red)
             }
+        }
+        .confirmationDialog("Download \(reciter.name)?", isPresented: $confirmDownload, titleVisibility: .visible) {
+            Button("Download All 114 Surahs") {
+                settings.hapticFeedback()
+                withAnimation {
+                    downloadManager.beginDownloadAll(for: reciter)
+                }
+            }
+
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This downloads the full reciter (all 114 surahs) for offline playback. It runs in the background and may use significant data and storage.")
         }
         .onAppear {
             downloadManager.ensureStateLoaded(for: reciter)

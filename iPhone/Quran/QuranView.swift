@@ -877,7 +877,7 @@ struct QuranView: View {
         switch mode {
         case .revelation, .page, .ayahs, .words, .letters:
             return true
-        case .surah, .juz, .khatm, .sajdah, .muqattaat:
+        case .surah, .juz, .khatm, .sajdah, .muqattaat, .pages:
             return false
         }
     }
@@ -902,7 +902,7 @@ struct QuranView: View {
 
             Divider()
 
-            ForEach([Settings.QuranSortMode.muqattaat, .sajdah]) { mode in
+            ForEach([Settings.QuranSortMode.muqattaat, .pages, .sajdah]) { mode in
                 sortModeButton(mode)
             }
         } label: {
@@ -1600,6 +1600,8 @@ struct QuranView: View {
                 khatmProgressSection()
                 khatmExtraDetailsSection()
                 surahBrowseSection(context: context, showsRevelationOrder: false)
+            case .pages:
+                pagesBrowseSection(context: context)
             case .sajdah:
                 sajdahBrowseSection(context: context)
             case .muqattaat:
@@ -1607,6 +1609,38 @@ struct QuranView: View {
             case .words, .letters:
                 surahBrowseSection(context: context, showsRevelationOrder: false)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func pagesBrowseSection(context: SearchDisplayContext) -> some View {
+        let all = quranData.pageAyahResults()
+        let rows = usesDescendingQuranSort ? Array(all.reversed()) : all
+        if !rows.isEmpty {
+            Section(header: pagesHeader(count: rows.count)) {
+                ForEach(rows, id: \.page) { item in
+                    quranNavigationLink(route: .ayahs(surahID: item.surah.id, ayah: item.ayah.id)) {
+                        CompactAyahArabicRow(surah: item.surah, ayah: item.ayah, leadingLabel: "Page \(item.page)")
+                    }
+                }
+            }
+        }
+    }
+
+    private func pagesHeader(count: Int) -> some View {
+        HStack {
+            Text("QURAN PAGES")
+
+            Spacer()
+
+            Text("\(count)")
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
         }
     }
 
@@ -2342,19 +2376,14 @@ struct QuranView: View {
 
     @ViewBuilder
     private func pageSearchSection(context: SearchDisplayContext) -> some View {
-        if let page = context.pageJuzQuery.page,
-           let pageResult = context.pageSearchResult {
-            Section(header: pageSearchHeader(title: "PAGE SEARCH RESULT", valueText: "Page \(page)")) {
-                AyahSearchResultRow(
-                    surah: pageResult.surah,
-                    ayah: pageResult.ayah,
-                    favoriteSurahs: context.favoriteSurahs,
-                    bookmarkedAyahs: context.bookmarkedAyahs,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID,
-                    disableTajweedColors: true,
-                    onSelectAyah: columnAyahSelectionHandler
-                )
+        if let page = context.pageJuzQuery.page {
+            let ayahs = quranData.ayahs(onPage: page)
+            if !ayahs.isEmpty {
+                Section(header: pageSearchHeader(title: "PAGE SEARCH RESULT", valueText: "Page \(page) • \(ayahs.count) Ayahs")) {
+                    ForEach(Array(ayahs.enumerated()), id: \.offset) { _, item in
+                        pageJuzAyahRow(item: item)
+                    }
+                }
             }
         }
     }
@@ -2362,24 +2391,21 @@ struct QuranView: View {
     @ViewBuilder
     private func juzSearchSection(context: SearchDisplayContext) -> some View {
         if let juz = context.pageJuzQuery.juz {
-            Section(header: pageSearchHeader(title: "JUZ SEARCH RESULT", valueText: "Juz \(juz) • \(context.juzSurahs.count) Surahs")) {
-                if let juzResult = context.juzSearchResult {
-                    AyahSearchResultRow(
-                        surah: juzResult.surah,
-                        ayah: juzResult.ayah,
-                        favoriteSurahs: context.favoriteSurahs,
-                        bookmarkedAyahs: context.bookmarkedAyahs,
-                        searchText: $searchText,
-                        scrollToSurahID: $scrollToSurahID,
-                        disableTajweedColors: true,
-                        onSelectAyah: columnAyahSelectionHandler
-                    )
-                }
-
-                ForEach(context.juzSurahs, id: \.id) { surah in
-                    surahRow(surah: surah, context: context)
+            let ayahs = quranData.ayahs(inJuz: juz)
+            if !ayahs.isEmpty {
+                Section(header: pageSearchHeader(title: "JUZ SEARCH RESULT", valueText: "Juz \(juz) • \(ayahs.count) Ayahs")) {
+                    ForEach(Array(ayahs.enumerated()), id: \.offset) { _, item in
+                        pageJuzAyahRow(item: item)
+                    }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func pageJuzAyahRow(item: (surah: Surah, ayah: Ayah)) -> some View {
+        quranNavigationLink(route: .ayahs(surahID: item.surah.id, ayah: item.ayah.id)) {
+            CompactAyahArabicRow(surah: item.surah, ayah: item.ayah)
         }
     }
 

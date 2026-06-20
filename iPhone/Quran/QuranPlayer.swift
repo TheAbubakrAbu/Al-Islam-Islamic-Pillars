@@ -866,6 +866,29 @@ final class QuranPlayer: ObservableObject {
         )
     }
 
+    /// Restart the in-progress custom range from the current ayah using the currently selected reciter,
+    /// so the user can switch reciter mid-range without losing their place. `playCustomRange` re-resolves
+    /// the selected reciter, so this just rebuilds the queue from the current position.
+    func reloadCustomRangeWithCurrentReciter() {
+        guard isPlayingCustomRange,
+              let currentIndex = customRangeCurrentIndex,
+              let startAyah = customRangeStartAyah,
+              let endAyah = customRangeEndAyah,
+              customRangeSurahNumber > 0,
+              !customRangeSurahName.isEmpty else {
+            return
+        }
+        playCustomRange(
+            surahNumber: customRangeSurahNumber,
+            surahName: customRangeSurahName,
+            startAyah: startAyah,
+            endAyah: endAyah,
+            repeatPerAyah: max(1, customRangeRepeatPerAyah),
+            repeatSection: customRangeRepeatSection,
+            initialSequenceIndex: max(0, currentIndex - 1)
+        )
+    }
+
     private func customRangeTitle(ayahNum: Int, isBismillah: Bool, zeroBasedIndex: Int) -> String {
         let base = "\(customRangeSurahName) \(customRangeSurahNumber):\(ayahNum)"
 

@@ -407,6 +407,12 @@ struct PlayCustomRangeSheet: View {
             clampStoredRepeatValues()
         }
         .onChange(of: settings.displayQiraahForArabic) { _ in clampRangeToMaxAyah() }
+        .onChange(of: settings.reciter) { _ in
+            // Let the user switch reciter mid-range: rebuild the running queue from the current ayah.
+            if QuranPlayer.shared.isPlayingCustomRange {
+                QuranPlayer.shared.reloadCustomRangeWithCurrentReciter()
+            }
+        }
         .id("\(initialStartAyah)-\(initialEndAyah)")
     }
 

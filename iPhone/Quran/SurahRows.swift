@@ -1561,6 +1561,79 @@ struct AyahOfTheDayRow: View {
 }
 #endif
 
+/// Compact, Arabic-only ayah row: the ayah reference (and an optional leading label like "Page 3")
+/// plus the Arabic text with tajweed + all reading settings applied, sized down to read nicely in
+/// page/juz search results and the Pages browse list.
+struct CompactAyahArabicRow: View {
+    @EnvironmentObject var settings: Settings
+
+    let surah: Surah
+    let ayah: Ayah
+    var leadingLabel: String? = nil
+
+    private var shouldShowTajweedColors: Bool {
+        settings.showTajweedColors && settings.showArabicText && settings.isHafsDisplay
+    }
+
+    private func arabicDisplayText() -> String {
+        let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
+        return settings.beginnerMode ? text.map { String($0) }.joined(separator: " ") : text
+    }
+
+    private func arabicTajweedText() -> AttributedString? {
+        guard shouldShowTajweedColors else { return nil }
+        let text = ayah.displayArabicText(surahId: surah.id, clean: false)
+        let displayText = settings.cleanArabicText ? ayah.displayArabicText(surahId: surah.id, clean: true) : text
+        let renderedDisplayText = settings.beginnerMode ? displayText.map { String($0) }.joined(separator: " ") : displayText
+        return TajweedStore.shared.attributedText(
+            surah: surah.id,
+            ayah: ayah.id,
+            text: text,
+            displayText: renderedDisplayText,
+            cleanDisplayText: settings.cleanArabicText,
+            beginnerSpacing: settings.beginnerMode
+        )
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                if let leadingLabel {
+                    Text(leadingLabel)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+                Text("\(surah.id):\(ayah.id)")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
+            .frame(width: 64, alignment: .leading)
+
+            if settings.showArabicText {
+                HighlightedSnippet(
+                    source: arabicDisplayText(),
+                    term: "",
+                    font: .custom(settings.fontArabic, size: settings.fontArabicSize * 0.8),
+                    accent: settings.accentColor.color,
+                    fg: .primary,
+                    preStyledSource: arabicTajweedText(),
+                    beginnerMode: settings.beginnerMode,
+                    lineLimit: nil
+                )
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            } else {
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
 struct AyahSearchResultRow: View {
     @EnvironmentObject private var settings: Settings
 

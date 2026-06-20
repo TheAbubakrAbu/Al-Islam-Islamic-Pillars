@@ -15,6 +15,7 @@ extension Settings {
         case khatm
         case page
         case ayahs
+        case pages
         case sajdah
         case muqattaat
         case words
@@ -25,9 +26,10 @@ extension Settings {
         var title: String {
             switch self {
             case .surah: return "Surah"
-            case .ayahs: return "Ayahs"
+            case .ayahs: return "Ayah Count"
             case .juz: return "Juz"
-            case .page: return "Pages"
+            case .page: return "Page Count"
+            case .pages: return "Pages"
             case .revelation: return "Revelation"
             case .khatm: return "Khatm"
             case .sajdah: return "Sajdahs"
@@ -43,6 +45,7 @@ extension Settings {
             case .ayahs: return "number"
             case .juz: return "square.grid.3x3"
             case .page: return "doc.text"
+            case .pages: return "doc.text.fill"
             case .revelation: return "sparkles"
             case .khatm: return "checkmark.seal"
             case .sajdah: return "moon.stars.fill"

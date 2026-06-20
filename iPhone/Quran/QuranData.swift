@@ -3018,6 +3018,7 @@ final class QuranData: ObservableObject {
     private var juzSearchIndex: [JuzSearchIndexEntry] = []
     private var cachedSajdahAyahResults: [(surah: Surah, ayah: Ayah)]?
     private var cachedMuqattaatAyahResults: [(surah: Surah, ayah: Ayah)]?
+    private var cachedPageAyahResults: [(page: Int, surah: Surah, ayah: Ayah)]?
 
     private var loadTask: Task<Void, Never>?
     private var searchIndexBuildTask: Task<Void, Never>?
@@ -3744,6 +3745,7 @@ final class QuranData: ObservableObject {
     private func invalidateDerivedResultCaches() {
         cachedSajdahAyahResults = nil
         cachedMuqattaatAyahResults = nil
+        cachedPageAyahResults = nil
     }
 
     private func searchTokens(from cleanedText: String) -> [String] {
@@ -4814,6 +4816,44 @@ final class QuranData: ObservableObject {
             }
         cachedMuqattaatAyahResults = results
         return results
+    }
+
+    /// First ayah of every mushaf page, in page order — used by the "Pages" browse mode (Sajdah-style).
+    func pageAyahResults() -> [(page: Int, surah: Surah, ayah: Ayah)] {
+        if let cachedPageAyahResults {
+            return cachedPageAyahResults
+        }
+
+        var seenPages = Set<Int>()
+        var results: [(page: Int, surah: Surah, ayah: Ayah)] = []
+        for surah in quran {
+            for ayah in surah.ayahs {
+                guard let page = ayah.page, !seenPages.contains(page) else { continue }
+                seenPages.insert(page)
+                results.append((page: page, surah: surah, ayah: ayah))
+            }
+        }
+        results.sort { $0.page < $1.page }
+        cachedPageAyahResults = results
+        return results
+    }
+
+    /// Every ayah on a given mushaf page, in order — used by page search results.
+    func ayahs(onPage page: Int) -> [(surah: Surah, ayah: Ayah)] {
+        quran.flatMap { surah in
+            surah.ayahs.compactMap { ayah in
+                ayah.page == page ? (surah: surah, ayah: ayah) : nil
+            }
+        }
+    }
+
+    /// Every ayah in a given juz, in order — used by juz search results.
+    func ayahs(inJuz juz: Int) -> [(surah: Surah, ayah: Ayah)] {
+        quran.flatMap { surah in
+            surah.ayahs.compactMap { ayah in
+                ayah.juz == juz ? (surah: surah, ayah: ayah) : nil
+            }
+        }
     }
 
     func filteredSurahs(query rawQuery: String) -> [Surah] {
