@@ -1231,19 +1231,18 @@ extension Settings {
         return out
     }
 
-    private func scheduleRefreshNag(
+    private func makeRefreshNagRequest(
         inDays offset: Int = 2,
         hour: Int = 12,
-        minute: Int = 0,
-        using center: UNUserNotificationCenter = .current()
-    ) {
-        guard let day = Calendar.current.date(byAdding: .day, value: offset, to: Date()) else { return }
+        minute: Int = 0
+    ) -> (request: UNNotificationRequest, date: Date)? {
+        guard let day = Calendar.current.date(byAdding: .day, value: offset, to: Date()) else { return nil }
 
         var comps = Calendar.current.dateComponents([.year, .month, .day], from: day)
         comps.hour = hour
         comps.minute = minute
 
-        guard (Calendar.current.date(from: comps) ?? Date.distantPast) > Date() else { return }
+        guard let date = Calendar.current.date(from: comps), date > Date() else { return nil }
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
 
@@ -1261,7 +1260,17 @@ extension Settings {
         let id = String(format: "RefreshReminder-%04d-%02d-%02d", comps.year ?? 0, comps.month ?? 0, comps.day ?? 0)
 
         let req = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-        center.add(req) { error in
+        return (req, date)
+    }
+
+    private func scheduleRefreshNag(
+        inDays offset: Int = 2,
+        hour: Int = 12,
+        minute: Int = 0,
+        using center: UNUserNotificationCenter = .current()
+    ) {
+        guard let built = makeRefreshNagRequest(inDays: offset, hour: hour, minute: minute) else { return }
+        center.add(built.request) { error in
             if let error { logger.debug("Refresh reminder add failed: \(error.localizedDescription)") }
         }
     }
@@ -1277,52 +1286,79 @@ extension Settings {
         logger.debug("Scheduling prayer time notifications")
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
-        
-        if dateNotifications {
-            for event in specialEvents {
-                scheduleNotification(for: event, using: center)
+
+        // iOS keeps at most 64 pending notifications and silently drops the rest. The app can build far
+        // more than that (multiple prayers × offsets × days × nags + events), which is why adhan /
+        // notification sounds previously "didn't always work" — later prayers got dropped. Collect every
+        // candidate, then add them in priority order under a safe cap so the at-time adhan always survives.
+        let maxPending = 60
+
+        var adhanRequests: [(request: UNNotificationRequest, date: Date)] = []
+        var reminderRequests: [(request: UNNotificationRequest, date: Date)] = []
+
+        func collectPrayer(_ prayer: Prayer, _ minutes: Int?) {
+            guard let built = makePrayerNotificationRequest(for: prayer, preNotificationTime: minutes, city: city) else { return }
+            if built.isAdhan {
+                adhanRequests.append((built.request, built.date))
+            } else {
+                reminderRequests.append((built.request, built.date))
             }
         }
 
         for prayer in prayersIncludingOptional(prayerObj.prayers, for: prayerObj.day) {
             guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
-
             for minutes in offsets(for: prefs) {
-                scheduleNotification(
-                    for: prayer,
-                    preNotificationTime: minutes == 0 ? nil : minutes,
-                    city: city,
-                    using: center
-                )
+                collectPrayer(prayer, minutes == 0 ? nil : minutes)
             }
         }
-        
+
         let futureDays = naggingMode ? 1 : 3
         if futureDays > 0 {
             for dayOffset in 1...futureDays {
                 let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? Date()
                 guard let list = getPrayerTimes(for: date) else { continue }
-                
                 for prayer in prayersIncludingOptional(list, for: date) {
                     guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
-                    
                     for minutes in offsets(for: prefs) {
-                        scheduleNotification(
-                            for: prayer,
-                            preNotificationTime: minutes == 0 ? nil : minutes,
-                            city: city,
-                            using: center
-                        )
+                        collectPrayer(prayer, minutes == 0 ? nil : minutes)
                     }
                 }
             }
         }
 
-        if naggingMode {
-            scheduleRefreshNag(inDays: 1, using: center)
+        var eventRequests: [(request: UNNotificationRequest, date: Date)] = []
+        if dateNotifications {
+            for event in specialEvents {
+                if let built = makeEventNotificationRequest(for: event) { eventRequests.append(built) }
+            }
         }
-        scheduleRefreshNag(inDays: 2, using: center)
-        scheduleRefreshNag(inDays: 3, using: center)
+
+        var nagRequests: [(request: UNNotificationRequest, date: Date)] = []
+        if naggingMode, let built = makeRefreshNagRequest(inDays: 1) { nagRequests.append(built) }
+        if let built = makeRefreshNagRequest(inDays: 2) { nagRequests.append(built) }
+        if let built = makeRefreshNagRequest(inDays: 3) { nagRequests.append(built) }
+
+        // Add in priority order, soonest-first within each tier, capped under iOS's 64 limit:
+        //   1. at-time adhan (the actual sound) — must never be dropped
+        //   2. refresh nags — keep the rolling schedule alive so future days get rescheduled
+        //   3. special-event reminders
+        //   4. pre-/nagging reminders — fill whatever budget remains
+        var finalRequests: [UNNotificationRequest] = []
+        func appendCapped(_ items: [(request: UNNotificationRequest, date: Date)]) {
+            for item in items.sorted(by: { $0.date < $1.date }) where finalRequests.count < maxPending {
+                finalRequests.append(item.request)
+            }
+        }
+        appendCapped(adhanRequests)
+        appendCapped(nagRequests)
+        appendCapped(eventRequests)
+        appendCapped(reminderRequests)
+
+        for req in finalRequests {
+            center.add(req) { error in
+                if let error { logger.debug("Notification add failed: \(error.localizedDescription)") }
+            }
+        }
 
         prayers?.setNotification = true
         #else
@@ -1378,7 +1414,9 @@ extension Settings {
         #endif
     }
 
-    func scheduleNotification(for prayer: Prayer, preNotificationTime minutes: Int?, city: String, using center: UNUserNotificationCenter = .current()) {
+    /// Builds an at-time / pre-notification prayer request. `isAdhan` marks the at-time notification of a
+    /// main prayer (the one that carries the adhan sound) so the scheduler can prioritize it.
+    private func makePrayerNotificationRequest(for prayer: Prayer, preNotificationTime minutes: Int?, city: String) -> (request: UNNotificationRequest, date: Date, isAdhan: Bool)? {
         let triggerTime: Date = {
             if let m = minutes, m != 0 {
                 return Calendar.current.date(byAdding: .minute, value: -m, to: prayer.time) ?? prayer.time
@@ -1386,7 +1424,7 @@ extension Settings {
             return prayer.time
         }()
 
-        guard triggerTime > Date() else { return }
+        guard triggerTime > Date() else { return nil }
 
         let content = UNMutableNotificationContent()
         content.title = AppIdentifiers.appName
@@ -1404,48 +1442,59 @@ extension Settings {
         let id = "\(prayer.nameTransliteration)-\(minutes ?? 0)-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)"
         let req  = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
 
-        center.add(req) { error in
+        let isAdhan = minutes == nil
+            && prayer.nameTransliteration != "Shurooq"
+            && !Self.optionalPrayerNames.contains(prayer.nameTransliteration)
+        return (req, triggerTime, isAdhan)
+    }
+
+    func scheduleNotification(for prayer: Prayer, preNotificationTime minutes: Int?, city: String, using center: UNUserNotificationCenter = .current()) {
+        guard let built = makePrayerNotificationRequest(for: prayer, preNotificationTime: minutes, city: city) else { return }
+        center.add(built.request) { error in
             if let error { logger.debug("Notification add failed: \(error.localizedDescription)") }
         }
     }
-    
-    func scheduleNotification(for event: (String, DateComponents, String, String), using center: UNUserNotificationCenter = .current()) {
+
+    private func makeEventNotificationRequest(for event: (String, DateComponents, String, String)) -> (request: UNNotificationRequest, date: Date)? {
         let (titleText, hijriComps, eventSubTitle, _) = event
-        
-        if let hijriDate = hijriCalendar.date(from: hijriComps) {
-            let gregorianCalendar = Calendar(identifier: .gregorian)
-            var gregorianComps = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
-            gregorianComps.hour = 9
-            gregorianComps.minute = 0
-            
-            guard
-                let finalDate = gregorianCalendar.date(from: gregorianComps),
-                finalDate > Date()
-            else {
-                return
-            }
-            
-            let content = UNMutableNotificationContent()
-            content.title = AppIdentifiers.appName
-            content.body = "\(titleText) (\(eventSubTitle))"
-            content.sound = .default
-            #if os(iOS)
-            if #available(iOS 15.0, *) {
-                content.interruptionLevel = .timeSensitive
-            }
-            #endif
-            
-            let trigger = UNCalendarNotificationTrigger(dateMatching: gregorianComps, repeats: false)
-            let request = UNNotificationRequest(
-                identifier: UUID().uuidString,
-                content: content,
-                trigger: trigger
-            )
-            
-            center.add(request) { error in
-                if let error = error {
-                    logger.debug("Failed to schedule special event notification: \(error)")
-                }
+
+        guard let hijriDate = hijriCalendar.date(from: hijriComps) else { return nil }
+        let gregorianCalendar = Calendar(identifier: .gregorian)
+        var gregorianComps = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
+        gregorianComps.hour = 9
+        gregorianComps.minute = 0
+
+        guard
+            let finalDate = gregorianCalendar.date(from: gregorianComps),
+            finalDate > Date()
+        else {
+            return nil
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = AppIdentifiers.appName
+        content.body = "\(titleText) (\(eventSubTitle))"
+        content.sound = .default
+        #if os(iOS)
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+        #endif
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: gregorianComps, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: trigger
+        )
+        return (request, finalDate)
+    }
+
+    func scheduleNotification(for event: (String, DateComponents, String, String), using center: UNUserNotificationCenter = .current()) {
+        guard let built = makeEventNotificationRequest(for: event) else { return }
+        center.add(built.request) { error in
+            if let error = error {
+                logger.debug("Failed to schedule special event notification: \(error)")
             }
         }
     }

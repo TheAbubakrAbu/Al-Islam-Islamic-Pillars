@@ -912,6 +912,7 @@ final class TajweedStore {
                 ops.append(PaintOp(range: nsRange(for: cur), priority: PaintPriority.maddNecessary6, category: .maddNecessary))
             }
             for i in clusters.indices where isLazimWawThenAlifSukoon(clusters: clusters, wawIndex: i) {
+                guard i + 1 < clusters.count else { continue }
                 if i == finalAaridCarrier || i + 1 == finalAaridCarrier { continue }
                 if hasMiniatureMaddScalar(clusters[i]) || hasMiniatureMaddScalar(clusters[i + 1]) { continue }
                 if strongerMaddRuleCovers(range: nsRange(for: clusters[i]), ops: ops) { continue }
@@ -1492,6 +1493,20 @@ final class TajweedStore {
 
     private func finalWordMaddAaridCarrierIndex(words: [Range<Int>], clusters: [CharacterClusterInfo]) -> Int? {
         guard let finalWord = words.last else { return nil }
+
+        // A word ending in madd 'iwad (a silent final alif/alif-maqsurah preceded by tanwin fath, e.g.
+        // مَّذۡكُورًا) is recited as a 2-count 'iwad madd on waqf — never aarid lil sukoon. Stripping that
+        // silent alif would otherwise shift the "second-to-last" letter onto the preceding madd letter
+        // (the waw here), wrongly flagging it. Bail so only a genuine second-to-last carrier qualifies.
+        let rawFinalLetters = finalWord.filter { clusters.indices.contains($0) && clusters[$0].primaryArabicLetter != nil }
+        if let rawLast = rawFinalLetters.last,
+           let base = clusters[rawLast].primaryArabicLetter, base == "ا" || base == "ى",
+           isSilentFinalLetter(clusters: clusters, index: rawLast),
+           let prev = previousArabicLetterClusterIndex(clusters: clusters, before: rawLast),
+           hasFathatayn(clusters[prev]) {
+            return nil
+        }
+
         let pronouncedLetters = effectivePronouncedArabicLetterIndices(in: finalWord, clusters: clusters)
         guard pronouncedLetters.count >= 2 else { return nil }
         let requiredCarrierIndex = pronouncedLetters[pronouncedLetters.count - 2]
@@ -1753,10 +1768,15 @@ final class TajweedStore {
             // Without either, leave it in the default color (a madd rule may color it instead) rather than
             // graying these letters at random. (و keeps its existing behavior.)
             if base == "ا" || base == "ى" || base == "ي" {
+                let prevIdx = previousArabicLetterClusterIndex(clusters: clusters, before: index)
                 let justifiedByNextHamzatWasl = nextWordStartsWithHamzatWasl(clusters: clusters, index: index)
-                let justifiedByPrecedingFathatayn = previousArabicLetterClusterIndex(clusters: clusters, before: index)
-                    .map { hasFathatayn(clusters[$0]) } ?? false
-                if !justifiedByNextHamzatWasl, !justifiedByPrecedingFathatayn { continue }
+                let justifiedByPrecedingFathatayn = prevIdx.map { hasFathatayn(clusters[$0]) } ?? false
+                // (C) Iqlab tanwin: the previous letter carries the tiny high/low meem (e.g. سَمِيعَۢا),
+                // which leaves a silent carrier alif just like fathatayn does — gray it too.
+                let justifiedByPrecedingIqlaab = prevIdx.map {
+                    isSilentFinalLetterAfterTinyMeem(clusters: clusters, index: index, previousIndex: $0)
+                } ?? false
+                if !justifiedByNextHamzatWasl, !justifiedByPrecedingFathatayn, !justifiedByPrecedingIqlaab { continue }
             }
             let range = primaryArabicLetterScalarRange(in: cluster) ?? nsRange(for: cluster)
             ops.append(PaintOp(range: range, priority: PaintPriority.droppedLetter, category: .droppedLetter))
@@ -1982,6 +2002,9 @@ final class TajweedStore {
             guard hasFathaFamily(prev) else { return false }
             // Tanwin fath (regular ً or Uthmani ٗ on previous letter) + following alif: not colored as natural madd.
             if hasFathatayn(prev) { return false }
+            // Iqlab tanwin (fatha + tiny high/low meem on previous letter, e.g. سَمِيعَۢا): the following
+            // alif is a silent tanwin carrier, not natural madd — let the silent painter color it instead.
+            if clusterHasTinyMeemIqlaabMark(prev) { return false }
             return !nextClusterIsHamzatWasl(clusters: clusters, after: i)
         }
         if cur.primaryArabicLetter == "و" {

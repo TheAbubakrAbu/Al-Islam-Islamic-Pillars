@@ -32,6 +32,17 @@ struct PlayCustomRangeSheet: View {
     @FocusState private var repeatPerAyahFocused: Bool
     @FocusState private var repeatSectionFocused: Bool
 
+    /// Per-render memoization for `pageGroups`. The page list only depends on the surah and active
+    /// qiraah, but `pageGroups` is read ~12× per body evaluation; without this the all-ayahs scan ran
+    /// every time and caused lag while stepping the range on long surahs. A reference box lets the
+    /// computed property cache within a render (and recompute when the qiraah key changes) while
+    /// staying always-correct — unlike an @State cache, it can never be transiently empty.
+    private final class PageGroupsBox {
+        var key: String = "\u{0}unset"
+        var value: [(page: Int, firstAyah: Int, lastAyah: Int)] = []
+    }
+    private let pageGroupsBox = PageGroupsBox()
+
     private static let repeatMin = 1
     private static let repeatMax = 20
     private static let repeatOptions = [1, 2, 3, 5, 10, 15, 20]
@@ -100,11 +111,16 @@ struct PlayCustomRangeSheet: View {
         return "Ayah \(ayahID)"
     }
 
-    /// Mushaf pages within this surah (clamped to the active qiraah), each mapped to its first/last ayah. Ordered by page number.
+    /// Mushaf pages within this surah (clamped to the active qiraah), each mapped to its first/last ayah.
+    /// Ordered by page number. Memoized per render via `pageGroupsBox`, keyed on the active qiraah.
     private var pageGroups: [(page: Int, firstAyah: Int, lastAyah: Int)] {
+        let key = settings.displayQiraahForArabic ?? ""
+        if pageGroupsBox.key == key { return pageGroupsBox.value }
+
         var bounds: [Int: (first: Int, last: Int)] = [:]
         var order: [Int] = []
-        for ayah in surah.ayahs where ayah.id <= maxAyah {
+        let m = maxAyah
+        for ayah in surah.ayahs where ayah.id <= m {
             guard let page = ayah.page else { continue }
             if let existing = bounds[page] {
                 bounds[page] = (first: Swift.min(existing.first, ayah.id), last: Swift.max(existing.last, ayah.id))
@@ -113,7 +129,13 @@ struct PlayCustomRangeSheet: View {
                 order.append(page)
             }
         }
-        return order.sorted().map { (page: $0, firstAyah: bounds[$0]!.first, lastAyah: bounds[$0]!.last) }
+        let groups = order.sorted().compactMap { page -> (page: Int, firstAyah: Int, lastAyah: Int)? in
+            guard let b = bounds[page] else { return nil }
+            return (page: page, firstAyah: b.first, lastAyah: b.last)
+        }
+        pageGroupsBox.key = key
+        pageGroupsBox.value = groups
+        return groups
     }
 
     /// True when we have any page data for this surah (drives whether the Ayahs/Pages toggle is shown).
@@ -223,26 +245,25 @@ struct PlayCustomRangeSheet: View {
         selectedRangeReciter?.displayNameWithEnglishQiraah ?? settings.reciter
     }
 
-    /// Two-line summary shown in both Ayahs and Pages modes:
-    ///   line 1 — the current selection ("X ayahs · Y pages in range")
-    ///   line 2 — the whole-surah totals ("M ayahs · N pages in Surah")
-    private var rangeSummary: some View {
+    /// "X ayahs · Y pages" describing the current selection (pages dropped when no page data).
+    private var rangeCountSummary: String {
         let pagesInRange = Swift.max(1, toPageIndex - fromPageIndex + 1)
-        return VStack(spacing: 2) {
-            rangeSummaryRow(
-                hasPageData
-                    ? "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") · \(pagesInRange) page\(pagesInRange == 1 ? "" : "s") in range"
-                    : "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") in range"
-            )
+        if hasPageData {
+            return "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s") · \(pagesInRange) page\(pagesInRange == 1 ? "" : "s")"
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        return "\(ayahCount) ayah\(ayahCount == 1 ? "" : "s")"
+    }
+
+    /// Total recitations the range will play: each ayah × its per-ayah repeats × the whole-section repeats.
+    private var totalPlayCount: Int {
+        ayahCount * repeatPerAyah * repeatSection
     }
 
     @ViewBuilder
-    private func rangeSummaryRow(_ text: String) -> some View {
+    private func animatedCaption(_ text: String) -> some View {
         let label = Text(text)
             .font(.caption.monospacedDigit())
-            .foregroundColor(Color(.tertiaryLabel))
+            .foregroundColor(.secondary)
 
         if #available(iOS 16.0, watchOS 9.0, *) {
             label.contentTransition(.numericText())
@@ -374,18 +395,50 @@ struct PlayCustomRangeSheet: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    surahHeaderCard
-                    reciterCard
-                    rangeCard
-                    arabicVersesCard
-                    repeatsCard
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    // Top: settings-style List. Ayah Range first, then reciter / surah / repeats.
+                    List {
+                        Section {
+                            rangeSectionContent
+                        } header: {
+                            if selectionMode == .pages && hasPageData {
+                                Label("Page Range", systemImage: "doc.text")
+                            } else {
+                                Label("Ayah Range", systemImage: "number")
+                            }
+                        }
+
+                        Section {
+                            SurahRow(surah: surah, hideInfo: false)
+                        }
+
+                        Section {
+                            reciterRow
+                        } header: {
+                            Label("Reciter", systemImage: "person.wave.2.fill")
+                        }
+
+                        Section {
+                            repeatRow(title: "Each ayah", value: $repeatPerAyah, text: $repeatPerAyahText, isFocused: $repeatPerAyahFocused)
+                            repeatRow(title: "Whole section", value: $repeatSection, text: $repeatSectionText, isFocused: $repeatSectionFocused)
+                        } header: {
+                            Label("Repeats", systemImage: "repeat")
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+
+                    Divider()
+
+                    // Bottom: compact, read-only first & last ayah preview. Capped at a third of the
+                    // height so the top section keeps priority.
+                    List {
+                        arabicVersesPreview
+                    }
+                    .frame(height: geo.size.height / 3)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
             }
-            .navigationTitle("Custom Range")
+            .navigationTitle("Custom Ayah Range")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -406,7 +459,9 @@ struct PlayCustomRangeSheet: View {
             clampRangeToMaxAyah()
             clampStoredRepeatValues()
         }
-        .onChange(of: settings.displayQiraahForArabic) { _ in clampRangeToMaxAyah() }
+        .onChange(of: settings.displayQiraahForArabic) { _ in
+            clampRangeToMaxAyah()
+        }
         .onChange(of: settings.reciter) { _ in
             // Let the user switch reciter mid-range: rebuild the running queue from the current ayah.
             if QuranPlayer.shared.isPlayingCustomRange {
@@ -416,18 +471,7 @@ struct PlayCustomRangeSheet: View {
         .id("\(initialStartAyah)-\(initialEndAyah)")
     }
 
-    private var surahHeaderCard: some View {
-        // Always show the full surah details here regardless of the global "Show Full Surah Details" setting.
-        SurahRow(surah: surah, hideInfo: false)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(UIColor.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .contentShape(Rectangle())
-    }
-
-    private var reciterCard: some View {
+    private var reciterRow: some View {
         NavigationLink {
             ReciterListView()
                 .environmentObject(settings)
@@ -438,10 +482,6 @@ struct PlayCustomRangeSheet: View {
                     .foregroundStyle(settings.accentColor.color)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Reciter")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
                     Text(selectedRangeReciterName)
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
@@ -455,23 +495,11 @@ struct PlayCustomRangeSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color(.tertiaryLabel))
             }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(UIColor.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
     }
 
-    private var rangeCard: some View {
+    private var rangeSectionContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             if selectionMode == .pages && hasPageData {
                 pageSelectionSection
@@ -491,24 +519,13 @@ struct PlayCustomRangeSheet: View {
                     if mode == .pages { snapRangeToPages() }
                 }
             }
-            
-            rangeSummary
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .contentShape(Rectangle())
         .animation(.easeInOut, value: startAyah)
         .animation(.easeInOut, value: endAyah)
     }
 
     private var ayahSelectionSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Ayah range", systemImage: "number")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(.secondary)
-
             HStack(alignment: .center, spacing: 12) {
                 rangeField(title: "From", value: $startAyah, text: $startAyahText, isFocused: $startAyahFocused) { new in
                     if new > endAyah {
@@ -603,10 +620,6 @@ struct PlayCustomRangeSheet: View {
         let toIdx = toPageIndex
 
         VStack(alignment: .leading, spacing: 16) {
-            Label("Page range", systemImage: "doc.text")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(.secondary)
-
             HStack(spacing: 12) {
                 pageField(
                     title: "From page",
@@ -803,67 +816,78 @@ struct PlayCustomRangeSheet: View {
         #endif
     }
 
-    private var repeatsCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Label("Repeats", systemImage: "repeat")
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(.secondary)
-
-            repeatRow(title: "Each ayah", value: $repeatPerAyah, text: $repeatPerAyahText, isFocused: $repeatPerAyahFocused)
-            repeatRow(title: "Whole section", value: $repeatSection, text: $repeatSectionText, isFocused: $repeatSectionFocused)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .contentShape(Rectangle())
-    }
-
-    private var arabicVersesCard: some View {
+    /// Compact, read-only preview card pinned above the Play button: a summary line (count, repeats,
+    /// total plays) followed by the first & last ayah. Line-limited (no minimum scale factor) so it
+    /// stays small regardless of ayah length.
+    private var arabicVersesPreview: some View {
         Group {
             if let first = surah.ayahs.first(where: { $0.id == startAyah }),
                let last = surah.ayahs.first(where: { $0.id == endAyah }) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("First & last ayah", systemImage: "text.quote.rtl")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.secondary)
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(ayahPageLabel(startAyah))
-                            .font(.caption2.weight(.medium))
-                            .foregroundColor(Color(.tertiaryLabel))
-                        
-                        Text(first.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: settings.displayQiraahForArabic))
-                            .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
-                            .multilineTextAlignment(.trailing)
-                            .lineLimit(nil)
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                    
+                VStack(alignment: .leading, spacing: 12) {
+                    versePreviewRow(label: ayahPageLabel(startAyah), ayah: first)
+
                     if startAyah != endAyah {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(ayahPageLabel(endAyah))
-                                .font(.caption2.weight(.medium))
-                                .foregroundColor(Color(.tertiaryLabel))
-                            
-                            Text(last.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: settings.displayQiraahForArabic))
-                                .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
-                                .multilineTextAlignment(.trailing)
-                                .lineLimit(nil)
-                                .foregroundColor(.primary)
-                                .frame(maxWidth: .infinity, alignment: .trailing)
-                        }
+                        versePreviewRow(label: ayahPageLabel(endAyah), ayah: last)
                     }
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(UIColor.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .contentShape(Rectangle())
-                .animation(.easeInOut, value: startAyah)
-                .animation(.easeInOut, value: endAyah)
+                
+                previewSummaryHeader
             }
+        }
+        .animation(.easeInOut, value: startAyah)
+        .animation(.easeInOut, value: endAyah)
+        .animation(.easeInOut, value: repeatPerAyah)
+        .animation(.easeInOut, value: repeatSection)
+    }
+
+    /// Range count + repeats on the left, a bold "total plays" badge on the right.
+    private var previewSummaryHeader: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                animatedCaption(rangeCountSummary)
+                animatedCaption("Each ayah ×\(repeatPerAyah) · Section ×\(repeatSection)")
+            }
+
+            Spacer(minLength: 8)
+
+            VStack(spacing: 0) {
+                totalPlaysText
+                    .font(.subheadline.monospacedDigit().weight(.bold))
+                    .foregroundColor(.white)
+                
+                Text("plays")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.9))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(settings.accentColor.color)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    @ViewBuilder
+    private var totalPlaysText: some View {
+        let label = Text("\(totalPlayCount)×")
+        if #available(iOS 16.0, watchOS 9.0, *) {
+            label.contentTransition(.numericText())
+        } else {
+            label
+        }
+    }
+
+    private func versePreviewRow(label: String, ayah: Ayah) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption2.weight(.medium))
+                .foregroundColor(Color(.tertiaryLabel))
+
+            Text(ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText, qiraahOverride: settings.displayQiraahForArabic))
+                .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2)
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 

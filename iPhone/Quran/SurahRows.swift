@@ -37,6 +37,8 @@ struct SurahRow: View, Equatable {
     let khatmCompletedAyahs: Int?
     let khatmTotalAyahs: Int?
     let searchQuery: String
+    /// When true, renders the same row content wrapped as a grid card (so grid == list look).
+    let grid: Bool
 
     init(
         surah: Surah,
@@ -49,7 +51,8 @@ struct SurahRow: View, Equatable {
         fontArabic: String = Settings.shared.fontArabic,
         khatmCompletedAyahs: Int? = nil,
         khatmTotalAyahs: Int? = nil,
-        searchQuery: String = ""
+        searchQuery: String = "",
+        grid: Bool = false
     ) {
         self.surah = surah
         self.ayah = ayah
@@ -62,6 +65,7 @@ struct SurahRow: View, Equatable {
         self.khatmCompletedAyahs = khatmCompletedAyahs
         self.khatmTotalAyahs = khatmTotalAyahs
         self.searchQuery = searchQuery
+        self.grid = grid
     }
 
     private var revelationEmoji: String {
@@ -182,6 +186,36 @@ struct SurahRow: View, Equatable {
     
     var body: some View {
         #if os(iOS)
+        if grid { gridBody } else { listBody }
+        #else
+        VStack {
+            HStack {
+                Text("\(surah.id) - \(surah.nameTransliteration)")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("\(surah.nameArabic) - \(surah.idArabic)")
+                    .font(.headline)
+                    .foregroundColor(settings.accentColor.color)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .minimumScaleFactor(0.9)
+            }
+
+            Text("\(revelationEmoji) • \(surah.numberOfAyahs) Ayahs • \(pageLine)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        .contentShape(Rectangle())
+        #endif
+    }
+
+    #if os(iOS)
+    // The normal surah row. Used in both the list and (wrapped as a card) the grid, so favorites look
+    // identical to normal surahs in either layout.
+    private var listBody: some View {
         HStack(alignment: .center) {
             surahNumberPill
                 .padding(.trailing, 2)
@@ -192,7 +226,7 @@ struct SurahRow: View, Equatable {
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
-                
+
                 HighlightedSnippet(
                     source: surah.nameTransliteration,
                     term: searchQuery,
@@ -200,13 +234,14 @@ struct SurahRow: View, Equatable {
                     accent: accentColor.color,
                     fg: .primary
                 )
-                
+
                 HighlightedSnippet(
                     source: surah.nameEnglish,
                     term: searchQuery,
                     font: .caption,
                     accent: accentColor.color,
-                    fg: showInfo ? .primary : .secondary
+                    fg: showInfo ? .primary : .secondary,
+                    trailingSuffix: showInfo ? "" : " \(revelationEmoji)"
                 )
 
                 if showInfo {
@@ -232,8 +267,9 @@ struct SurahRow: View, Equatable {
 
                 khatmProgressLine
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .lineLimit(1)
+            .layoutPriority(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack {
                 HighlightedSnippet(
@@ -243,41 +279,120 @@ struct SurahRow: View, Equatable {
                     accent: accentColor.color,
                     fg: .primary
                 )
-                
+
                 Text(surah.idArabic)
                     .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
                     .foregroundColor(accentColor.color)
             }
             .minimumScaleFactor(1)
+            .padding(.leading, 8)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .lineLimit(1)
         .minimumScaleFactor(0.75)
         .contentShape(Rectangle())
-        #else
-        VStack {
-            HStack {
-                Text("\(surah.id) - \(surah.nameTransliteration)")
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Text("\(surah.nameArabic) - \(surah.idArabic)")
-                    .font(.headline)
-                    .foregroundColor(settings.accentColor.color)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .minimumScaleFactor(0.9)
+    }
+
+    /// Custom grid tile: the same information as the list row, re-laid out vertically so it reads
+    /// well in a narrow 2-column grid cell.
+    private var gridBody: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text("\(surah.id)")
+                    .font(.subheadline.monospacedDigit().weight(.bold))
+                    .foregroundColor(accentColor.color)
+
+                Spacer(minLength: 0)
+
+                if favoriteState {
+                    Image(systemName: "star.fill")
+                        .font(.caption2)
+                        .foregroundStyle(accentColor.color)
+                }
             }
 
-            Text("\(revelationEmoji) • \(surah.numberOfAyahs) Ayahs • \(pageLine)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 4) {
+                Text(surah.idArabic)
+                    .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
+                    .foregroundColor(accentColor.color)
+                
+                HighlightedSnippet(
+                    source: surah.nameArabic,
+                    term: searchQuery,
+                    font: .custom(fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize),
+                    accent: accentColor.color,
+                    fg: .primary
+                )
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+
+            if let context = positionContextLine {
+                Text(context)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+
+            HighlightedSnippet(
+                source: surah.nameTransliteration,
+                term: searchQuery,
+                font: .subheadline.weight(.semibold),
+                accent: accentColor.color,
+                fg: .primary
+            )
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+
+            HighlightedSnippet(
+                source: surah.nameEnglish,
+                term: searchQuery,
+                font: .caption,
+                accent: accentColor.color,
+                fg: showInfo ? .primary : .secondary,
+                trailingSuffix: showInfo ? "" : " \(revelationEmoji)"
+            )
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+
+            if showInfo {
+                Text(pageLine)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                Text(ayahAndRevelationLine)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                if let sortedMetricLine,
+                   settings.quranSortMode == .words || settings.quranSortMode == .letters {
+                    Text(sortedMetricLine)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+            } else if let sortedMetricLine {
+                Text(sortedMetricLine)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
+
+            khatmProgressLine
+
+            Spacer(minLength: 0)
         }
-        .lineLimit(1)
-        .minimumScaleFactor(0.5)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
         .contentShape(Rectangle())
-        #endif
     }
+    #endif
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.surah == rhs.surah &&
@@ -290,7 +405,8 @@ struct SurahRow: View, Equatable {
         lhs.fontArabic == rhs.fontArabic &&
         lhs.khatmCompletedAyahs == rhs.khatmCompletedAyahs &&
         lhs.khatmTotalAyahs == rhs.khatmTotalAyahs &&
-        lhs.searchQuery == rhs.searchQuery
+        lhs.searchQuery == rhs.searchQuery &&
+        lhs.grid == rhs.grid
     }
 }
 
@@ -302,6 +418,11 @@ struct SurahAyahRow: View {
     var ayah: Ayah
     var note: String? = nil
     var disableTajweedColors: Bool = false
+    /// When true, renders the same single-line row content wrapped as a grid card (grid == list look).
+    var grid: Bool = false
+    /// Multiplier on the Arabic line's font size (default matches the normal row). Pass a smaller value
+    /// for compact contexts such as the page/juz starting-ayah lists.
+    var arabicScale: CGFloat = 1.1
 
     private var isBookmarked: Bool {
         settings.bookmarkedAyahs.contains { $0.surah == surah.id && $0.ayah == ayah.id }
@@ -361,7 +482,7 @@ struct SurahAyahRow: View {
         return size.width + 8
     }
     
-    var body: some View {
+    private var listBody: some View {
         HStack {
             VStack {
                 ZStack(alignment: .topTrailing) {
@@ -393,7 +514,7 @@ struct SurahAyahRow: View {
                             .offset(x: 8, y: -6)
                     }
                 }
-                
+
                 Text(surah.nameTransliteration)
                     #if os(iOS)
                     .font(.caption)
@@ -410,84 +531,103 @@ struct SurahAyahRow: View {
             #endif
             .foregroundColor(settings.accentColor.color)
             .padding(.trailing, 8)
-            
-            if let note = note {
-                Text(note)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .lineLimit(settings.showFullSurahRow ? nil : 1)
-            } else {
-                // "Show Full Surah Details" off → compact (one translation, single lines).
-                // On → the same information the reading view shows (transliteration + both translations
-                // with attributions, fully wrapped).
-                let full = settings.showFullSurahRow
-                let lineCap: Int? = full ? nil : 1
-                VStack(alignment: .leading, spacing: full ? 8 : 2) {
-                    if settings.showArabicText {
-                        HighlightedSnippet(
-                            source: arabicDisplayText(),
-                            term: "",
-                            font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1),
-                            accent: settings.accentColor.color,
-                            fg: .primary,
-                            preStyledSource: arabicTajweedText(),
-                            beginnerMode: settings.beginnerMode,
-                            lineLimit: lineCap
-                        )
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
 
-                    if settings.showTransliteration, settings.isHafsDisplay {
-                        Text(ayah.textTransliteration)
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .lineLimit(lineCap)
-                    }
-
-                    if full {
-                        if settings.showEnglishSaheeh, settings.isHafsDisplay {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(ayah.textEnglishSaheeh)
-                                    .font(.subheadline)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text("— Saheeh International")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                        if settings.showEnglishMustafa, settings.isHafsDisplay {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(ayah.textEnglishMustafa)
-                                    .font(.subheadline)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text("— Clear Quran (Mustafa Khattab)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                    } else {
-                        if settings.showEnglishSaheeh, settings.isHafsDisplay {
-                            Text(ayah.textEnglishSaheeh)
-                                .font(.subheadline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .lineLimit(1)
-                        } else if settings.showEnglishMustafa, settings.isHafsDisplay {
-                            Text(ayah.textEnglishMustafa)
-                                .font(.subheadline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .foregroundColor(.primary)
-            }
+            ayahContent
         }
         .padding(.vertical, 2)
+    }
+
+    /// The ayah text (note, or Arabic + transliteration + English, single line each) shared by the
+    /// list row and the grid tile so they show identical information.
+    @ViewBuilder
+    private var ayahContent: some View {
+        if let note = note {
+            Text(note)
+                .font(.subheadline)
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(1)
+        } else {
+            VStack {
+                if settings.showArabicText {
+                    HighlightedSnippet(
+                        source: arabicDisplayText(),
+                        term: "",
+                        font: .custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * arabicScale),
+                        accent: settings.accentColor.color,
+                        fg: .primary,
+                        preStyledSource: arabicTajweedText(),
+                        beginnerMode: settings.beginnerMode,
+                        lineLimit: 1
+                    )
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+
+                if settings.showTransliteration, settings.isHafsDisplay {
+                    Text(ayah.textTransliteration)
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(1)
+                }
+
+                if settings.showEnglishSaheeh, settings.isHafsDisplay {
+                    Text(ayah.textEnglishSaheeh)
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(1)
+                } else if settings.showEnglishMustafa, settings.isHafsDisplay {
+                    Text(ayah.textEnglishMustafa)
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(1)
+                }
+            }
+            .foregroundColor(.primary)
+        }
+    }
+
+    #if os(iOS)
+    /// Custom grid tile: the same ayah information as the list row, laid out vertically for a 2-column cell.
+    private var gridBody: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("\(surah.id):\(ayah.id)")
+                    .font(.subheadline.monospacedDigit().weight(.semibold))
+                    .foregroundColor(settings.accentColor.color)
+                    .onTapGesture {
+                        settings.hapticFeedback()
+                        toggleBookmarkWithNoteGuard()
+                    }
+
+                Spacer(minLength: 0)
+
+                if isBookmarked {
+                    Image(systemName: "bookmark.fill")
+                        .font(.caption2)
+                        .foregroundStyle(settings.accentColor.color)
+                }
+            }
+
+            ayahContent
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+        .contentShape(Rectangle())
+    }
+    #endif
+
+    var body: some View {
+        Group {
+            #if os(iOS)
+            if grid { gridBody } else { listBody }
+            #else
+            listBody
+            #endif
+        }
         .contentShape(Rectangle())
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
@@ -763,6 +903,7 @@ struct LastListenedSurahRow: View {
                     .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0.35)
                     .animation(.easeInOut, value: quranPlayer.isPlaying)
                     .animation(.easeInOut, value: quranPlayer.isPaused)
+                    .contentShape(Rectangle())
             }
             .disabled(quranPlayer.isPlaying || quranPlayer.isPaused)
         }
@@ -985,6 +1126,7 @@ struct SummarySurahTile: View {
                             .font(.subheadline)
                             .foregroundColor(settings.accentColor.color)
                             .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0.35)
+                            .contentShape(Rectangle())
                     }
                     .disabled(quranPlayer.isPlaying || quranPlayer.isPaused)
                 }
@@ -994,156 +1136,6 @@ struct SummarySurahTile: View {
                     color: settings.accentColor.color
                 )
                 .padding(.top, 1)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-/// Compact summary-mode tile for a favorite surah. Favorites are whole surahs (no single ayah),
-/// so it shows the surah number with its Arabic name, transliteration, and English meaning.
-struct SummarySurahNameTile: View {
-    @EnvironmentObject var settings: Settings
-
-    let title: String
-    let icon: String
-    let surah: Surah
-    let onTap: () -> Void
-
-    var body: some View {
-        Button {
-            settings.hapticFeedback()
-            onTap()
-        } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                if !title.isEmpty {
-                    HStack(spacing: 6) {
-                        Image(systemName: icon)
-                            .font(.caption)
-                            .foregroundColor(settings.accentColor.color)
-                        Text(title)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-
-                HStack(spacing: 6) {
-                    Text("\(surah.id)")
-                        .font(.subheadline.monospacedDigit().weight(.bold))
-                        .foregroundColor(settings.accentColor.color)
-
-                    Text(surah.nameTransliteration)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(settings.accentColor.color)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                }
-
-                Text(surah.nameArabic)
-                    .font(.custom(settings.fontArabic, size: UIFont.preferredFont(forTextStyle: .subheadline).pointSize * 1.1))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-
-                Text(surah.nameEnglish)
-                    .font(.footnote)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .padding(12)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-/// Grid tile for the surah / juz browse list — shows everything a row does except the Arabic name:
-/// number, transliteration, English meaning, and the revelation type with ayah count.
-struct SurahGridTile: View {
-    @EnvironmentObject var settings: Settings
-
-    let surah: Surah
-    let isFavorite: Bool
-    var positionNote: String? = nil
-    var khatmCompletedAyahs: Int? = nil
-    var khatmTotalAyahs: Int? = nil
-    let onTap: () -> Void
-
-    private var typeLabel: String { surah.type == "makkan" ? "🕋 Makkan" : "🕌 Madinan" }
-
-    private var isKhatmComplete: Bool {
-        guard let khatmCompletedAyahs, let khatmTotalAyahs else { return false }
-        return khatmTotalAyahs > 0 && khatmCompletedAyahs >= khatmTotalAyahs
-    }
-
-    var body: some View {
-        Button {
-            settings.hapticFeedback()
-            onTap()
-        } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text("\(surah.id)")
-                        .font(.subheadline.monospacedDigit().weight(.bold))
-                        .foregroundColor(settings.accentColor.color)
-
-                    Spacer(minLength: 0)
-
-                    if isFavorite {
-                        Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundStyle(settings.accentColor.color)
-                    }
-                }
-
-                Text(surah.nameTransliteration)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-
-                Text(surah.nameEnglish)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-
-                if let positionNote {
-                    Text(positionNote)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(settings.accentColor.color)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                }
-
-                Text("\(typeLabel) · \(surah.numberOfAyahs) ayahs")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-
-                if let khatmCompletedAyahs, let khatmTotalAyahs {
-                    HStack(spacing: 5) {
-                        Image(systemName: isKhatmComplete ? "checkmark.circle.fill" : "circle.dashed")
-                            .font(.caption2.weight(.semibold))
-                        Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs)")
-                            .font(.caption2.monospacedDigit().weight(isKhatmComplete ? .semibold : .regular))
-                    }
-                    .foregroundStyle(isKhatmComplete ? settings.accentColor.color : Color.secondary)
-                }
-
-                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .padding(12)
@@ -1694,6 +1686,8 @@ struct AyahSearchResultRow: View {
     @Binding var searchText: String
     @Binding var scrollToSurahID: Int
     var disableTajweedColors: Bool = false
+    /// When true, the Arabic line is rendered smaller (used by the page/juz starting-ayah lists).
+    var compactArabic: Bool = false
     var onSelectAyah: ((Int, Int) -> Void)? = nil
 
     private var isBookmarked: Bool {
@@ -1715,7 +1709,7 @@ struct AyahSearchResultRow: View {
 
     var body: some View {
         let row = VStack(alignment: .leading, spacing: 4) {
-            SurahAyahRow(surah: surah, ayah: ayah, disableTajweedColors: disableTajweedColors)
+            SurahAyahRow(surah: surah, ayah: ayah, disableTajweedColors: disableTajweedColors, arabicScale: compactArabic ? 0.8 : 1.1)
 
             if settings.showFullSurahRow, let pageJuzLine {
                 Label(pageJuzLine, systemImage: "map")

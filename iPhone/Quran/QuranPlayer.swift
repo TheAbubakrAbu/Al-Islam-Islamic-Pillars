@@ -2058,7 +2058,8 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
 
     private func baseDirectoryURL() -> URL {
         let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
         let root = appSupport.appendingPathComponent("ReciterDownloads", isDirectory: true)
         if !fileManager.fileExists(atPath: root.path) {
             try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)

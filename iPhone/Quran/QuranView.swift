@@ -166,6 +166,15 @@ struct QuranView: View {
             return PageJuzQuery(page: nil, juz: validJuz, isExplicitPage: false, isExplicitJuz: true)
         }
 
+        // Plain number (no "page"/"juz" prefix): offer it as both a page and a juz candidate so a bare
+        // number like "50" surfaces page 50 (and juz, when in range) alongside surah 50. Kept
+        // non-explicit so the surah results still show too.
+        if let n = Int(trimmed) ?? arabicToEnglishNumber(trimmed) {
+            let validPage = (1...630).contains(n) ? n : nil
+            let validJuz = (1...30).contains(n) ? n : nil
+            return PageJuzQuery(page: validPage, juz: validJuz, isExplicitPage: false, isExplicitJuz: false)
+        }
+
         return PageJuzQuery(page: nil, juz: nil, isExplicitPage: false, isExplicitJuz: false)
     }
 
@@ -348,7 +357,6 @@ struct QuranView: View {
                 Text("• Ayah: X:Y or text (Arabic/English/transliteration)")
                 Text("• Page/Juz: 'page X', 'juz X', or plain numbers")
                 Text("• Counts: '286 ayahs' or '48 pages'")
-                Text("• Special: sajdah/sujood or muqatta'at/huruf muqattaat")
             }
             .font(.caption)
             .foregroundStyle(.primary)
@@ -439,7 +447,12 @@ struct QuranView: View {
                 }
             }
 
-            guard shouldPrewarmAllQuranDestinations else { return }
+            // The broad prewarm scans all 114 surahs. This `Task` is unstructured (not tied to `.task`), so
+            // leaving and re-entering the Quran tab — common on iPad/Mac split view — would otherwise spawn
+            // overlapping full prewarm passes. Run it at most once per session; caches are rebuilt lazily on
+            // demand afterward, so correctness is unaffected.
+            guard shouldPrewarmAllQuranDestinations, !Self.didPrewarmAllDestinations else { return }
+            Self.didPrewarmAllDestinations = true
 
             for surah in quranData.quran {
                 guard seen.insert(surah.id).inserted else { continue }
@@ -449,6 +462,8 @@ struct QuranView: View {
             }
         }
     }
+
+    @MainActor private static var didPrewarmAllDestinations = false
 
     private var shouldPrewarmAllQuranDestinations: Bool {
         !AppPerformance.shouldAvoidBroadPrewarm
@@ -623,7 +638,7 @@ struct QuranView: View {
                     primaryHistorySections(context: context)
                     bookmarkSection(context: context)
                     favoriteSection(context: context)
-                    if context.explicitPageOrJuzMode && context.isSearching {
+                    if (context.pageJuzQuery.page != nil || context.pageJuzQuery.juz != nil) && context.isSearching {
                         pageSearchSection(context: context)
                         juzSearchSection(context: context)
                     }
@@ -654,11 +669,17 @@ struct QuranView: View {
             }
             .onChange(of: scrollToSurahID) { id in
                 guard id > 0 else { return }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation {
-                        scrollProxy.scrollTo("surah_\(id)", anchor: .top)
-                    }
+                // Grid mode uses a LazyVGrid, whose off-screen tiles aren't realized, so ScrollViewReader
+                // can't reach them. Force list mode (each surah is its own List row, which scrolls
+                // reliably to off-screen rows) before scrolling.
+                if settings.quranGridMode {
+                    settings.quranGridMode = false
                 }
+                // "Scroll To Surah" often clears an active search at the same time (and now may also flip
+                // grid→list), both of which rebuild the List. A single fixed-delay scroll races that
+                // rebuild and lands on an id that doesn't exist yet, so retry until the target row appears
+                // (its onAppear resets scrollToSurahID, which ends the retries).
+                scrollToSurah(id, proxy: scrollProxy, attemptsLeft: 12)
             }
             
         }
@@ -1300,21 +1321,9 @@ struct QuranView: View {
                 settings.hapticFeedback()
                 push(surahID: surah.id, ayahID: ayah.id)
             } label: {
-                SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
-                    .contentShape(Rectangle())
+                SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow, grid: true)
             }
             .buttonStyle(.plain)
-            .ayahContextMenuModifier(
-                surah: surah.id,
-                ayah: ayah.id,
-                favoriteSurahs: context.favoriteSurahs,
-                bookmarkedAyahs: context.bookmarkedAyahs,
-                searchText: $searchText,
-                scrollToSurahID: $scrollToSurahID
-            )
             #else
             Button {
                 settings.hapticFeedback()
@@ -1448,22 +1457,9 @@ struct QuranView: View {
                 settings.hapticFeedback()
                 push(surahID: surah.id, ayahID: nil)
             } label: {
-                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
-                    .contentShape(Rectangle())
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id), grid: true)
             }
             .buttonStyle(.plain)
-            .contextMenu {
-                SurahContextMenu(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    favoriteSurahs: context.favoriteSurahs,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
             #else
             Button {
                 settings.hapticFeedback()
@@ -1709,6 +1705,7 @@ struct QuranView: View {
             bookmarkedAyahs: context.bookmarkedAyahs,
             searchText: $searchText,
             scrollToSurahID: $scrollToSurahID,
+            compactArabic: true,
             onSelectAyah: columnAyahSelectionHandler
         )
     }
@@ -1746,80 +1743,79 @@ struct QuranView: View {
     @ViewBuilder
     private func khatmProgressSection() -> some View {
         Section {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Khatm mode tracks your progress through a complete reading of the Quran. As you read, ayahs are marked as completed so you can see how much of the Quran you have finished by ayah, page, and juz.")
+            Text("Khatm mode tracks your progress through a complete reading of the Quran. As you read, ayahs are marked as completed so you can see how much of the Quran you have finished by ayah, page, and juz.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Automatically Mark Ayahs", isOn: $settings.automaticKhatmCompletion.animation(.easeInOut))
+                    .font(.subheadline)
+
+                Text("When on, ayahs are marked as completed as soon as they appear while you read. Turn this off to mark ayahs only when you tap them.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .padding(.vertical, 2)
+            }
 
+            VStack {
                 HStack(alignment: .firstTextBaseline) {
                     Text("\(khatmPercent)% completed")
                         .font(.headline)
                         .foregroundStyle(settings.accentColor.color)
-
+                    
                     Spacer()
-
-                    Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs)")
+                    
+                    Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs) ayahs")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
-
+                
                 ProgressView(value: Double(khatmCompletedAyahs), total: Double(max(khatmTotalAyahs, 1)))
                     .tint(settings.accentColor.color)
+            }
 
-                // Juz / Pages / Ayahs metrics using cached stats
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        let totalJuz = quranData.juzSections.count
-                        let completedJuz = khatmJuzStats.values.reduce(0) { $0 + ($1.completed == $1.total ? 1 : 0) }
-                        let juzPercent = totalJuz > 0 ? Int((Double(completedJuz) / Double(totalJuz) * 100).rounded()) : 0
+            // Juz / Pages / Ayahs metrics using cached stats
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    let totalJuz = quranData.juzSections.count
+                    let completedJuz = khatmJuzStats.values.reduce(0) { $0 + ($1.completed == $1.total ? 1 : 0) }
+                    let juzPercent = totalJuz > 0 ? Int((Double(completedJuz) / Double(totalJuz) * 100).rounded()) : 0
 
-                        // Use the actual mushaf page range (max page present in data) if available,
-                        // otherwise fall back to the canonical 604 pages.
-                        let totalPages: Int = {
-                            let maxPage = quranData.quran
-                                .flatMap { $0.ayahs }
-                                .compactMap { $0.page }
-                                .max()
-                            return maxPage ?? 604
-                        }()
-                        let completedPages = khatmPageStats.keys.filter { page in
-                            if let stats = khatmPageStats[page] { return stats.completed == stats.total }
-                            return false
-                        }.count
-                        let pagePercent = totalPages > 0 ? Int((Double(completedPages) / Double(totalPages) * 100).rounded()) : 0
+                    // Use the actual mushaf page range (max page present in data) if available,
+                    // otherwise fall back to the canonical 604 pages.
+                    let totalPages: Int = {
+                        let maxPage = quranData.quran
+                            .flatMap { $0.ayahs }
+                            .compactMap { $0.page }
+                            .max()
+                        return maxPage ?? 604
+                    }()
+                    let completedPages = khatmPageStats.keys.filter { page in
+                        if let stats = khatmPageStats[page] { return stats.completed == stats.total }
+                        return false
+                    }.count
+                    let pagePercent = totalPages > 0 ? Int((Double(completedPages) / Double(totalPages) * 100).rounded()) : 0
 
-                        Text("Juz: \(completedJuz)/\(totalJuz) (\(juzPercent)%)")
-                            .font(.subheadline.monospacedDigit())
-                        Text("Pages: \(completedPages)/\(totalPages) (\(pagePercent)%)")
-                            .font(.subheadline.monospacedDigit())
-                        Text("Ayahs: \(khatmCompletedAyahs)/\(khatmTotalAyahs) (\(khatmPercent)%)")
-                            .font(.subheadline.monospacedDigit())
-                    }
-
-                    Spacer()
-
-                    Button("Extra") {
-                        settings.hapticFeedback()
-                        withAnimation {
-                            showKhatmExtraDetails.toggle()
-                        }
-                        if showKhatmExtraDetails && khatmExtraTotals == nil {
-                            loadKhatmExtraTotalsIfNeeded()
-                        }
-                    }
-                    .font(.subheadline)
+                    Text("Juz: \(completedJuz)/\(totalJuz) (\(juzPercent)%)")
+                        .font(.subheadline.monospacedDigit())
+                    Text("Pages: \(completedPages)/\(totalPages) (\(pagePercent)%)")
+                        .font(.subheadline.monospacedDigit())
                 }
+
+                Spacer()
+
+                Button("Extra") {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        showKhatmExtraDetails.toggle()
+                    }
+                    if showKhatmExtraDetails && khatmExtraTotals == nil {
+                        loadKhatmExtraTotalsIfNeeded()
+                    }
+                }
+                .font(.subheadline)
 
                 Divider()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Toggle("Automatically Mark Ayahs", isOn: $settings.automaticKhatmCompletion.animation(.easeInOut))
-                        .font(.subheadline)
-
-                    Text("When on, ayahs are marked as completed as soon as they appear while you read. Turn this off to mark ayahs only when you tap them.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
 
                 if khatmEditMode {
                     Button(role: .destructive) {
@@ -2001,32 +1997,32 @@ struct QuranView: View {
     private func surahGrid(_ surahs: [Surah], context: SearchDisplayContext) -> some View {
         LazyVGrid(columns: surahGridColumns, alignment: .leading, spacing: 10) {
             ForEach(surahs, id: \.id) { surah in
-                SurahGridTile(
-                    surah: surah,
-                    isFavorite: context.favoriteSurahs.contains(surah.id),
-                    khatmCompletedAyahs: settings.quranSortMode == .khatm ? settings.khatmCompletedCount(for: surah) : nil,
-                    khatmTotalAyahs: settings.quranSortMode == .khatm ? surah.numberOfAyahs : nil
-                ) {
-                    push(surahID: surah.id, ayahID: nil)
-                }
-                .contextMenu {
-                    SurahContextMenu(
-                        surahID: surah.id,
-                        surahName: surah.nameTransliteration,
-                        favoriteSurahs: context.favoriteSurahs,
-                        searchText: $searchText,
-                        scrollToSurahID: $scrollToSurahID
-                    )
-                }
-                .id("surah_\(surah.id)")
-                .onAppear {
-                    if surah.id == scrollToSurahID {
-                        withAnimation { scrollToSurahID = -1 }
-                    }
-                }
+                surahGridTile(surah: surah, context: context)
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private func surahGridTile(surah: Surah, context: SearchDisplayContext) -> some View {
+        Button {
+            settings.hapticFeedback()
+            push(surahID: surah.id, ayahID: nil)
+        } label: {
+            SurahRow(
+                surah: surah,
+                isFavorite: context.favoriteSurahs.contains(surah.id),
+                khatmCompletedAyahs: settings.quranSortMode == .khatm ? settings.khatmCompletedCount(for: surah) : nil,
+                khatmTotalAyahs: settings.quranSortMode == .khatm ? surah.numberOfAyahs : nil,
+                grid: true
+            )
+        }
+        .buttonStyle(.plain)
+        .id("surah_\(surah.id)")
+        .onAppear {
+            if surah.id == scrollToSurahID {
+                withAnimation { scrollToSurahID = -1 }
+            }
+        }
     }
     #endif
 
@@ -2168,27 +2164,27 @@ struct QuranView: View {
     @ViewBuilder
     private func juzGridTile(row: QuranData.JuzSectionData.Row, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(row.surahID) {
-            let note: String? = {
-                switch row.kind {
-                case .plain: return nil
-                case .start(let ayah): return ayah > 1 ? "From \(surah.id):\(ayah)" : nil
-                case .end(let ayah): return ayah < surah.numberOfAyahs ? "To \(surah.id):\(ayah)" : nil
-                }
-            }()
             let route = preprocessedJuzRoute(row: row, surah: surah)
             let ayahID: Int? = { if case let .ayahs(_, ayah) = route { return ayah } else { return nil } }()
-            SurahGridTile(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id), positionNote: note) {
+            Button {
+                settings.hapticFeedback()
                 push(surahID: surah.id, ayahID: ayahID)
+            } label: {
+                juzGridLabel(row: row, surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
             }
-            .contextMenu {
-                SurahContextMenu(
-                    surahID: surah.id,
-                    surahName: surah.nameTransliteration,
-                    favoriteSurahs: context.favoriteSurahs,
-                    searchText: $searchText,
-                    scrollToSurahID: $scrollToSurahID
-                )
-            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private func juzGridLabel(row: QuranData.JuzSectionData.Row, surah: Surah, isFavorite: Bool) -> some View {
+        switch row.kind {
+        case .plain:
+            SurahRow(surah: surah, isFavorite: isFavorite, grid: true)
+        case .start(let ayah):
+            SurahRow(surah: surah, ayah: ayah, isFavorite: isFavorite, grid: true)
+        case .end(let ayah):
+            SurahRow(surah: surah, ayah: ayah, end: true, isFavorite: isFavorite, grid: true)
         }
     }
     #endif
@@ -2754,6 +2750,20 @@ struct QuranView: View {
 
     private func handleAyahSearchChange(_ txt: String) {
         handleAyahSearchChange(txt, debounce: true)
+    }
+
+    /// Scrolls to a surah row, retrying until it appears. Needed because the action that requests the
+    /// scroll may also clear an active search, and the resulting List rebuild can outlast a single
+    /// fixed delay. The target row's `onAppear` resets `scrollToSurahID` to -1, which stops the loop.
+    private func scrollToSurah(_ id: Int, proxy: ScrollViewProxy, attemptsLeft: Int) {
+        guard attemptsLeft > 0, scrollToSurahID == id else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            guard scrollToSurahID == id else { return }
+            withAnimation {
+                proxy.scrollTo("surah_\(id)", anchor: .top)
+            }
+            scrollToSurah(id, proxy: proxy, attemptsLeft: attemptsLeft - 1)
+        }
     }
 
     private func loadMoreAyahMatches(_ amount: Int) {

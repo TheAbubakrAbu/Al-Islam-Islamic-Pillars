@@ -64,10 +64,15 @@ struct AlIslamApp: App {
             settings.updateDates()
             WidgetCenter.shared.reloadAllTimelines()
         }
-        .onChange(of: scenePhase) { _ in
+        .onChange(of: scenePhase) { phase in
             quranPlayer.saveLastListenedSurah()
             quranPlayer.saveLastListenedAyah()
             settings.refreshQuranWidgets()
+            if phase != .active {
+                // Send any just-made setting change before the app is suspended, so it can't be lost (and
+                // can't be reverted by a stale synced value on the next launch).
+                WatchConnectivityManager.shared.flushPendingSync()
+            }
         }
     }
 

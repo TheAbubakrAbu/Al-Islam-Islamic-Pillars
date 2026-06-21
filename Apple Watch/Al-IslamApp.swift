@@ -7,7 +7,8 @@ struct AlIslamApp: App {
     @StateObject private var quranData = QuranData.shared
     @StateObject private var quranPlayer = QuranPlayer.shared
     @StateObject private var namesData = NamesViewModel.shared
-        
+
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isLaunching = true
 
     init() {
@@ -63,6 +64,12 @@ struct AlIslamApp: App {
         .onChange(of: settings.hijriOffset) { _ in
             settings.updateDates()
             WidgetCenter.shared.reloadAllTimelines()
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase != .active {
+                // Flush any just-made setting change before suspension so it reliably reaches the iPhone.
+                WatchConnectivityManager.shared.flushPendingSync()
+            }
         }
     }
 }

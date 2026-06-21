@@ -169,6 +169,17 @@ struct HighlightedSnippet: View {
                 }
                 searchStart = matchRange.upperBound
             }
+            // Arabic fallback: an alef-insensitive match (so الرحمن / الرحمان / الرحمٰن all match), with a
+            // longest-prefix partial match so something is always highlighted even when the exact phrase
+            // isn't present. This is why exact substring matching alone was missing most Arabic terms.
+            if ranges.isEmpty, source.containsArabicLetters {
+                ranges = arabicLooseRanges(
+                    source: source,
+                    normalizedSource: normEntry.normalizedSource,
+                    indexMap: normEntry.indexMap,
+                    normalizedTerm: normalizedTerm
+                )
+            }
             if ranges.isEmpty, source.containsArabicLetters {
                 ranges = arabicPhrasePrefixRanges(
                     in: source,
@@ -250,6 +261,74 @@ struct HighlightedSnippet: View {
         }
 
         return ranges
+    }
+
+    /// Alef-insensitive matching with a longest-prefix partial fallback.
+    ///
+    /// `normalizeForSearch` already folds the dagger alef (ٰ) to a plain alef, so dropping every "ا" from
+    /// both the source and the term produces a skeleton where الرحمن, الرحمان and الرحمٰن all compare equal.
+    /// The kept-character → source-index map lets a skeleton match map back to a contiguous original range.
+    /// If the whole term skeleton isn't found, the longest leading chunk (≥ 2 letters) is highlighted, so
+    /// the user always sees *something* of what they searched.
+    private func arabicLooseRanges(
+        source: String,
+        normalizedSource: String,
+        indexMap: [String.Index],
+        normalizedTerm: String
+    ) -> [Range<String.Index>] {
+        guard indexMap.count == normalizedSource.count else { return [] }
+
+        var skeleton = ""
+        var skeletonMap: [String.Index] = []
+        skeleton.reserveCapacity(normalizedSource.count)
+        skeletonMap.reserveCapacity(normalizedSource.count)
+        var k = 0
+        for ch in normalizedSource {
+            if ch != "ا" {
+                skeleton.append(ch)
+                skeletonMap.append(indexMap[k])
+            }
+            k += 1
+        }
+
+        var termSkeleton = ""
+        for ch in normalizedTerm where ch != "ا" { termSkeleton.append(ch) }
+        guard termSkeleton.count >= 2, !skeleton.isEmpty else { return [] }
+
+        func mapRange(_ r: Range<String.Index>) -> Range<String.Index>? {
+            let lo = skeleton.distance(from: skeleton.startIndex, to: r.lowerBound)
+            let hi = skeleton.distance(from: skeleton.startIndex, to: r.upperBound)
+            guard lo >= 0, hi > lo, hi - 1 < skeletonMap.count else { return nil }
+            var start = skeletonMap[lo]
+            let end = source.index(after: skeletonMap[hi - 1])
+            // Pull a directly-preceding alef (e.g. the ا of الـ) into the highlight so it reads naturally.
+            if start > source.startIndex {
+                let prev = source.index(before: start)
+                if normalizeForSearch(String(source[prev]), trimWhitespace: false) == "ا" { start = prev }
+            }
+            return start..<end
+        }
+
+        // Full alef-insensitive substring matches.
+        var ranges: [Range<String.Index>] = []
+        var searchStart = skeleton.startIndex
+        while searchStart < skeleton.endIndex,
+              let m = skeleton.range(of: termSkeleton, range: searchStart..<skeleton.endIndex) {
+            if let mapped = mapRange(m) { ranges.append(mapped) }
+            searchStart = m.upperBound
+        }
+        if !ranges.isEmpty { return ranges }
+
+        // Longest-prefix partial: highlight the longest leading chunk of the term we can find.
+        var prefixLen = termSkeleton.count - 1
+        while prefixLen >= 2 {
+            let prefix = String(termSkeleton.prefix(prefixLen))
+            if let m = skeleton.range(of: prefix), let mapped = mapRange(m) {
+                return [mapped]
+            }
+            prefixLen -= 1
+        }
+        return []
     }
 
     private func normalizedTokenRanges(in text: String) -> [Range<String.Index>] {

@@ -21,10 +21,22 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     private let session = WCSession.default
     private var cancellables = Set<AnyCancellable>()
 
+    /// Local persistent store (per-device; app groups don't sync across devices). Persisting the sync
+    /// bookkeeping is what prevents a stale `applicationContext` from being re-applied over a newer local
+    /// change on relaunch — the "change a setting, reopen, it reverts" bug.
+    private let store: UserDefaults
+    private static let scoreKey = "watchSync.knownMaxScore"
+    private static let lastSyncedKey = "watchSync.lastSyncedSettingsData"
+
     /// Serialized form of the settings dict we last sent or applied — used to skip no-op/echo sends.
-    private var lastSyncedSettingsData = Data()
+    private var lastSyncedSettingsData: Data {
+        didSet { store.set(lastSyncedSettingsData, forKey: Self.lastSyncedKey) }
+    }
     /// Highest score (version·10 + rank) we've sent or applied. Drives versioning and conflict resolution.
-    private var knownMaxScore = 0
+    /// Persisted so a relaunch doesn't forget it and re-accept an already-superseded payload.
+    private var knownMaxScore: Int {
+        didSet { store.set(knownMaxScore, forKey: Self.scoreKey) }
+    }
 
     #if os(iOS)
     private let deviceRank = 1   // iPhone wins ties
@@ -33,6 +45,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     #endif
 
     private override init() {
+        let store = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName) ?? .standard
+        self.store = store
+        self.knownMaxScore = store.integer(forKey: Self.scoreKey)
+        self.lastSyncedSettingsData = store.data(forKey: Self.lastSyncedKey) ?? Data()
         super.init()
         guard WCSession.isSupported() else { return }
 
@@ -47,6 +63,12 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     }
 
     // MARK: - Sending
+
+    /// Sends any pending local change immediately, bypassing the debounce. Call when the app is about to be
+    /// backgrounded so a just-made change isn't lost if the app is suspended before the debounce fires.
+    @MainActor func flushPendingSync() {
+        sendSnapshotIfChanged()
+    }
 
     private func sendSnapshotIfChanged() {
         guard session.activationState == .activated else { return }
@@ -97,9 +119,14 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         if let error { logger.debug("WC activation failed: \(error)") }
         logger.debug("WC activation → \(activationState.rawValue)")
 
-        // Apply any context that arrived while we were inactive.
-        if activationState == .activated, !session.receivedApplicationContext.isEmpty {
-            receive(session.receivedApplicationContext)
+        // Apply any context that arrived while we were inactive (rejected if not strictly newer than what
+        // we already know), then push any local change that wasn't sent before — between them, the latest
+        // value always wins and both devices converge regardless of who was open when.
+        if activationState == .activated {
+            if !session.receivedApplicationContext.isEmpty {
+                receive(session.receivedApplicationContext)
+            }
+            DispatchQueue.main.async { [weak self] in self?.sendSnapshotIfChanged() }
         }
 
         #if os(watchOS)
