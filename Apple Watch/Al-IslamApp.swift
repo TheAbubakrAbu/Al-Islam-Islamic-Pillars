@@ -9,7 +9,13 @@ struct AlIslamApp: App {
     @StateObject private var namesData = NamesViewModel.shared
         
     @State private var isLaunching = true
-    
+
+    init() {
+        // Activate WatchConnectivity early so we can tell whether the iPhone app is installed
+        // (used to decide if the watch should schedule prayer notifications itself).
+        _ = WatchConnectivityManager.shared
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {

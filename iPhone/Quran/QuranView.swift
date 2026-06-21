@@ -1294,9 +1294,19 @@ struct QuranView: View {
         if let surah = quranData.surah(bookmarkedAyah.surah),
            let ayah = quranData.ayah(surah: bookmarkedAyah.surah, ayah: bookmarkedAyah.ayah) {
             #if os(iOS)
-            SummaryAyahTile(title: "", icon: "", surah: surah, ayah: ayah) {
+            let noteText = bookmarkedAyah.note?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let noteToShow = (noteText?.isEmpty == false) ? noteText : nil
+            Button {
+                settings.hapticFeedback()
                 push(surahID: surah.id, ayahID: ayah.id)
+            } label: {
+                SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .ayahContextMenuModifier(
                 surah: surah.id,
                 ayah: ayah.id,
@@ -1434,9 +1444,17 @@ struct QuranView: View {
     private func favoriteGridTile(surahID: Int, context: SearchDisplayContext) -> some View {
         if let surah = quranData.surah(surahID) {
             #if os(iOS)
-            SummarySurahNameTile(title: "", icon: "", surah: surah) {
+            Button {
+                settings.hapticFeedback()
                 push(surahID: surah.id, ayahID: nil)
+            } label: {
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .contextMenu {
                 SurahContextMenu(
                     surahID: surah.id,
@@ -1619,9 +1637,7 @@ struct QuranView: View {
         if !rows.isEmpty {
             Section(header: pagesHeader(count: rows.count)) {
                 ForEach(rows, id: \.page) { item in
-                    quranNavigationLink(route: .ayahs(surahID: item.surah.id, ayah: item.ayah.id)) {
-                        CompactAyahArabicRow(surah: item.surah, ayah: item.ayah, leadingLabel: "Page \(item.page)")
-                    }
+                    specialAyahRow(item: (surah: item.surah, ayah: item.ayah), context: context)
                 }
             }
         }
@@ -1985,7 +2001,12 @@ struct QuranView: View {
     private func surahGrid(_ surahs: [Surah], context: SearchDisplayContext) -> some View {
         LazyVGrid(columns: surahGridColumns, alignment: .leading, spacing: 10) {
             ForEach(surahs, id: \.id) { surah in
-                SurahGridTile(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id)) {
+                SurahGridTile(
+                    surah: surah,
+                    isFavorite: context.favoriteSurahs.contains(surah.id),
+                    khatmCompletedAyahs: settings.quranSortMode == .khatm ? settings.khatmCompletedCount(for: surah) : nil,
+                    khatmTotalAyahs: settings.quranSortMode == .khatm ? surah.numberOfAyahs : nil
+                ) {
                     push(surahID: surah.id, ayahID: nil)
                 }
                 .contextMenu {

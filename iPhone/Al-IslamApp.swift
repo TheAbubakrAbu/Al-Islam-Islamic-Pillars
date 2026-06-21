@@ -13,6 +13,11 @@ struct AlIslamApp: App {
 
     @State private var isLaunching = true
 
+    init() {
+        // Activate WatchConnectivity so settings sync (and watch app-installed detection) work both ways.
+        _ = WatchConnectivityManager.shared
+    }
+
     private enum RootStage: Equatable {
         case launch
         case splash

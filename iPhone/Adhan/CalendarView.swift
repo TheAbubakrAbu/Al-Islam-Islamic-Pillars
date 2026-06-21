@@ -78,11 +78,11 @@ struct CalendarView: View {
     private func applyToolbar(to base: some View) -> some View {
         base.toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 10) {
-                    hijriInfoButton
-
-                    calendarModeButton
-                }
+                hijriInfoButton
+            }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                calendarModeButton
             }
         }
     }

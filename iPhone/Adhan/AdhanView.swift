@@ -63,13 +63,23 @@ struct AdhanView: View {
     private var adhanContent: some View {
         List {
             Group {
+                #if os(iOS)
                 DateAndLocationSection(showBigQibla: $showBigQibla)
 
                 prayersSection
 
-                #if os(iOS)
                 Section(header: Text("LOCATION AND CALCULATION")) {
                     LocationCalculationCard()
+                }
+                #else
+                // Watch order: prayer times first (2 per row), then countdown, then city, then qibla.
+                prayersSection
+
+                watchCityRow
+                watchQiblaRow
+
+                if let hijriDate = settings.hijriDate {
+                    HijriDateRow(hijriDate: hijriDate)
                 }
                 #endif
             }
@@ -123,11 +133,42 @@ struct AdhanView: View {
         }
         #else
         if settings.prayers != nil {
-            PrayerCountdown()
             PrayerList()
+            PrayerCountdown()
         }
         #endif
     }
+
+    #if os(watchOS)
+    private var watchCityRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: settings.currentLocation != nil ? "location.fill" : "location.slash")
+                .foregroundColor(settings.accentColor.color)
+            Text((settings.prayers != nil ? settings.currentLocation?.city : nil) ?? "No location")
+                .font(.subheadline)
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var watchQiblaRow: some View {
+        VStack(spacing: 6) {
+            QiblaView(size: showBigQibla ? 100 : 50)
+                .animation(.easeInOut, value: showBigQibla)
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    withAnimation { showBigQibla.toggle() }
+                }
+
+            Text("Compass may not be accurate on Apple Watch")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    #endif
 
     private func prayerTimeRefresh(force: Bool) {
         settings.requestNotificationAuthorization {

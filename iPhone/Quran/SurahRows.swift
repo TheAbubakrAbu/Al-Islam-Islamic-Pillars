@@ -417,9 +417,14 @@ struct SurahAyahRow: View {
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .lineLimit(1)
+                    .lineLimit(settings.showFullSurahRow ? nil : 1)
             } else {
-                VStack {
+                // "Show Full Surah Details" off → compact (one translation, single lines).
+                // On → the same information the reading view shows (transliteration + both translations
+                // with attributions, fully wrapped).
+                let full = settings.showFullSurahRow
+                let lineCap: Int? = full ? nil : 1
+                VStack(alignment: .leading, spacing: full ? 8 : 2) {
                     if settings.showArabicText {
                         HighlightedSnippet(
                             source: arabicDisplayText(),
@@ -429,28 +434,54 @@ struct SurahAyahRow: View {
                             fg: .primary,
                             preStyledSource: arabicTajweedText(),
                             beginnerMode: settings.beginnerMode,
-                            lineLimit: 1
+                            lineLimit: lineCap
                         )
+                            .multilineTextAlignment(.trailing)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
-                    
+
                     if settings.showTransliteration, settings.isHafsDisplay {
                         Text(ayah.textTransliteration)
                             .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .lineLimit(1)
+                            .lineLimit(lineCap)
                     }
-                    
-                    if settings.showEnglishSaheeh, settings.isHafsDisplay {
-                        Text(ayah.textEnglishSaheeh)
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .lineLimit(1)
-                    } else if settings.showEnglishMustafa, settings.isHafsDisplay {
-                        Text(ayah.textEnglishMustafa)
-                            .font(.subheadline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .lineLimit(1)
+
+                    if full {
+                        if settings.showEnglishSaheeh, settings.isHafsDisplay {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ayah.textEnglishSaheeh)
+                                    .font(.subheadline)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text("— Saheeh International")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        if settings.showEnglishMustafa, settings.isHafsDisplay {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ayah.textEnglishMustafa)
+                                    .font(.subheadline)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text("— Clear Quran (Mustafa Khattab)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    } else {
+                        if settings.showEnglishSaheeh, settings.isHafsDisplay {
+                            Text(ayah.textEnglishSaheeh)
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .lineLimit(1)
+                        } else if settings.showEnglishMustafa, settings.isHafsDisplay {
+                            Text(ayah.textEnglishMustafa)
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .lineLimit(1)
+                        }
                     }
                 }
                 .foregroundColor(.primary)
@@ -1045,9 +1076,16 @@ struct SurahGridTile: View {
     let surah: Surah
     let isFavorite: Bool
     var positionNote: String? = nil
+    var khatmCompletedAyahs: Int? = nil
+    var khatmTotalAyahs: Int? = nil
     let onTap: () -> Void
 
     private var typeLabel: String { surah.type == "makkan" ? "🕋 Makkan" : "🕌 Madinan" }
+
+    private var isKhatmComplete: Bool {
+        guard let khatmCompletedAyahs, let khatmTotalAyahs else { return false }
+        return khatmTotalAyahs > 0 && khatmCompletedAyahs >= khatmTotalAyahs
+    }
 
     var body: some View {
         Button {
@@ -1094,6 +1132,16 @@ struct SurahGridTile: View {
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
+
+                if let khatmCompletedAyahs, let khatmTotalAyahs {
+                    HStack(spacing: 5) {
+                        Image(systemName: isKhatmComplete ? "checkmark.circle.fill" : "circle.dashed")
+                            .font(.caption2.weight(.semibold))
+                        Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs)")
+                            .font(.caption2.monospacedDigit().weight(isKhatmComplete ? .semibold : .regular))
+                    }
+                    .foregroundStyle(isKhatmComplete ? settings.accentColor.color : Color.secondary)
+                }
 
                 Spacer(minLength: 0)
             }

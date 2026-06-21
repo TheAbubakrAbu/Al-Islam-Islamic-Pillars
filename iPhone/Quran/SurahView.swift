@@ -1855,23 +1855,17 @@ struct SurahView: View {
     @ViewBuilder
     private func applySurahToolbar(to base: some View) -> some View {
         base.toolbar {
-            // `surahPrincipalToolbar` is ToolbarContent (a `.principal` ToolbarItem), so it goes
-            // straight into the `.toolbar` builder — it can't be nested inside another ToolbarItem.
-            surahPrincipalToolbar
+            ToolbarItem(placement: .principal) {
+                surahTitlePickerButton
+            }
 
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    surahInfoButton
-                    navBarTitle
-                }
+                surahInfoButton
             }
-        }
-    }
-
-    @ToolbarContentBuilder
-    private var surahPrincipalToolbar: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            surahTitlePickerButton
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                navBarTitle
+            }
         }
     }
 

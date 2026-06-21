@@ -290,9 +290,14 @@ struct PrayerList: View {
 
     @ViewBuilder
     private func tilesContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+        #if os(watchOS)
+        let columnCount = 2
+        #else
+        let columnCount = settings.travelingMode ? 2 : 3
+        #endif
         let columns = Array(
             repeating: GridItem(.flexible(), spacing: 10),
-            count: settings.travelingMode ? 2 : 3
+            count: columnCount
         )
 
         LazyVGrid(columns: columns, spacing: 10) {
