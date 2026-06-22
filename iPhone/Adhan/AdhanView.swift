@@ -134,7 +134,6 @@ struct AdhanView: View {
         }
         #endif
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .withNowPlayingInset()
     }
 
     @ViewBuilder

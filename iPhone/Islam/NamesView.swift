@@ -710,6 +710,7 @@ private struct NameRow: View, Equatable {
 private struct NameRowDetails: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
+    
     let name: NameOfAllah
     let firstFoundTarget: (surahID: Int, ayahID: Int)?
     let showDescription: Bool

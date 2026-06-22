@@ -78,7 +78,6 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .withNowPlayingInset()
     }
 
     #if os(iOS)
@@ -114,7 +113,6 @@ struct SettingsView: View {
                 SettingsQuranView(showEdits: true)
             }
         }
-        .withNowPlayingInset()
     }
     #endif
 

@@ -10,7 +10,6 @@ import UIKit
 enum AppIdentifiers {
     static let appFullName = "Al-Islam | Islamic Pillars"
     static let appName = "Al-Islam"
-    static let toolsView = "Al-Islam"
     
     static let mainColor = AccentColor.green
     static let mainColorString = "green"
@@ -26,9 +25,6 @@ enum AppIdentifiers {
     static let networkMonitorQueueLabel = "\(bundleIdentifier).NetworkMonitor"
     static let reciterDownloadDedupeQueueLabel = "\(bundleIdentifier).reciter-dedupe"
 }
-
-// (Quran widget shared data — QuranWidgetSnapshot / QuranWidgetStore — now lives in
-// Widget/Quran/QuranWidgetSnapshot.swift, next to the widget code that consumes it.)
 
 enum AppPerformance {
     static var isLowMemoryDevice: Bool {

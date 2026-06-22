@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import WidgetKit
 
 extension Settings {
@@ -812,74 +813,5 @@ extension Settings {
             cards.append(quranWidgetAyahCard(surah: surah, ayah: ayah))
         }
         return cards
-    }
-
-    // MARK: Arabic search normalization
-
-    func cleanSearch(_ text: String, whitespace: Bool = false) -> String {
-        let normalized = normalizedArabicForSearch(text)
-        var cleaned = String(normalized.unicodeScalars
-            .filter { !Self.unwantedCharSet.contains($0) }
-        ).lowercased()
-        cleaned = collapsingWhitespace(cleaned)
-
-        if whitespace {
-            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        return cleaned
-    }
-
-    func cleanSearchIgnoringSilentArabicLetters(_ text: String, whitespace: Bool = false) -> String {
-        cleanSearch(text.removingSilentArabicLettersForSearch, whitespace: whitespace)
-    }
-
-    private func normalizedArabicForSearch(_ text: String) -> String {
-        Self.canonicalArabicSearchMap.reduce(text) { partial, pair in
-            partial.replacingOccurrences(of: pair.key, with: pair.value)
-        }
-    }
-
-    private static let canonicalArabicSearchMap: [String: String] = [
-        // Alif family
-        "\u{0670}": "ا", // dagger alif
-        "ٱ": "ا",
-        // Hamza family folds to plain carrier letters for forgiving search.
-        "أ": "ا",
-        "إ": "ا",
-        "آ": "ا",
-        "ٲ": "ا",
-        "ٳ": "ا",
-        "ٵ": "ا",
-        "ؤ": "و",
-        "ئ": "ي",
-        "ء": "",
-        "ٴ": "",
-        "ٶ": "و",
-        "ٷ": "و",
-        "ٸ": "ي",
-        // Waw variants
-        "ۥ": "و",
-        // Ya variants
-        "ۦ": "ي",
-        "ى": "ا", // alif maqsurah -> alif (matches both ى and ا forms in search)
-        // Teh marbuta equivalence (broad)
-        "ة": "ه"
-    ]
-
-    private static let unwantedCharSet: CharacterSet = {
-        var set = CharacterSet.punctuationCharacters
-            .union(.symbols)
-            .union(.nonBaseCharacters)
-        // Keep boolean-search operators in the normalized query.
-        set.remove(charactersIn: "&|!#")
-        return set
-    }()
-
-    private func collapsingWhitespace(_ text: String) -> String {
-        text
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
     }
 }

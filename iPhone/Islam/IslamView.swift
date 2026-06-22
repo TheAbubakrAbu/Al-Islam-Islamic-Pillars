@@ -71,8 +71,7 @@ struct IslamView: View {
             .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle(AppIdentifiers.toolsView)
-        .withNowPlayingInset()
+        .navigationTitle("Al-Islam")
     }
 
     #if os(iOS)
@@ -87,7 +86,7 @@ struct IslamView: View {
             .themedListRowBackground()
         }
         .applyConditionalListStyle(defaultView: settings.defaultView)
-        .navigationTitle(AppIdentifiers.toolsView)
+        .navigationTitle("Al-Islam")
     }
 
     @available(iOS 16.0, *)
@@ -97,7 +96,6 @@ struct IslamView: View {
         // view disappeared and came back on iPad/Mac.
         destinationView(for: selectedResource ?? .arabicAlphabet)
             .id(selectedResource ?? .arabicAlphabet)
-            .withNowPlayingInset()
     }
 
     @available(iOS 16.0, *)

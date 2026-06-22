@@ -115,50 +115,77 @@ struct AlIslamApp: App {
 private struct MainTabView: View {
     @EnvironmentObject private var quranPlayer: QuranPlayer
 
+    private enum AppTab: Hashable { case adhan, quran, islam, settings }
+    @State private var selectedTab: AppTab = .adhan
+
     var body: some View {
+        tabs
+            // Single Now Playing bar for the whole app, applied once at the root so it persists across every
+            // screen — including pushed subviews — instead of each tab adding it. Suppressed on the Quran tab,
+            // which renders its own richer bar (scroll-to-surah, in-Quran navigation).
+            .safeAreaInset(edge: .bottom) {
+                if selectedTab != .quran,
+                   quranPlayer.isPlaying || quranPlayer.isPaused {
+                    VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                        NowPlayingView()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 8)
+                    .background(Color.white.opacity(0.00001))
+                    .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var tabs: some View {
         if #available(iOS 18.0, *) {
-            TabView {
-                Tab("Adhan", systemImage: "mecca") {
+            TabView(selection: $selectedTab) {
+                Tab("Adhan", systemImage: "mecca", value: AppTab.adhan) {
                     AdhanView()
                 }
 
-                Tab("Quran", systemImage: "character.book.closed.ar") {
+                Tab("Quran", systemImage: "character.book.closed.ar", value: AppTab.quran) {
                     QuranView()
                 }
 
-                Tab("Islam", systemImage: "moon.stars") {
+                Tab("Islam", systemImage: "moon.stars", value: AppTab.islam) {
                     IslamView()
                 }
 
-                Tab("Settings", systemImage: "gearshape", role: .search) {
+                Tab("Settings", systemImage: "gearshape", value: AppTab.settings, role: .search) {
                     SettingsView()
                 }
             }
         } else {
-            TabView {
+            TabView(selection: $selectedTab) {
                 AdhanView()
                     .tabItem {
                         Image(systemName: "safari")
                         Text("Adhan")
                     }
+                    .tag(AppTab.adhan)
 
                 QuranView()
                     .tabItem {
                         Image(systemName: "character.book.closed.ar")
                         Text("Quran")
                     }
+                    .tag(AppTab.quran)
 
                 IslamView()
                     .tabItem {
                         Image(systemName: "moon.stars")
                         Text("Islam")
                     }
+                    .tag(AppTab.islam)
 
                 SettingsView()
                     .tabItem {
                         Image(systemName: "gearshape")
                         Text("Settings")
                     }
+                    .tag(AppTab.settings)
             }
         }
     }

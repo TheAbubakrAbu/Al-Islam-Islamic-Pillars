@@ -1,9 +1,10 @@
 import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
+import Combine
+#if canImport(AppKit)
 import AppKit
 #endif
+import os
 
 struct Surah: Codable, Identifiable, Equatable {
     let id: Int

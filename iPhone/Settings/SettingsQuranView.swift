@@ -659,7 +659,7 @@ struct SettingsQuranView: View {
 
         The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-        To learn more about the 7 Ahruf and the 10 Qiraat, see below and in \(AppIdentifiers.toolsView) View > Islamic Pillars and Basics.
+        To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
         """)
             .font(.caption)
             .foregroundColor(.primary)
@@ -1429,7 +1429,7 @@ struct ReciterListView: View {
 
                                 The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                                To learn more about the 7 Ahruf and the 10 Qiraat, see below and in \(AppIdentifiers.toolsView) View > Islamic Pillars and Basics.
+                                To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
                                 """)
                                 .font(.subheadline)
                                 .foregroundColor(.primary)
@@ -1502,7 +1502,7 @@ struct ReciterListView: View {
 
                             The Qiraat are not different Qurans; they are different prophetic ways of reciting the same Quran, letter for letter, word for word, all preserving the same meaning and message.
 
-                            To learn more about the 7 Ahruf and the 10 Qiraat, see below and in \(AppIdentifiers.toolsView) View > Islamic Pillars and Basics.
+                            To learn more about the 7 Ahruf and the 10 Qiraat, see below and in Al-Islam View > Islamic Pillars and Basics.
                             """)
                             .font(.subheadline)
                             .foregroundColor(.primary)
