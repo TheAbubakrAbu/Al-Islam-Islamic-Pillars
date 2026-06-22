@@ -57,6 +57,9 @@ struct NowPlayingView: View {
                         playerRow(isPlaying: quranPlayer.isPlaying)
                     }
                 }
+                // Pin a stable full width so the small and big players are the same size and only the
+                // height animates — keeps the card from resizing sideways when expanding/collapsing.
+                .frame(maxWidth: .infinity)
                 .overlay(alignment: .topTrailing) {
                     expandToggleButton
                 }
@@ -75,9 +78,10 @@ struct NowPlayingView: View {
                 .cornerRadius(24)
                 .padding(.horizontal, 8)
                 .transition(.opacity)
-                // Big player uses the rounded-rectangle glass; small player is a capsule (rectangle: false)
-                // unless it's a custom range, which needs the taller rectangle to fit its detail lines.
-                .conditionalGlassEffect(rectangle: isExpanded || quranPlayer.isPlayingCustomRange)
+                // Always use the rounded-rectangle glass so the shape never morphs between a capsule and a
+                // rectangle when expanding/collapsing. Animating the glass shape change crashed the glass
+                // renderer (and caused the temporary Quran-layout shift), so we keep one stable shape.
+                .conditionalGlassEffect(rectangle: true)
             )
         #else
         return
@@ -298,7 +302,9 @@ struct NowPlayingView: View {
         }
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
-        .animation(.easeInOut, value: isExpanded)
+        // No `.animation(value: isExpanded)` here: the expand toggle already wraps the change in
+        // `withAnimation`, and a second implicit animation on the same value fought it and contributed
+        // to the layout glitch/crash.
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 let surah = quranPlayer.currentSurahNumber ?? 1

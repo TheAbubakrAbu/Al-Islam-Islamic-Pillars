@@ -120,21 +120,6 @@ private struct MainTabView: View {
 
     var body: some View {
         tabs
-            // Single Now Playing bar for the whole app, applied once at the root so it persists across every
-            // screen — including pushed subviews — instead of each tab adding it. Suppressed on the Quran tab,
-            // which renders its own richer bar (scroll-to-surah, in-Quran navigation).
-            .safeAreaInset(edge: .bottom) {
-                if selectedTab != .quran,
-                   quranPlayer.isPlaying || quranPlayer.isPaused {
-                    VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                        NowPlayingView()
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 8)
-                    .background(Color.white.opacity(0.00001))
-                    .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
-                }
-            }
     }
 
     @ViewBuilder
@@ -143,6 +128,7 @@ private struct MainTabView: View {
             TabView(selection: $selectedTab) {
                 Tab("Adhan", systemImage: "mecca", value: AppTab.adhan) {
                     AdhanView()
+                        .withNowPlayingInset()
                 }
 
                 Tab("Quran", systemImage: "character.book.closed.ar", value: AppTab.quran) {
@@ -151,15 +137,18 @@ private struct MainTabView: View {
 
                 Tab("Islam", systemImage: "moon.stars", value: AppTab.islam) {
                     IslamView()
+                        .withNowPlayingInset()
                 }
 
                 Tab("Settings", systemImage: "gearshape", value: AppTab.settings, role: .search) {
                     SettingsView()
+                        .withNowPlayingInset()
                 }
             }
         } else {
             TabView(selection: $selectedTab) {
                 AdhanView()
+                    .withNowPlayingInset()
                     .tabItem {
                         Image(systemName: "safari")
                         Text("Adhan")
@@ -167,6 +156,7 @@ private struct MainTabView: View {
                     .tag(AppTab.adhan)
 
                 QuranView()
+                    .withNowPlayingInset()
                     .tabItem {
                         Image(systemName: "character.book.closed.ar")
                         Text("Quran")
@@ -174,6 +164,7 @@ private struct MainTabView: View {
                     .tag(AppTab.quran)
 
                 IslamView()
+                    .withNowPlayingInset()
                     .tabItem {
                         Image(systemName: "moon.stars")
                         Text("Islam")
@@ -181,6 +172,7 @@ private struct MainTabView: View {
                     .tag(AppTab.islam)
 
                 SettingsView()
+                    .withNowPlayingInset()
                     .tabItem {
                         Image(systemName: "gearshape")
                         Text("Settings")
@@ -191,3 +183,32 @@ private struct MainTabView: View {
     }
 }
 
+struct NowPlayingInsetModifier: ViewModifier {
+    @EnvironmentObject private var quranPlayer: QuranPlayer
+
+    private var shouldShowPlayer: Bool {
+        quranPlayer.isPlaying || quranPlayer.isPaused
+    }
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom) {
+            if shouldShowPlayer {
+                VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                    NowPlayingView()
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
+                .background(Color.white.opacity(0.00001))
+                .animation(.easeInOut, value: shouldShowPlayer)
+            }
+        }
+    }
+}
+
+extension View {
+    func withNowPlayingInset() -> some View {
+        modifier(
+            NowPlayingInsetModifier()
+        )
+    }
+}
