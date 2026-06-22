@@ -571,7 +571,7 @@ private struct Card: View {
                 }
             }
 
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel") { }
         }
         #endif
     }

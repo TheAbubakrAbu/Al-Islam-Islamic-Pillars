@@ -852,7 +852,7 @@ struct LastListenedSurahRow: View {
                         settings.saveLastListenedSurah = false
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button("Cancel") {}
             } message: {
                 Text("You can re-enable Last Listened Surah later in Quran Settings.")
             }
@@ -1492,7 +1492,7 @@ struct LastListenedAyahRow: View {
                         settings.saveLastListenedAyah = false
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button("Cancel") {}
             } message: {
                 Text("You can re-enable Last Listened Ayah later in Quran Settings.")
             }

@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 extension Settings {
     // MARK: - Quran types and constants
@@ -605,5 +606,280 @@ extension Settings {
         let trimmed = reciterID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         return favoriteReciterIDs.contains(trimmed)
+    }
+}
+
+// MARK: - Quran logic moved out of Settings.swift
+//
+// Behavior that operates on Quran data lives here so Settings.swift holds (mostly) just the stored
+// settings. Only the @AppStorage/@Published *storage* must stay in the main class — Swift forbids stored
+// property wrappers in extensions — but methods and `static` caches are free to live here.
+extension Settings {
+
+    // MARK: Saved sajdah / muqatta'at ayahs
+
+    func toggleSavedSajdah(surah: Int, ayah: Int) {
+        let key = "\(surah)-\(ayah)"
+        var s = savedSajdahAyahIDs
+        if s.contains(key) { s.remove(key) } else { s.insert(key) }
+        savedSajdahAyahIDs = s
+    }
+
+    func toggleSavedBrokenLetter(surah: Int, ayah: Int) {
+        let key = "\(surah)-\(ayah)"
+        var s = savedBrokenLetterAyahIDs
+        if s.contains(key) { s.remove(key) } else { s.insert(key) }
+        savedBrokenLetterAyahIDs = s
+    }
+
+    // MARK: Ayah of the Day
+
+    /// Stable yyyy-MM-dd key for a date, used to seed the Ayah of the Day and gate "Hide for Today".
+    static func dayKey(_ date: Date = Date()) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = Calendar(identifier: .gregorian)
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: date)
+    }
+
+    /// True when the user tapped "Hide for Today" on the Ayah of the Day card for the current day.
+    var isAyahOfTheDayHiddenToday: Bool {
+        ayahOfTheDayHiddenDate == Self.dayKey()
+    }
+
+    /// Words that keep an ayah out of the Ayah of the Day rotation — not because anything is wrong with
+    /// them, just to keep the daily card gentle/uplifting (matches the widget's safe-pool filter).
+    private static let ayahOfTheDayBlockedWords = [
+        "kill", "killing", "fight", "fighting", "violence", "violent",
+        "murder", "slay", "slaughter", "battle", "war"
+    ]
+
+    private static func isAyahGentle(_ ayah: Ayah) -> Bool {
+        let combined = [ayah.textEnglishSaheeh, ayah.textEnglishMustafa, ayah.textTransliteration]
+            .joined(separator: " ").lowercased()
+        return !ayahOfTheDayBlockedWords.contains { !$0.isEmpty && combined.contains($0) }
+    }
+
+    /// Keeps the daily card to roughly two lines by skipping long ayahs. Caps are approximate — tuned so
+    /// both the Arabic and the English translation fit a compact card without overflowing.
+    private static func isAyahShort(_ ayah: Ayah) -> Bool {
+        ayah.textHafs.count <= 120 && ayah.textEnglishSaheeh.count <= 150
+    }
+
+    private static var gentleAyahRefsCache: [(surahID: Int, ayahID: Int)]? = nil
+
+    /// All (surahID, ayahID) pairs eligible for Ayah of the Day, filtered to gentle ayahs. Built once.
+    private static func gentleAyahRefs(_ data: QuranData) -> [(surahID: Int, ayahID: Int)] {
+        if let cached = gentleAyahRefsCache { return cached }
+        var refs: [(surahID: Int, ayahID: Int)] = []
+        for surah in data.quran {
+            for ayah in surah.ayahs where isAyahGentle(ayah) && isAyahShort(ayah) {
+                refs.append((surah.id, ayah.id))
+            }
+        }
+        guard !refs.isEmpty else { return [] }   // don't cache before Quran data is loaded
+        gentleAyahRefsCache = refs
+        return refs
+    }
+
+    /// Deterministic (surahID, ayahID) for the Ayah of the Day on the given day. Same input day always
+    /// yields the same ayah, so the in-app card and the widget agree. Picks from the gentle-ayah pool
+    /// using a day-seeded multiplicative hash.
+    func ayahOfTheDayReference(for date: Date = Date(), data: QuranData = .shared) -> (surahID: Int, ayahID: Int)? {
+        let refs = Self.gentleAyahRefs(data)
+        guard !refs.isEmpty else { return nil }
+
+        let day = UInt64(bitPattern: Int64(date.timeIntervalSince1970 / 86_400))
+        // Knuth multiplicative hash (UInt64 to stay valid on 32-bit Int platforms like older watchOS).
+        let index = Int((day &* 2_654_435_761) % UInt64(refs.count))
+        return refs[index]
+    }
+
+    // MARK: Quran widgets
+
+    /// Rebuilds the App Group payload the Quran widgets read (last read ayah, last listened surah, and a
+    /// pool of safe random ayahs) and reloads their timelines. Runs only in the main app — the widget
+    /// extension just consumes the snapshot. Cheap to call from lifecycle/save hooks.
+    func refreshQuranWidgets() {
+        guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
+        let data = QuranData.shared
+        guard !data.quran.isEmpty else { return }
+
+        // Preserve the existing random pool so this stays cheap when called frequently (e.g. on every
+        // surah navigation) — the widget rotates through the pool over time for variety.
+        var snapshot = QuranWidgetStore.load() ?? QuranWidgetSnapshot()
+        snapshot.lastRead = nil
+
+        if lastReadSurah > 0, lastReadAyah > 0,
+           let surah = data.quran.first(where: { $0.id == lastReadSurah }),
+           let ayah = surah.ayahs.first(where: { $0.id == lastReadAyah }) {
+            snapshot.lastRead = quranWidgetAyahCard(surah: surah, ayah: ayah)
+        }
+
+        if let listened = lastListenedSurah {
+            snapshot.lastListened = QuranWidgetSnapshot.ListenCard(
+                name: listened.surahName,
+                reciter: listened.reciter.displayNameForNowPlaying,
+                current: listened.currentDuration,
+                full: listened.fullDuration
+            )
+        }
+
+        snapshot.lastListenedAyah = nil
+        if saveLastListenedAyah,
+           let listenedAyah = lastListenedAyah,
+           let surah = data.quran.first(where: { $0.id == listenedAyah.surahNumber }),
+           let ayah = surah.ayahs.first(where: { $0.id == listenedAyah.ayahNumber }) {
+            snapshot.lastListenedAyah = quranWidgetAyahCard(surah: surah, ayah: ayah)
+        }
+
+        snapshot.ayahOfTheDay = nil
+        if showAyahOfTheDay,
+           let ref = ayahOfTheDayReference(data: data),
+           let surah = data.quran.first(where: { $0.id == ref.surahID }),
+           let ayah = surah.ayahs.first(where: { $0.id == ref.ayahID }) {
+            snapshot.ayahOfTheDay = quranWidgetAyahCard(surah: surah, ayah: ayah)
+        }
+
+        // Rebuild the pool when it's empty or built by an older app version (cards missing the font tag),
+        // so the ayah-of-the-day widget can fall back to it.
+        if snapshot.randomPool.isEmpty || snapshot.randomPool.contains(where: { $0.fontName == nil }) {
+            snapshot.randomPool = buildQuranWidgetRandomPool(from: data)
+        }
+
+        QuranWidgetStore.save(snapshot)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Builds a widget ayah card with the Arabic rendered per the user's display settings (clean text /
+    /// dots) and tagged with the selected Arabic font so the widget can match the in-app look.
+    private func quranWidgetAyahCard(surah: Surah, ayah: Ayah) -> QuranWidgetSnapshot.AyahCard {
+        let arabic = ayah.displayArabicText(surahId: surah.id, clean: cleanArabicText)
+        return QuranWidgetSnapshot.AyahCard(
+            arabic: arabic,
+            reference: "Surah \(surah.id):\(ayah.id) • \(surah.nameTransliteration)",
+            english: ayah.textEnglishSaheeh,
+            fontName: fontArabic,
+            colorRuns: quranWidgetTajweedRuns(surah: surah, ayah: ayah, displayText: arabic)
+        )
+    }
+
+    /// Extracts tajweed color spans (UTF-16 offsets + RGB) over `displayText` so the widget can re-apply
+    /// them without running the tajweed engine. Returns nil when tajweed is off. iOS-only (uses UIKit).
+    private func quranWidgetTajweedRuns(surah: Surah, ayah: Ayah, displayText: String) -> [QuranWidgetSnapshot.ColorRun]? {
+        #if os(iOS)
+        guard showTajweedColors, showArabicText, isHafsDisplay else { return nil }
+        let raw = ayah.displayArabicText(surahId: surah.id, clean: false)
+        guard let attributed = TajweedStore.shared.attributedText(
+            surah: surah.id,
+            ayah: ayah.id,
+            text: raw,
+            displayText: displayText,
+            cleanDisplayText: cleanArabicText
+        ) else { return nil }
+
+        let ns = NSAttributedString(attributed)
+        // Resolve the adaptive base label color so it can be skipped — only the tajweed hues are stored;
+        // the widget keeps un-colored text in its own primary color.
+        let label = UIColor.label.resolvedColor(with: .current)
+        var lr: CGFloat = 0, lg: CGFloat = 0, lb: CGFloat = 0, la: CGFloat = 0
+        label.getRed(&lr, green: &lg, blue: &lb, alpha: &la)
+
+        var runs: [QuranWidgetSnapshot.ColorRun] = []
+        ns.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: ns.length)) { value, range, _ in
+            guard let color = value as? UIColor else { return }
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            guard color.getRed(&r, green: &g, blue: &b, alpha: &a) else { return }
+            if abs(r - lr) < 0.03, abs(g - lg) < 0.03, abs(b - lb) < 0.03 { return }
+            runs.append(QuranWidgetSnapshot.ColorRun(start: range.location, length: range.length, r: Double(r), g: Double(g), b: Double(b)))
+        }
+        return runs.isEmpty ? nil : runs
+        #else
+        return nil
+        #endif
+    }
+
+    private func buildQuranWidgetRandomPool(from data: QuranData, count: Int = 20) -> [QuranWidgetSnapshot.AyahCard] {
+        var cards: [QuranWidgetSnapshot.AyahCard] = []
+        var attempts = 0
+        while cards.count < count, attempts < count * 8 {
+            attempts += 1
+            // Same gentle + short filter as the in-app Ayah of the Day pool, so the widget's fallback matches.
+            guard let surah = data.quran.randomElement(),
+                  let ayah = surah.ayahs.filter({ Self.isAyahGentle($0) && Self.isAyahShort($0) }).randomElement()
+            else { continue }
+            cards.append(quranWidgetAyahCard(surah: surah, ayah: ayah))
+        }
+        return cards
+    }
+
+    // MARK: Arabic search normalization
+
+    func cleanSearch(_ text: String, whitespace: Bool = false) -> String {
+        let normalized = normalizedArabicForSearch(text)
+        var cleaned = String(normalized.unicodeScalars
+            .filter { !Self.unwantedCharSet.contains($0) }
+        ).lowercased()
+        cleaned = collapsingWhitespace(cleaned)
+
+        if whitespace {
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return cleaned
+    }
+
+    func cleanSearchIgnoringSilentArabicLetters(_ text: String, whitespace: Bool = false) -> String {
+        cleanSearch(text.removingSilentArabicLettersForSearch, whitespace: whitespace)
+    }
+
+    private func normalizedArabicForSearch(_ text: String) -> String {
+        Self.canonicalArabicSearchMap.reduce(text) { partial, pair in
+            partial.replacingOccurrences(of: pair.key, with: pair.value)
+        }
+    }
+
+    private static let canonicalArabicSearchMap: [String: String] = [
+        // Alif family
+        "\u{0670}": "ا", // dagger alif
+        "ٱ": "ا",
+        // Hamza family folds to plain carrier letters for forgiving search.
+        "أ": "ا",
+        "إ": "ا",
+        "آ": "ا",
+        "ٲ": "ا",
+        "ٳ": "ا",
+        "ٵ": "ا",
+        "ؤ": "و",
+        "ئ": "ي",
+        "ء": "",
+        "ٴ": "",
+        "ٶ": "و",
+        "ٷ": "و",
+        "ٸ": "ي",
+        // Waw variants
+        "ۥ": "و",
+        // Ya variants
+        "ۦ": "ي",
+        "ى": "ا", // alif maqsurah -> alif (matches both ى and ا forms in search)
+        // Teh marbuta equivalence (broad)
+        "ة": "ه"
+    ]
+
+    private static let unwantedCharSet: CharacterSet = {
+        var set = CharacterSet.punctuationCharacters
+            .union(.symbols)
+            .union(.nonBaseCharacters)
+        // Keep boolean-search operators in the normalized query.
+        set.remove(charactersIn: "&|!#")
+        return set
+    }()
+
+    private func collapsingWhitespace(_ text: String) -> String {
+        text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
     }
 }

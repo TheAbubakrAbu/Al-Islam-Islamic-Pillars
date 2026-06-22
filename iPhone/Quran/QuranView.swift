@@ -1632,9 +1632,7 @@ struct QuranView: View {
         let rows = usesDescendingQuranSort ? Array(all.reversed()) : all
         if !rows.isEmpty {
             Section(header: pagesHeader(count: rows.count)) {
-                ForEach(rows, id: \.page) { item in
-                    specialAyahRow(item: (surah: item.surah, ayah: item.ayah), context: context)
-                }
+                specialAyahCollection(rows.map { (surah: $0.surah, ayah: $0.ayah) }, context: context)
             }
         }
     }
@@ -1661,9 +1659,7 @@ struct QuranView: View {
         let rows = usesDescendingQuranSort ? Array(sajdahAyahs.reversed()) : sajdahAyahs
         if !rows.isEmpty {
             Section(header: sajdahHeader(count: rows.count)) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
-                    specialAyahRow(item: item, context: context)
-                }
+                specialAyahCollection(rows, context: context)
             }
         }
     }
@@ -1690,11 +1686,47 @@ struct QuranView: View {
         let rows = usesDescendingQuranSort ? Array(muqattaatAyahs.reversed()) : muqattaatAyahs
         if !rows.isEmpty {
             Section(header: muqattaatHeader(count: rows.count)) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
-                    specialAyahRow(item: item, context: context)
-                }
+                specialAyahCollection(rows, context: context)
             }
         }
+    }
+
+    /// Renders an ayah list (pages / sajdah / muqatta'at) as a 2-column grid or a list, matching the
+    /// Bookmarked Ayahs section so grid mode is supported everywhere ayahs are listed.
+    @ViewBuilder
+    private func specialAyahCollection(_ rows: [(surah: Surah, ayah: Ayah)], context: SearchDisplayContext) -> some View {
+        #if os(iOS)
+        if settings.quranGridMode {
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                alignment: .leading,
+                spacing: 10
+            ) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
+                    specialAyahGridTile(item: item)
+                }
+            }
+            .padding(.vertical, 4)
+        } else {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
+                specialAyahRow(item: item, context: context)
+            }
+        }
+        #else
+        ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
+            specialAyahRow(item: item, context: context)
+        }
+        #endif
+    }
+
+    private func specialAyahGridTile(item: (surah: Surah, ayah: Ayah)) -> some View {
+        Button {
+            settings.hapticFeedback()
+            push(surahID: item.surah.id, ayahID: item.ayah.id)
+        } label: {
+            SurahAyahRow(surah: item.surah, ayah: item.ayah, grid: true)
+        }
+        .buttonStyle(.plain)
     }
 
     private func specialAyahRow(item: (surah: Surah, ayah: Ayah), context: SearchDisplayContext) -> some View {

@@ -11,6 +11,7 @@ struct NowPlayingView: View {
     private let onOpenPlayback: ((PlaybackContext) -> Void)?
 
     @State private var confirmRemoveNote = false
+    @State private var confirmClearQueue = false
 
     /// Small (default) vs. big player. Stored on `settings` (not @AppStorage) so `withAnimation` animates it.
     private var isExpanded: Bool { settings.nowPlayingExpanded }
@@ -61,6 +62,15 @@ struct NowPlayingView: View {
                 }
                 .contextMenu {
                     contextMenu(for: playbackContext)
+                }
+                .confirmationDialog("Clear the queue?", isPresented: $confirmClearQueue, titleVisibility: .visible) {
+                    Button("Clear Queue", role: .destructive) {
+                        settings.hapticFeedback()
+                        withAnimation(.easeInOut) { quranPlayer.clearSurahQueue() }
+                    }
+                    Button("Cancel") {}
+                } message: {
+                    Text("This removes all surahs you've queued up. This can't be undone.")
                 }
                 .cornerRadius(24)
                 .padding(.horizontal, 8)
@@ -501,9 +511,7 @@ struct NowPlayingView: View {
         if !quranPlayer.surahQueue.isEmpty {
             Button(role: .destructive) {
                 settings.hapticFeedback()
-                withAnimation(.easeInOut) {
-                    quranPlayer.clearSurahQueue()
-                }
+                confirmClearQueue = true
             } label: {
                 Label("Clear Queue (\(quranPlayer.surahQueue.count))", systemImage: "text.badge.xmark")
             }

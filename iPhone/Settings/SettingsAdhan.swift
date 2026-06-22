@@ -1045,90 +1045,6 @@ extension Settings {
         #endif
     }
 
-    // MARK: - Watch ⇄ iPhone settings sync
-
-    /// `@AppStorage` (UserDefaults.standard) keys that are safe to mirror between iPhone and Watch.
-    /// Deliberately excludes device-sensed / transient / large state (location, prayer caches, auto-detected
-    /// calculation, reading position, day-specific flags) so syncing can never clobber per-device data.
-    static let watchSyncedAppStorageKeys: [String] = [
-        // Appearance & general
-        "colorSchemeString", "defaultView", "hapticOn",
-        // Prayer / notifications
-        "calculationAutomatic", "travelAutomatic", "switchHijriDateAtMaghrib", "dateNotifications",
-        "naggingMode", "naggingStartOffset", "adhanNotificationSound", "showPrayerInfo",
-        "notificationFajr", "notificationSunrise", "notificationDhuhr", "notificationAsr",
-        "notificationMaghrib", "notificationIsha", "notificationDuha", "notificationIslamicMidnight",
-        "notificationLastThird", "showDuha", "showIslamicMidnight", "showLastThird",
-        "naggingFajr", "naggingSunrise", "naggingDhuhr", "naggingAsr", "naggingMaghrib", "naggingIsha",
-        "naggingDuha", "naggingIslamicMidnight", "naggingLastThird",
-        "preNotificationFajr", "preNotificationSunrise", "preNotificationDhuhr", "preNotificationAsr",
-        "preNotificationMaghrib", "preNotificationIsha", "preNotificationDuha",
-        "preNotificationIslamicMidnight", "preNotificationLastThird",
-        "offsetFajr", "offsetSunrise", "offsetDhuhr", "offsetAsr", "offsetMaghrib", "offsetIsha",
-        // Quran display
-        "showArabicText", "showTransliteration", "showEnglishSaheeh", "showEnglishMustafa",
-        "cleanArabicText", "removeArabicDots", "beginnerMode", "highlightAllahNames",
-        "useFontArabic", "THEfontArabic", "fontArabicSize", "englishFontSize",
-        "showTajweedColors", "reciter", "reciterId", "reciteType", "displayQiraah",
-        "showOtherQiraatReciters", "qiraatComparisonMode", "ignoreSilentLettersInQuranSearch",
-        "quranSummaryMode", "quranGridMode", "showFullSurahRow", "showMuqattaatHelper",
-        "showPageJuzDividers", "searchForSurahs", "showBookmarks", "showFavorites",
-        "saveLastReadAyah", "saveLastListenedSurah", "saveLastListenedAyah", "showAyahOfTheDay",
-        // Tajweed categories
-        "showTajweedTafkhim", "showTajweedQalqalah", "showTajweedLamShamsiyah", "showTajweedBareNuunMeem",
-        "showTajweedIdghamBiGhunnahHeavy", "showTajweedGeneralGhunnah", "showTajweedIkhfaa",
-        "showTajweedIqlab", "showTajweedIdghamBilaGhunnah", "showTajweedHamzatWaslSilent",
-        "showTajweedSukoonJazm", "showTajweedMaddNatural2", "showTajweedMaddNaturalMiniature",
-        "showTajweedMaddSeparated", "showTajweedMaddConnected", "showTajweedMaddNecessary6",
-        "showTajweedMadd246",
-        // Sharing / copy
-        "shareShowAyahInformation", "shareShowSurahInformation",
-        "copyAyahArabic", "copyAyahTransliteration", "copyAyahEnglishSaheeh", "copyAyahEnglishMustafa",
-    ]
-
-    /// A complete snapshot of the synced settings (never partial — that is what prevents the old
-    /// "settings randomly flipped" glitch, since the receiver only writes keys that are present).
-    func watchSyncSnapshot() -> [String: Any] {
-        var dict: [String: Any] = [:]
-        // Core @Published (app-group) settings.
-        dict["accentColor"] = accentColor.rawValue
-        dict["customAccentColorHex"] = customAccentColorHex
-        dict["prayerCalculation"] = prayerCalculation
-        dict["hanafiMadhab"] = hanafiMadhab
-        dict["travelingMode"] = travelingMode
-        dict["hijriOffset"] = hijriOffset
-        // @AppStorage settings.
-        let store = UserDefaults.standard
-        for key in Self.watchSyncedAppStorageKeys where store.object(forKey: key) != nil {
-            dict[key] = store.object(forKey: key)
-        }
-        return dict
-    }
-
-    /// Apply a snapshot received from the paired device. Only keys actually present are written, via the
-    /// real setters (so persistence + side effects fire correctly), then a single recompute/refresh.
-    @MainActor
-    func applyWatchSyncSnapshot(_ dict: [String: Any]) {
-        if let raw = dict["accentColor"] as? String, let c = AccentColor(rawValue: raw), c != accentColor { accentColor = c }
-        if let v = dict["customAccentColorHex"] as? String, v != customAccentColorHex { customAccentColorHex = v }
-        if let v = dict["prayerCalculation"] as? String, v != prayerCalculation { prayerCalculation = v }
-        if let v = dict["hanafiMadhab"] as? Bool, v != hanafiMadhab { hanafiMadhab = v }
-        if let v = dict["travelingMode"] as? Bool, v != travelingMode { travelingMode = v }
-        if let v = dict["hijriOffset"] as? Int, v != hijriOffset { hijriOffset = v }
-
-        let store = UserDefaults.standard
-        for key in Self.watchSyncedAppStorageKeys where dict[key] != nil {
-            store.set(dict[key], forKey: key)
-        }
-
-        objectWillChange.send()
-        updateDates()
-        fetchPrayerTimes(force: true)
-        #if os(iOS) || os(watchOS)
-        WidgetCenter.shared.reloadAllTimelines()
-        #endif
-    }
-
     @MainActor
     func requestNotificationAuthorization() async -> Bool {
         #if os(watchOS)
@@ -1140,6 +1056,11 @@ extension Settings {
 
         switch status {
         case .authorized:
+            showNotificationAlert = false
+            return true
+
+        case .provisional, .ephemeral:
+            // Both allow delivering notifications, so treat them like authorized and keep scheduling.
             showNotificationAlert = false
             return true
 
@@ -1160,7 +1081,7 @@ extension Settings {
                 return false
             }
 
-        default:
+        @unknown default:
             return false
         }
         #else
@@ -1285,7 +1206,6 @@ extension Settings {
 
         logger.debug("Scheduling prayer time notifications")
         let center = UNUserNotificationCenter.current()
-        center.removeAllPendingNotificationRequests()
 
         // iOS keeps at most 64 pending notifications and silently drops the rest. The app can build far
         // more than that (multiple prayers × offsets × days × nags + events), which is why adhan /
@@ -1354,9 +1274,21 @@ extension Settings {
         appendCapped(eventRequests)
         appendCapped(reminderRequests)
 
+        // Incremental refresh instead of wiping everything first: adding a request with an existing
+        // identifier replaces it in place (all our identifiers are stable), so unchanged notifications are
+        // never torn down — no brief window with zero pending, less churn, faster, and the system keeps the
+        // already-scheduled fire times steady. Afterwards, prune only the now-stale ones (past days,
+        // prayers turned off, items pushed out by the cap).
+        let desiredIDs = Set(finalRequests.map { $0.identifier })
         for req in finalRequests {
             center.add(req) { error in
                 if let error { logger.debug("Notification add failed: \(error.localizedDescription)") }
+            }
+        }
+        center.getPendingNotificationRequests { pending in
+            let stale = pending.map(\.identifier).filter { !desiredIDs.contains($0) }
+            if !stale.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: stale)
             }
         }
 
@@ -1366,6 +1298,44 @@ extension Settings {
         #endif
     }
     
+    #if os(iOS)
+    /// The next at-time adhan the in-app foreground player should sound: a main prayer (not Shurooq /
+    /// optional) whose "at time" notification is enabled, with a fire time still ahead. Returns its date,
+    /// name, and the matching scheduled-notification identifier so the now-redundant notification can be
+    /// pruned when the app plays the adhan itself.
+    func nextForegroundAdhan(after now: Date = Date()) -> (date: Date, name: String, notificationID: String)? {
+        guard let prayerObj = prayers else { return nil }
+
+        var candidates: [(date: Date, name: String)] = []
+        for prayer in prayersIncludingOptional(prayerObj.prayers, for: prayerObj.day) {
+            candidates.append((prayer.time, prayer.nameTransliteration))
+        }
+        // Include tomorrow so the Isha → next-Fajr gap is covered.
+        if let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: prayerObj.day),
+           let list = getPrayerTimes(for: tomorrow) {
+            for prayer in prayersIncludingOptional(list, for: tomorrow) {
+                candidates.append((prayer.time, prayer.nameTransliteration))
+            }
+        }
+
+        guard let next = candidates
+            .filter({ $0.date > now && isForegroundAdhanEligible($0.name) })
+            .min(by: { $0.date < $1.date })
+        else { return nil }
+
+        // Mirrors the at-time identifier built in makePrayerNotificationRequest (minutes == nil → "0").
+        let comps = Calendar.current.dateComponents([.year, .month, .day], from: next.date)
+        let id = "\(next.name)-0-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)"
+        return (next.date, next.name, id)
+    }
+
+    private func isForegroundAdhanEligible(_ name: String) -> Bool {
+        guard name != "Shurooq", !Self.optionalPrayerNames.contains(name) else { return false }
+        guard let prefs = Self.notifTable[name] else { return false }
+        return self[keyPath: prefs.enabled]
+    }
+    #endif
+
     private func buildBody(prayer: Prayer, minutesBefore: Int?, city: String) -> String {
         let englishPart: String = {
             switch prayer.nameTransliteration {
@@ -1482,8 +1452,11 @@ extension Settings {
         #endif
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: gregorianComps, repeats: false)
+        // Stable identifier (title + date) so incremental rescheduling updates the same request in place
+        // instead of churning a new UUID every refresh.
+        let id = "Event-\(titleText)-\(gregorianComps.year ?? 0)-\(gregorianComps.month ?? 0)-\(gregorianComps.day ?? 0)"
         let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
+            identifier: id,
             content: content,
             trigger: trigger
         )

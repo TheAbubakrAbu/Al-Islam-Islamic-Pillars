@@ -1600,7 +1600,7 @@ struct ReciterListView: View {
                     }
                 }
 
-                Button("Cancel", role: .cancel) {
+                Button("Cancel") {
                     pendingMinshawiReciter = nil
                 }
             } message: {
@@ -1951,9 +1951,9 @@ private struct ReciterRow: View {
                 }
             }
 
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel") {}
         } message: {
-            Text("This downloads the full reciter (all 114 surahs) for offline playback. It runs in the background and may use significant data and storage.")
+            Text("This downloads all 114 full-surah recitations for offline playback — it does not download ayah-by-ayah audio. It runs in the background and may use significant data and storage.")
         }
         .onAppear {
             downloadManager.ensureStateLoaded(for: reciter)

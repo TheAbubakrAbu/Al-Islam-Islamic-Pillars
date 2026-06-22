@@ -1661,7 +1661,7 @@ struct AyahContextMenuModifier: ViewModifier {
                         }
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button("Cancel") {}
             } message: {
                 Text(ayahOfTheDay
                      ? "You can re-enable Ayah of the Day later in Quran Settings."

@@ -68,7 +68,12 @@ struct AlIslamApp: App {
             quranPlayer.saveLastListenedSurah()
             quranPlayer.saveLastListenedAyah()
             settings.refreshQuranWidgets()
-            if phase != .active {
+            if phase == .active {
+                // Play the adhan in-app on time while open (the scheduled notification covers the closed
+                // case and can be delivered late by the system, especially on Mac/Catalyst).
+                ForegroundAdhanPlayer.shared.reschedule()
+            } else {
+                ForegroundAdhanPlayer.shared.stop()
                 // Send any just-made setting change before the app is suspended, so it can't be lost (and
                 // can't be reverted by a stale synced value on the next launch).
                 WatchConnectivityManager.shared.flushPendingSync()

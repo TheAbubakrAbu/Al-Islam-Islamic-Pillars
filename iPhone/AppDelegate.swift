@@ -1,5 +1,7 @@
 #if os(iOS)
+import AVFoundation
 import BackgroundTasks
+import Combine
 import UIKit
 import UserNotifications
 
@@ -37,13 +39,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         ReciterDownloadManager.shared.backgroundSessionCompletionHandler(completionHandler)
     }
 
-    // Shows in-app notifications as banner + sound when a notification arrives in foreground.
+    // Shows in-app notifications as banner + sound when a notification arrives in foreground, and keeps
+    // them in Notification Center (.list) so a missed banner isn't lost.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .sound])
+        completionHandler([.banner, .list, .sound])
     }
 
     // Registers the BGTask handler that refreshes prayer times in the background.
@@ -108,14 +111,151 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         logger.debug("🚀 BGAppRefresh fired")
         scheduleAppRefresh()
 
+        // `setTaskCompleted` must be called exactly once. The expiration handler and the fetch completion
+        // can race (e.g. the fetch finishes just as the task expires), so gate it behind a lock + flag.
+        let completionLock = NSLock()
+        var didComplete = false
+        func complete(_ success: Bool) {
+            completionLock.lock()
+            defer { completionLock.unlock() }
+            guard !didComplete else { return }
+            didComplete = true
+            task.setTaskCompleted(success: success)
+        }
+
         task.expirationHandler = {
             logger.error("⏰ BG task expired before finishing")
-            task.setTaskCompleted(success: false)
+            complete(false)
         }
 
         Settings.shared.fetchPrayerTimes {
             logger.debug("🎉 BG task completed – prayer times refreshed")
-            task.setTaskCompleted(success: true)
+            complete(true)
+        }
+    }
+}
+
+/// Plays the adhan in-app, on time, while the app is active.
+///
+/// The scheduled notification is the source of truth when the app is closed/backgrounded, but the system
+/// can deliver scheduled local notifications late while the app is open (notably on Mac/Catalyst). To make
+/// the adhan reliable in that case, this arms a precise timer for the next at-time adhan and, when it fires
+/// with the app active, plays the selected adhan sound directly and removes the now-redundant scheduled
+/// notification so it can't sound again late. When the app isn't active this does nothing — the system
+/// notification handles it exactly as before.
+@MainActor
+final class ForegroundAdhanPlayer: NSObject, ObservableObject {
+    static let shared = ForegroundAdhanPlayer()
+
+    private var timer: DispatchSourceTimer?
+    private var player: AVAudioPlayer?
+    private var pausedQuranForAdhan = false
+    private var lastPlayedID: String?
+    private var cancellables = Set<AnyCancellable>()
+
+    private override init() {
+        super.init()
+        // Re-arm whenever prayer times or relevant settings change (debounced to batch rapid edits and the
+        // burst of changes during a prayer-time refresh).
+        Settings.shared.objectWillChange
+            .debounce(for: .seconds(1), scheduler: DispatchQueue.main)
+            .sink { [weak self] in self?.reschedule() }
+            .store(in: &cancellables)
+    }
+
+    /// Recomputes the next eligible adhan and arms a one-shot timer for it. Safe to call repeatedly
+    /// (on app-active and whenever prayer times / settings change); it just re-arms.
+    func reschedule() {
+        cancelTimer()
+
+        guard let next = Settings.shared.nextForegroundAdhan() else { return }
+        let interval = next.date.timeIntervalSinceNow
+        guard interval > 0 else { return }
+
+        let t = DispatchSource.makeTimerSource(queue: .main)
+        t.schedule(deadline: .now() + interval, leeway: .milliseconds(200))
+        t.setEventHandler { [weak self] in
+            self?.fire(notificationID: next.notificationID)
+        }
+        t.resume()
+        timer = t
+    }
+
+    /// Stops the pending timer (e.g. when the app backgrounds). A currently-playing adhan is left to finish.
+    func stop() {
+        cancelTimer()
+    }
+
+    private func cancelTimer() {
+        timer?.cancel()
+        timer = nil
+    }
+
+    private func fire(notificationID: String) {
+        timer = nil
+
+        // Only the actual adhan sound files play in-app; if "Default" is selected there's no adhan audio to
+        // play, so leave the system notification to handle the sound and just arm the next one.
+        let settings = Settings.shared
+        guard let filename = settings.adhanSoundFilename(for: settings.adhanNotificationSound),
+              let path = Bundle.main.path(forResource: filename.replacingOccurrences(of: ".caf", with: ""), ofType: "caf") else {
+            reschedule()
+            return
+        }
+
+        guard notificationID != lastPlayedID else {
+            reschedule()
+            return
+        }
+        lastPlayedID = notificationID
+
+        // Drop the redundant scheduled notification so it can't double-sound late.
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationID])
+
+        playAdhan(path: path)
+        reschedule()
+    }
+
+    private func playAdhan(path: String) {
+        // Pause in-app audio (Quran) so the adhan isn't talked over; resume it when the adhan finishes.
+        if QuranPlayer.shared.isPlaying {
+            QuranPlayer.shared.pause(saveInfo: false)
+            pausedQuranForAdhan = true
+        }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.setActive(true)
+
+            let p = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: path))
+            p.delegate = self
+            p.prepareToPlay()
+            p.play()
+            player = p
+        } catch {
+            logger.error("Foreground adhan playback failed: \(error.localizedDescription)")
+            player = nil
+            finishPlayback()
+        }
+    }
+
+    private func finishPlayback() {
+        if pausedQuranForAdhan {
+            pausedQuranForAdhan = false
+            QuranPlayer.shared.resume()
+        } else {
+            try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+        }
+    }
+}
+
+extension ForegroundAdhanPlayer: AVAudioPlayerDelegate {
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        Task { @MainActor in
+            guard self.player === player else { return }
+            self.player = nil
+            self.finishPlayback()
         }
     }
 }

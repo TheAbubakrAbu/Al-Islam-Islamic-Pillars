@@ -1,6 +1,7 @@
 import Foundation
 import WatchConnectivity
 import Combine
+import WidgetKit
 
 /// Two-way settings sync between iPhone and Apple Watch.
 ///
@@ -151,5 +152,94 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         DispatchQueue.main.async { self.receive(applicationContext) }
+    }
+}
+
+// MARK: - Settings snapshot for Watch ⇄ iPhone sync
+//
+// Lives with the WatchConnectivity code (its only caller) rather than in SettingsAdhan, because the synced
+// set is cross-cutting — appearance + prayer/adhan + Quran + tajweed + sharing — not Adhan-specific.
+extension Settings {
+
+    /// `@AppStorage` (UserDefaults.standard) keys that are safe to mirror between iPhone and Watch.
+    /// Deliberately excludes device-sensed / transient / large state (location, prayer caches, auto-detected
+    /// calculation, reading position, day-specific flags) so syncing can never clobber per-device data.
+    static let watchSyncedAppStorageKeys: [String] = [
+        // Appearance & general
+        "colorSchemeString", "defaultView", "hapticOn",
+        // Prayer / notifications
+        "calculationAutomatic", "travelAutomatic", "switchHijriDateAtMaghrib", "dateNotifications",
+        "naggingMode", "naggingStartOffset", "adhanNotificationSound", "showPrayerInfo",
+        "notificationFajr", "notificationSunrise", "notificationDhuhr", "notificationAsr",
+        "notificationMaghrib", "notificationIsha", "notificationDuha", "notificationIslamicMidnight",
+        "notificationLastThird", "showDuha", "showIslamicMidnight", "showLastThird",
+        "naggingFajr", "naggingSunrise", "naggingDhuhr", "naggingAsr", "naggingMaghrib", "naggingIsha",
+        "naggingDuha", "naggingIslamicMidnight", "naggingLastThird",
+        "preNotificationFajr", "preNotificationSunrise", "preNotificationDhuhr", "preNotificationAsr",
+        "preNotificationMaghrib", "preNotificationIsha", "preNotificationDuha",
+        "preNotificationIslamicMidnight", "preNotificationLastThird",
+        "offsetFajr", "offsetSunrise", "offsetDhuhr", "offsetAsr", "offsetMaghrib", "offsetIsha",
+        // Quran display
+        "showArabicText", "showTransliteration", "showEnglishSaheeh", "showEnglishMustafa",
+        "cleanArabicText", "removeArabicDots", "beginnerMode", "highlightAllahNames",
+        "useFontArabic", "THEfontArabic", "fontArabicSize", "englishFontSize",
+        "showTajweedColors", "reciter", "reciterId", "reciteType", "displayQiraah",
+        "showOtherQiraatReciters", "qiraatComparisonMode", "ignoreSilentLettersInQuranSearch",
+        "quranSummaryMode", "quranGridMode", "showFullSurahRow", "showMuqattaatHelper",
+        "showPageJuzDividers", "searchForSurahs", "showBookmarks", "showFavorites",
+        "saveLastReadAyah", "saveLastListenedSurah", "saveLastListenedAyah", "showAyahOfTheDay",
+        // Tajweed categories
+        "showTajweedTafkhim", "showTajweedQalqalah", "showTajweedLamShamsiyah", "showTajweedBareNuunMeem",
+        "showTajweedIdghamBiGhunnahHeavy", "showTajweedGeneralGhunnah", "showTajweedIkhfaa",
+        "showTajweedIqlab", "showTajweedIdghamBilaGhunnah", "showTajweedHamzatWaslSilent",
+        "showTajweedSukoonJazm", "showTajweedMaddNatural2", "showTajweedMaddNaturalMiniature",
+        "showTajweedMaddSeparated", "showTajweedMaddConnected", "showTajweedMaddNecessary6",
+        "showTajweedMadd246",
+        // Sharing / copy
+        "shareShowAyahInformation", "shareShowSurahInformation",
+        "copyAyahArabic", "copyAyahTransliteration", "copyAyahEnglishSaheeh", "copyAyahEnglishMustafa",
+    ]
+
+    /// A complete snapshot of the synced settings (never partial — that is what prevents the old
+    /// "settings randomly flipped" glitch, since the receiver only writes keys that are present).
+    func watchSyncSnapshot() -> [String: Any] {
+        var dict: [String: Any] = [:]
+        // Core @Published (app-group) settings.
+        dict["accentColor"] = accentColor.rawValue
+        dict["customAccentColorHex"] = customAccentColorHex
+        dict["prayerCalculation"] = prayerCalculation
+        dict["hanafiMadhab"] = hanafiMadhab
+        dict["travelingMode"] = travelingMode
+        dict["hijriOffset"] = hijriOffset
+        // @AppStorage settings.
+        let store = UserDefaults.standard
+        for key in Self.watchSyncedAppStorageKeys where store.object(forKey: key) != nil {
+            dict[key] = store.object(forKey: key)
+        }
+        return dict
+    }
+
+    /// Apply a snapshot received from the paired device. Only keys actually present are written, via the
+    /// real setters (so persistence + side effects fire correctly), then a single recompute/refresh.
+    @MainActor
+    func applyWatchSyncSnapshot(_ dict: [String: Any]) {
+        if let raw = dict["accentColor"] as? String, let c = AccentColor(rawValue: raw), c != accentColor { accentColor = c }
+        if let v = dict["customAccentColorHex"] as? String, v != customAccentColorHex { customAccentColorHex = v }
+        if let v = dict["prayerCalculation"] as? String, v != prayerCalculation { prayerCalculation = v }
+        if let v = dict["hanafiMadhab"] as? Bool, v != hanafiMadhab { hanafiMadhab = v }
+        if let v = dict["travelingMode"] as? Bool, v != travelingMode { travelingMode = v }
+        if let v = dict["hijriOffset"] as? Int, v != hijriOffset { hijriOffset = v }
+
+        let store = UserDefaults.standard
+        for key in Self.watchSyncedAppStorageKeys where dict[key] != nil {
+            store.set(dict[key], forKey: key)
+        }
+
+        objectWillChange.send()
+        updateDates()
+        fetchPrayerTimes(force: true)
+        #if os(iOS) || os(watchOS)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 }

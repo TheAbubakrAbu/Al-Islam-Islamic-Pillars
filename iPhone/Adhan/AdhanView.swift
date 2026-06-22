@@ -101,6 +101,19 @@ struct AdhanView: View {
                 settings.beginLocationRefinement()
             }
         }
+        // Present the automatic-change confirmation the moment the flag flips, from ANY code path that runs
+        // checkIfTraveling()/the auto-calculation change — not only after a prayer-fetch completion. That
+        // gating made the dialog lag (waited for the fetch) and often never appear (when the flag flipped
+        // from a fetch not routed through prayerTimeRefresh).
+        .onChange(of: settings.travelTurnOnAutomatic) { on in
+            if on { showAlert = .travelTurnOnAutomatic }
+        }
+        .onChange(of: settings.travelTurnOffAutomatic) { off in
+            if off { showAlert = .travelTurnOffAutomatic }
+        }
+        .onChange(of: settings.calculationAutoChanged) { changed in
+            if changed { showAlert = .calculationAutomaticChanged }
+        }
         .navigationTitle("Al-Adhan")
         #if os(iOS)
         .toolbar {
@@ -164,7 +177,7 @@ struct AdhanView: View {
             Text("Compass may not be accurate on Apple Watch")
                 .font(.caption2)
                 .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity)
     }
@@ -228,7 +241,7 @@ struct AdhanView: View {
                 }
             }
 
-            Button("Confirm: Keep On", role: .cancel) {
+            Button("Confirm: Keep On") {
                 settings.hapticFeedback()
                 withAnimation(.easeInOut) {
                     settings.confirmTravelAutomaticChange()
@@ -243,7 +256,7 @@ struct AdhanView: View {
                 }
             }
 
-            Button("Confirm: Turn Off", role: .cancel) {
+            Button("Confirm: Turn Off") {
                 settings.hapticFeedback()
                 withAnimation(.easeInOut) {
                     settings.confirmTravelAutomaticChange()
@@ -258,7 +271,7 @@ struct AdhanView: View {
                 }
             }
 
-            Button("Confirm: Use \(settings.calculationAutoDetectedMethod)", role: .cancel) {
+            Button("Confirm: Use \(settings.calculationAutoDetectedMethod)") {
                 settings.hapticFeedback()
                 withAnimation(.easeInOut) {
                     settings.confirmAutomaticCalculationChange()
@@ -274,7 +287,7 @@ struct AdhanView: View {
                 settings.hapticFeedback()
                 settings.locationNeverAskAgain = true
             }
-            Button("Ignore", role: .cancel) {
+            Button("Ignore") {
                 settings.hapticFeedback()
             }
 
@@ -287,7 +300,7 @@ struct AdhanView: View {
                 settings.hapticFeedback()
                 settings.notificationNeverAskAgain = true
             }
-            Button("Ignore", role: .cancel) {
+            Button("Ignore") {
                 settings.hapticFeedback()
             }
 
@@ -417,7 +430,7 @@ private struct CurrentLocationRow: View {
             Text("Compass may not be accurate on Apple Watch")
                 .font(.caption2)
                 .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
             #endif
         }
         #if os(iOS)

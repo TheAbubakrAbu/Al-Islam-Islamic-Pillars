@@ -71,6 +71,22 @@ final class QuranPlayer: ObservableObject {
     private var statusObserver: NSKeyValueObservation?
     private var queuePlayerItemObserver: NSKeyValueObservation?
     private var notificationObservers = [NSObjectProtocol]()
+
+    /// Periodic observer on the surah player used to prewarm the next surah near the end of the current one.
+    private var surahTimeObserver: Any?
+
+    /// The next surah, already created and buffering in a paused player, ready to be promoted for a gapless
+    /// hand-off (mirrors the AVQueuePlayer next-ayah prefetch). Built ~`surahPrewarmLeadTime` before the end.
+    private struct PrewarmedSurah {
+        let surahNumber: Int
+        let surahName: String
+        let reciterSurahLink: String
+        let url: URL
+        let player: AVPlayer
+        let item: AVPlayerItem
+    }
+    private var prewarmedSurah: PrewarmedSurah?
+    private let surahPrewarmLeadTime: TimeInterval = 10
     
     var nowPlayingTitle: String?
     var nowPlayingReciter: String?
@@ -300,8 +316,17 @@ final class QuranPlayer: ObservableObject {
     
     func seek(by seconds: Double) {
         guard let p = player else { return }
-        let newTime = CMTimeGetSeconds(p.currentTime()) + seconds
-        p.seek(to: CMTime(seconds: newTime, preferredTimescale: 1)) { _ in
+        let current = CMTimeGetSeconds(p.currentTime())
+        guard current.isFinite else { return }
+        var target = current + seconds
+        // Clamp to [0, duration] so a skip near the ends can't seek negative or past the item.
+        if let item = p.currentItem {
+            let dur = CMTimeGetSeconds(item.duration)
+            if dur.isFinite, dur > 0 { target = min(target, dur) }
+        }
+        target = max(0, target)
+        guard target.isFinite else { return }
+        p.seek(to: CMTime(seconds: target, preferredTimescale: 1)) { _ in
             self.updateNowPlayingInfo(); self.saveLastListenedSurah(); self.saveLastListenedAyah()
         }
     }
@@ -330,6 +355,7 @@ final class QuranPlayer: ObservableObject {
 
             player?.pause()
             removeAllObservers()
+            discardPrewarm()
 
             player = nil
             queuePlayer = nil
@@ -366,6 +392,12 @@ final class QuranPlayer: ObservableObject {
         notificationObservers.removeAll()
         queuePlayerItemObserver = nil
         statusObserver = nil
+        // The time observer was added to the current `player`; always removed here before `player` is
+        // reassigned/nilled, so it's removed from the same instance it was added to (never crashes).
+        if let obs = surahTimeObserver {
+            player?.removeTimeObserver(obs)
+            surahTimeObserver = nil
+        }
     }
     
     private var repeatCount: Int = 1
@@ -423,9 +455,12 @@ final class QuranPlayer: ObservableObject {
             presentPlaybackFailure("The selected reciter could not be found. Please choose another reciter in settings.")
             return
         }
-        let reciter: Reciter = (certainReciter && settings.lastListenedSurah?.reciter != nil)
-            ? settings.lastListenedSurah!.reciter
-            : reciterPref
+        let reciter: Reciter
+        if certainReciter, let lastReciter = settings.lastListenedSurah?.reciter {
+            reciter = lastReciter
+        } else {
+            reciter = reciterPref
+        }
         playbackReciter = reciter
 
         let remoteURLString = "\(reciter.surahLink)\(String(format: "%03d", surahNumber)).mp3"
@@ -443,59 +478,92 @@ final class QuranPlayer: ObservableObject {
 
         let startupBuffer: TimeInterval = localURL != nil ? localSurahStartupBuffer : remoteSurahStartupBuffer
 
-        let item = makeFastStartItem(url: url, bufferDuration: startupBuffer)
-        let avPlayer = AVPlayer(playerItem: item)
-        configureFastStartPlayer(avPlayer, bufferDuration: startupBuffer)
-        player = avPlayer
+        // Adopt a matching prewarmed (already-buffering) player for a gapless hand-off; otherwise build fresh.
+        let item: AVPlayerItem
+        if let pre = prewarmedSurah, pre.surahNumber == surahNumber, pre.url == url {
+            prewarmedSurah = nil
+            item = pre.item
+            configureFastStartPlayer(pre.player, bufferDuration: startupBuffer)
+            player = pre.player
+        } else {
+            discardPrewarm()
+            let fresh = makeFastStartItem(url: url, bufferDuration: startupBuffer)
+            let avPlayer = AVPlayer(playerItem: fresh)
+            configureFastStartPlayer(avPlayer, bufferDuration: startupBuffer)
+            item = fresh
+            player = avPlayer
+        }
 
+        wireSurahPlayback(
+            item: item,
+            surahNumber: surahNumber,
+            surahName: surahName,
+            reciter: reciter,
+            certainReciter: certainReciter,
+            skipSurah: skipSurah
+        )
+    }
+
+    /// Applies the "ready to play" transition for a surah item (used by the status observer and, when a
+    /// prewarmed item is already ready, invoked directly since KVO doesn't fire for the current value).
+    private func onSurahItemReady(surahNumber: Int, surahName: String, reciter: Reciter, certainReciter: Bool, skipSurah: Bool) {
+        player?.playImmediately(atRate: 1.0)
+        // Flip isLoading off in the SAME transaction that turns isPlaying on, otherwise there's a frame
+        // where all of isLoading/isPlaying/isPaused are false and the control briefly flashes the play icon.
+        withAnimation {
+            isLoading = false
+            isPlaying = true
+            isPaused = false
+            nowPlayingTitle = "Surah \(surahNumber): \(surahName)" +
+                repeatSuffix(total: repeatCount, remaining: repeatRemaining)
+            nowPlayingReciter = reciter.displayNameForNowPlaying
+            updateNowPlayingInfo()
+            recordListeningHistory(surahNumber: surahNumber, surahName: surahName, reciter: reciter.displayNameWithEnglishQiraah)
+        }
+
+        idleTimerSet(true)
+
+        var didResume = false
+        if certainReciter,
+           let last = settings.lastListenedSurah,
+           last.surahNumber == surahNumber,
+           last.currentDuration > 1 {
+            let seekT = CMTime(seconds: last.currentDuration, preferredTimescale: 1)
+            player?.seek(to: seekT) { [weak self] _ in self?.updateNowPlayingInfo() }
+            didResume = true
+        }
+
+        if !didResume && (!certainReciter || !skipSurah) {
+            saveLastListenedSurah()
+        }
+    }
+
+    /// Wires the status observer (+ already-ready fast path), end-of-item handler, and the prewarm timer for
+    /// a surah player. Shared by fresh playback and prewarm adoption so behavior never diverges.
+    private func wireSurahPlayback(item: AVPlayerItem, surahNumber: Int, surahName: String, reciter: Reciter, certainReciter: Bool, skipSurah: Bool) {
         statusObserver = item.observe(\.status) { [weak self] itm, _ in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 switch itm.status {
                 case .readyToPlay:
-                    self.player?.playImmediately(atRate: 1.0)
-                    // Flip isLoading off in the SAME transaction that turns isPlaying on, otherwise
-                    // there's a frame where all of isLoading/isPlaying/isPaused are false and the
-                    // control briefly flashes the play icon before showing the stop button.
-                    withAnimation {
-                        self.isLoading = false
-                        self.isPlaying = true
-                        self.isPaused = false
-                        self.nowPlayingTitle  = "Surah \(surahNumber): \(surahName)" +
-                            self.repeatSuffix(total: self.repeatCount, remaining: self.repeatRemaining)
-                        self.nowPlayingReciter = reciter.displayNameForNowPlaying
-                        self.updateNowPlayingInfo()
-                        self.recordListeningHistory(surahNumber: surahNumber, surahName: surahName, reciter: reciter.displayNameWithEnglishQiraah)
-                    }
-
-                    self.idleTimerSet(true)
-
-                    var didResume = false
-                    if certainReciter,
-                       let last = self.settings.lastListenedSurah,
-                       last.surahNumber == surahNumber,
-                       last.currentDuration > 1 {
-                        let seekT = CMTime(seconds: last.currentDuration, preferredTimescale: 1)
-                        self.player?.seek(to: seekT) { _ in
-                            self.updateNowPlayingInfo()
-                        }
-                        didResume = true
-                    }
-
-                    if !didResume && (!certainReciter || !skipSurah) {
-                        self.saveLastListenedSurah()
-                    }
-                default:
+                    self.onSurahItemReady(surahNumber: surahNumber, surahName: surahName, reciter: reciter, certainReciter: certainReciter, skipSurah: skipSurah)
+                case .failed:
                     self.presentPlaybackFailure("Unable to load this recitation. Check your internet connection and try again.", title: "Playback Unavailable")
+                default:
+                    break   // .unknown / still loading — wait for the next status change
                 }
             }
+        }
+        // A prewarmed item may already be ready; KVO won't fire for the current value, so kick it now.
+        if item.status == .readyToPlay {
+            onSurahItemReady(surahNumber: surahNumber, surahName: surahName, reciter: reciter, certainReciter: certainReciter, skipSurah: skipSurah)
         }
 
         let obs = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
-            object: player?.currentItem, queue: .main
+            object: item, queue: .main
         ) { [weak self] _ in
-            guard let self = self else { return }
+            guard let self = self, self.player?.currentItem === item else { return }
 
             if self.repeatRemaining > 1 {
                 self.repeatRemaining -= 1
@@ -530,6 +598,78 @@ final class QuranPlayer: ObservableObject {
             }
         }
         notificationObservers.append(obs)
+
+        // Prewarm the upcoming surah as the current one nears its end (gapless, like the next-ayah prefetch).
+        if let p = player {
+            let interval = CMTime(seconds: 1, preferredTimescale: 1)
+            surahTimeObserver = p.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
+                self?.maybePrewarmNextSurah(certainReciter: certainReciter)
+            }
+        }
+    }
+
+    /// The surah that will play after the current one ends — mirrors the end-of-item branch (queue first,
+    /// then `reciteType`), excluding the repeat case (which replays the same surah).
+    private func nextSurahDescriptor() -> (number: Int, name: String)? {
+        if let queued = surahQueue.first {
+            return (queued.surahNumber, queued.surahName)
+        }
+        guard let n = currentSurahNumber else { return nil }
+        switch settings.reciteType {
+        case "Continue to Previous":
+            guard n > 1, let s = quranData.surah(n - 1) else { return nil }
+            return (s.id, s.nameTransliteration)
+        case "End Recitation":
+            return nil
+        default:
+            guard n < 114, let s = quranData.surah(n + 1) else { return nil }
+            return (s.id, s.nameTransliteration)
+        }
+    }
+
+    /// Called from the surah time observer: once the current surah is within `surahPrewarmLeadTime` of the
+    /// end (and not mid-repeat), build and start buffering the next surah's player so the hand-off is gapless.
+    private func maybePrewarmNextSurah(certainReciter: Bool) {
+        guard repeatRemaining <= 1 else { return }   // a repeat replays the same surah; nothing to prewarm
+        guard let p = player, let item = p.currentItem else { return }
+        let dur = CMTimeGetSeconds(item.duration)
+        let cur = CMTimeGetSeconds(p.currentTime())
+        guard dur.isFinite, dur > 0, cur.isFinite else { return }
+        let remaining = dur - cur
+        guard remaining > 0, remaining <= surahPrewarmLeadTime else { return }
+
+        guard let next = nextSurahDescriptor() else { return }
+        if prewarmedSurah?.surahNumber == next.number { return }   // already prewarmed
+        prewarmNextSurah(number: next.number, name: next.name)
+    }
+
+    private func prewarmNextSurah(number: Int, name: String) {
+        discardPrewarm()
+        guard let reciter = playbackReciter ?? resolvedSelectedReciter() else { return }
+        let localURL = reciterDownloadManager.localSurahURL(reciter: reciter, surahNumber: number)
+        let remote = URL(string: "\(reciter.surahLink)\(String(format: "%03d", number)).mp3")
+        guard let url = localURL ?? remote else { return }
+
+        let buffer = localURL != nil ? localSurahStartupBuffer : remoteSurahStartupBuffer
+        let item = makeFastStartItem(url: url, bufferDuration: buffer)
+        let pre = AVPlayer(playerItem: item)
+        pre.automaticallyWaitsToMinimizeStalling = false
+        pre.pause()   // attaching the item to a player starts buffering even while paused
+        prewarmedSurah = PrewarmedSurah(
+            surahNumber: number,
+            surahName: name,
+            reciterSurahLink: reciter.surahLink,
+            url: url,
+            player: pre,
+            item: item
+        )
+    }
+
+    /// Tears down any prewarmed (but not yet promoted) surah player.
+    private func discardPrewarm() {
+        prewarmedSurah?.player.pause()
+        prewarmedSurah?.item.asset.cancelLoading()
+        prewarmedSurah = nil
     }
 
     func addSurahToQueue(surahNumber: Int, surahName: String) {
@@ -706,6 +846,7 @@ final class QuranPlayer: ObservableObject {
         let first = sequence[initialIndex]
 
         removeAllObservers()
+        discardPrewarm()
         customRangeSequence = sequence
         customRangeSurahNumber = surahNumber
         customRangeSurahName = surahName
@@ -773,7 +914,7 @@ final class QuranPlayer: ObservableObject {
                         self.nowPlayingTitle = base
                         self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                         self.updateNowPlayingInfo()
-                    } else {
+                    } else if itm.status == .failed {
                         self.presentPlaybackFailure("Unable to start this custom range. Check your internet connection and try again.", title: "Range Playback Failed")
                     }
                 }
@@ -802,9 +943,10 @@ final class QuranPlayer: ObservableObject {
                 }
 
                 let (ayahNum, isBismillah) = self.customRangeSequence[zeroBasedIndex]
-                let repeatWithinAyah = ((zeroBasedIndex % self.customRangeRepeatPerAyah) + 1)
+                let perAyah = max(1, self.customRangeRepeatPerAyah)
+                let repeatWithinAyah = ((zeroBasedIndex % perAyah) + 1)
                 let numAyahsInRange = (self.customRangeEndAyah ?? 1) - (self.customRangeStartAyah ?? 1) + 1
-                let itemsPerSection = numAyahsInRange * self.customRangeRepeatPerAyah
+                let itemsPerSection = numAyahsInRange * perAyah
                 let sectionIndex = (zeroBasedIndex / max(1, itemsPerSection)) + 1
 
                 let base = self.customRangeTitle(ayahNum: ayahNum, isBismillah: isBismillah, zeroBasedIndex: zeroBasedIndex)
@@ -909,6 +1051,7 @@ final class QuranPlayer: ObservableObject {
         continueRecitation: Bool
     ) {
         removeAllObservers()
+        discardPrewarm()
 
         guard
             let surah  = quranData.quran.first(where: { $0.id == surahNumber }),
@@ -954,7 +1097,7 @@ final class QuranPlayer: ObservableObject {
                             self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                             self.updateNowPlayingInfo()
                         }
-                    } else {
+                    } else if itm.status == .failed {
                         self.isLoading = false
                         self.presentPlaybackFailure("Unable to start ayah playback. Check your internet connection and try again.")
                     }
@@ -1041,7 +1184,7 @@ final class QuranPlayer: ObservableObject {
                         self.nowPlayingReciter = self.ayahNowPlayingReciterName(for: reciter)
                         self.updateNowPlayingInfo()
                     }
-                } else {
+                } else if itm.status == .failed {
                     self.isLoading = false
                     self.presentPlaybackFailure("Unable to continue ayah playback. Check your internet connection and try again.")
                 }
@@ -1503,7 +1646,10 @@ final class QuranPlayer: ObservableObject {
             let url = URL(string: "\(rec.surahLink)\(String(format: "%03d", surahNumber)).mp3")
         else { return 0 }
 
-        return CMTimeGetSeconds(AVURLAsset(url: url).duration)
+        let duration = AVURLAsset(url: url).duration
+        guard duration.isValid, !duration.isIndefinite else { return 0 }
+        let seconds = CMTimeGetSeconds(duration)
+        return seconds.isFinite ? seconds : 0
         #else
         // The watch doesn't rely on this value, so just return 0
         return 0
@@ -1594,6 +1740,13 @@ final class ReciterDownloadManager: NSObject, ObservableObject, URLSessionDownlo
     func beginDownloadAll(for reciter: Reciter) {
         ensureStateLoaded(for: reciter)
         let reciterID = reciter.id
+
+        // Only full-surah reciters can be downloaded; ayah-by-ayah reciters have no surah link, so fail
+        // clearly instead of starting tasks against an invalid URL that would silently error out.
+        guard !reciter.surahLink.isEmpty else {
+            finishWithError(for: reciterID, message: "This reciter doesn't offer full-surah downloads.")
+            return
+        }
 
         if activeTasks[reciterID] != nil {
             return

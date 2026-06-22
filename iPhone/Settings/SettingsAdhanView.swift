@@ -91,52 +91,38 @@ struct SettingsAdhanView: View {
         }
         #endif
         .onChange(of: settings.homeLocation) { _ in
-            settings.fetchPrayerTimes() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if settings.travelTurnOnAutomatic {
-                        showAlert = .travelTurnOnAutomatic
-                    } else if settings.travelTurnOffAutomatic {
-                        showAlert = .travelTurnOffAutomatic
-                    }
-                }
-            }
+            settings.fetchPrayerTimes()
         }
         .onChange(of: settings.travelAutomatic) { newValue in
-            if newValue {
-                settings.fetchPrayerTimes() {
-                    if settings.homeLocation == nil {
-                        withAnimation {
-                            settings.travelingMode = false
-                        }
-                    } else {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            if settings.travelTurnOnAutomatic {
-                                showAlert = .travelTurnOnAutomatic
-                            } else if settings.travelTurnOffAutomatic {
-                                showAlert = .travelTurnOffAutomatic
-                            }
-                        }
-                    }
+            guard newValue else { return }
+            settings.fetchPrayerTimes() {
+                if settings.homeLocation == nil {
+                    withAnimation { settings.travelingMode = false }
                 }
             }
         }
         .onChange(of: settings.calculationAutomatic) { newValue in
             guard newValue else { return }
-            settings.fetchPrayerTimes(force: true) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if settings.calculationAutoChanged {
-                        showAlert = .calculationAutomaticChanged
-                    }
-                }
-            }
+            settings.fetchPrayerTimes(force: true)
         }
-        .onChange(of: settings.prayerCalculation) { _ in
-            if settings.calculationAutoChanged {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showAlert = .calculationAutomaticChanged
-                }
-            }
+        // Present the automatic-change confirmation the moment the flag flips, from ANY code path that runs
+        // checkIfTraveling()/the auto-calculation change (location updates, scene changes, background
+        // refresh) — not gated behind a specific prayer-fetch completion. The old approach only checked the
+        // flag inside a couple of fetch completions, so the dialog lagged (waited for the fetch) and often
+        // never appeared (when the flag flipped from a fetch not triggered here).
+        .onChange(of: settings.travelTurnOnAutomatic) { on in
+            if on { showAlert = .travelTurnOnAutomatic }
         }
+        .onChange(of: settings.travelTurnOffAutomatic) { off in
+            if off { showAlert = .travelTurnOffAutomatic }
+        }
+        .onChange(of: settings.calculationAutoChanged) { changed in
+            if changed { showAlert = .calculationAutomaticChanged }
+        }
+        // NOTE: Confirmation-dialog buttons intentionally avoid `role: .cancel`. On iOS 26+ a `.cancel`
+        // button is hidden from the action sheet (the system expects you to cancel by tapping outside / the
+        // dim background instead), so a meaningful "Confirm: Keep On"-style choice would silently disappear.
+        // Plain buttons always render; tapping outside still cancels. Applies to all confirmation dialogs.
         .confirmationDialog(dialogTitle, isPresented: Binding(
             get: { showAlert != nil },
             set: { if !$0 { showAlert = nil } }
@@ -148,7 +134,7 @@ struct SettingsAdhanView: View {
                     settings.overrideTravelingMode(keepOn: false)
                 }
 
-                Button("Confirm: Keep On", role: .cancel) {
+                Button("Confirm: Keep On") {
                     settings.hapticFeedback()
                     settings.confirmTravelAutomaticChange()
                 }
@@ -159,7 +145,7 @@ struct SettingsAdhanView: View {
                     settings.overrideTravelingMode(keepOn: true)
                 }
 
-                Button("Confirm: Turn Off", role: .cancel) {
+                Button("Confirm: Turn Off") {
                     settings.hapticFeedback()
                     settings.confirmTravelAutomaticChange()
                 }
@@ -170,7 +156,7 @@ struct SettingsAdhanView: View {
                     settings.overrideAutomaticCalculationKeepingPrevious()
                 }
 
-                Button("Confirm: Use \(settings.calculationAutoDetectedMethod)", role: .cancel) {
+                Button("Confirm: Use \(settings.calculationAutoDetectedMethod)") {
                     settings.hapticFeedback()
                     settings.confirmAutomaticCalculationChange()
                 }
@@ -643,7 +629,7 @@ struct NotificationView: View {
                 settings.hapticFeedback()
                 openSystemSettings()
             }
-            Button("Ignore", role: .cancel) { }
+            Button("Ignore") { }
         } message: {
             Text("Please go to Settings and enable notifications to be notified of prayer times.")
         }
@@ -651,7 +637,7 @@ struct NotificationView: View {
             get: { requestAccessAlertMessage != nil },
             set: { if !$0 { requestAccessAlertMessage = nil } }
         ), titleVisibility: .visible) {
-            Button("OK", role: .cancel) { requestAccessAlertMessage = nil }
+            Button("OK") { requestAccessAlertMessage = nil }
             Button("Open Settings") {
                 settings.hapticFeedback()
                 requestAccessAlertMessage = nil
@@ -1147,7 +1133,7 @@ struct MoreNotificationView: View {
                 }
                 #endif
             }
-            Button("Ignore", role: .cancel) { }
+            Button("Ignore") { }
         } message: {
             Text("Please go to Settings and enable notifications to be notified of prayer times.")
         }
