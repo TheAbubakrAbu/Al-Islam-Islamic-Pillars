@@ -72,11 +72,15 @@ struct SettingsQuranView: View {
                         recitationDestination
                     }
                 }
+                // The Quran Tab View options (full surah details, summary mode, last-read rows) only affect
+                // the iPhone/iPad Quran tab layout, so hide this whole section on watchOS.
+                #if os(iOS)
                 Section {
                     quranSettingsLink(title: "Quran Tab View", systemImage: "list.bullet.rectangle") {
                         quranTabViewDestination
                     }
                 }
+                #endif
                 Section {
                     quranSettingsLink(title: "Surah Reading View", systemImage: "book") {
                         surahReadingDestination
@@ -175,7 +179,11 @@ struct SettingsQuranView: View {
         List {
             Group {
                 arabicTextSection
+                // Qiraah/Riwayah details + comparison mode affect on-screen Arabic and ayah playback the
+                // watch doesn't offer; hide them on watchOS.
+                #if os(iOS)
                 qiraahSection
+                #endif
             }
             .themedListRowBackground()
         }

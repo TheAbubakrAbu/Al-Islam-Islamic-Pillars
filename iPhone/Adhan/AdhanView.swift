@@ -105,14 +105,27 @@ struct AdhanView: View {
         // checkIfTraveling()/the auto-calculation change — not only after a prayer-fetch completion. That
         // gating made the dialog lag (waited for the fetch) and often never appear (when the flag flipped
         // from a fetch not routed through prayerTimeRefresh).
+        // Consume each flag the instant it flips: capture it into `showAlert` (which now owns the
+        // presentation) and immediately reset the @AppStorage flag. Otherwise the flag stayed set
+        // until the user tapped a button — so a tap-outside dismissal, or simply leaving and
+        // re-entering this tab (onAppear → fetch → nextAlertToPresent), re-presented the same dialog.
         .onChange(of: settings.travelTurnOnAutomatic) { on in
-            if on { showAlert = .travelTurnOnAutomatic }
+            if on {
+                showAlert = .travelTurnOnAutomatic
+                settings.travelTurnOnAutomatic = false
+            }
         }
         .onChange(of: settings.travelTurnOffAutomatic) { off in
-            if off { showAlert = .travelTurnOffAutomatic }
+            if off {
+                showAlert = .travelTurnOffAutomatic
+                settings.travelTurnOffAutomatic = false
+            }
         }
         .onChange(of: settings.calculationAutoChanged) { changed in
-            if changed { showAlert = .calculationAutomaticChanged }
+            if changed {
+                showAlert = .calculationAutomaticChanged
+                settings.calculationAutoChanged = false
+            }
         }
         .navigationTitle("Al-Adhan")
         #if os(iOS)
@@ -186,7 +199,9 @@ struct AdhanView: View {
         settings.requestNotificationAuthorization {
             settings.fetchPrayerTimes(force: force) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showAlert = nextAlertToPresent
+                    // Don't clobber a dialog the .onChange handlers already presented (travel/calc are
+                    // now consumed there). This only fills in the location/notification prompts.
+                    if showAlert == nil { showAlert = nextAlertToPresent }
                 }
             }
         }

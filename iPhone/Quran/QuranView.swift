@@ -638,7 +638,10 @@ struct QuranView: View {
                     primaryHistorySections(context: context)
                     bookmarkSection(context: context)
                     favoriteSection(context: context)
-                    if (context.pageJuzQuery.page != nil || context.pageJuzQuery.juz != nil) && context.isSearching {
+                    // Only hoist page/juz above the surah list for EXPLICIT "page X" / "juz Y" queries
+                    // (where surahContentSections is empty anyway). For a bare number, the surah match
+                    // comes first and the compact page/juz results follow below (in searchResultSections).
+                    if context.explicitPageOrJuzMode && context.isSearching {
                         pageSearchSection(context: context)
                         juzSearchSection(context: context)
                     }
@@ -711,11 +714,16 @@ struct QuranView: View {
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    settings.hapticFeedback()
-                    showingSettingsSheet = true
-                } label: {
-                    Image(systemName: "gear")
+                // On iPad/Mac the open-surah (detail) pane provides the settings gear; avoid a duplicate gear
+                // in the sidebar list when using side-by-side column navigation. (The condition lives inside
+                // the ToolbarItem so the toolbar content stays non-optional, keeping pre-iOS 16 support.)
+                if !usesColumnNavigation {
+                    Button {
+                        settings.hapticFeedback()
+                        showingSettingsSheet = true
+                    } label: {
+                        Image(systemName: "gear")
+                    }
                 }
             }
         }
@@ -766,21 +774,25 @@ struct QuranView: View {
     @ViewBuilder
     private var nowPlayingInset: some View {
         #if os(iOS)
-        VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-            if quranPlayer.isPlaying || quranPlayer.isPaused {
-                if #available(iOS 16.0, *) {
-                    NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText) { context in
-                        push(surahID: context.surah.id, ayahID: quranPlayer.isPlayingSurah ? nil : context.ayahNumber)
+        // On iPad/Mac the open-surah (detail) pane shows its own Now Playing bar; don't duplicate it in
+        // the sidebar list when using side-by-side column navigation.
+        if !usesColumnNavigation {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                if quranPlayer.isPlaying || quranPlayer.isPaused {
+                    if #available(iOS 16.0, *) {
+                        NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText) { context in
+                            push(surahID: context.surah.id, ayahID: quranPlayer.isPlayingSurah ? nil : context.ayahNumber)
+                        }
+                    } else {
+                        NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
                     }
-                } else {
-                    NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
                 }
             }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+            .background(Color.white.opacity(0.00001))
+            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 8)
-        .background(Color.white.opacity(0.00001))
-        .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
         #endif
     }
 
@@ -2411,10 +2423,11 @@ struct QuranView: View {
     @ViewBuilder
     private func searchResultSections(context: SearchDisplayContext) -> some View {
         if context.isSearching {
-            // Page/juz rows for explicit queries are inserted above surahContentSections.
+            // Page/juz rows for explicit queries are inserted above surahContentSections. For a bare number
+            // they go here, BELOW the surah match (juz before page). Each shows the range's Start/End ayah.
             if !context.explicitPageOrJuzMode {
-                pageSearchSection(context: context)
                 juzSearchSection(context: context)
+                pageSearchSection(context: context)
             }
 
             if !context.explicitPageOrJuzMode {
@@ -2427,11 +2440,9 @@ struct QuranView: View {
     private func pageSearchSection(context: SearchDisplayContext) -> some View {
         if let page = context.pageJuzQuery.page {
             let ayahs = quranData.ayahs(onPage: page)
-            if !ayahs.isEmpty {
+            if let first = ayahs.first {
                 Section(header: pageSearchHeader(title: "PAGE SEARCH RESULT", valueText: "Page \(page) • \(ayahs.count) Ayahs")) {
-                    ForEach(Array(ayahs.enumerated()), id: \.offset) { _, item in
-                        pageJuzAyahRow(item: item)
-                    }
+                    pageJuzRangeRows(first: first, last: ayahs.last, count: ayahs.count)
                 }
             }
         }
@@ -2441,20 +2452,31 @@ struct QuranView: View {
     private func juzSearchSection(context: SearchDisplayContext) -> some View {
         if let juz = context.pageJuzQuery.juz {
             let ayahs = quranData.ayahs(inJuz: juz)
-            if !ayahs.isEmpty {
+            if let first = ayahs.first {
                 Section(header: pageSearchHeader(title: "JUZ SEARCH RESULT", valueText: "Juz \(juz) • \(ayahs.count) Ayahs")) {
-                    ForEach(Array(ayahs.enumerated()), id: \.offset) { _, item in
-                        pageJuzAyahRow(item: item)
-                    }
+                    pageJuzRangeRows(first: first, last: ayahs.last, count: ayahs.count)
                 }
             }
         }
     }
 
+    /// A page/juz search result shows the range's FIRST and LAST ayah (labeled Start / End) rather than
+    /// every ayah — like Juz View marks where a section begins and ends. The header's count pill conveys
+    /// the total. A single-ayah range shows just the one row (unlabeled).
     @ViewBuilder
-    private func pageJuzAyahRow(item: (surah: Surah, ayah: Ayah)) -> some View {
+    private func pageJuzRangeRows(first: (surah: Surah, ayah: Ayah), last: (surah: Surah, ayah: Ayah)?, count: Int) -> some View {
+        if count > 1, let last {
+            pageJuzAyahRow(item: first, leadingLabel: "Start")
+            pageJuzAyahRow(item: last, leadingLabel: "End")
+        } else {
+            pageJuzAyahRow(item: first)
+        }
+    }
+
+    @ViewBuilder
+    private func pageJuzAyahRow(item: (surah: Surah, ayah: Ayah), leadingLabel: String? = nil) -> some View {
         quranNavigationLink(route: .ayahs(surahID: item.surah.id, ayah: item.ayah.id)) {
-            CompactAyahArabicRow(surah: item.surah, ayah: item.ayah)
+            CompactAyahArabicRow(surah: item.surah, ayah: item.ayah, leadingLabel: leadingLabel)
         }
     }
 

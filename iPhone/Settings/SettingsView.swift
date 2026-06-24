@@ -155,13 +155,13 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var notificationSection: some View {
-        #if os(iOS)
+        // Shown on watchOS too: watchOS now supports local notifications, so expose the settings instead
+        // of hiding them. (The iPad split layout uses notificationSectionSplit instead.)
         Section(header: Text("NOTIFICATIONS")) {
             resourceLink(title: "Notification Settings", systemImage: "bell.badge") {
                 NotificationView()
             }
         }
-        #endif
     }
 
     @available(iOS 16.0, *)

@@ -164,12 +164,12 @@ struct SurahView: View {
     }
 
     @ViewBuilder
-    private func listBoundaryDivider(model: BoundaryDividerModel, nextAyahID: Int? = nil) -> some View {
+    private func listBoundaryDivider(model: BoundaryDividerModel, nextAyahID: Int? = nil, showAyahPreview: Bool = false) -> some View {
         if settings.defaultView {
-            boundaryDivider(model: model, nextAyahID: nextAyahID)
+            boundaryDivider(model: model, nextAyahID: nextAyahID, showAyahPreview: showAyahPreview)
         } else {
             VStack {
-                boundaryDivider(model: model, nextAyahID: nextAyahID)
+                boundaryDivider(model: model, nextAyahID: nextAyahID, showAyahPreview: showAyahPreview)
                 
                 Divider()
                     .padding(.top, 7)
@@ -619,7 +619,7 @@ struct SurahView: View {
         DispatchQueue.main.async { attempt(2) }
     }
 
-    private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false, nextAyahID: Int? = nil) -> some View {
+    private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false, nextAyahID: Int? = nil, showAyahPreview: Bool = false) -> some View {
         let accent = settings.accentColor.color
         
         let dividerColor: Color = {
@@ -717,6 +717,20 @@ struct SurahView: View {
                 Text("Ayah \(ayahID)")
                     .font(.caption2.weight(.semibold))
                     .foregroundColor(.secondary)
+
+                // For a bare "page"/"juz" keyword search we only list dividers (no ayah rows), so show a
+                // small Arabic preview of the start of the divider's first ayah. lineLimit(1) + tail
+                // truncation on RTL Arabic keeps just the beginning of the ayah.
+                if showAyahPreview, settings.showArabicText,
+                   let previewAyah = surah.ayahs.first(where: { $0.id == ayahID }) {
+                    Text(previewAyah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText))
+                        .font(.custom(settings.fontArabic, size: settings.fontArabicSize * 0.7))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
             return AnyView(
                 labeledContent
@@ -1167,7 +1181,8 @@ struct SurahView: View {
                                         forDivider: dividerModel,
                                         boundaryModel: bm,
                                         ayahsForQiraah: ayahsForQiraah
-                                    )
+                                    ),
+                                    showAyahPreview: true
                                 )
                             } else {
                                 listBoundaryDivider(model: dividerModel, nextAyahID: nil)
@@ -1357,6 +1372,7 @@ struct SurahView: View {
             }
             #if os(iOS)
             .overlay(alignment: .top) {
+            //.safeAreaInset(edge: .top) {
                 VStack(spacing: 8) {
                     floatingHeaderOverlay(
                         floatingDividerModel: floatingDividerModel,

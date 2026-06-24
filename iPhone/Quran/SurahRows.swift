@@ -296,7 +296,7 @@ struct SurahRow: View, Equatable {
     /// Custom grid tile: the same information as the list row, re-laid out vertically so it reads
     /// well in a narrow 2-column grid cell.
     private var gridBody: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Text("\(surah.id)")
                     .font(.subheadline.monospacedDigit().weight(.bold))
@@ -388,7 +388,7 @@ struct SurahRow: View, Equatable {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(8)
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.06)))
         .contentShape(Rectangle())
     }

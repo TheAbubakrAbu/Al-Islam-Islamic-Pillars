@@ -169,9 +169,10 @@ struct NowPlayingView: View {
             .contentShape(Rectangle())
             .onTapGesture {
                 settings.hapticFeedback()
-                withAnimation {
-                    isPlaying ? quranPlayer.pause() : quranPlayer.resume()
-                }
+                // No withAnimation: wrapping play/pause in an animation transaction made the glass card
+                // briefly flash a black backing behind the (expanded) player. The icon swap alone needs
+                // no animation, and isPlaying||isPaused stays true across pause/resume so nothing else moves.
+                isPlaying ? quranPlayer.pause() : quranPlayer.resume()
             }
 
         #if os(iOS)
@@ -275,9 +276,11 @@ struct NowPlayingView: View {
     private var expandToggleButton: some View {
         Button {
             settings.hapticFeedback()
-            withAnimation(.easeInOut) {
-                settings.nowPlayingExpanded.toggle()
-            }
+            // Toggle WITHOUT a global withAnimation. A global transaction animated the whole enclosing
+            // List, which squished the ayah/surah rows and scrolled the Quran list back to the top. The
+            // compact<->expanded size change is animated locally by `.animation(value: isExpanded)` on
+            // playerRow, so only this card animates.
+            settings.nowPlayingExpanded.toggle()
         } label: {
             Image(systemName: isExpanded
                   ? "arrow.down.right.and.arrow.up.left"
@@ -302,9 +305,10 @@ struct NowPlayingView: View {
         }
         .transition(.opacity)
         .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
-        // No `.animation(value: isExpanded)` here: the expand toggle already wraps the change in
-        // `withAnimation`, and a second implicit animation on the same value fought it and contributed
-        // to the layout glitch/crash.
+        // Animate the compact<->expanded size change locally, from this single source. The expand button
+        // no longer wraps the toggle in a global `withAnimation` (that animated the whole List — squishing
+        // rows and resetting the Quran scroll), so there's no longer a second animation to fight with.
+        .animation(.easeInOut, value: isExpanded)
         .confirmationDialog(Settings.bookmarkNoteRemovalDialogTitle, isPresented: $confirmRemoveNote, titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
                 let surah = quranPlayer.currentSurahNumber ?? 1
@@ -399,9 +403,10 @@ struct NowPlayingView: View {
             .contentShape(Rectangle())
             .onTapGesture {
                 settings.hapticFeedback()
-                withAnimation {
-                    isPlaying ? quranPlayer.pause() : quranPlayer.resume()
-                }
+                // No withAnimation: wrapping play/pause in an animation transaction made the glass card
+                // briefly flash a black backing behind the (expanded) player. The icon swap alone needs
+                // no animation, and isPlaying||isPaused stays true across pause/resume so nothing else moves.
+                isPlaying ? quranPlayer.pause() : quranPlayer.resume()
             }
 
         Image(systemName: "forward.fill")

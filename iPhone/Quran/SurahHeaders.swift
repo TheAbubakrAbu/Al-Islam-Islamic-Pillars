@@ -165,12 +165,13 @@ struct SurahSectionHeader: View {
         #endif
     }
 
-    /// The favorite star is a touch larger than the revelation emoji.
+    /// On iOS the favorite star is a touch larger than the revelation emoji; on watchOS the two side icons
+    /// match exactly (same size as `symbolFont`) so they look balanced.
     private var starFont: Font {
         #if os(iOS)
         compact ? .subheadline : .body
         #else
-        .title2
+        .title3
         #endif
     }
 

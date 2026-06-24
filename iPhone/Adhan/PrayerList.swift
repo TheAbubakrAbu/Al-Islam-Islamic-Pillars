@@ -33,7 +33,13 @@ struct PrayerList: View {
     }
 
     private var prayerDisplayMode: PrayerDisplayMode {
-        PrayerDisplayMode(rawValue: prayerDisplayModeRawValue) ?? .tiles
+        #if os(watchOS)
+        // The watch only has room for the compact tile grid, and its display-mode picker is hidden, so
+        // always render tiles regardless of the stored (iPhone-set) preference.
+        return .tiles
+        #else
+        return PrayerDisplayMode(rawValue: prayerDisplayModeRawValue) ?? .tiles
+        #endif
     }
 
     private static let selectedDateHeaderFormatter: DateFormatter = {

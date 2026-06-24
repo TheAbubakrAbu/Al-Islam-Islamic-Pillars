@@ -332,14 +332,32 @@ struct PlayCustomRangeSheet: View {
         text.wrappedValue = "\(clamped)"
     }
 
-    private func adjustAyahValue(_ value: Binding<Int>, text: Binding<String>, delta: Int, onChange: @escaping (Int) -> Void) {
-        commitBothAyahFields()
-
-        let newValue = min(Swift.max(1, value.wrappedValue + delta), maxAyah)
+    /// Step the START ayah by `delta`. Reads/writes the `startAyah` @State *directly* (not through a passed
+    /// Binding). The old generic helper computed `value.wrappedValue + delta` through a Binding parameter,
+    /// which in this nested helper context did not reflect the current value — so every tap jumped the range
+    /// to the surah's last ayah. Direct @State access steps reliably by one.
+    private func stepStart(_ delta: Int) {
+        let newValue = min(Swift.max(1, startAyah + delta), maxAyah)
         withAnimation(.easeInOut(duration: 0.15)) {
-            value.wrappedValue = newValue
-            text.wrappedValue = "\(newValue)"
-            onChange(newValue)
+            startAyah = newValue
+            startAyahText = "\(newValue)"
+            if endAyah < newValue {
+                endAyah = newValue
+                endAyahText = "\(newValue)"
+            }
+        }
+    }
+
+    /// Step the END ayah by `delta`. See `stepStart` for why this reads `endAyah` directly.
+    private func stepEnd(_ delta: Int) {
+        let newValue = min(Swift.max(1, endAyah + delta), maxAyah)
+        withAnimation(.easeInOut(duration: 0.15)) {
+            endAyah = newValue
+            endAyahText = "\(newValue)"
+            if startAyah > newValue {
+                startAyah = newValue
+                startAyahText = "\(newValue)"
+            }
         }
     }
 
@@ -527,23 +545,13 @@ struct PlayCustomRangeSheet: View {
     private var ayahSelectionSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
-                rangeField(title: "From", value: $startAyah, text: $startAyahText, isFocused: $startAyahFocused) { new in
-                    if new > endAyah {
-                        startAyah = endAyah
-                        startAyahText = "\(endAyah)"
-                    }
-                }
+                rangeField(title: "From", value: $startAyah, text: $startAyahText, isFocused: $startAyahFocused, onStep: stepStart)
 
                 Image(systemName: "arrow.right")
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(Color(.tertiaryLabel))
 
-                rangeField(title: "To", value: $endAyah, text: $endAyahText, isFocused: $endAyahFocused) { new in
-                    if new < startAyah {
-                        endAyah = startAyah
-                        endAyahText = "\(startAyah)"
-                    }
-                }
+                rangeField(title: "To", value: $endAyah, text: $endAyahText, isFocused: $endAyahFocused, onStep: stepEnd)
             }
             .onChange(of: startAyah) { ayah in
                 startAyahText = "\(ayah)"
@@ -666,21 +674,22 @@ struct PlayCustomRangeSheet: View {
     }
 
     private func quickActionButton(title: String, systemImage: String, prominent: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+        // onTapGesture (not Button): these are used in pairs within one List row (e.g. Go to start / Go to
+        // end), and two Buttons in a single row share one tap target. Scoped contentShape keeps them separate.
         let tint = enabled ? settings.accentColor.color : Color(UIColor.tertiaryLabel)
-        return Button {
-            settings.hapticFeedback()
-            action()
-        } label: {
-            Label(title, systemImage: systemImage)
-                .font(.subheadline.weight(.medium))
-                .foregroundColor(tint)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, prominent ? 12 : 10)
-                .background(tint.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: prominent ? 16 : 14, style: .continuous))
-                .contentShape(Rectangle())
-        }
-        .disabled(!enabled)
+        return Label(title, systemImage: systemImage)
+            .font(.subheadline.weight(.medium))
+            .foregroundColor(tint)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, prominent ? 12 : 10)
+            .background(tint.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: prominent ? 16 : 14, style: .continuous))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                guard enabled else { return }
+                settings.hapticFeedback()
+                action()
+            }
     }
 
     private func pageField(title: String, pageNumber: Int?, canDecrement: Bool, canIncrement: Bool, onDecrement: @escaping () -> Void, onIncrement: @escaping () -> Void) -> some View {
@@ -688,16 +697,17 @@ struct PlayCustomRangeSheet: View {
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
+            // onTapGesture (not Button) so the two steppers in this single row don't share one tap target.
             HStack(spacing: 0) {
-                Button {
-                    settings.hapticFeedback()
-                    onDecrement()
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(canDecrement ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
-                }
-                .disabled(!canDecrement)
+                Image(systemName: "minus.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(canDecrement ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        guard canDecrement else { return }
+                        settings.hapticFeedback()
+                        onDecrement()
+                    }
 
                 Spacer()
 
@@ -708,15 +718,15 @@ struct PlayCustomRangeSheet: View {
 
                 Spacer()
 
-                Button {
-                    settings.hapticFeedback()
-                    onIncrement()
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(canIncrement ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
-                }
-                .disabled(!canIncrement)
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(canIncrement ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        guard canIncrement else { return }
+                        settings.hapticFeedback()
+                        onIncrement()
+                    }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -727,24 +737,27 @@ struct PlayCustomRangeSheet: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func rangeField(title: String, value: Binding<Int>, text: Binding<String>, isFocused: FocusState<Bool>.Binding, onChange: @escaping (Int) -> Void) -> some View {
+    private func rangeField(title: String, value: Binding<Int>, text: Binding<String>, isFocused: FocusState<Bool>.Binding, onStep: @escaping (Int) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
+            // onTapGesture (not Button): multiple Buttons inside one List/Form row collapse into a single
+            // tap target, so tapping minus could fire plus (and vice-versa) — the "it's touching everything"
+            // bug. A scoped contentShape + onTapGesture per icon keeps each hit area separate.
             HStack(spacing: 0) {
-                Button {
-                    settings.hapticFeedback()
-                    adjustAyahValue(value, text: text, delta: -1, onChange: onChange)
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(value.wrappedValue > 1 ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
-                }
-                .disabled(value.wrappedValue <= 1)
+                Image(systemName: "minus.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value.wrappedValue > 1 ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        guard value.wrappedValue > 1 else { return }
+                        settings.hapticFeedback()
+                        onStep(-1)
+                    }
 
                 Spacer()
-                
+
                 TextField("", text: text)
                     .font(.title2.monospacedDigit().weight(.semibold))
                     .foregroundColor(.primary)
@@ -764,18 +777,18 @@ struct PlayCustomRangeSheet: View {
                     .onSubmit {
                         commitBothAyahFields()
                     }
-                
+
                 Spacer()
-                
-                Button {
-                    settings.hapticFeedback()
-                    adjustAyahValue(value, text: text, delta: 1, onChange: onChange)
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(value.wrappedValue < maxAyah ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
-                }
-                .disabled(value.wrappedValue >= maxAyah)
+
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value.wrappedValue < maxAyah ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        guard value.wrappedValue < maxAyah else { return }
+                        settings.hapticFeedback()
+                        onStep(1)
+                    }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -900,25 +913,24 @@ struct PlayCustomRangeSheet: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(Self.repeatOptions, id: \.self) { n in
-                            Button {
-                                settings.hapticFeedback()
-                                withAnimation {
-                                    value.wrappedValue = n
-                                    text.wrappedValue = "\(n)"
+                            Text("\(n)×")
+                                .font(.subheadline.weight(value.wrappedValue == n ? .semibold : .regular))
+                                .foregroundColor(value.wrappedValue == n ? .white : .primary)
+                                .padding(8)
+                                .background(
+                                    value.wrappedValue == n
+                                        ? settings.accentColor.color
+                                        : Color(UIColor.tertiarySystemFill)
+                                )
+                                .clipShape(Capsule())
+                                .contentShape(Capsule())
+                                .onTapGesture {
+                                    settings.hapticFeedback()
+                                    withAnimation {
+                                        value.wrappedValue = n
+                                        text.wrappedValue = "\(n)"
+                                    }
                                 }
-                            } label: {
-                                Text("\(n)×")
-                                    .font(.subheadline.weight(value.wrappedValue == n ? .semibold : .regular))
-                                    .foregroundColor(value.wrappedValue == n ? .white : .primary)
-                                    .padding(8)
-                                    .background(
-                                        value.wrappedValue == n
-                                            ? settings.accentColor.color
-                                            : Color(UIColor.tertiarySystemFill)
-                                    )
-                                    .clipShape(Capsule())
-                                    .contentShape(Capsule())
-                            }
                         }
                     }
                     .padding(.vertical, 2)
@@ -936,15 +948,15 @@ struct PlayCustomRangeSheet: View {
 
     private func repeatStepper(value: Binding<Int>, text: Binding<String>, isFocused: FocusState<Bool>.Binding) -> some View {
         HStack(spacing: 4) {
-            Button {
-                settings.hapticFeedback()
-                adjustRepeatValue(value, text: text, delta: -1)
-            } label: {
-                Image(systemName: "minus.circle.fill")
-                    .font(.body)
-                    .foregroundStyle(value.wrappedValue > Self.repeatMin ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
-            }
-            .disabled(value.wrappedValue <= Self.repeatMin)
+            Image(systemName: "minus.circle.fill")
+                .font(.body)
+                .foregroundStyle(value.wrappedValue > Self.repeatMin ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard value.wrappedValue > Self.repeatMin else { return }
+                    settings.hapticFeedback()
+                    adjustRepeatValue(value, text: text, delta: -1)
+                }
 
             TextField("", text: text)
                 .font(.subheadline.monospacedDigit().weight(.medium))
@@ -964,15 +976,15 @@ struct PlayCustomRangeSheet: View {
                 }
                 .onSubmit { commitAllRepeatFields() }
 
-            Button {
-                settings.hapticFeedback()
-                adjustRepeatValue(value, text: text, delta: 1)
-            } label: {
-                Image(systemName: "plus.circle.fill")
-                    .font(.body)
-                    .foregroundStyle(value.wrappedValue < Self.repeatMax ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
-            }
-            .disabled(value.wrappedValue >= Self.repeatMax)
+            Image(systemName: "plus.circle.fill")
+                .font(.body)
+                .foregroundStyle(value.wrappedValue < Self.repeatMax ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard value.wrappedValue < Self.repeatMax else { return }
+                    settings.hapticFeedback()
+                    adjustRepeatValue(value, text: text, delta: 1)
+                }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
