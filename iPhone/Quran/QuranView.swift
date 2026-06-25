@@ -2017,10 +2017,10 @@ struct QuranView: View {
     private func surahBrowseSection(context: SearchDisplayContext, showsRevelationOrder: Bool) -> some View {
         let browsedSurahs = orderedQuranSurahs(showsRevelationOrder: showsRevelationOrder)
 
+        #if os(iOS)
         Section(header: surahBrowseHeader(showsRevelationOrder: showsRevelationOrder)) { }
             .padding(.bottom, -12)
 
-        #if os(iOS)
         if settings.quranGridMode {
             Section {
                 surahGrid(browsedSurahs, context: context)
@@ -2033,8 +2033,12 @@ struct QuranView: View {
             }
         }
         #else
-        ForEach(browsedSurahs, id: \.id) { surah in
-            surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
+        // watchOS: keep the rows inside the header's own section. An empty `Section(header:) {}` followed
+        // by loose rows (the iOS pattern) leaves a large blank gap under the "SURAHS" title on watchOS.
+        Section(header: surahBrowseHeader(showsRevelationOrder: showsRevelationOrder)) {
+            ForEach(browsedSurahs, id: \.id) { surah in
+                surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
+            }
         }
         #endif
     }
@@ -2585,68 +2589,44 @@ struct QuranView: View {
         let normalizedQuery = normalizedBestMatchText(trimmed)
         guard !normalizedQuery.isEmpty else { return [] }
 
-        let queryTokens = normalizedQuery
-            .split(separator: " ")
-            .map(String.init)
-            .filter { !$0.isEmpty }
-
-        guard !queryTokens.isEmpty else { return [] }
-
-        typealias RankedHit = (hit: VerseIndexEntry, score: Int)
-        var ranked: [RankedHit] = []
-        ranked.reserveCapacity(verseHits.count)
-
-        for hit in verseHits {
-            let sources = [hit.arabicBlob, hit.englishBlob, hit.englishExactBlob]
-
-            var score = 0
-
-            if sources.contains(where: { $0 == normalizedQuery }) {
-                score += 260
-            }
-
-            if sources.contains(where: { $0.hasPrefix(normalizedQuery) }) {
-                score += 180
-            } else if sources.contains(where: { $0.contains(normalizedQuery) }) {
-                score += 120
-            }
-
-            let tokenHits = queryTokens.filter { token in
-                sources.contains(where: { $0.contains(token) })
-            }.count
-
-            score += tokenHits * 24
-
-            if tokenHits == queryTokens.count {
-                score += 60
-            }
-
-            if score > 0 {
-                ranked.append((hit: hit, score: score))
-            }
+        func sources(_ hit: VerseIndexEntry) -> [String] {
+            [hit.arabicBlob, hit.englishBlob, hit.englishExactBlob]
         }
 
-        guard !ranked.isEmpty else { return [] }
-
-        ranked.sort {
-            if $0.score != $1.score { return $0.score > $1.score }
-            if $0.hit.surah != $1.hit.surah { return $0.hit.surah < $1.hit.surah }
-            return $0.hit.ayah < $1.hit.ayah
+        // An "exact" hit contains the full query phrase contiguously, not just its tokens scattered around.
+        func isExactPhraseHit(_ hit: VerseIndexEntry) -> Bool {
+            sources(hit).contains { $0.contains(normalizedQuery) }
         }
 
-        let topScore = ranked[0].score
-        let secondScore = ranked.count > 1 ? ranked[1].score : 0
-        let isClearlyBetter = topScore >= 220 || (ranked.count > 1 && (topScore - secondScore) >= 40)
-        guard isClearlyBetter else { return [] }
+        let exactHits = verseHits.filter(isExactPhraseHit)
 
-        let minAcceptedScore = max(150, topScore - 55)
+        // Only worth a separate "Top Ayah Results" section when there's a real contrast: some loaded hits
+        // contain the exact phrase and others only matched loosely. If every hit (or no hit) is an exact
+        // phrase match, the section just duplicates the list below — so suppress it instead of showing a
+        // redundant "top" that's no better than the rest.
+        guard !exactHits.isEmpty, exactHits.count < verseHits.count else { return [] }
+
+        // Rank the exact hits so the strongest phrasing (whole-blob equality, then prefix) leads.
+        func rank(_ hit: VerseIndexEntry) -> Int {
+            let s = sources(hit)
+            if s.contains(where: { $0 == normalizedQuery }) { return 3 }
+            if s.contains(where: { $0.hasPrefix(normalizedQuery) }) { return 2 }
+            return 1
+        }
+
+        let ordered = exactHits.sorted {
+            let r0 = rank($0), r1 = rank($1)
+            if r0 != r1 { return r0 > r1 }
+            if $0.surah != $1.surah { return $0.surah < $1.surah }
+            return $0.ayah < $1.ayah
+        }
+
         var selected: [VerseIndexEntry] = []
         var seen = Set<String>()
-
-        for candidate in ranked where candidate.score >= minAcceptedScore {
-            let key = "\(candidate.hit.surah)-\(candidate.hit.ayah)"
+        for hit in ordered {
+            let key = "\(hit.surah)-\(hit.ayah)"
             if seen.insert(key).inserted {
-                selected.append(candidate.hit)
+                selected.append(hit)
             }
             if selected.count >= maxResults { break }
         }

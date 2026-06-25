@@ -2006,14 +2006,44 @@ struct AyahSearchRow: View, Equatable {
         return sources
     }
 
+    /// A source "matches" the query when it contains the whole phrase contiguously OR matches it loosely as
+    /// a phrase-prefix (consecutive words, last is a prefix) — the same close-match rule the verse search
+    /// uses. Gating highlights on the strict `contains` alone meant close matches showed the row but never
+    /// highlighted; this keeps the two in sync so the matched words always color.
+    private func sourceMatchesQuery(_ source: String, normalizedQuery: String) -> Bool {
+        guard !normalizedQuery.isEmpty else { return false }
+        if source.contains(normalizedQuery) { return true }
+
+        let queryTokens = normalizedQuery.split(separator: " ").map(String.init).filter { !$0.isEmpty }
+        guard queryTokens.count >= 1 else { return false }
+        let sourceTokens = source.split(separator: " ").map(String.init)
+        guard sourceTokens.count >= queryTokens.count else { return false }
+
+        for start in 0...(sourceTokens.count - queryTokens.count) {
+            var matched = true
+            for offset in queryTokens.indices {
+                let word = sourceTokens[start + offset]
+                let token = queryTokens[offset]
+                if offset == queryTokens.count - 1 {
+                    if !word.hasPrefix(token) { matched = false; break }
+                } else if word != token {
+                    matched = false
+                    break
+                }
+            }
+            if matched { return true }
+        }
+        return false
+    }
+
     private func searchVisibility() -> SearchVisibility {
         let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
         let sources = normalizedSources()
 
-        let mArabic = !normalizedQuery.isEmpty && sources.arabic.contains(normalizedQuery)
-        let mTr = !normalizedQuery.isEmpty && sources.transliteration.contains(normalizedQuery)
-        let mSaheeh = !normalizedQuery.isEmpty && sources.saheeh.contains(normalizedQuery)
-        let mMustafa = !normalizedQuery.isEmpty && sources.mustafa.contains(normalizedQuery)
+        let mArabic = sourceMatchesQuery(sources.arabic, normalizedQuery: normalizedQuery)
+        let mTr = sourceMatchesQuery(sources.transliteration, normalizedQuery: normalizedQuery)
+        let mSaheeh = sourceMatchesQuery(sources.saheeh, normalizedQuery: normalizedQuery)
+        let mMustafa = sourceMatchesQuery(sources.mustafa, normalizedQuery: normalizedQuery)
         let showArabicLine = settings.showArabicText || mArabic
         let showTrLine = settings.isHafsDisplay && (settings.showTransliteration || mTr)
 

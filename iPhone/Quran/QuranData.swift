@@ -382,6 +382,21 @@ final class TajweedStore {
     private static let smallHighMeem = UnicodeScalar(0x06E2)!
     private static let smallLowMeem = UnicodeScalar(0x06ED)!
 
+    /// Words from `madd_muttasil_analysis.json` `proper_words`. Each is written with a superscript madd
+    /// letter (dagger-alif ٰ / small-waw ۥ / small-yeh ۦ) carrying a maddah and immediately followed by a
+    /// hamzah inside the same written word — which normally reads as madd muttaṣil — but here that specific
+    /// sequence is recited as madd munfaṣil ḥukmī (a يا/ها particle joined to a following hamzah). Only that
+    /// superscript-carrier sequence is reclassified; any genuine madd muttaṣil elsewhere in the same word
+    /// (e.g. لَآءِ in هَٰٓؤُلَآءِ, a real alif) is left untouched. Stored NFC-normalized so the exact-word
+    /// match is independent of combining-mark order.
+    static let hukmiMunfasilProperWords: Set<String> = Set([
+        "يَٰٓأَيُّهَا", "هَٰٓؤُلَآءِ", "يَٰٓأَهۡلَ", "يَٰٓأَبَتِ", "يَٰٓأُوْلِي",
+        "يَٰٓـَٔادَمُ", "هَٰٓأَنتُمۡ", "أَهَٰٓؤُلَآءِ", "يَٰٓأَبَانَا", "هَٰٓؤُلَآءِۚ",
+        "يَٰٓإِبۡرَٰهِيمُ", "يَٰٓأَبَانَآ", "يَٰٓإِبۡلِيسُ", "وَيَٰٓـَٔادَمُ", "يَٰٓأَرۡضُ",
+        "يَٰٓأَسَفَىٰ", "وَهَٰٓؤُلَآءِ", "يَٰٓأُخۡتَ", "يَٰٓإِبۡرَٰهِيمُۖ", "يَٰٓأَيُّهَ",
+        "يَٰٓأَيَّتُهَا",
+    ].map { $0.precomposedStringWithCanonicalMapping })
+
     /// Higher value wins when painting overlapping UTF-16 units.
     private enum PaintPriority {
         static let tafkhim = 1
@@ -893,7 +908,7 @@ final class TajweedStore {
             )
         }
 
-        appendExplicitMaddahPaintOps(text: text, clusters: clusters, finalAaridCarrier: finalAaridCarrier, ayahFinalNaturalIndex: ayahFinalMaddNaturalIndex, into: &ops)
+        appendExplicitMaddahPaintOps(text: text, clusters: clusters, words: words, finalAaridCarrier: finalAaridCarrier, ayahFinalNaturalIndex: ayahFinalMaddNaturalIndex, into: &ops)
 
         if settings.isTajweedCategoryVisible(.maddNecessary) {
             for index in clusters.indices where isLazimCombinedAlifCluster(clusters[index]) {
@@ -1097,11 +1112,16 @@ final class TajweedStore {
         return false
     }
 
-    private func appendExplicitMaddahPaintOps(text: String, clusters: [CharacterClusterInfo], finalAaridCarrier: Int?, ayahFinalNaturalIndex: Int?, into ops: inout [PaintOp]) {
+    private func appendExplicitMaddahPaintOps(text: String, clusters: [CharacterClusterInfo], words: [Range<Int>], finalAaridCarrier: Int?, ayahFinalNaturalIndex: Int?, into ops: inout [PaintOp]) {
+        let hukmiOverrideIndices = hukmiMunfasilOverrideClusterIndices(clusters: clusters, words: words)
         for index in clusters.indices where hasMaddah(clusters[index]) {
             if index == finalAaridCarrier { continue }
             if hasMiniatureMaddMark(clusters[index]) { continue }
-            var classification = explicitMaddahCategory(clusters: clusters, index: index)
+            var classification = explicitMaddahCategory(
+                clusters: clusters,
+                index: index,
+                allowHukmiMunfasilOverride: hukmiOverrideIndices.contains(index)
+            )
             // Ayah-final lone madd letter: read as natural madd at waqf, not the highlighted madd lazim catch-all.
             if index == ayahFinalNaturalIndex, classification.category == .maddNecessary {
                 classification = (.maddNatural, PaintPriority.maddNatural2)
@@ -1117,9 +1137,24 @@ final class TajweedStore {
         }
     }
 
+    /// Cluster indices that belong to a `proper_words` (hukmī munfaṣil) exact-match word, so the superscript
+    /// madd carrier + same-word hamzah inside them is reclassified munfaṣil instead of muttaṣil.
+    private func hukmiMunfasilOverrideClusterIndices(clusters: [CharacterClusterInfo], words: [Range<Int>]) -> Set<Int> {
+        guard !Self.hukmiMunfasilProperWords.isEmpty else { return [] }
+        var result = Set<Int>()
+        for word in words {
+            let wordText = word.map { clusters[$0].text }.joined().precomposedStringWithCanonicalMapping
+            if Self.hukmiMunfasilProperWords.contains(wordText) {
+                result.formUnion(word)
+            }
+        }
+        return result
+    }
+
     private func explicitMaddahCategory(
         clusters: [CharacterClusterInfo],
-        index: Int
+        index: Int,
+        allowHukmiMunfasilOverride: Bool = false
     ) -> (category: TajweedLegendCategory, priority: Int) {
         let hasTashkeelMaddCarrier = scalarRange(in: clusters[index], scalar: Self.daggerAlif) != nil ||
             scalarRange(in: clusters[index], scalar: Self.smallWaw) != nil ||
@@ -1147,9 +1182,17 @@ final class TajweedStore {
             }
             // Check hamza before the Arabic-letter guard so tatweel+hamza (e.g. ـَٔ) is caught as muttasil.
             if isHamzaCarrier(cluster) {
-                return sawWordBreak
-                    ? (.maddSeparated, PaintPriority.explicitMaddSeparated)
-                    : (.maddConnected, PaintPriority.explicitMaddConnected)
+                if sawWordBreak {
+                    return (.maddSeparated, PaintPriority.explicitMaddSeparated)
+                }
+                // Exception: in the `proper_words` hukmī munfaṣil words, a superscript madd carrier
+                // (dagger-alif / small-waw / small-yeh) followed by a hamzah in the SAME written word is
+                // recited as madd munfaṣil, not muttaṣil. Only the superscript-carrier sequence is
+                // overridden — a real madd letter + hamzah in these words stays muttaṣil.
+                if allowHukmiMunfasilOverride, hasTashkeelMaddCarrier {
+                    return (.maddSeparated, PaintPriority.explicitMaddSeparated)
+                }
+                return (.maddConnected, PaintPriority.explicitMaddConnected)
             }
             guard cluster.primaryArabicLetter != nil else {
                 scanIndex += 1

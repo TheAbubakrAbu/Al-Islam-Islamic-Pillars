@@ -180,8 +180,12 @@ struct HighlightedSnippet: View {
                     normalizedTerm: normalizedTerm
                 )
             }
-            if ranges.isEmpty, source.containsArabicLetters {
-                ranges = arabicPhrasePrefixRanges(
+            // Phrase-prefix fallback for BOTH scripts: highlights consecutive words where the leading words
+            // match and the final word is a prefix (e.g. "those who believ" → "those who believe"). This is
+            // the same "close match" rule the verse search itself uses, so English close matches — which
+            // previously highlighted nothing — now get colored like the Arabic ones.
+            if ranges.isEmpty {
+                ranges = phrasePrefixRanges(
                     in: source,
                     normalizedSource: normEntry.normalizedSource,
                     normalizedTerm: normalizedTerm,
@@ -203,7 +207,7 @@ struct HighlightedSnippet: View {
         return attributed
     }
 
-    private func arabicPhrasePrefixRanges(
+    private func phrasePrefixRanges(
         in source: String,
         normalizedSource: String,
         normalizedTerm: String,

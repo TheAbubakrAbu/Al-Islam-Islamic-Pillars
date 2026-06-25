@@ -22,7 +22,9 @@ struct CalendarView: View {
     @State private var hijriMonth = 1
     @State private var didAutoScrollToNearest = false
     @State private var eventRows: [HijriEventRowModel] = []
+    @State private var nextYearEventRows: [HijriEventRowModel] = []
     @State private var nearestEventRow: HijriEventRowModel?
+    @State private var showNextYear = false
 
     private static let monthSymbols = [
         "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
@@ -133,6 +135,29 @@ struct CalendarView: View {
                             HijriEventRow(row: row, isPast: isPastEvent(row))
                                 .id(row.id)
                         }
+
+                        Button {
+                            settings.hapticFeedback()
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showNextYear.toggle()
+                            }
+                        } label: {
+                            Label(
+                                showNextYear ? "Hide Next Year's Events" : "Show Next Year's Events",
+                                systemImage: showNextYear ? "chevron.up" : "chevron.down"
+                            )
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(settings.accentColor.color)
+                        }
+                    }
+
+                    if showNextYear {
+                        Section(header: Text("NEXT YEAR'S DATES")) {
+                            ForEach(nextYearEventRows, id: \.id) { row in
+                                HijriEventRow(row: row, isPast: false)
+                                    .id("next-\(row.id)")
+                            }
+                        }
                     }
                 }
                 .themedListRowBackground()
@@ -158,7 +183,7 @@ struct CalendarView: View {
         }
     }
 
-    private func buildEventRows() -> [HijriEventRowModel] {
+    private func buildEventRows(extraYearShift: Int = 0) -> [HijriEventRowModel] {
         let baseEvents = settings.specialEvents
         let todayStart = Calendar.current.startOfDay(for: Date())
 
@@ -169,7 +194,9 @@ struct CalendarView: View {
             guard let date = settings.hijriCalendar.date(from: event.1) else { return true }
             return date < todayStart
         }
-        let yearShift = allPast ? 1 : 0
+        // extraYearShift lets the "next year's events" button build the following year's set on top of
+        // whatever the current display year already resolved to.
+        let yearShift = (allPast ? 1 : 0) + extraYearShift
 
         return baseEvents.map { event in
             var components = event.1
@@ -227,6 +254,7 @@ struct CalendarView: View {
         hijriYear = components.year ?? 1445
         hijriMonth = components.month ?? 1
         eventRows = buildEventRows()
+        nextYearEventRows = buildEventRows(extraYearShift: 1)
         nearestEventRow = nearestEventRow(in: eventRows)
         settings.updateDates()
     }

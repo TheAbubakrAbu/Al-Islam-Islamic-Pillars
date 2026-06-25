@@ -399,9 +399,9 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
         case .maddSukoon:
             return "The key condition is pausing at the word ending. This includes madd aarid lis-sukoon, where the final letter becomes temporarily sakin after a normal madd letter, and madd leen, where a sakin waaw or yaa follows a fathah and is stretched softly when stopping. Use 2, 4, or 6 counts consistently, and keep madd leen no longer than the madd aarid length chosen in the same recitation."
         case .maddSeparated:
-            return "Because the hamzah is in the following word, scholars classify this separately from muttasil. Allowed lengths vary by riwayah, so learners should follow one taught pattern and avoid switching counts randomly in the same recitation."
+            return "Because the hamzah is in the following word, scholars classify this separately from muttasil. Allowed lengths vary by riwayah, so learners should follow one taught pattern and avoid switching counts randomly in the same recitation. This color also marks Madd Munfasil Hukmi (\"ruled\" separated): a handful of words — the vocative يَٰٓ (\"O…\") and demonstrative هَٰٓ (\"these…\") particles written joined to a following hamzah, such as يَٰٓأَيُّهَا and هَٰٓؤُلَآءِ — where only that superscript-particle sequence is treated as separated even though it sits inside one written word."
         case .maddConnected:
-            return "Since both elements occur inside one word, this is treated as a stronger extension than natural madd. Keep the elongation measured and stable according to your riwayah so the hamzah after it remains clear and not swallowed."
+            return "Since both elements occur inside one word, this is treated as a stronger extension than natural madd. Keep the elongation measured and stable according to your riwayah so the hamzah after it remains clear and not swallowed. Note one exception: in the يَٰٓ/هَٰٓ particle words (e.g. يَٰٓأَيُّهَا, هَٰٓؤُلَآءِ) the superscript madd before the hamzah is recited as Madd Munfasil Hukmi instead — but any real madd letter + hamzah elsewhere in those same words (e.g. لَآءِ in هَٰٓؤُلَآءِ) stays muttasil."
         case .maddNecessary:
             return "This category is fixed and not flexible like optional madd forms, so it should be given its full required length whenever encountered. Its consistency is one of the easiest ways to stabilize rhythm and accuracy in longer passages."
             
@@ -415,6 +415,156 @@ enum TajweedLegendCategory: String, CaseIterable, Identifiable {
 ///
 /// Keep the rule engine in one place so Quran rendering, legend labels, and future color tweaks
 /// all read from the same definitions instead of duplicating sets and maps across files.
+///
+/// ============================================================================================
+/// TAJWEED ENGINE REFERENCE
+/// ============================================================================================
+/// This is the full specification of how the app classifies and colors tajweed, written so a future
+/// standalone engine can be rebuilt from it. `TajweedLegendCategory` (above) is the public rule set and
+/// owns the canonical color + copy for each rule; the per-letter DETECTION lives in `QuranData`
+/// (`collectMaddAndWaslPaintOps`, `appendExplicitMaddahPaintOps`, `appendTreeDrivenPaintOps`, and the
+/// `append…PaintOps` helpers). This comment ties the two together and enumerates every exception.
+///
+/// --------------------------------------------------------------------------------------------
+/// 1. PIPELINE (how a colored ayah is produced)
+/// --------------------------------------------------------------------------------------------
+///   a. The ayah's `textArabic` is split into GRAPHEME CLUSTERS (`CharacterClusterInfo`): one base
+///      Arabic letter plus its trailing combining marks (harakat, shadda, maddah, dagger alif, small
+///      high marks, etc.). Word boundaries are whitespace clusters (`wordClusterRanges`).
+///   b. Two independent producers emit `PaintOp`s (a UTF-16 range + category + integer priority):
+///        • TREE-DRIVEN: precomputed annotations decoded from the bundled tajweed JSON, keyed by
+///          (surah, ayah), mapped to categories via `treeDrivenRuleMap`. Used mainly for the
+///          ghunnah / ikhfaa / iqlaab / idgham / qalqalah / silent families.
+///        • HEURISTIC: per-cluster scanning for madd, tafkhim, qalqalah, lam shamsiyyah, hamzat wasl,
+///          and the madd EXCEPTIONS below. This is authoritative for madd.
+///   c. All ops are sorted ascending by priority and applied per UTF-16 unit, so the HIGHEST priority
+///      wins on any overlap (see `PaintPriority` in `QuranData`). Waqf ornaments are skipped.
+///   d. A category is only painted if the user has it enabled (`isTajweedCategoryVisible`) and it is not
+///      in `stopBasedCategories` (stop-only madds are computed but intentionally not painted yet).
+///
+/// --------------------------------------------------------------------------------------------
+/// 2. KEY UNICODE SCALARS (the engine is scalar-driven, never glyph-driven)
+/// --------------------------------------------------------------------------------------------
+///   Madd letters (full):        alif U+0627, waw U+0648, yaa U+064A; alif-maqsura U+0649; alif-madda U+0622
+///   Madd letters (superscript): dagger alif U+0670, small waw U+06E5, small yaa U+06E6, small high yaa U+06E7
+///   Maddah (explicit madd):     U+0653  (turns a carrier into an explicit muttasil/munfasil/lazim madd)
+///   Hamza (base letters):       U+0621 ء, U+0623 أ, U+0624 ؤ, U+0625 إ, U+0626 ئ
+///   Hamza (combining, on seat): U+0654 (above), U+0655 (below) — e.g. tatweel+ٔ
+///   Hamzat al-wasl:             U+0671 ٱ  (silent when connecting)
+///   Harakat / shadda / sukoon:  fatha U+064E, damma U+064F, kasra U+0650, shadda U+0651, sukoon U+0652
+///   Tanwin:                     fathatayn U+064B, dammatayn U+064C, kasratayn U+064D (+ Uthmani variants)
+///   Iqlaab/ikhfaa tiny marks:   small high meem U+06E2, small low meem U+06ED (silent tanwin carriers)
+///   Waqf ornaments:             U+06D6…U+06ED skipped for coloring EXCEPT {U+06E1, U+06E2, U+06E5,
+///                               U+06E6, U+06ED} which are parts of letters, not stop symbols.
+///
+/// --------------------------------------------------------------------------------------------
+/// 3. RULE TAXONOMY (category · trigger · length)
+/// --------------------------------------------------------------------------------------------
+///   MADD — elongation
+///     • maddNatural (Tabi'i) ......... full madd letter preceded by its matching vowel, with NO maddah,
+///                                      NO sukoon after, and not before hamza/hamzat-wasl. 2 counts.
+///     • maddNaturalMiniature ......... a superscript madd mark (dagger alif / small waw / small yaa)
+///                                      that does NOT itself carry a maddah. Still 2 counts.
+///     • maddConnected (Muttasil) ..... madd letter + hamza in the SAME word. 4–5 counts (obligatory).
+///     • maddSeparated (Munfasil) ..... madd letter ending a word + hamza starting the NEXT word.
+///                                      2/4/5 counts. ALSO carries Munfasil Hukmi (see exceptions).
+///     • maddSukoon (Aarid/Leen) ...... only when STOPPING: a madd letter (aarid) or leen (sakin
+///                                      waw/yaa after fatha) before the final letter. 2/4/6 counts.
+///                                      In `stopBasedCategories` → computed but not painted by default.
+///     • maddNecessary (Lazim) ........ madd + permanent sukoon or shadda. 6 counts. Includes Lazim
+///                                      Harfi (muqatta'at letter names) and Lazim Kalimi (e.g. ٱلضَّآلِّينَ).
+///   GHUNNAH / NASAL (2-count nasal)
+///     • idghamGhunnah, idghamBilaGhunnah, generalGhunnah, ikhfaaLight, ikhfaaHeavy, iqlaab — driven by
+///       noon/tanwin + following letter (see the noon/tanwin sets below) and by tree annotations.
+///   SIFAAT / ARTICULATION
+///     • qalqalah ..... qutb-jad letters (ق ط ب ج د) on sukoon or when stopped. Verse-final too.
+///     • tafkhim ...... isti'la letters (خ ص ض ط ظ غ ق); final ر has its own higher-priority case.
+///   SILENT / JOINING (gray)
+///     • hamzatWaslSilent, droppedLetter, lamShamsiyah, idghamBilaGhunnah.
+///
+/// --------------------------------------------------------------------------------------------
+/// 4. NOON / TANWIN & MEEM TABLES (used by the ghunnah family)
+/// --------------------------------------------------------------------------------------------
+///   After noon-sakin / tanwin:
+///     ن only ........... idgham WITH ghunnah          (`noonTanweenTargetOnlyIdghamLetters`)
+///     م ي و ............ split idgham handling         (`noonTanweenSplitIdghamLetters`)
+///     ل ر .............. idgham WITHOUT ghunnah        (`noonTanweenSourceOnlyIdghamLetters`)
+///     ب ................ iqlaab (noon → meem sound)
+///     ص ض ط ظ ق ........ ikhfaa HEAVY                  (`ikhfaaHeavyLetters`)
+///     ت ث ج د ذ ز س ش ف ك  ikhfaa LIGHT               (`ikhfaaLightLetters`)
+///   After meem-sakin: ب → iqlaab(shafawi-style), م → idgham ghunnah.
+///   Helper alif/alif-maqsura after fathatayn is skipped to find the governed letter
+///   (`fathataynFollowerSkipLetters`).
+///
+/// --------------------------------------------------------------------------------------------
+/// 5. EXPLICIT-MADDAH CLASSIFIER (the core madd decision)  — `explicitMaddahCategory`
+/// --------------------------------------------------------------------------------------------
+///   For any cluster carrying a maddah (U+0653) that is NOT a final-aarid carrier and NOT a tiny mark:
+///     1. If the NEXT non-space cluster has a shadda → Lazim (maddNecessary).
+///     2. Else scan forward, skipping transparent marks (tatweel, harakat) and hamzat-wasl:
+///          • first hamza found  → with a word break before it = Munfasil, else = Muttasil.
+///          • EXCEPTION (Hukmi)  → if this is one of the proper_words AND the carrier is a SUPERSCRIPT
+///            madd letter, force Munfasil even though it is in the same word (see §6.1).
+///     3. Else, if the carrier is a superscript mark → miniature natural madd.
+///     4. Else → Lazim catch-all (explicit maddah that is none of the above).
+///
+/// --------------------------------------------------------------------------------------------
+/// 6. EXCEPTIONS & SPECIAL CASES (the part a naive engine gets wrong)
+/// --------------------------------------------------------------------------------------------
+///   6.1  MADD MUNFASIL HUKMI ("ruled" separated). The vocative يَا and demonstrative هَا particles are
+///        written joined to a following hamzah, so a superscript carrier (dagger alif / small waw / small
+///        yaa) + maddah + hamza sits inside ONE written word yet is recited as Munfasil. The 21 exact
+///        words are `QuranData.hukmiMunfasilProperWords` (NFC-normalized). Only that superscript-particle
+///        sequence is overridden; a real madd letter + hamza elsewhere in the SAME word stays Muttasil
+///        (e.g. هَٰٓؤُلَآءِ = هَٰٓؤُ munfasil-hukmi + لَآءِ muttasil).
+///   6.2  GENUINE MUTTASIL WRITTEN WITH A DAGGER ALIF. A dagger alif + hamza inside one true morpheme
+///        (no joined يَا/هَا) is ordinary Muttasil and must NOT be reclassified — أُوْلَٰٓئِكَ, مَلَٰٓئِكَة,
+///        إِسۡرَٰٓءِيل. This is why the override is gated by the exact-word set, not by the dagger alif alone.
+///   6.3  AYAH-FINAL LONE MADD. A lone madd letter ending the ayah is read as natural madd at waqf, not
+///        as the Lazim catch-all (`ayahFinalMaddNaturalIndex`).
+///   6.4  MADD 'IWAD. A word ending in tanwin-fath has a SILENT final alif; at waqf it is a 2-count 'iwad,
+///        never aarid lis-sukoon. The final-aarid scan skips this silent alif (`finalWordMaddAaridCarrierIndex`).
+///   6.5  MINIATURE MARK CARRYING A MADDAH. A dagger alif / small waw / small yaa is normally a 2-count
+///        natural madd, but if it ALSO carries an explicit maddah it is handled by the explicit-maddah
+///        classifier instead (so it can become muttasil/munfasil/lazim). See `hasMiniatureMaddMark`.
+///   6.6  MUQATTA'AT (disconnected opening letters). Three buckets:
+///          • `surahsOpeningMuqattaat` — letter names with a madd+sukoon are Lazim Harfi (6 counts);
+///            in ayah 1 an explicit maddah forces Lazim.
+///          • `completeAyahMuqattaatSurahs` — the letters fill the whole first ayah.
+///          • `firstWordOnlyMuqattaatSurahs` — only the first WORD of ayah 1 is muqatta'at; the rest of
+///            that ayah uses normal rules. (Ash-Shura's letters span the first TWO ayahs — handled apart.)
+///   6.7  LAZIM KALIMI. A madd letter immediately before a shadda/permanent sukoon inside a word →
+///        6 counts: combined alif+shadda clusters (ٱلضَّآلِّينَ) and waw-then-alif-sukoon sequences.
+///   6.8  HAMZAT AL-WASL. Silent (gray) when connecting from a previous word; pronounced only when the
+///        word is the start of recitation. The hamzat-wasl that opens the FIRST letter of an ayah is not
+///        painted silent.
+///   6.9  IQLAAB / IKHFAA TINY MARKS. A small high/low meem (U+06E2 / U+06ED) marks a tanwin that becomes
+///        a hidden meem; the alif that follows is a silent tanwin carrier, NOT natural madd
+///        (`clusterHasTinyMeemIqlaabMark`).
+///   6.10 FINAL RAA TAFKHIM. A word-final ر carrying tafkhim uses a dedicated higher priority so it wins
+///        over generic tafkhim on overlap.
+///   6.11 STOP-BASED MADD NOT PAINTED. `maddSukoon` (aarid + leen) is fully detected but kept out of the
+///        painted text for now (`stopBasedCategories`); the legend still documents it.
+///   6.12 WAQF ORNAMENTS. Pause symbols in U+06D6…U+06ED are not colored, except the five exception
+///        scalars that are letter components (`waqfScalarExceptions`).
+///
+/// --------------------------------------------------------------------------------------------
+/// 7. PRIORITIES (highest wins; see `PaintPriority` in QuranData)
+/// --------------------------------------------------------------------------------------------
+///   Lowest: tafkhim/silent/ghunnah families → natural madd → aarid → lazim → explicit muttasil →
+///   explicit munfasil(22) → explicit lazim(23) → hamzat-wasl-silent(50) → tiny-meem-iqlaab(51) →
+///   final-raa-tafkhim(52). The Hukmi-munfasil override emits at the explicit-munfasil tier (22), the
+///   highest madd tier, so it always beats any competing muttasil op for the same letters.
+///
+/// --------------------------------------------------------------------------------------------
+/// 8. LENGTH SUMMARY (harakat / counts)
+/// --------------------------------------------------------------------------------------------
+///   Natural & miniature, Badal, 'Iwad, Tamkin, Silah-sughra ... 2
+///   Munfasil & Munfasil-Hukmi & Silah-kubra ................... 2 / 4 / 5 (consistent within a recitation)
+///   Muttasil ................................................. 4 / 5
+///   Aarid lis-sukoon / Leen .................................. 2 / 4 / 6 (leen ≤ chosen aarid length)
+///   Lazim (Harfi & Kalimi) ................................... 6 (fixed)
+/// ============================================================================================
 struct TajweedRules {
     /// Seven heavy letters used by tafkhim detection.
     static let heavyBaseLetters: Set<Character> = ["خ", "ص", "ض", "ط", "ظ", "غ", "ق"]

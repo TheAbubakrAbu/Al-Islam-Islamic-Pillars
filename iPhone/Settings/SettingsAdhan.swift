@@ -1428,18 +1428,30 @@ extension Settings {
     private func makeEventNotificationRequest(for event: (String, DateComponents, String, String)) -> (request: UNNotificationRequest, date: Date)? {
         let (titleText, hijriComps, eventSubTitle, _) = event
 
-        guard let hijriDate = hijriCalendar.date(from: hijriComps) else { return nil }
         let gregorianCalendar = Calendar(identifier: .gregorian)
-        var gregorianComps = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
-        gregorianComps.hour = 9
-        gregorianComps.minute = 0
 
-        guard
-            let finalDate = gregorianCalendar.date(from: gregorianComps),
-            finalDate > Date()
-        else {
-            return nil
+        // The Hijri components carry the current Hijri year, so an event that already passed this year
+        // would otherwise produce no notification at all (its Gregorian date is in the past). Roll the
+        // occurrence forward one Hijri year at a time until it lands in the future, so each event always
+        // has an upcoming reminder scheduled — even late in the Hijri year after all of this year's
+        // events are behind us.
+        var comps = hijriComps
+        var gregorianComps = DateComponents()
+        var finalDate: Date?
+        for _ in 0...1 {
+            guard let hijriDate = hijriCalendar.date(from: comps) else { return nil }
+            var g = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
+            g.hour = 9
+            g.minute = 0
+            if let candidate = gregorianCalendar.date(from: g), candidate > Date() {
+                gregorianComps = g
+                finalDate = candidate
+                break
+            }
+            comps.year = (comps.year ?? hijriCalendar.component(.year, from: Date())) + 1
         }
+
+        guard let finalDate else { return nil }
 
         let content = UNMutableNotificationContent()
         content.title = AppIdentifiers.appName

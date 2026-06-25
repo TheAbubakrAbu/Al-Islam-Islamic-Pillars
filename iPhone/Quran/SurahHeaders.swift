@@ -136,6 +136,23 @@ struct SurahSectionHeader: View {
     var compact: Bool = false
 
     var body: some View {
+        #if os(watchOS)
+        // watchOS has too little width to fit the emoji, ayah/page summary, play, and star on one line,
+        // so the controls get their own row beneath the summary.
+        VStack(spacing: 8) {
+            HStack(spacing: 6) {
+                revelationSymbol
+                ayahSummary
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+
+            HStack(spacing: 28) {
+                watchPlaybackButton
+                favoriteToggle
+            }
+            .frame(maxWidth: .infinity)
+        }
+        #else
         // Revelation symbol on the left, ayah/page info centered, favorite star on the right.
         // The symbol and star share the same size so the centered text sits exactly in the middle.
         ZStack {
@@ -148,13 +165,10 @@ struct SurahSectionHeader: View {
 
                 Spacer()
 
-                #if os(watchOS)
-                watchPlaybackButton
-                #endif
-
                 favoriteToggle
             }
         }
+        #endif
     }
 
     private var symbolFont: Font {

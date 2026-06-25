@@ -1313,6 +1313,141 @@ private struct TajweedMaddView: View {
                     .font(.body)
             }
 
+            Section("3B. MADD MUNFASIL HUKMI (RULED SEPARATED)") {
+                Text("A special, \u{201C}ruled\u{201D} (hukmi) form of Madd Munfasil. The madd letter and the hamzah are written inside one word, so it looks like Madd Muttasil — but it is recited as a separated madd.")
+                    .font(.body)
+
+                Text("Why It Is Separated")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("The madd letter is actually the tail of a small joined particle — the vocative يَا (\u{201C}O \u{2026}\u{201D}) or the demonstrative هَا (\u{201C}here/these \u{2026}\u{201D}) — and the hamzah begins the word it is attached to. So in meaning it is two words, even though the script joins them.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+
+                Text("How To Spot It")
+                    .font(.subheadline.weight(.semibold))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("A superscript madd letter — dagger alif (\u{0670}), small waw (\u{06E5}), or small yaa (\u{06E6}) — carrying a maddah (\u{0653})")
+                    Text("Immediately followed by a hamzah in the SAME written word")
+                    Text("The carrier is the tail of a joined يَا or هَا particle")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Length: 2, 4, or 5 counts (treated exactly like Madd Munfasil — be consistent)")
+                    .font(.body)
+                    .foregroundColor(settings.accentColor.color)
+
+                Text("Examples")
+                    .font(.subheadline.weight(.semibold))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedPairRow(arabic: "يَٰٓأَيُّهَا", english: "ya + ayyuha (O you…)", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "هَٰٓأَنتُمۡ", english: "ha + antum (here you are)", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "يَٰٓإِبۡرَٰهِيمُ", english: "ya + Ibrahim (O Abraham)", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "يَٰٓـَٔادَمُ", english: "ya + Adam (O Adam)", arabicFont: arabicHeadlineFont)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("One Word Can Hold Two Different Madds")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("Do not assume every long madd in these words is hukmi. The word هَٰٓؤُلَآءِ contains BOTH:")
+                    .font(.body)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("هَٰٓؤُ → Madd Munfasil Hukmi (the joined هَا particle)")
+                    Text("لَآءِ → a true Madd Muttasil (a real alif + hamzah in one word)")
+                }
+                .font(.body)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Only the superscript-particle sequence is munfasil hukmi. Every other madd in the word follows the normal rules.")
+                    .font(.body)
+
+                Text("The Complete Set In The Qur\u{2019}an")
+                    .font(.subheadline.weight(.semibold))
+
+                Text("هَٰٓأَنتُمۡ · هَٰٓؤُلَآءِ · أَهَٰٓؤُلَآءِ · وَهَٰٓؤُلَآءِ · يَٰٓـَٔادَمُ · وَيَٰٓـَٔادَمُ · يَٰٓأَبَانَا · يَٰٓأَبَتِ · يَٰٓإِبۡرَٰهِيمُ · يَٰٓإِبۡلِيسُ · يَٰٓأُخۡتَ · يَٰٓأَرۡضُ · يَٰٓأَسَفَىٰ · يَٰٓأَهۡلَ · يَٰٓأُوْلِي · يَٰٓأَيَّتُهَا · يَٰٓأَيُّهَ · يَٰٓأَيُّهَا")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
+
+                Text("(Counting orthographic variants such as يَٰٓأَبَانَآ and the pause-mark forms, this is 21 written words in the Hafs muṣḥaf.)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("3C. OTHER MADD TYPES & EXCEPTIONS") {
+                Text("Several named madds and special cases sit alongside the main five. They matter for accurate recitation and for any rule engine.")
+                    .font(.body)
+
+                Text("Madd Badal — hamzah BEFORE the madd")
+                    .font(.subheadline.weight(.semibold))
+                Text("A hamzah followed by a madd letter (the reverse of muttasil). Read 2 counts; it is not lengthened like muttasil.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedPairRow(arabic: "ءَامَنُوا", english: "aa-manu", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "ءَادَمَ", english: "aa-dama", arabicFont: arabicHeadlineFont)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Madd \u{02BF}Iwad — tanwin fath at a stop")
+                    .font(.subheadline.weight(.semibold))
+                Text("When you stop on a word ending in tanwin fath (\u{064B}), the tanwin drops and the alif is stretched 2 counts. It is not aarid lis-sukoon.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedPairRow(arabic: "عَلِيمًا", english: "stop: a-li-maa", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "غَفُورًا", english: "stop: gha-fu-raa", arabicFont: arabicHeadlineFont)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Madd Tamkin — doubled yaa")
+                    .font(.subheadline.weight(.semibold))
+                Text("A kasrah + shaddah yaa meeting a madd yaa. Read 2 counts, taking care not to swallow either yaa.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedPairRow(arabic: "ٱلنَّبِيِّـۧنَ", english: "an-nabiy-yiin", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "حُيِّيتُم", english: "huy-yi-tum", arabicFont: arabicHeadlineFont)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Madd Silah — the pronoun haa")
+                    .font(.subheadline.weight(.semibold))
+                Text("The attached pronoun \u{0647} (\u{201C}his/its\u{201D}) between two voweled letters is given a hidden waw/yaa. Sughra (small) is 2 counts; Kubra (large) is 4\u{2013}5 counts when a hamzah follows — it then behaves like Madd Munfasil.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedPairRow(arabic: "إِنَّهُۥ كَانَ", english: "sughra: in-na-hu", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "بِهِۦٓ أَحَدَۢا", english: "kubra: bi-hii (before hamzah)", arabicFont: arabicHeadlineFont)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Dagger Alif & Tiny Madd Marks")
+                    .font(.subheadline.weight(.semibold))
+                Text("Superscript madd marks — dagger alif (\u{0670}), small waw (\u{06E5}), small yaa (\u{06E6}) — are still a 2-count natural madd even though they are written tiny. When such a mark also carries a maddah (\u{0653}) and a hamzah follows, it becomes the munfasil-hukmi case above.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+
+                Text("Genuine Muttasil Written With A Dagger Alif")
+                    .font(.subheadline.weight(.semibold))
+                Text("Not every dagger alif + hamzah is hukmi. When both sit inside one true word (no joined يَا/هَا particle), it is ordinary Madd Muttasil — for example أُوْلَٰٓئِكَ, مَلَٰٓئِكَة, and إِسۡرَٰٓءِيل.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    TajweedPairRow(arabic: "أُوْلَٰٓئِكَ", english: "muttasil: ula-aa-ika", arabicFont: arabicHeadlineFont)
+                    TajweedPairRow(arabic: "مَلَٰٓئِكَةِ", english: "muttasil: mala-aa-ikah", arabicFont: arabicHeadlineFont)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             Section("4. ENDING MADD") {
                 Text("Ending madd applies when you stop on a word and the ending sound changes because of waqf.")
                     .font(.body)

@@ -13,11 +13,29 @@ struct PrayersEntryView: View {
         switch family {
         case .accessoryRectangular:
             rectangular
+        case .accessoryCorner:
+            corner
         default:
             circular
         }
     }
-    
+
+    @ViewBuilder
+    var corner: some View {
+        if let nextPrayer = entry.nextPrayer {
+            Image(systemName: nextPrayer.image)
+                .font(.title3)
+                .foregroundColor(accent(for: nextPrayer))
+                .widgetLabel {
+                    Text("\(nextPrayer.nameTransliteration) \(nextPrayer.time, style: .time)")
+                }
+        } else {
+            Image(systemName: "moon.stars.fill")
+                .foregroundColor(entry.accentColor.color)
+                .widgetLabel { Text("Open app") }
+        }
+    }
+
     var circular: some View {
         VStack(spacing: 4) {
             if let nextPrayer = entry.nextPrayer {
@@ -89,6 +107,7 @@ struct Complication: Widget {
         .supportedFamilies([
             .accessoryInline,
             .accessoryCircular,
+            .accessoryCorner,
             .accessoryRectangular
         ])
     }
@@ -150,35 +169,46 @@ struct CountdownComplicationView: View {
     }
 
     private func circular(next: Prayer) -> some View {
+        // The ring itself is the live, second-by-second countdown. Inside it we show the prayer logo and a
+        // `.relative` label (e.g. "3 hr") instead of a ticking `.timer` H:MM:SS, which was too wide and
+        // overflowed the small circular face.
         ProgressView(timerInterval: interval(to: next), countsDown: true) {
-            Image(systemName: next.image)
-                .font(.caption2)
+            EmptyView()
         } currentValueLabel: {
-            Text(next.time, style: .timer)
-                .font(.system(.caption2, design: .rounded))
-                .multilineTextAlignment(.center)
+            VStack(spacing: 0) {
+                Image(systemName: next.image)
+                    .font(.system(size: 12))
+                Text(next.time, style: .relative)
+                    .font(.system(size: 12, design: .rounded))
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+            }
         }
         .progressViewStyle(.circular)
         .tint(accent(for: next))
     }
 
     private func rectangular(next: Prayer) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 4) {
                 Image(systemName: next.image)
-                    .font(.body)
+                    .font(.subheadline)
                 Text(next.nameTransliteration)
                     .font(.headline)
             }
             .foregroundColor(accent(for: next))
 
-            Text(next.time, style: .timer)
-                .font(.system(.title3, design: .rounded).bold())
-                .foregroundColor(accent(for: next))
+            // Countdown and target time share one baseline-aligned row so the three lines no longer have
+            // the loose vertical gaps they used to.
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text(next.time, style: .timer)
+                    .font(.system(.title3, design: .rounded).bold())
+                    .foregroundColor(accent(for: next))
 
-            Text("at \(next.time, style: .time)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+                Text("at \(next.time, style: .time)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
