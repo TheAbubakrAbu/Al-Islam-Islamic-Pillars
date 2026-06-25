@@ -179,7 +179,7 @@ struct CalendarView: View {
             .safeAreaInset(edge: .top) {
                 dateOverlayHeader
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .applyConditionalListStyle()
         }
     }
 

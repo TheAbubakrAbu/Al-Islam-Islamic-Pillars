@@ -445,6 +445,7 @@ struct PlayCustomRangeSheet: View {
                         }
                     }
                     .listStyle(.insetGrouped)
+                    .applyConditionalListStyle(disableNowPlayingInset: true)
 
                     Divider()
 
@@ -453,6 +454,7 @@ struct PlayCustomRangeSheet: View {
                     List {
                         arabicVersesPreview
                     }
+                    .applyConditionalListStyle(disableNowPlayingInset: true)
                     .frame(height: geo.size.height / 3)
                 }
             }

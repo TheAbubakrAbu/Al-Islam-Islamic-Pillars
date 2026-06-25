@@ -49,7 +49,7 @@ struct DateView: View {
             #endif
         }
         .navigationTitle("Hijri Converter")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 
     private var selectionSection: some View {

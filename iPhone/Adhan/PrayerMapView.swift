@@ -43,6 +43,7 @@ struct PrayerTimesMapView: View {
             prayerTimesSection
             dateFooterSection
         }
+        .applyConditionalListStyle()
         .navigationTitle("View City Prayer Times")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

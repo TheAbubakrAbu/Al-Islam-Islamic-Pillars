@@ -441,5 +441,6 @@ final class LocalQiblaCompass: NSObject, ObservableObject, CLLocationManagerDele
             QiblaView(size: 160)
                 .padding()
         }
+        .applyConditionalListStyle(disableNowPlayingInset: true)
     }
 }

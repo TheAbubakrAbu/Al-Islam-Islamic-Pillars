@@ -2267,5 +2267,6 @@ struct AyahSearchRow: View, Equatable {
                 ayah: AlIslamPreviewData.ayah
             )
         }
+        .applyConditionalListStyle(disableNowPlayingInset: true)
     }
 }

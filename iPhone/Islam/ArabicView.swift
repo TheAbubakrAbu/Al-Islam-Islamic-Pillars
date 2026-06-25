@@ -150,7 +150,7 @@ struct ArabicView: View {
             .background(Color.white.opacity(0.00001))
         }
         #endif
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Arabic Alphabet")
     }
 
@@ -541,7 +541,7 @@ struct ArabicLetterView: View {
             .background(Color.white.opacity(0.00001))
         }
         #endif
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle(letterData.letter)
     }
 

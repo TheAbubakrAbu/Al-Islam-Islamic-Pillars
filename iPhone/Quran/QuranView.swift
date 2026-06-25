@@ -657,7 +657,7 @@ struct QuranView: View {
                 }
                 .themedListRowBackground()
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .applyConditionalListStyle(disableNowPlayingInset: true)
             .compactListSectionSpacing()
             .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
             .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)

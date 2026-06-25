@@ -26,7 +26,7 @@ struct WallpaperView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Wallpapers")
     }
 

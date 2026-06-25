@@ -36,7 +36,7 @@ struct TasbihView: View {
             .background(Color(UIColor.systemGroupedBackground))
         }
         #endif
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .compactListSectionSpacing()
         .navigationTitle("Tasbih Counter")
     }

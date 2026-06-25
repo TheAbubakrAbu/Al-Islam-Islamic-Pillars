@@ -146,7 +146,7 @@ struct AdhanView: View {
             .smallMediumSheetPresentation()
         }
         #endif
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 
     @ViewBuilder

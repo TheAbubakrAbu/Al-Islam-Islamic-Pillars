@@ -351,5 +351,6 @@ struct HeaderRow: View {
         List {
             SurahSectionHeader(surah: AlIslamPreviewData.surah)
         }
+        .applyConditionalListStyle(disableNowPlayingInset: true)
     }
 }

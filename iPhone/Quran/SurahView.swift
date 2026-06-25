@@ -1303,7 +1303,7 @@ struct SurahView: View {
                 }
                 .themedListRowBackground()
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .applyConditionalListStyle(disableNowPlayingInset: true)
             .compactListSectionSpacing()
             #if os(iOS)
             .onChange(of: scrollDown) { value in
@@ -2122,7 +2122,7 @@ private struct SurahPickerSheet: View {
                     }
                     .themedListRowBackground()
                 }
-                .applyConditionalListStyle(defaultView: settings.defaultView)
+                .applyConditionalListStyle()
                 .compactListSectionSpacing()
                 .searchable(text: $searchText.animation(.easeInOut), prompt: "Search surah")
                 .navigationTitle("Choose Surah")

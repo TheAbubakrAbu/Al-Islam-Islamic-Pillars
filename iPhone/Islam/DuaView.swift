@@ -127,7 +127,7 @@ struct DuaView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Dua & Supplications")
     }
 }
@@ -167,7 +167,7 @@ private struct DuaCollectionView: View {
         #else
         .searchable(text: $searchText.animation(.easeInOut))
         #endif
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .compactListSectionSpacing()
         .navigationTitle(collection.title)
     }

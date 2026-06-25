@@ -77,7 +77,7 @@ struct SettingsView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Settings")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 
     #if os(iOS)
@@ -96,7 +96,7 @@ struct SettingsView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Settings")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 
     @ViewBuilder
@@ -234,7 +234,7 @@ struct SettingsView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Manual Offset Settings")
     }
 

@@ -70,7 +70,7 @@ struct IslamView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Al-Islam")
     }
 
@@ -85,7 +85,7 @@ struct IslamView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Al-Islam")
     }
 

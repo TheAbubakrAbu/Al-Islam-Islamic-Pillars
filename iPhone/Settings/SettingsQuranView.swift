@@ -99,7 +99,7 @@ struct SettingsQuranView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .compactListSectionSpacing()
         .navigationTitle("Al-Quran Settings")
         #if os(iOS)
@@ -146,7 +146,7 @@ struct SettingsQuranView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle(title)
     }
 
@@ -187,7 +187,7 @@ struct SettingsQuranView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Arabic Text")
         .confirmationDialog("Convert Qiraah to Hafs an Asim?", isPresented: $confirmHideQiraahDetails, titleVisibility: .visible) {
             Button("Yes") {
@@ -1574,7 +1574,7 @@ struct ReciterListView: View {
             #elseif os(watchOS)
             .searchable(text: $searchText.animation(.easeInOut))
             #endif
-            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .applyConditionalListStyle()
             .confirmationDialog(qiraahChangeDialogTitle, isPresented: Binding(
                 get: { pendingQiraahReciter != nil },
                 set: {

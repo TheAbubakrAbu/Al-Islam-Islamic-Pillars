@@ -67,7 +67,7 @@ struct PillarsView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Islamic Pillars")
     }
 }
@@ -214,7 +214,7 @@ struct GodPillarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Does God Exist?")
     }
 }
@@ -348,7 +348,7 @@ struct IslamPillarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("What is Islam?")
     }
 }
@@ -440,7 +440,7 @@ struct AllahPillarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Who is Allah?")
     }
 }
@@ -518,7 +518,7 @@ struct QuranPillarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("What is the Quran?")
     }
 }
@@ -621,7 +621,7 @@ struct MuqattaatPillarView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Muqatta'at Letters")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 
     private func muqattaatRow(_ row: MuqattaatRow) -> some View {
@@ -747,7 +747,7 @@ struct ProphetPillarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Who is the Prophet?")
     }
 }
@@ -821,7 +821,7 @@ struct SunnahPillarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("What is the Sunnah?")
     }
 }
@@ -907,7 +907,7 @@ struct HadithPillarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("What are Hadiths?")
     }
 }
@@ -1025,7 +1025,7 @@ struct ShahaadahView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Shahaadah")
     }
 }
@@ -1092,7 +1092,7 @@ struct SalahView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Salaah")
     }
 }
@@ -1169,7 +1169,7 @@ struct SawmView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Sawm")
     }
 }
@@ -1227,7 +1227,7 @@ struct ZakahView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Zakah")
     }
 }
@@ -1308,7 +1308,7 @@ struct HajjView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Hajj")
     }
 }
@@ -1417,7 +1417,7 @@ struct GodView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("One God")
     }
 }
@@ -1514,7 +1514,7 @@ struct AngelsView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Angels")
     }
 }
@@ -1591,7 +1591,7 @@ struct BooksView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Books")
     }
 }
@@ -1683,7 +1683,7 @@ struct ProphetsView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Prophets")
     }
 }
@@ -1763,7 +1763,7 @@ struct DayView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Day of Judgment")
     }
 }
@@ -1838,7 +1838,7 @@ struct QadrView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Qadr")
     }
 }
@@ -1951,7 +1951,7 @@ struct HaramView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Masjid Al-Haram")
     }
 }
@@ -2026,7 +2026,7 @@ struct NabawiView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Masjid An-Nabawi")
     }
 }
@@ -2107,7 +2107,7 @@ struct AqsaView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Masjid Al-Aqsa")
     }
 }
@@ -2284,7 +2284,7 @@ struct WudhuView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Wudhu and Ghusl")
     }
 }
@@ -2367,7 +2367,7 @@ struct JumuahView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Jumuah")
     }
 }
@@ -2469,7 +2469,7 @@ struct AdhanOtherView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Adhan")
     }
 }
@@ -2552,7 +2552,7 @@ struct IqamahView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Iqamah")
     }
 }
@@ -2656,7 +2656,7 @@ struct TakbiratView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Takbirat Al-Eid")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -2721,7 +2721,7 @@ struct HijriCalendarView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Hijri Calendar")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -2873,7 +2873,7 @@ struct CompileView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Compilation of the Quran")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -2970,7 +2970,7 @@ struct TajweedView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Tajweed")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         #if os(iOS)
         .sheet(isPresented: $showTajweedLegend) {
             NavigationView {
@@ -3029,7 +3029,7 @@ struct JuzView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Thirty Juz")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -3128,7 +3128,7 @@ struct AhrufView: View {
             .themedListRowBackground()
         }
         .navigationTitle("7 Ahruf (Modes)")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -3355,7 +3355,7 @@ struct QiraatView: View {
             .themedListRowBackground()
         }
         .navigationTitle("10 Qiraat (Recitations)")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 
     /// A tappable Instagram handle that opens the creator's profile, used for the infographic credits.
@@ -3427,7 +3427,7 @@ struct FarewellView: View {
             .themedListRowBackground()
         }
         .navigationTitle("Farewell Sermon")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -3523,7 +3523,7 @@ struct SahabahView: View {
             .themedListRowBackground()
         }
         .navigationTitle("The Sahabah")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -3660,7 +3660,7 @@ struct WivesView: View {
             .themedListRowBackground()
         }
         .navigationTitle("The Wives")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -3796,7 +3796,7 @@ struct CaliphatesView: View {
             .themedListRowBackground()
         }
         .navigationTitle("The Caliphates")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 
@@ -3871,7 +3871,7 @@ struct MadhabView: View {
             .themedListRowBackground()
         }
         .navigationTitle("The 4 Madhabs")
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
     }
 }
 

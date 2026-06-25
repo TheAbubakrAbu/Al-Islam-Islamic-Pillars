@@ -23,10 +23,7 @@ struct CreditsView: View {
             appsSection
             botsSection
         }
-        .listStyle(.plain)
-        .navigationBarTitleDisplayMode(.inline)
-        .accentColor(settings.accentColor.color)
-        .tint(settings.accentColor.color)
+        .applyConditionalListStyle()
         .navigationTitle("Credits")
     }
 

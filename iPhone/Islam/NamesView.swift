@@ -257,7 +257,7 @@ struct NamesView: View {
             .background(Color.white.opacity(0.00001))
         }
         #endif
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .compactListSectionSpacing()
         .navigationTitle("99 Names of Allah")
     }

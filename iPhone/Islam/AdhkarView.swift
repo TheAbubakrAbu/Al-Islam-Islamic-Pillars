@@ -145,7 +145,7 @@ struct AdhkarView: View {
         #elseif os(watchOS)
         .searchable(text: $searchText.animation(.easeInOut))
         #endif
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .compactListSectionSpacing()
         .navigationTitle("Dhikr & Remembrances")
     }

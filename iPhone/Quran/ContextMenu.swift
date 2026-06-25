@@ -889,7 +889,7 @@ struct AyahQiraahComparisonSheet: View {
                 }
                 .themedListRowBackground()
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .applyConditionalListStyle()
             .compactListSectionSpacing()
             .navigationTitle("Qiraah Comparison")
             .navigationBarTitleDisplayMode(.inline)
@@ -1224,7 +1224,7 @@ struct AyahEnglishComparisonSheet: View {
                 }
                 .themedListRowBackground()
             }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .applyConditionalListStyle()
             .compactListSectionSpacing()
             .navigationTitle("Translation Comparison")
             .navigationBarTitleDisplayMode(.inline)

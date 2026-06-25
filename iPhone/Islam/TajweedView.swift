@@ -151,7 +151,7 @@ struct TajweedFoundationsView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Tajweed Foundations")
         #if os(iOS)
         .sheet(isPresented: $showTajweedLegend) {
@@ -328,7 +328,7 @@ private struct TajweedImprovingRecitationView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Improving Your Recitation")
     }
 }
@@ -388,7 +388,7 @@ private struct TajweedFoundationsTopicView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Lip Movement")
     }
 }
@@ -622,7 +622,7 @@ private struct TajweedInMushafView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Tajweed Hints in the Mushaf")
     }
 }
@@ -862,7 +862,7 @@ private struct TajweedMakharijView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Makhaarij")
     }
 }
@@ -1058,7 +1058,7 @@ private struct TajweedHeavyLightView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Heavy and Light")
     }
 }
@@ -1183,7 +1183,7 @@ private struct TajweedShamsQamarView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Shams and Qamar")
     }
 }
@@ -1576,7 +1576,7 @@ private struct TajweedMaddView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Madd")
     }
 }
@@ -1689,7 +1689,7 @@ private struct TajweedQalqalahView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Qalqalah")
     }
 }
@@ -1918,7 +1918,7 @@ private struct TajweedIdghamIkhfaView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Noon Sakinah and Tanween")
     }
 }
@@ -2084,7 +2084,7 @@ private struct TajweedMeemSakinahView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Meem Sakinah")
     }
 }
@@ -2191,7 +2191,7 @@ private struct TajweedAaridLisSukoonView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("4 Sukoon")
     }
 }
@@ -2342,7 +2342,7 @@ private struct TajweedHamzatulWaslView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Hamzatul-Wasl")
     }
 }
@@ -2633,7 +2633,7 @@ private struct TajweedWaqfView: View {
             }
             .themedListRowBackground()
         }
-        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .applyConditionalListStyle()
         .navigationTitle("Waqf")
     }
 }
@@ -2728,7 +2728,7 @@ private struct TajweedTopicPlaceholderView: View {
 
     var body: some View {
         List { }
-            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .applyConditionalListStyle()
             .navigationTitle(title)
     }
 }

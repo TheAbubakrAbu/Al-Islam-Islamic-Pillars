@@ -1007,6 +1007,7 @@ private struct AyahRowPreviewContent: View {
                 searchText: $searchText
             )
         }
+        .applyConditionalListStyle(disableNowPlayingInset: true)
     }
 }
 

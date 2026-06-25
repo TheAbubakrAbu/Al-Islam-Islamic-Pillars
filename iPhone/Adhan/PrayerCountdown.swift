@@ -479,5 +479,6 @@ private struct PrayerSunnahInfoView: View {
         List {
             PrayerCountdown()
         }
+        .applyConditionalListStyle(disableNowPlayingInset: true)
     }
 }

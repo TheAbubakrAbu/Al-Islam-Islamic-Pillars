@@ -818,5 +818,6 @@ private struct SplitPrayerRow<TrailingContent: View>: View {
         List {
             PrayerList()
         }
+        .applyConditionalListStyle(disableNowPlayingInset: true)
     }
 }
