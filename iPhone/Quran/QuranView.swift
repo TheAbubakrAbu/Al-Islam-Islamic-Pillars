@@ -2476,7 +2476,16 @@ struct QuranView: View {
     @ViewBuilder
     private func pageJuzAyahRow(item: (surah: Surah, ayah: Ayah), leadingLabel: String? = nil) -> some View {
         quranNavigationLink(route: .ayahs(surahID: item.surah.id, ayah: item.ayah.id)) {
-            CompactAyahArabicRow(surah: item.surah, ayah: item.ayah, leadingLabel: leadingLabel)
+            VStack(alignment: .leading, spacing: 4) {
+                if let leadingLabel {
+                    Text(leadingLabel)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                // Full ayah row (same font/tajweed/beginner mode/highlight as the reading view); already
+                // single-line internally.
+                SurahAyahRow(surah: item.surah, ayah: item.ayah)
+            }
         }
     }
 

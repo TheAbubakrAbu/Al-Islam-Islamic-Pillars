@@ -1674,6 +1674,60 @@ struct CompactAyahArabicRow: View {
     }
 }
 
+/// Just the Arabic text of an ayah, rendered through the same pipeline as the reading view — same font,
+/// tajweed colors, beginner-mode spacing, and Allah highlighting — sized by `scale`. Used for compact
+/// previews such as the page/juz dividers in SurahView.
+struct AyahArabicSnippet: View {
+    @EnvironmentObject var settings: Settings
+
+    let surah: Surah
+    let ayah: Ayah
+    var scale: CGFloat = 0.8
+    var lineLimit: Int? = 1
+
+    private var shouldShowTajweedColors: Bool {
+        settings.showTajweedColors && settings.showArabicText && settings.isHafsDisplay
+    }
+
+    private func arabicDisplayText() -> String {
+        let text = ayah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText)
+        return settings.beginnerMode ? text.map { String($0) }.joined(separator: " ") : text
+    }
+
+    private func arabicTajweedText() -> AttributedString? {
+        guard shouldShowTajweedColors else { return nil }
+        let text = ayah.displayArabicText(surahId: surah.id, clean: false)
+        let displayText = settings.cleanArabicText ? ayah.displayArabicText(surahId: surah.id, clean: true) : text
+        let renderedDisplayText = settings.beginnerMode ? displayText.map { String($0) }.joined(separator: " ") : displayText
+        return TajweedStore.shared.attributedText(
+            surah: surah.id,
+            ayah: ayah.id,
+            text: text,
+            displayText: renderedDisplayText,
+            cleanDisplayText: settings.cleanArabicText,
+            beginnerSpacing: settings.beginnerMode
+        )
+    }
+
+    var body: some View {
+        if settings.showArabicText {
+            HighlightedSnippet(
+                source: arabicDisplayText(),
+                term: "",
+                font: .custom(settings.fontArabic, size: settings.fontArabicSize * scale),
+                accent: settings.accentColor.color,
+                fg: .primary,
+                preStyledSource: arabicTajweedText(),
+                beginnerMode: settings.beginnerMode,
+                lineLimit: lineLimit,
+                highlightAllahNames: settings.highlightAllahNames
+            )
+            .multilineTextAlignment(.trailing)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+    }
+}
+
 struct AyahSearchResultRow: View {
     @EnvironmentObject private var settings: Settings
 

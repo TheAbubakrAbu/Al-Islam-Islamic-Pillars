@@ -164,12 +164,12 @@ struct SurahView: View {
     }
 
     @ViewBuilder
-    private func listBoundaryDivider(model: BoundaryDividerModel, nextAyahID: Int? = nil, showAyahPreview: Bool = false) -> some View {
+    private func listBoundaryDivider(model: BoundaryDividerModel, nextAyahID: Int? = nil, showAyahPreview: Bool = false, showAyahLabel: Bool = true) -> some View {
         if settings.defaultView {
-            boundaryDivider(model: model, nextAyahID: nextAyahID, showAyahPreview: showAyahPreview)
+            boundaryDivider(model: model, nextAyahID: nextAyahID, showAyahPreview: showAyahPreview, showAyahLabel: showAyahLabel)
         } else {
             VStack {
-                boundaryDivider(model: model, nextAyahID: nextAyahID, showAyahPreview: showAyahPreview)
+                boundaryDivider(model: model, nextAyahID: nextAyahID, showAyahPreview: showAyahPreview, showAyahLabel: showAyahLabel)
                 
                 Divider()
                     .padding(.top, 7)
@@ -619,7 +619,7 @@ struct SurahView: View {
         DispatchQueue.main.async { attempt(2) }
     }
 
-    private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false, nextAyahID: Int? = nil, showAyahPreview: Bool = false) -> some View {
+    private func boundaryDivider(model: BoundaryDividerModel, isOverlay: Bool = false, nextAyahID: Int? = nil, showAyahPreview: Bool = false, showAyahLabel: Bool = true) -> some View {
         let accent = settings.accentColor.color
         
         let dividerColor: Color = {
@@ -714,22 +714,19 @@ struct SurahView: View {
         if !searchText.isEmpty, let ayahID = nextAyahID {
             let labeledContent = VStack(spacing: 2) {
                 dividerContent
-                Text("Ayah \(ayahID)")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(.secondary)
+                if showAyahLabel {
+                    Text("Ayah \(ayahID)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(.secondary)
+                }
 
                 // For a bare "page"/"juz" keyword search we only list dividers (no ayah rows), so show a
-                // small Arabic preview of the start of the divider's first ayah. lineLimit(1) + tail
-                // truncation on RTL Arabic keeps just the beginning of the ayah.
+                // small Arabic preview of the start of the divider's first ayah. Rendered with the same
+                // pipeline as a real ayah row (font, tajweed, beginner mode, Allah highlight), just smaller
+                // and single-line so only the beginning of the ayah shows.
                 if showAyahPreview, settings.showArabicText,
                    let previewAyah = surah.ayahs.first(where: { $0.id == ayahID }) {
-                    Text(previewAyah.displayArabicText(surahId: surah.id, clean: settings.cleanArabicText))
-                        .font(.custom(settings.fontArabic, size: settings.fontArabicSize * 0.7))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    AyahArabicSnippet(surah: surah, ayah: previewAyah, scale: 0.7, lineLimit: 1)
                 }
             }
             return AnyView(
@@ -929,7 +926,10 @@ struct SurahView: View {
         }()
         let isDividerKeywordSearch = dividerKeywordMode != nil
         let isPageOrJuzSearch = pageJuzQuery.page != nil || pageJuzQuery.juz != nil
-        let showBoundaryDividers = settings.showPageJuzDividers && (searchText.isEmpty || isPageOrJuzSearch || isDividerKeywordSearch)
+        // During a page/juz search the divider IS the context (it tells you which page/juz you're looking
+        // at), so always show it then — regardless of the user's normal show-page/juz-dividers preference,
+        // which only governs reading (searchText empty).
+        let showBoundaryDividers = isPageOrJuzSearch || isDividerKeywordSearch || (settings.showPageJuzDividers && searchText.isEmpty)
         let prepared = cachedAyahsForQiraah.isEmpty ? Self.preparedCache(for: surah, settings: settings) : nil
         let ayahsForQiraah = cachedAyahsForQiraah.isEmpty
             ? (prepared?.ayahs ?? [])
@@ -1192,7 +1192,7 @@ struct SurahView: View {
                 } else {
                     if let startOfSurahDivider {
                         Section {
-                            listBoundaryDivider(model: startOfSurahDivider, nextAyahID: ayahsForQiraah.first?.id)
+                            listBoundaryDivider(model: startOfSurahDivider, nextAyahID: ayahsForQiraah.first?.id, showAyahLabel: false)
                         }
                         .onAppear {
                             if shouldUpdateFloatingPageJuzOverlay, let nextID = filteredAyahs.first?.id {
@@ -1213,7 +1213,7 @@ struct SurahView: View {
 
                         if let dividerBefore {
                             Section {
-                                listBoundaryDivider(model: dividerBefore, nextAyahID: ayah.id)
+                                listBoundaryDivider(model: dividerBefore, nextAyahID: ayah.id, showAyahLabel: false)
                             }
                             .onAppear {
                                 if shouldUpdateFloatingPageJuzOverlay {
@@ -1285,7 +1285,8 @@ struct SurahView: View {
                         Section {
                             listBoundaryDivider(
                                 model: trailingSearchBoundaryDivider,
-                                nextAyahID: trailingSearchBoundaryScrollTarget
+                                nextAyahID: trailingSearchBoundaryScrollTarget,
+                                showAyahLabel: false
                             )
                         }
                     }

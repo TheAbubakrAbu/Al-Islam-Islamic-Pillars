@@ -1022,14 +1022,9 @@ final class TajweedStore {
                 for i in lo..<hi {
                     if i == finalAaridCarrier { continue }
                     if isFinalFathataynSilentAlifMadd(clusters: clusters, index: i) {
-                        if strongerMaddRuleCoversCluster(index: i, ops: ops, clusters: clusters) { continue }
-                        appendLetterOnlyMaddPaintOps(
-                            clusters: clusters,
-                            index: i,
-                            priority: PaintPriority.maddNatural2,
-                            category: .maddNatural,
-                            into: &ops
-                        )
+                        // The final silent alif / alif-maqsura after fathatayn at ayah end (نًا / نًى) is not
+                        // pronounced at waqf, so leave it completely uncolored — don't paint a natural madd
+                        // on it. Covers both fathatayn forms (regular ً and Uthmani ٗ) via hasFathatayn.
                         continue
                     }
                     guard shouldOfferNaturalMadd2(clusters: clusters, index: i, wordStart: lo) else { continue }
@@ -2237,13 +2232,20 @@ final class TajweedStore {
     ) {
         let clusters = characterClusters(in: text)
         var paintedTanween = false
-        for cluster in clusters {
+        for (idx, cluster) in clusters.enumerated() {
             guard utf16RangesOverlap(cluster.utf16Range, range) else { continue }
             if category == .iqlaab, clusterHasTinyMeemIqlaabMark(cluster) {
                 paintedTanween = true
                 continue
             }
             guard let tanweenRange = tanweenScalarRange(in: cluster) else { continue }
+            // Waqf: a tanween at the end of the ayah — the last letter (e.g. نٌ), or with only a final
+            // silent alif/yaa after it (نًا / نًى) — isn't pronounced when stopping, so never color it.
+            // Mark it as "painted" so the whole-range fallback below doesn't end up coloring it instead.
+            if isTanweenClusterAtAyahEnd(clusters: clusters, index: idx) {
+                paintedTanween = true
+                continue
+            }
             ops.append(PaintOp(range: tanweenRange, priority: priority, category: category, color: category.color))
             paintedTanween = true
         }
@@ -2251,6 +2253,19 @@ final class TajweedStore {
         if !paintedTanween {
             ops.append(PaintOp(range: range, priority: priority, category: category, color: category.color))
         }
+    }
+
+    /// True when the tanween-carrying cluster sits at a waqf (ayah-end) position: it is the final Arabic
+    /// letter, or the only thing after it is the ayah's final silent alif / alif-maqsura / yaa (نًا / نًى).
+    /// Tanween is not pronounced at waqf, so its mark must never be colored there. Applies to all six
+    /// tanween marks (tanweenScalarRange already matches every form).
+    private func isTanweenClusterAtAyahEnd(clusters: [CharacterClusterInfo], index: Int) -> Bool {
+        guard let finalIdx = indexOfFinalArabicLetterCluster(clusters: clusters) else { return false }
+        if index == finalIdx { return true }
+        guard let nextIdx = nextArabicLetterClusterIndex(clusters: clusters, after: index) else { return true }
+        guard nextIdx == finalIdx else { return false }
+        if let base = clusters[finalIdx].primaryArabicLetter, base == "ا" || base == "ى" { return true }
+        return isYaBase(clusters[finalIdx])
     }
 
     private func appendQalqalahTreePaintOps(
