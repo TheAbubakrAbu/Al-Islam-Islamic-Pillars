@@ -1024,8 +1024,17 @@ struct SurahView: View {
             return nil
         }()
         let startOfSurahDivider: BoundaryDividerModel? = {
-            guard showBoundaryDividers, searchText.isEmpty else { return nil }
-            return boundaryModel?.startDivider
+            guard showBoundaryDividers else { return nil }
+            if searchText.isEmpty { return boundaryModel?.startDivider }
+            // Page/juz search: the surah's first ayah has no `dividerBeforeAyah` entry, so when the searched
+            // page/juz is the one the surah begins on (first ayah is in the results), surface the start
+            // divider too — otherwise the "Page X • Juz Y" header is missing for that first page.
+            if isPageOrJuzSearch,
+               let firstID = ayahsForQiraah.first?.id,
+               filteredAyahs.contains(where: { $0.id == firstID }) {
+                return boundaryModel?.startDivider
+            }
+            return nil
         }()
         let endOfSurahDivider: BoundaryDividerModel? = {
             guard showBoundaryDividers, searchText.isEmpty else { return nil }

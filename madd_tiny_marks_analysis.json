@@ -1,0 +1,4341 @@
+{
+  "description": "Words containing a tiny madd mark CARRYING A MADDAH (ٓ U+0653) — an extended madd written with a superscript letter: dagger-alif madd (ٰٓ), superscript-waw madd (ۥٓ), or superscript-yaa madd (ۦٓ). Plain tiny marks without a maddah are excluded. Detected over Quran.json textArabic.",
+  "totalOccurrences": 1347,
+  "distinctWords": 389,
+  "byMark": {
+    "daggerAlif": {
+      "occurrences": 1022,
+      "distinctWords": 206
+    },
+    "smallWaw": {
+      "occurrences": 164,
+      "distinctWords": 106
+    },
+    "smallYeh": {
+      "occurrences": 162,
+      "distinctWords": 78
+    },
+    "smallHighYeh": {
+      "occurrences": 0,
+      "distinctWords": 0
+    }
+  },
+  "proper_words": [
+    "هَٰٓأَنتُمۡ",
+
+    "هَٰٓؤُلَآءِ",
+    "هَٰٓؤُلَآءِۚ",
+    "أَهَٰٓؤُلَآءِ",
+    "وَهَٰٓؤُلَآءِ",
+
+    "وَيَٰٓـَٔادَمُ",
+    "يَٰٓأَبَانَا",
+    "يَٰٓأَبَانَآ",
+    "يَٰٓأَبَتِ",
+    "يَٰٓإِبۡرَٰهِيمُ",
+    "يَٰٓإِبۡرَٰهِيمُۖ",
+    "يَٰٓإِبۡلِيسُ",
+    "يَٰٓأُخۡتَ",
+    "يَٰٓـَٔادَمُ",
+    "يَٰٓأَرۡضُ",
+    "يَٰٓأَسَفَىٰ",
+    "يَٰٓأَهۡلَ",
+    "يَٰٓأُوْلِي",
+    "يَٰٓأَيَّتُهَا",
+    "يَٰٓأَيُّهَ",
+    "يَٰٓأَيُّهَا"
+  ],
+  "words": [
+    {
+      "word": "أُوْلَٰٓئِكَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "يَٰٓأَيُّهَا",
+      "count": 142,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "أُوْلَٰٓئِكَ",
+      "count": 133,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "عَلَىٰٓ",
+      "count": 81,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 84
+      }
+    },
+    {
+      "word": "إِلَىٰٓ",
+      "count": 54,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 85
+      }
+    },
+    {
+      "word": "حَتَّىٰٓ",
+      "count": 47,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 152
+      }
+    },
+    {
+      "word": "فَأُوْلَٰٓئِكَ",
+      "count": 46,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 81
+      }
+    },
+    {
+      "word": "إِسۡرَٰٓءِيلَ",
+      "count": 41,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 40
+      }
+    },
+    {
+      "word": "هَٰٓؤُلَآءِ",
+      "count": 38,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 31
+      }
+    },
+    {
+      "word": "بِهِۦٓ",
+      "count": 31,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "وَأُوْلَٰٓئِكَ",
+      "count": 25,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "مُوسَىٰٓ",
+      "count": 23,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 51
+      }
+    },
+    {
+      "word": "ٱلۡمَلَٰٓئِكَةُ",
+      "count": 20,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 39
+      }
+    },
+    {
+      "word": "لَهُۥٓ",
+      "count": 19,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 245
+      }
+    },
+    {
+      "word": "دُونِهِۦٓ",
+      "count": 14,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 117
+      }
+    },
+    {
+      "word": "يَٰٓأَهۡلَ",
+      "count": 13,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 64
+      }
+    },
+    {
+      "word": "يُوحَىٰٓ",
+      "count": 13,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 50
+      }
+    },
+    {
+      "word": "يَٰمُوسَىٰٓ",
+      "count": 11,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 22
+      }
+    },
+    {
+      "word": "وَٱلۡمَلَٰٓئِكَةُ",
+      "count": 10,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 210
+      }
+    },
+    {
+      "word": "عَسَىٰٓ",
+      "count": 10,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 185
+      }
+    },
+    {
+      "word": "لِلۡمَلَٰٓئِكَةِ",
+      "count": 9,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 30
+      }
+    },
+    {
+      "word": "ٱلۡمَلَٰٓئِكَةَ",
+      "count": 9,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 80
+      }
+    },
+    {
+      "word": "ٱلۡمَلَٰٓئِكَةِ",
+      "count": 8,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 31
+      }
+    },
+    {
+      "word": "تَرَىٰٓ",
+      "count": 8,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 83
+      }
+    },
+    {
+      "word": "قَوۡمِهِۦٓ",
+      "count": 8,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 60
+      }
+    },
+    {
+      "word": "يَٰٓأَبَتِ",
+      "count": 8,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 4
+      }
+    },
+    {
+      "word": "هَٰذِهِۦٓ",
+      "count": 7,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 138
+      }
+    },
+    {
+      "word": "عِندَهُۥٓ",
+      "count": 6,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 255
+      }
+    },
+    {
+      "word": "مَعَهُۥٓ",
+      "count": 6,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 157
+      }
+    },
+    {
+      "word": "لِقَوۡمِهِۦٓ",
+      "count": 5,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 67
+      }
+    },
+    {
+      "word": "قَضَىٰٓ",
+      "count": 5,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 117
+      }
+    },
+    {
+      "word": "يَٰٓأُوْلِي",
+      "count": 5,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 179
+      }
+    },
+    {
+      "word": "فَضۡلِهِۦٓۚ",
+      "count": 5,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 32
+      }
+    },
+    {
+      "word": "بِهِۦٓۚ",
+      "count": 5,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 57
+      }
+    },
+    {
+      "word": "وَأَهۡلَهُۥٓ",
+      "count": 5,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 83
+      }
+    },
+    {
+      "word": "ٱلۡقُرَىٰٓ",
+      "count": 5,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 96
+      }
+    },
+    {
+      "word": "ٱلۡهُدَىٰٓ",
+      "count": 5,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 94
+      }
+    },
+    {
+      "word": "ءَايَٰتِهِۦٓ",
+      "count": 5,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 30,
+        "ayah": 20
+      }
+    },
+    {
+      "word": "وَعَلَىٰٓ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "يَٰٓـَٔادَمُ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 33
+      }
+    },
+    {
+      "word": "وَٱلۡمَلَٰٓئِكَةِ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 161
+      }
+    },
+    {
+      "word": "رَبِّهِۦٓ",
+      "count": 4,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 258
+      }
+    },
+    {
+      "word": "هَٰٓأَنتُمۡ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 66
+      }
+    },
+    {
+      "word": "وَلَهُۥٓ",
+      "count": 4,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 83
+      }
+    },
+    {
+      "word": "بَلَىٰٓۚ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 125
+      }
+    },
+    {
+      "word": "أَدۡنَىٰٓ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 3
+      }
+    },
+    {
+      "word": "أَهَٰٓؤُلَآءِ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 53
+      }
+    },
+    {
+      "word": "خَلَٰٓئِفَ",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 165
+      }
+    },
+    {
+      "word": "وَرَسُولُهُۥٓ",
+      "count": 4,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 59
+      }
+    },
+    {
+      "word": "يَٰٓأَبَانَا",
+      "count": 4,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 11
+      }
+    },
+    {
+      "word": "رَبَّهُۥٓ",
+      "count": 4,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 21,
+        "ayah": 83
+      }
+    },
+    {
+      "word": "لَهُۥٓۚ",
+      "count": 4,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 22,
+        "ayah": 73
+      }
+    },
+    {
+      "word": "إِنَّهُۥٓ",
+      "count": 4,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 27,
+        "ayah": 9
+      }
+    },
+    {
+      "word": "وَمَلَٰٓئِكَتِهِۦ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 98
+      }
+    },
+    {
+      "word": "فَعَسَىٰٓ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "مَّرۡضَىٰٓ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 43
+      }
+    },
+    {
+      "word": "هَٰٓؤُلَآءِۚ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 143
+      }
+    },
+    {
+      "word": "جَزَٰٓؤُاْ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 29
+      }
+    },
+    {
+      "word": "بِـَٔايَٰتِهِۦٓۚ",
+      "count": 3,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "وَنَادَىٰٓ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 44
+      }
+    },
+    {
+      "word": "غَيۡرُهُۥٓۚ",
+      "count": 3,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 65
+      }
+    },
+    {
+      "word": "وَرَسُولَهُۥٓۚ",
+      "count": 3,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 71
+      }
+    },
+    {
+      "word": "يَٰٓإِبۡرَٰهِيمُ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 11,
+        "ayah": 76
+      }
+    },
+    {
+      "word": "فَأَوۡحَىٰٓ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 14,
+        "ayah": 13
+      }
+    },
+    {
+      "word": "وَأَبۡقَىٰٓ",
+      "count": 3,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 20,
+        "ayah": 73
+      }
+    },
+    {
+      "word": "ٱسۡتَوَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 29
+      }
+    },
+    {
+      "word": "تَهۡوَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 87
+      }
+    },
+    {
+      "word": "بِأَمۡرِهِۦٓۗ",
+      "count": 2,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 109
+      }
+    },
+    {
+      "word": "فَلَهُۥٓ",
+      "count": 2,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 112
+      }
+    },
+    {
+      "word": "رَبُّهُۥٓ",
+      "count": 2,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 131
+      }
+    },
+    {
+      "word": "وَعَسَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 216
+      }
+    },
+    {
+      "word": "ٱلرِّبَوٰٓاْ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 278
+      }
+    },
+    {
+      "word": "بَعۡدِهِۦٓۚ",
+      "count": 2,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 65
+      }
+    },
+    {
+      "word": "يُؤَدِّهِۦٓ",
+      "count": 2,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 75
+      }
+    },
+    {
+      "word": "بِهِۦٓۗ",
+      "count": 2,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 91
+      }
+    },
+    {
+      "word": "ٱلۡهَوَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 135
+      }
+    },
+    {
+      "word": "شَعَٰٓئِرَ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 2
+      }
+    },
+    {
+      "word": "يَٰوَيۡلَتَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 31
+      }
+    },
+    {
+      "word": "أَنۢبَٰٓؤُاْ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "ثَمَرِهِۦٓ",
+      "count": 2,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 99
+      }
+    },
+    {
+      "word": "يُجۡزَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 160
+      }
+    },
+    {
+      "word": "وَرَسُولَهُۥٓ",
+      "count": 2,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 8,
+        "ayah": 1
+      }
+    },
+    {
+      "word": "وَأَنَّهُۥٓ",
+      "count": 2,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 8,
+        "ayah": 24
+      }
+    },
+    {
+      "word": "وَرَسُولِهِۦٓ",
+      "count": 2,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 1
+      }
+    },
+    {
+      "word": "مُّوسَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 10,
+        "ayah": 80
+      }
+    },
+    {
+      "word": "يَٰٓأَبَانَآ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 17
+      }
+    },
+    {
+      "word": "ءَاوَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 69
+      }
+    },
+    {
+      "word": "ٱلضُّعَفَٰٓؤُاْ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 14,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "يَٰٓإِبۡلِيسُ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 15,
+        "ayah": 32
+      }
+    },
+    {
+      "word": "عِبَادِهِۦٓ",
+      "count": 2,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 16,
+        "ayah": 2
+      }
+    },
+    {
+      "word": "فَأَبَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 89
+      }
+    },
+    {
+      "word": "يُحَاوِرُهُۥٓ",
+      "count": 2,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 18,
+        "ayah": 34
+      }
+    },
+    {
+      "word": "مُوسَىٰٓۚ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 19,
+        "ayah": 51
+      }
+    },
+    {
+      "word": "مَلَٰٓئِكَةٗ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 23,
+        "ayah": 24
+      }
+    },
+    {
+      "word": "يُلۡقَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 25,
+        "ayah": 8
+      }
+    },
+    {
+      "word": "حَوۡلَهُۥٓ",
+      "count": 2,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 26,
+        "ayah": 25
+      }
+    },
+    {
+      "word": "جَآءَهُۥٓۚ",
+      "count": 2,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 29,
+        "ayah": 68
+      }
+    },
+    {
+      "word": "أَسَٰٓـُٔواْ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 30,
+        "ayah": 10
+      }
+    },
+    {
+      "word": "ٱلَّٰٓـِٔي",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 33,
+        "ayah": 4
+      }
+    },
+    {
+      "word": "زُلۡفَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 34,
+        "ayah": 37
+      }
+    },
+    {
+      "word": "ٱلۡأُخۡرَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 39,
+        "ayah": 42
+      }
+    },
+    {
+      "word": "كَبَٰٓئِرَ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 42,
+        "ayah": 37
+      }
+    },
+    {
+      "word": "ٱلۡكُبۡرَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 44,
+        "ayah": 16
+      }
+    },
+    {
+      "word": "وَٱلَّٰٓـِٔي",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 65,
+        "ayah": 4
+      }
+    },
+    {
+      "word": "وَٱلۡأُنثَىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 75,
+        "ayah": 39
+      }
+    },
+    {
+      "word": "وَتَوَلَّىٰٓ",
+      "count": 2,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 80,
+        "ayah": 1
+      }
+    },
+    {
+      "word": "يَسۡتَحۡيِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "فَتَلَقَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 37
+      }
+    },
+    {
+      "word": "عَهۡدَهُۥٓۖ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 80
+      }
+    },
+    {
+      "word": "تِلَاوَتِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 121
+      }
+    },
+    {
+      "word": "ٱبۡتَلَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 124
+      }
+    },
+    {
+      "word": "أَضۡطَرُّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 126
+      }
+    },
+    {
+      "word": "يُبَدِّلُونَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 181
+      }
+    },
+    {
+      "word": "مُلۡكِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 248
+      }
+    },
+    {
+      "word": "ٱلۡمَلَٰٓئِكَةُۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 248
+      }
+    },
+    {
+      "word": "عِلۡمِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 255
+      }
+    },
+    {
+      "word": "وَأَمۡرُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 275
+      }
+    },
+    {
+      "word": "وَأَدۡنَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 282
+      }
+    },
+    {
+      "word": "فَإِنَّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 2,
+        "ayah": 283
+      }
+    },
+    {
+      "word": "تَأۡوِيلَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "وَبَيۡنَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 30
+      }
+    },
+    {
+      "word": "ٱصۡطَفَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 33
+      }
+    },
+    {
+      "word": "يَٰعِيسَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 55
+      }
+    },
+    {
+      "word": "يُؤۡتَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 73
+      }
+    },
+    {
+      "word": "إِسۡرَٰٓءِيلُ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 93
+      }
+    },
+    {
+      "word": "بِنِعۡمَتِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 103
+      }
+    },
+    {
+      "word": "وَعۡدَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 3,
+        "ayah": 152
+      }
+    },
+    {
+      "word": "ٱلۡيَتَٰمَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 2
+      }
+    },
+    {
+      "word": "وَوَرِثَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 11
+      }
+    },
+    {
+      "word": "وَرَبَٰٓئِبُكُمُ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 23
+      }
+    },
+    {
+      "word": "وَحَلَٰٓئِلُ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 23
+      }
+    },
+    {
+      "word": "ٱفۡتَرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 48
+      }
+    },
+    {
+      "word": "وَإِلَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 83
+      }
+    },
+    {
+      "word": "وَأُوْلَٰٓئِكُمۡ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 91
+      }
+    },
+    {
+      "word": "أَهۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 92
+      }
+    },
+    {
+      "word": "أَلۡقَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 94
+      }
+    },
+    {
+      "word": "تَلۡوُۥٓاْ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 135
+      }
+    },
+    {
+      "word": "غَيۡرِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 140
+      }
+    },
+    {
+      "word": "وَكَلِمَتُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 171
+      }
+    },
+    {
+      "word": "سُبۡحَٰنَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 4,
+        "ayah": 171
+      }
+    },
+    {
+      "word": "ٱلۡقَلَٰٓئِدَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 2
+      }
+    },
+    {
+      "word": "نَصَٰرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 14
+      }
+    },
+    {
+      "word": "أَبۡنَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 18
+      }
+    },
+    {
+      "word": "وَأَحِبَّٰٓؤُهُۥۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 18
+      }
+    },
+    {
+      "word": "وَٱلنَّصَٰرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 51
+      }
+    },
+    {
+      "word": "نَخۡشَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 52
+      }
+    },
+    {
+      "word": "وَيُحِبُّونَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 54
+      }
+    },
+    {
+      "word": "فَكَفَّٰرَتُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 89
+      }
+    },
+    {
+      "word": "تَنَالُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 94
+      }
+    },
+    {
+      "word": "وَٱلۡقَلَٰٓئِدَۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 97
+      }
+    },
+    {
+      "word": "أُعَذِّبُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 5,
+        "ayah": 115
+      }
+    },
+    {
+      "word": "طَٰٓئِرٖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 38
+      }
+    },
+    {
+      "word": "لِيُقۡضَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 60
+      }
+    },
+    {
+      "word": "يَدۡعُونَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 71
+      }
+    },
+    {
+      "word": "أَتُحَٰٓجُّوٓنِّي",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 80
+      }
+    },
+    {
+      "word": "قَدۡرِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 91
+      }
+    },
+    {
+      "word": "شُرَكَٰٓؤُاْۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 94
+      }
+    },
+    {
+      "word": "وَيَنۡعِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 99
+      }
+    },
+    {
+      "word": "وَلِتَصۡغَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 113
+      }
+    },
+    {
+      "word": "وَبَاطِنَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 120
+      }
+    },
+    {
+      "word": "يَطۡعَمُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 6,
+        "ayah": 145
+      }
+    },
+    {
+      "word": "وَيَٰٓـَٔادَمُ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "غَيۡرُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 59
+      }
+    },
+    {
+      "word": "مَّعَهُۥٓۗ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 131
+      }
+    },
+    {
+      "word": "طَٰٓئِرُهُمۡ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 131
+      }
+    },
+    {
+      "word": "يَجُرُّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 150
+      }
+    },
+    {
+      "word": "ٱلۡخَبَٰٓئِثَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 157
+      }
+    },
+    {
+      "word": "قَوۡمُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 160
+      }
+    },
+    {
+      "word": "وَلَٰكِنَّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 176
+      }
+    },
+    {
+      "word": "أَسۡمَٰٓئِهِۦۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 180
+      }
+    },
+    {
+      "word": "طَٰٓئِفٞ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 7,
+        "ayah": 201
+      }
+    },
+    {
+      "word": "دُبُرَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 8,
+        "ayah": 16
+      }
+    },
+    {
+      "word": "أَوۡلِيَآءَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 8,
+        "ayah": 34
+      }
+    },
+    {
+      "word": "أَوۡلِيَآؤُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 8,
+        "ayah": 34
+      }
+    },
+    {
+      "word": "ٱلۡأَسۡرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 8,
+        "ayah": 70
+      }
+    },
+    {
+      "word": "رَسُولِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "سَبِيلِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 9
+      }
+    },
+    {
+      "word": "فَضۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 28
+      }
+    },
+    {
+      "word": "عِندِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 52
+      }
+    },
+    {
+      "word": "قَبۡرِهِۦٓۖ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 84
+      }
+    },
+    {
+      "word": "رَحۡمَتِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 99
+      }
+    },
+    {
+      "word": "ٱلتَّٰٓئِبُونَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 112
+      }
+    },
+    {
+      "word": "ٱلسَّٰٓئِحُونَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 9,
+        "ayah": 112
+      }
+    },
+    {
+      "word": "لِجَنۢبِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 10,
+        "ayah": 12
+      }
+    },
+    {
+      "word": "قَبۡلِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 10,
+        "ayah": 16
+      }
+    },
+    {
+      "word": "شُفَعَٰٓؤُنَا",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 10,
+        "ayah": 18
+      }
+    },
+    {
+      "word": "سَيُبۡطِلُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 10,
+        "ayah": 81
+      }
+    },
+    {
+      "word": "لِمُوسَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 10,
+        "ayah": 83
+      }
+    },
+    {
+      "word": "يَحۡبِسُهُۥٓۗ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 11,
+        "ayah": 8
+      }
+    },
+    {
+      "word": "يَٰٓأَرۡضُ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 11,
+        "ayah": 44
+      }
+    },
+    {
+      "word": "غَيۡرُهُۥٓۖ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 11,
+        "ayah": 50
+      }
+    },
+    {
+      "word": "نَشَٰٓؤُاْۖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 11,
+        "ayah": 87
+      }
+    },
+    {
+      "word": "أَخۡذَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 11,
+        "ayah": 102
+      }
+    },
+    {
+      "word": "نُؤَخِّرُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 11,
+        "ayah": 104
+      }
+    },
+    {
+      "word": "وَإِخۡوَتِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "لِٱمۡرَأَتِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "أَشُدَّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 22
+      }
+    },
+    {
+      "word": "رَأَيۡنَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 31
+      }
+    },
+    {
+      "word": "بِتَأۡوِيلِهِۦٓۖ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 36
+      }
+    },
+    {
+      "word": "تُرۡزَقَانِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 37
+      }
+    },
+    {
+      "word": "سُنۢبُلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 47
+      }
+    },
+    {
+      "word": "جَزَٰٓؤُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif",
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 74
+      }
+    },
+    {
+      "word": "جَزَٰٓؤُهُۥ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 75
+      }
+    },
+    {
+      "word": "جَزَٰٓؤُهُۥۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 75
+      }
+    },
+    {
+      "word": "مَكَانَهُۥٓۖ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 78
+      }
+    },
+    {
+      "word": "يَٰٓأَسَفَىٰ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 84
+      }
+    },
+    {
+      "word": "ٱلۡقُرَىٰٓۗ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 12,
+        "ayah": 109
+      }
+    },
+    {
+      "word": "رَّبِّهِۦٓۗ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 13,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "أَعۡمَىٰٓۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 13,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "وَعِندَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 13,
+        "ayah": 39
+      }
+    },
+    {
+      "word": "رُسُلَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 14,
+        "ayah": 47
+      }
+    },
+    {
+      "word": "بِٱلۡمَلَٰٓئِكَةِ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 15,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "نُنَزِّلُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 15,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "أَبَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 15,
+        "ayah": 31
+      }
+    },
+    {
+      "word": "أَتَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 16,
+        "ayah": 1
+      }
+    },
+    {
+      "word": "بِأَمۡرِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 16,
+        "ayah": 12
+      }
+    },
+    {
+      "word": "أَلۡوَٰنُهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 16,
+        "ayah": 13
+      }
+    },
+    {
+      "word": "تُشَٰٓقُّونَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 16,
+        "ayah": 27
+      }
+    },
+    {
+      "word": "إِيمَٰنِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 16,
+        "ayah": 106
+      }
+    },
+    {
+      "word": "طَٰٓئِرَهُۥ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 13
+      }
+    },
+    {
+      "word": "وَهَٰٓؤُلَآءِ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 20
+      }
+    },
+    {
+      "word": "ٱلزِّنَىٰٓۖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 32
+      }
+    },
+    {
+      "word": "أَوۡحَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 39
+      }
+    },
+    {
+      "word": "نَجۡوَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 47
+      }
+    },
+    {
+      "word": "عَذَابَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 57
+      }
+    },
+    {
+      "word": "ذُرِّيَّتَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 62
+      }
+    },
+    {
+      "word": "مَلَٰٓئِكَةٞ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 95
+      }
+    },
+    {
+      "word": "قَبۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 17,
+        "ayah": 107
+      }
+    },
+    {
+      "word": "فَأۡوُۥٓاْ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 18,
+        "ayah": 16
+      }
+    },
+    {
+      "word": "حُكۡمِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 18,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "رَبِّهِۦٓۗ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 18,
+        "ayah": 50
+      }
+    },
+    {
+      "word": "وَذُرِّيَّتَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 18,
+        "ayah": 50
+      }
+    },
+    {
+      "word": "وَلِنَجۡعَلَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 19,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "يَٰٓأُخۡتَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 19,
+        "ayah": 28
+      }
+    },
+    {
+      "word": "سُبۡحَٰنَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 19,
+        "ayah": 35
+      }
+    },
+    {
+      "word": "يَٰٓإِبۡرَٰهِيمُۖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 19,
+        "ayah": 46
+      }
+    },
+    {
+      "word": "وَإِسۡرَٰٓءِيلَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 19,
+        "ayah": 58
+      }
+    },
+    {
+      "word": "لِتَشۡقَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 20,
+        "ayah": 2
+      }
+    },
+    {
+      "word": "أُخۡرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 20,
+        "ayah": 37
+      }
+    },
+    {
+      "word": "يُقۡضَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 20,
+        "ayah": 114
+      }
+    },
+    {
+      "word": "فَتَشۡقَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 20,
+        "ayah": 117
+      }
+    },
+    {
+      "word": "وَعَصَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 20,
+        "ayah": 121
+      }
+    },
+    {
+      "word": "رَّبِّهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 20,
+        "ayah": 133
+      }
+    },
+    {
+      "word": "ٱلۡخَبَٰٓئِثَۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 21,
+        "ayah": 74
+      }
+    },
+    {
+      "word": "بِأَمۡرِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 21,
+        "ayah": 81
+      }
+    },
+    {
+      "word": "زَوۡجَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 21,
+        "ayah": 90
+      }
+    },
+    {
+      "word": "ٱلۡحُسۡنَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 21,
+        "ayah": 101
+      }
+    },
+    {
+      "word": "ضَرُّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 22,
+        "ayah": 13
+      }
+    },
+    {
+      "word": "شَعَٰٓئِرِ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 22,
+        "ayah": 36
+      }
+    },
+    {
+      "word": "يَنصُرُهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 22,
+        "ayah": 40
+      }
+    },
+    {
+      "word": "تَمَنَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 22,
+        "ayah": 52
+      }
+    },
+    {
+      "word": "بِإِذۡنِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 22,
+        "ayah": 65
+      }
+    },
+    {
+      "word": "قَدۡرِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 22,
+        "ayah": 74
+      }
+    },
+    {
+      "word": "وَأُمَّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 23,
+        "ayah": 50
+      }
+    },
+    {
+      "word": "رَبِّهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 23,
+        "ayah": 117
+      }
+    },
+    {
+      "word": "لِمِثۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 24,
+        "ayah": 17
+      }
+    },
+    {
+      "word": "صَٰٓفَّٰتٖۖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 24,
+        "ayah": 41
+      }
+    },
+    {
+      "word": "مَّفَاتِحَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 24,
+        "ayah": 61
+      }
+    },
+    {
+      "word": "أَمۡرِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 24,
+        "ayah": 63
+      }
+    },
+    {
+      "word": "تَرَٰٓءَا",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 26,
+        "ayah": 61
+      }
+    },
+    {
+      "word": "مَّعَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 26,
+        "ayah": 65
+      }
+    },
+    {
+      "word": "عُلَمَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 26,
+        "ayah": 197
+      }
+    },
+    {
+      "word": "لِأَهۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 27,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "وَقَوۡمِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 27,
+        "ayah": 12
+      }
+    },
+    {
+      "word": "لَأَاْذۡبَحَنَّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 27,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "طَٰٓئِرُكُمۡ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 27,
+        "ayah": 47
+      }
+    },
+    {
+      "word": "ٱصۡطَفَىٰٓۗ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 27,
+        "ayah": 59
+      }
+    },
+    {
+      "word": "رَحۡمَتِهِۦٓۗ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 27,
+        "ayah": 63
+      }
+    },
+    {
+      "word": "فَٱلۡتَقَطَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 28,
+        "ayah": 8
+      }
+    },
+    {
+      "word": "وَٱسۡتَوَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 28,
+        "ayah": 14
+      }
+    },
+    {
+      "word": "تَوَلَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 28,
+        "ayah": 24
+      }
+    },
+    {
+      "word": "بِأَهۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 28,
+        "ayah": 29
+      }
+    },
+    {
+      "word": "وَمَلَإِيْهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 28,
+        "ayah": 32
+      }
+    },
+    {
+      "word": "يُجۡبَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 28,
+        "ayah": 57
+      }
+    },
+    {
+      "word": "وَأَبۡقَىٰٓۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 28,
+        "ayah": 60
+      }
+    },
+    {
+      "word": "لِنَفۡسِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 29,
+        "ayah": 6
+      }
+    },
+    {
+      "word": "لَهُۥٓۖ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 29,
+        "ayah": 17
+      }
+    },
+    {
+      "word": "يُعِيدُهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 29,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "وَلِقَآئِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 29,
+        "ayah": 23
+      }
+    },
+    {
+      "word": "ٱلسُّوٓأَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 30,
+        "ayah": 10
+      }
+    },
+    {
+      "word": "شُفَعَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 30,
+        "ayah": 13
+      }
+    },
+    {
+      "word": "وَجۡهَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 31,
+        "ayah": 22
+      }
+    },
+    {
+      "word": "كُفۡرُهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 31,
+        "ayah": 23
+      }
+    },
+    {
+      "word": "ءَايَٰتِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 31,
+        "ayah": 31
+      }
+    },
+    {
+      "word": "مِقۡدَارُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 32,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "وَأَزۡوَٰجُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 33,
+        "ayah": 6
+      }
+    },
+    {
+      "word": "وَٱلصَّٰٓئِمِينَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 33,
+        "ayah": 35
+      }
+    },
+    {
+      "word": "وَٱلصَّٰٓئِمَٰتِ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 33,
+        "ayah": 35
+      }
+    },
+    {
+      "word": "وَمَلَٰٓئِكَتُهُۥ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 33,
+        "ayah": 43
+      }
+    },
+    {
+      "word": "بَعۡدِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 33,
+        "ayah": 53
+      }
+    },
+    {
+      "word": "وَمَلَٰٓئِكَتَهُۥ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 33,
+        "ayah": 56
+      }
+    },
+    {
+      "word": "مَوۡتِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 34,
+        "ayah": 14
+      }
+    },
+    {
+      "word": "عُمُرِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 35,
+        "ayah": 11
+      }
+    },
+    {
+      "word": "قُرۡبَىٰٓۗ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 35,
+        "ayah": 18
+      }
+    },
+    {
+      "word": "ٱلۡعُلَمَٰٓؤُاْۗ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 35,
+        "ayah": 28
+      }
+    },
+    {
+      "word": "طَٰٓئِرُكُم",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 36,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "أَطۡعَمَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 36,
+        "ayah": 47
+      }
+    },
+    {
+      "word": "أَمۡرُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 36,
+        "ayah": 82
+      }
+    },
+    {
+      "word": "وَٱلصَّٰٓفَّٰتِ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 37,
+        "ayah": 1
+      }
+    },
+    {
+      "word": "ٱلۡبَلَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 37,
+        "ayah": 106
+      }
+    },
+    {
+      "word": "بَطۡنِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 37,
+        "ayah": 144
+      }
+    },
+    {
+      "word": "لَّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 38,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "شَكۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 38,
+        "ayah": 58
+      }
+    },
+    {
+      "word": "ٱلۡأَعۡلَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 38,
+        "ayah": 69
+      }
+    },
+    {
+      "word": "أَحۡسَنَهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 39,
+        "ayah": 18
+      }
+    },
+    {
+      "word": "ضُرِّهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 39,
+        "ayah": 38
+      }
+    },
+    {
+      "word": "بِأَنَّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 40,
+        "ayah": 12
+      }
+    },
+    {
+      "word": "رَبَّهُۥٓۖ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 40,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "إِيمَٰنَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 40,
+        "ayah": 28
+      }
+    },
+    {
+      "word": "دُعَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 40,
+        "ayah": 50
+      }
+    },
+    {
+      "word": "ٱلۡمَوۡتَىٰٓۚ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 41,
+        "ayah": 39
+      }
+    },
+    {
+      "word": "ءَايَٰتُهُۥٓۖ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 41,
+        "ayah": 44
+      }
+    },
+    {
+      "word": "فَحُكۡمُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 42,
+        "ayah": 10
+      }
+    },
+    {
+      "word": "وَعِيسَىٰٓۖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 42,
+        "ayah": 13
+      }
+    },
+    {
+      "word": "شُرَكَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 42,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "بِكَلِمَٰتِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 42,
+        "ayah": 24
+      }
+    },
+    {
+      "word": "ظَهۡرِهِۦٓۚ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 42,
+        "ayah": 33
+      }
+    },
+    {
+      "word": "وَجَزَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 42,
+        "ayah": 40
+      }
+    },
+    {
+      "word": "وَقَوۡمِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 43,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "يَٰٓأَيُّهَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 43,
+        "ayah": 49
+      }
+    },
+    {
+      "word": "مَّلَٰٓئِكَةٗ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 43,
+        "ayah": 60
+      }
+    },
+    {
+      "word": "بَلَٰٓؤٞاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 44,
+        "ayah": 33
+      }
+    },
+    {
+      "word": "بَصَٰٓئِرُ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 45,
+        "ayah": 20
+      }
+    },
+    {
+      "word": "تُدۡعَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 45,
+        "ayah": 28
+      }
+    },
+    {
+      "word": "خَلۡفِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 46,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "يُرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 46,
+        "ayah": 25
+      }
+    },
+    {
+      "word": "وَأَعۡمَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 47,
+        "ayah": 23
+      }
+    },
+    {
+      "word": "فَقَرَّبَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 51,
+        "ayah": 27
+      }
+    },
+    {
+      "word": "مِّثۡلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 52,
+        "ayah": 34
+      }
+    },
+    {
+      "word": "رَأَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 11
+      }
+    },
+    {
+      "word": "ٱلۡمَأۡوَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 15
+      }
+    },
+    {
+      "word": "ضِيزَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 22
+      }
+    },
+    {
+      "word": "وَيَرۡضَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "ٱتَّقَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 32
+      }
+    },
+    {
+      "word": "وَأَكۡدَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 34
+      }
+    },
+    {
+      "word": "يَرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 35
+      }
+    },
+    {
+      "word": "وَفَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 37
+      }
+    },
+    {
+      "word": "ٱلۡأُولَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 53,
+        "ayah": 56
+      }
+    },
+    {
+      "word": "نَّتَّبِعُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 54,
+        "ayah": 24
+      }
+    },
+    {
+      "word": "أُوْلَٰٓئِكُمۡ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 54,
+        "ayah": 43
+      }
+    },
+    {
+      "word": "ذَنۢبِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 55,
+        "ayah": 39
+      }
+    },
+    {
+      "word": "تَخۡلُقُونَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 56,
+        "ayah": 59
+      }
+    },
+    {
+      "word": "تَزۡرَعُونَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 56,
+        "ayah": 64
+      }
+    },
+    {
+      "word": "يَمَسُّهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 56,
+        "ayah": 79
+      }
+    },
+    {
+      "word": "عَبۡدِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 57,
+        "ayah": 9
+      }
+    },
+    {
+      "word": "وَرُسُلِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 57,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "بُرَءَٰٓؤُاْ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 60,
+        "ayah": 4
+      }
+    },
+    {
+      "word": "وَحۡدَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 60,
+        "ayah": 4
+      }
+    },
+    {
+      "word": "ٱسۡمُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 61,
+        "ayah": 6
+      }
+    },
+    {
+      "word": "يُدۡعَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 61,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "يَتَمَنَّوۡنَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 62,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "حَسۡبُهُۥٓۚ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 65,
+        "ayah": 3
+      }
+    },
+    {
+      "word": "أَنزَلَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 65,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "يُبۡدِلَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 66,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "تَٰٓئِبَٰتٍ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 66,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "سَٰٓئِحَٰتٖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 66,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "مَلَٰٓئِكَةٌ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 66,
+        "ayah": 6
+      }
+    },
+    {
+      "word": "بِهِۦٓۖ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 67,
+        "ayah": 13
+      }
+    },
+    {
+      "word": "صَٰٓفَّٰتٖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 67,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "وَجۡهِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 67,
+        "ayah": 22
+      }
+    },
+    {
+      "word": "أَهۡدَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 67,
+        "ayah": 22
+      }
+    },
+    {
+      "word": "يَأۡكُلُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 69,
+        "ayah": 37
+      }
+    },
+    {
+      "word": "فَأَوۡعَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 70,
+        "ayah": 18
+      }
+    },
+    {
+      "word": "وَوَلَدُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 71,
+        "ayah": 21
+      }
+    },
+    {
+      "word": "غَيۡبِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 72,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "نِّصۡفَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 73,
+        "ayah": 3
+      }
+    },
+    {
+      "word": "مَلَٰٓئِكَةٗۖ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 74,
+        "ayah": 31
+      }
+    },
+    {
+      "word": "يَتَمَطَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 75,
+        "ayah": 33
+      }
+    },
+    {
+      "word": "فَأَوۡلَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 75,
+        "ayah": 35
+      }
+    },
+    {
+      "word": "وَٱلۡأُولَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 79,
+        "ayah": 25
+      }
+    },
+    {
+      "word": "يَخۡشَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 79,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "يَزَّكَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 80,
+        "ayah": 3
+      }
+    },
+    {
+      "word": "ٱلذِّكۡرَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 80,
+        "ayah": 4
+      }
+    },
+    {
+      "word": "طَعَامِهِۦٓ",
+      "count": 1,
+      "marks": [
+        "smallYeh"
+      ],
+      "first": {
+        "surah": 80,
+        "ayah": 24
+      }
+    },
+    {
+      "word": "تَنسَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 87,
+        "ayah": 6
+      }
+    },
+    {
+      "word": "تَحَٰٓضُّونَ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 89,
+        "ayah": 18
+      }
+    },
+    {
+      "word": "عَذَابَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 89,
+        "ayah": 25
+      }
+    },
+    {
+      "word": "وَثَاقَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 89,
+        "ayah": 26
+      }
+    },
+    {
+      "word": "يَٰٓأَيَّتُهَا",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 89,
+        "ayah": 27
+      }
+    },
+    {
+      "word": "يَرَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 90,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "مَالُهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 92,
+        "ayah": 11
+      }
+    },
+    {
+      "word": "تَرَدَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 92,
+        "ayah": 11
+      }
+    },
+    {
+      "word": "تُجۡزَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 92,
+        "ayah": 19
+      }
+    },
+    {
+      "word": "فَتَرۡضَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 93,
+        "ayah": 5
+      }
+    },
+    {
+      "word": "لَيَطۡغَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 96,
+        "ayah": 6
+      }
+    },
+    {
+      "word": "ٱسۡتَغۡنَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 96,
+        "ayah": 7
+      }
+    },
+    {
+      "word": "ٱلرُّجۡعَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 96,
+        "ayah": 8
+      }
+    },
+    {
+      "word": "صَلَّىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 96,
+        "ayah": 10
+      }
+    },
+    {
+      "word": "بِٱلتَّقۡوَىٰٓ",
+      "count": 1,
+      "marks": [
+        "daggerAlif"
+      ],
+      "first": {
+        "surah": 96,
+        "ayah": 12
+      }
+    },
+    {
+      "word": "مَالَهُۥٓ",
+      "count": 1,
+      "marks": [
+        "smallWaw"
+      ],
+      "first": {
+        "surah": 104,
+        "ayah": 3
+      }
+    }
+  ]
+}

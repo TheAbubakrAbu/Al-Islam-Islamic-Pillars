@@ -47,6 +47,7 @@ struct TajweedLegendView: View {
         .buttonStyle(.plain)
         .foregroundStyle(settings.accentColor.color)
         .conditionalGlassEffect(rectangle: true)
+        .contentShape(Rectangle())
     }
     
     @ViewBuilder

@@ -437,6 +437,13 @@ struct QuranView: View {
         // blocked by building surah caches. Priority routes (default/last-read/first bookmark/favorite) warm
         // first so the most likely next tap is ready, then the rest fill in slowly in the background.
         Task(priority: .utility) { @MainActor in
+            // This whole prewarm runs on the main actor (it reads `settings`/builds caches), so doing it the
+            // instant the tab appears stalls the FIRST render — the main cause of "opening Quran feels slow".
+            // Wait for the first render to settle before warming anything, so the list paints immediately and
+            // caches fill in afterward. (Cancelled automatically if the user leaves the tab.)
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            if Task.isCancelled { return }
+
             var seen = Set<Int>()
             for route in priorityRoutes {
                 if case let .ayahs(surahID, _) = route,
@@ -2685,7 +2692,9 @@ struct QuranView: View {
                 bookmarkedAyahs: context.bookmarkedAyahs,
                 searchText: $searchText,
                 scrollToSurahID: $scrollToSurahID,
-                disableTajweedColors: true,
+                // Exact "S:A" match is a single row with no search-term highlight to conflict, so show
+                // tajweed colors here (text-search hits keep them off for the term highlight + perf).
+                disableTajweedColors: false,
                 onSelectAyah: columnAyahSelectionHandler
             )
         }

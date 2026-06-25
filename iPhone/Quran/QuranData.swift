@@ -377,6 +377,8 @@ final class TajweedStore {
     private static let smallHighUprightRectangularZero = UnicodeScalar(0x06E0)!
     private static let smallWaw = UnicodeScalar(0x06E5)!
     private static let smallYeh = UnicodeScalar(0x06E6)!
+    /// Small high yeh (ۧ), e.g. ٱلنَّبِيِّـۧنَ — another miniature natural-madd mark, treated like smallYeh.
+    private static let smallHighYeh = UnicodeScalar(0x06E7)!
     private static let smallHighMeem = UnicodeScalar(0x06E2)!
     private static let smallLowMeem = UnicodeScalar(0x06ED)!
 
@@ -884,7 +886,7 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.maddNaturalMiniature) {
             appendScalarPaintOps(
                 text: text,
-                scalars: [Self.smallWaw.value, Self.smallYeh.value, Self.daggerAlif.value],
+                scalars: [Self.smallWaw.value, Self.smallYeh.value, Self.smallHighYeh.value, Self.daggerAlif.value],
                 priority: PaintPriority.maddNatural2MiniatureScalars,
                 category: .maddNaturalMiniature,
                 into: &ops
@@ -1022,9 +1024,18 @@ final class TajweedStore {
                 for i in lo..<hi {
                     if i == finalAaridCarrier { continue }
                     if isFinalFathataynSilentAlifMadd(clusters: clusters, index: i) {
-                        // The final silent alif / alif-maqsura after fathatayn at ayah end (نًا / نًى) is not
-                        // pronounced at waqf, so leave it completely uncolored — don't paint a natural madd
-                        // on it. Covers both fathatayn forms (regular ً and Uthmani ٗ) via hasFathatayn.
+                        // Madd 'iwad: at the END of the ayah (waqf) the tanwin fath is dropped and the final
+                        // alif / alif-maqsura IS pronounced as a 2-count natural madd, so colour it (not
+                        // silent). Mid-ayah those alifs stay silent. Covers both fathatayn forms (ً 064B and
+                        // Uthmani ٗ 0657) via hasFathatayn, for alif and alif-maqsura.
+                        if strongerMaddRuleCoversCluster(index: i, ops: ops, clusters: clusters) { continue }
+                        appendLetterOnlyMaddPaintOps(
+                            clusters: clusters,
+                            index: i,
+                            priority: PaintPriority.maddNatural2,
+                            category: .maddNatural,
+                            into: &ops
+                        )
                         continue
                     }
                     guard shouldOfferNaturalMadd2(clusters: clusters, index: i, wordStart: lo) else { continue }
@@ -1112,7 +1123,8 @@ final class TajweedStore {
     ) -> (category: TajweedLegendCategory, priority: Int) {
         let hasTashkeelMaddCarrier = scalarRange(in: clusters[index], scalar: Self.daggerAlif) != nil ||
             scalarRange(in: clusters[index], scalar: Self.smallWaw) != nil ||
-            scalarRange(in: clusters[index], scalar: Self.smallYeh) != nil
+            scalarRange(in: clusters[index], scalar: Self.smallYeh) != nil ||
+            scalarRange(in: clusters[index], scalar: Self.smallHighYeh) != nil
 
         if index + 1 < clusters.count,
            !isWhitespaceOnly(clusters[index + 1]),
@@ -1160,7 +1172,7 @@ final class TajweedStore {
     }
 
     private func hasMiniatureMaddScalar(_ cluster: CharacterClusterInfo) -> Bool {
-        cluster.contains(Self.daggerAlif) || cluster.contains(Self.smallWaw) || cluster.contains(Self.smallYeh)
+        cluster.contains(Self.daggerAlif) || cluster.contains(Self.smallWaw) || cluster.contains(Self.smallYeh) || cluster.contains(Self.smallHighYeh)
     }
 
     private func shouldIgnoreForExplicitMaddahScan(_ cluster: CharacterClusterInfo) -> Bool {
@@ -1244,7 +1256,7 @@ final class TajweedStore {
         into ops: inout [PaintOp]
     ) {
         let cluster = clusters[index]
-        let skipScalars: Set<UInt32> = [Self.daggerAlif.value, Self.smallWaw.value, Self.smallYeh.value]
+        let skipScalars: Set<UInt32> = [Self.daggerAlif.value, Self.smallWaw.value, Self.smallYeh.value, Self.smallHighYeh.value]
         var u = cluster.utf16Range.lowerBound
         for s in cluster.text.unicodeScalars {
             if !skipScalars.contains(s.value) {
@@ -2268,6 +2280,31 @@ final class TajweedStore {
         return isYaBase(clusters[finalIdx])
     }
 
+    /// Ghunnah for a noon/meem with shadda colours the whole cluster — EXCEPT a trailing tanween at waqf
+    /// (ayah end), which is dropped when stopping and so must stay uncoloured (e.g. وَلَا جَآنّٞ: the نّ stays
+    /// green, the final tanween ٞ does not). Mid-ayah the tanween is pronounced, so the whole cluster colours.
+    private func appendShaddaGhunnahPaintOps(clusters: [CharacterClusterInfo], index: Int, into ops: inout [PaintOp]) {
+        let cluster = clusters[index]
+        let full = nsRange(for: cluster)
+
+        guard let tanweenRange = tanweenScalarRange(in: cluster),
+              isTanweenClusterAtAyahEnd(clusters: clusters, index: index) else {
+            appendPaintOpIfVisible(range: full, priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+            return
+        }
+
+        // Colour everything in the cluster except the tanween scalar.
+        let beforeLength = tanweenRange.location - full.location
+        if beforeLength > 0 {
+            appendPaintOpIfVisible(range: NSRange(location: full.location, length: beforeLength), priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+        }
+        let afterLocation = tanweenRange.location + tanweenRange.length
+        let afterLength = (full.location + full.length) - afterLocation
+        if afterLength > 0 {
+            appendPaintOpIfVisible(range: NSRange(location: afterLocation, length: afterLength), priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+        }
+    }
+
     private func appendQalqalahTreePaintOps(
         text: String,
         range: NSRange,
@@ -2471,7 +2508,7 @@ final class TajweedStore {
         var ranges: [NSRange] = []
         for scalar in cluster.text.unicodeScalars {
             let length = utf16Length(of: scalar)
-            if scalar == Self.daggerAlif || scalar == Self.maddah || scalar == Self.smallWaw || scalar == Self.smallYeh {
+            if scalar == Self.daggerAlif || scalar == Self.maddah || scalar == Self.smallWaw || scalar == Self.smallYeh || scalar == Self.smallHighYeh {
                 ranges.append(NSRange(location: offset, length: length))
             }
             offset += length
@@ -2482,7 +2519,8 @@ final class TajweedStore {
     private func explicitMaddahPaintRanges(in cluster: CharacterClusterInfo) -> [NSRange] {
         let hasTashkeelMaddCarrier = scalarRange(in: cluster, scalar: Self.daggerAlif) != nil ||
             scalarRange(in: cluster, scalar: Self.smallWaw) != nil ||
-            scalarRange(in: cluster, scalar: Self.smallYeh) != nil
+            scalarRange(in: cluster, scalar: Self.smallYeh) != nil ||
+            scalarRange(in: cluster, scalar: Self.smallHighYeh) != nil
         if hasTashkeelMaddCarrier {
             return specialMaddScalarRanges(in: cluster)
         }
@@ -2515,7 +2553,7 @@ final class TajweedStore {
             if let base,
                (base == "ن" || base == "م") && hasShadda(cluster) {
                 // Global ghunnah: any noon or meem with shaddah.
-                appendPaintOpIfVisible(range: nsRange(for: cluster), priority: PaintPriority.generalGhunnah, category: .generalGhunnah, into: &ops)
+                appendShaddaGhunnahPaintOps(clusters: clusters, index: idx, into: &ops)
                 continue
             }
 

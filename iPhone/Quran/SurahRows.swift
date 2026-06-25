@@ -592,9 +592,11 @@ struct SurahAyahRow: View {
     private var gridBody: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text("\(surah.id):\(ayah.id)")
+                Text("\(surah.nameTransliteration) \(surah.id):\(ayah.id)")
                     .font(.subheadline.monospacedDigit().weight(.semibold))
                     .foregroundColor(settings.accentColor.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .onTapGesture {
                         settings.hapticFeedback()
                         toggleBookmarkWithNoteGuard()
@@ -2055,10 +2057,14 @@ struct AyahSearchRow: View, Equatable {
                         accent: settings.accentColor.color,
                         fg: .primary,
                         preStyledSource: arabicTajweedText(),
-                        beginnerMode: settings.beginnerMode
+                        beginnerMode: settings.beginnerMode,
+                        lineLimit: nil
                     )
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .multilineTextAlignment(.trailing)
+                    // Inside this badge+Arabic HStack SwiftUI otherwise truncates a long ayah to one line;
+                    // fixedSize lets it wrap to as many lines as needed.
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -2129,10 +2135,12 @@ struct AyahSearchRow: View, Equatable {
                     accent: settings.accentColor.color,
                     fg: .primary,
                     preStyledSource: arabicTajweedText(),
-                    beginnerMode: settings.beginnerMode
+                    beginnerMode: settings.beginnerMode,
+                    lineLimit: nil
                 )
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
             }
 
             if visibility.showTrLine {
@@ -2168,7 +2176,7 @@ struct AyahSearchRow: View, Equatable {
             pageJuzMetadata
         }
     }
-    
+
     var body: some View {
         Group {
             if compact {
