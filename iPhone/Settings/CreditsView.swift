@@ -22,6 +22,7 @@ struct CreditsView: View {
             creditsLinksSection
             appsSection
             botsSection
+            intentSection
         }
         .applyConditionalListStyle()
         .navigationTitle("Credits")
@@ -73,9 +74,10 @@ struct CreditsView: View {
                 .font(.body)
                 .multilineTextAlignment(.leading)
 
-            if let url = URL(string: "https://github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars") {
+            let urlText = "https://github.com/TheAbubakrAbu/Al-Islam-iOS"
+            if let url = URL(string: urlText) {
                 Link(
-                    "View the source code: github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars",
+                    "View the source code: \(urlText)",
                     destination: url
                 )
                 .font(.body)
@@ -86,7 +88,7 @@ struct CreditsView: View {
 
                     Button {
                         settings.hapticFeedback()
-                        UIPasteboard.general.string = "https://github.com/TheAbubakrAbu/Al-Islam-Islamic-Pillars"
+                        UIPasteboard.general.string = urlText
                     } label: {
                         HStack {
                             Image(systemName: "doc.on.doc")
@@ -154,6 +156,14 @@ struct CreditsView: View {
             ForEach(botsByAbubakr) { bot in
                 AppLinkRow(imageName: bot.imageName, title: bot.title, url: bot.url)
             }
+        }
+    }
+
+    private var intentSection: some View {
+        Section(header: Text("A NOTE ON INTENT")) {
+            Text("This app is offered as *sadaqah jariyah* — a contribution for the benefit of the Muslim community and anyone building tools to read, learn, and listen to the Quran. If it helps you, please keep the chain of attribution intact and consider contributing improvements back.")
+                .font(.body)
+                .multilineTextAlignment(.leading)
         }
     }
 

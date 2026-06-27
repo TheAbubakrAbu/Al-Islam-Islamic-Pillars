@@ -373,6 +373,7 @@
 		72C6FDE92F7880700035F675 /* makkah-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "makkah-30.caf"; sourceTree = "<group>"; };
 		72C6FDEA2F7880700035F675 /* zakariya-30.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "zakariya-30.caf"; sourceTree = "<group>"; };
 		72C7DD752D79A59B00FC6058 /* CountdownSimpleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownSimpleWidget.swift; sourceTree = "<group>"; };
+		72C882832FEF3791008FE6C8 /* CREDITS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CREDITS.md; sourceTree = "<group>"; };
 		72CCAE962D42DDF100871A6A /* WatchConnectivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivity.swift; sourceTree = "<group>"; };
 		72CCAE9F2D42DF5700871A6A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		72CCAEA12D42DF5700871A6A /* ViewExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtensions.swift; sourceTree = "<group>"; };
@@ -468,7 +469,6 @@
 				72616D802D52F7B000A66C86 /* Info-Main.plist */,
 				72616D812D52F7BD00A66C86 /* Info-Widget.plist */,
 				72F7DB742F0431740037B059 /* Assets.xcassets */,
-				725D4C6A2E29584B00817FFB /* Logo.jpg */,
 				72EF01C52F775D9200B273F7 /* Adhan Sounds */,
 				7260F9382A8715D600E8FF87 /* Fonts */,
 				7260F9222A8715D600E8FF87 /* JSONs */,
@@ -536,6 +536,8 @@
 			isa = PBXGroup;
 			children = (
 				7287AB0E2D42E55D00C3D776 /* README.md */,
+				72C882832FEF3791008FE6C8 /* CREDITS.md */,
+				725D4C6A2E29584B00817FFB /* Logo.jpg */,
 				7230F8A32D42119D0017DAE3 /* Resources */,
 				7260F9132A8715D600E8FF87 /* iPhone */,
 				725B42032AA0061C009C8C91 /* Widget */,
@@ -553,11 +555,11 @@
 				72F7DB712F03FEE50037B059 /* AppReview.swift */,
 				728D75E32F79D2E600502B8A /* SplashScreen.swift */,
 				7260F9342A8715D600E8FF87 /* LaunchScreen.swift */,
-				72CCAEA32D42DF5700871A6A /* Helpers */,
 				7260F9192A8715D600E8FF87 /* Adhan */,
 				7260F9212A8715D600E8FF87 /* Quran */,
 				729115312AF817CF00A4EB2B /* Islam */,
 				7260F9142A8715D600E8FF87 /* Settings */,
+				72CCAEA32D42DF5700871A6A /* Helpers */,
 			);
 			path = iPhone;
 			sourceTree = "<group>";
@@ -576,6 +578,7 @@
 				728D75A32F79C51C00502B8A /* ArabicLetters.swift */,
 				72574CC82E49EE7F00BFF138 /* AppIntents.swift */,
 				72CCAE962D42DDF100871A6A /* WatchConnectivity.swift */,
+				72EF01C22F775A5600B273F7 /* PreviewSupport.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -681,7 +684,6 @@
 		72CCAEA32D42DF5700871A6A /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
-				72EF01C22F775A5600B273F7 /* PreviewSupport.swift */,
 				72CCAEA12D42DF5700871A6A /* ViewExtensions.swift */,
 				72CCAEA22D42DF5700871A6A /* SearchBar.swift */,
 				720CCE0D2E394375002DD82E /* Highlighted.swift */,

@@ -225,6 +225,7 @@ struct SurahRow: View, Equatable {
                     Text(context)
                         .font(.caption2)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
 
                 HighlightedSnippet(
@@ -234,6 +235,7 @@ struct SurahRow: View, Equatable {
                     accent: accentColor.color,
                     fg: .primary
                 )
+                .lineLimit(1)
 
                 HighlightedSnippet(
                     source: surah.nameEnglish,
@@ -243,6 +245,7 @@ struct SurahRow: View, Equatable {
                     fg: showInfo ? .primary : .secondary,
                     trailingSuffix: showInfo ? "" : " \(revelationEmoji)"
                 )
+                .lineLimit(1)
 
                 if showInfo {
                     Text(pageLine)
@@ -2037,7 +2040,7 @@ struct AyahSearchRow: View, Equatable {
     }
 
     private func searchVisibility() -> SearchVisibility {
-        let normalizedQuery = settings.cleanSearch(query, whitespace: true).removingArabicDiacriticsAndSigns
+        let normalizedQuery = settings.cleanSearch(query.removingAyahSearchOperators, whitespace: true).removingArabicDiacriticsAndSigns
         let sources = normalizedSources()
 
         let mArabic = sourceMatchesQuery(sources.arabic, normalizedQuery: normalizedQuery)

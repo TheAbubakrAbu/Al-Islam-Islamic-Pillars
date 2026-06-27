@@ -50,6 +50,32 @@ struct BoundaryDividerModel: Codable, Equatable {
     let style: BoundaryDividerStyle
 }
 
+extension Surah {
+    /// Absolute mushaf page where this surah begins (falls back to the smallest ayah page).
+    var resolvedPageStart: Int? {
+        pageStart ?? ayahs.compactMap(\.page).min()
+    }
+
+    /// 1-based page number *within* this surah for an absolute mushaf `page`
+    /// (e.g. a surah starting on page 100 returns 3 for page 102). `nil` when
+    /// the surah's start page is unknown or `page` falls before it.
+    func pageWithinSurah(_ page: Int) -> Int? {
+        guard let start = resolvedPageStart else { return nil }
+        let relative = page - start + 1
+        return relative >= 1 ? relative : nil
+    }
+}
+
+/// "Page 102 (3)" — the absolute mushaf page annotated with its position within
+/// `surah` when that can be determined, otherwise just "Page 102". Pass `nil` for
+/// cross-surah boundaries (the relative number would belong to a different surah).
+func mushafPageLabel(forAbsolutePage page: Int, in surah: Surah?) -> String {
+    if let surah, let relative = surah.pageWithinSurah(page) {
+        return "Page \(page) (\(relative))"
+    }
+    return "Page \(page)"
+}
+
 struct SurahBoundaryModel: Codable, Equatable {
     let startDivider: BoundaryDividerModel?
     let startDividerHighlighted: Bool

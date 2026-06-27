@@ -901,11 +901,25 @@ final class TajweedStore {
         if settings.isTajweedCategoryVisible(.maddNaturalMiniature) {
             appendScalarPaintOps(
                 text: text,
-                scalars: [Self.smallWaw.value, Self.smallYeh.value, Self.smallHighYeh.value, Self.daggerAlif.value],
+                scalars: [Self.smallWaw.value, Self.smallYeh.value, Self.daggerAlif.value],
                 priority: PaintPriority.maddNatural2MiniatureScalars,
                 category: .maddNaturalMiniature,
                 into: &ops
             )
+
+            // Small high yeh (ۧ) sits on a tatweel (e.g. ـۧ in ٱلنَّبِيِّـۧنَ) and the font won't paint a
+            // foreground color onto the bare mark, so color the whole carrier cluster instead — the same
+            // "color the whole letter" approach used for the tiny iqlaab meem — so it's actually visible.
+            for cluster in clusters where clusterHasSmallHighYehMaddMark(cluster) {
+                for range in smallHighYehMaddPaintRanges(in: cluster) {
+                    appendPaintOpIfVisible(
+                        range: range,
+                        priority: PaintPriority.maddNatural2MiniatureScalars,
+                        category: .maddNaturalMiniature,
+                        into: &ops
+                    )
+                }
+            }
         }
 
         appendExplicitMaddahPaintOps(text: text, clusters: clusters, words: words, finalAaridCarrier: finalAaridCarrier, ayahFinalNaturalIndex: ayahFinalMaddNaturalIndex, into: &ops)
@@ -2442,6 +2456,17 @@ final class TajweedStore {
         return [nsRange(for: cluster)]
     }
 
+    private func clusterHasSmallHighYehMaddMark(_ cluster: CharacterClusterInfo) -> Bool {
+        cluster.contains(Self.smallHighYeh)
+    }
+
+    private func smallHighYehMaddPaintRanges(in cluster: CharacterClusterInfo) -> [NSRange] {
+        // Color the whole carrier cluster (e.g. the ـۧ in ٱلنَّبِيِّـۧنَ), not just the bare small high yeh
+        // mark, so this miniature natural madd actually shows — same reasoning as `tinyMeemPaintRanges`.
+        guard clusterHasSmallHighYehMaddMark(cluster) else { return [] }
+        return [nsRange(for: cluster)]
+    }
+
     private func hasFathatayn(_ cluster: CharacterClusterInfo) -> Bool {
         cluster.contains(Self.fathatayn) || cluster.contains(Self.specialFathatayn)
     }
@@ -3075,7 +3100,8 @@ final class QuranData: ObservableObject {
     }
 
     private struct QuranDynamicCache: Codable {
-        static let version = 2
+        // v3: cross-surah boundary dividers no longer carry a surah-relative "(N)" page annotation.
+        static let version = 3
 
         let version: Int
         let resourceSignature: String
@@ -4441,16 +4467,16 @@ final class QuranData: ObservableObject {
         cachedFirstAyahLookupQiraah = displayQiraah ?? ""
     }
 
-    private func boundaryText(from oldAyah: Ayah, to newAyah: Ayah) -> String? {
+    private func boundaryText(from oldAyah: Ayah, to newAyah: Ayah, in surah: Surah?) -> String? {
         let pageChanged = oldAyah.page != newAyah.page
         let juzChanged = oldAyah.juz != newAyah.juz
         guard pageChanged || juzChanged else { return nil }
 
         if let page = newAyah.page, let juz = newAyah.juz {
-            return "Page \(page) • Juz \(juz)"
+            return "\(mushafPageLabel(forAbsolutePage: page, in: surah)) • Juz \(juz)"
         }
         if let page = newAyah.page {
-            return "Page \(page)"
+            return mushafPageLabel(forAbsolutePage: page, in: surah)
         }
         if let juz = newAyah.juz {
             return "Juz \(juz)"
@@ -4458,12 +4484,12 @@ final class QuranData: ObservableObject {
         return nil
     }
 
-    private func boundaryText(for ayah: Ayah) -> String? {
+    private func boundaryText(for ayah: Ayah, in surah: Surah?) -> String? {
         if let page = ayah.page, let juz = ayah.juz {
-            return "Page \(page) • Juz \(juz)"
+            return "\(mushafPageLabel(forAbsolutePage: page, in: surah)) • Juz \(juz)"
         }
         if let page = ayah.page {
-            return "Page \(page)"
+            return mushafPageLabel(forAbsolutePage: page, in: surah)
         }
         if let juz = ayah.juz {
             return "Juz \(juz)"
@@ -4528,7 +4554,7 @@ final class QuranData: ObservableObject {
                 continue
             }
 
-            let startDividerText = ayahsForQiraah.first.flatMap { boundaryText(for: $0) }
+            let startDividerText = ayahsForQiraah.first.flatMap { boundaryText(for: $0, in: surah) }
             let startDividerHighlighted: Bool = {
                 guard index > 0,
                       let firstAyah = ayahsForQiraah.first else { return false }
@@ -4555,7 +4581,7 @@ final class QuranData: ObservableObject {
                 for i in 1..<ayahsForQiraah.count {
                     let prev = ayahsForQiraah[i - 1]
                     let current = ayahsForQiraah[i]
-                    if let text = boundaryText(from: prev, to: current) {
+                    if let text = boundaryText(from: prev, to: current, in: surah) {
                         dividerBeforeAyah[current.id] = dividerModel(
                             from: text,
                             style: boundaryStyle(pageChanged: prev.page != current.page, juzChanged: prev.juz != current.juz)
@@ -4575,7 +4601,9 @@ final class QuranData: ObservableObject {
                 if let lastAyah = ayahsForQiraah.last,
                    let nextAyah = nextSurah.ayahs.first(where: { $0.existsInQiraah(displayQiraah) }) {
                     nextFirstAyah = nextAyah
-                    endDividerText = boundaryText(from: lastAyah, to: nextAyah)
+                    // Cross-surah boundary: the page belongs to the next surah, so it is shown without a
+                    // surah-relative annotation — an "(N)" here would read as the next surah's page count.
+                    endDividerText = boundaryText(from: lastAyah, to: nextAyah, in: nil)
                     endBoundaryPageChanged = lastAyah.page != nextAyah.page
                     endBoundaryJuzChanged = lastAyah.juz != nextAyah.juz
                     endDividerHighlighted = lastAyah.page != nextAyah.page || lastAyah.juz != nextAyah.juz
@@ -4583,17 +4611,9 @@ final class QuranData: ObservableObject {
             }
 
             if let nextFirstAyah {
-                endOfSurahDividerText = boundaryText(for: nextFirstAyah)
+                endOfSurahDividerText = boundaryText(for: nextFirstAyah, in: nil)
             } else if let lastAyah = ayahsForQiraah.last {
-                if let page = lastAyah.page {
-                    if let juz = lastAyah.juz {
-                        endOfSurahDividerText = "Page \(page) • Juz \(juz)"
-                    } else {
-                        endOfSurahDividerText = "Page \(page)"
-                    }
-                } else if let juz = lastAyah.juz {
-                    endOfSurahDividerText = "Juz \(juz)"
-                }
+                endOfSurahDividerText = boundaryText(for: lastAyah, in: nil)
             }
             let endDividerStyle = boundaryStyle(pageChanged: endBoundaryPageChanged, juzChanged: endBoundaryJuzChanged)
             let endOfSurahDividerStyle: BoundaryDividerStyle = {

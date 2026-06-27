@@ -38,6 +38,7 @@ struct AlIslamApp: App {
     var body: some Scene {
         WindowGroup {
             rootContent
+                .statusBarHidden(true)
                 .environmentObject(settings)
                 .environmentObject(quranData)
                 .environmentObject(quranPlayer)

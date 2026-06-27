@@ -391,6 +391,8 @@ private struct HijriDateRow: View {
             }
             .font(.footnote)
             .foregroundColor(settings.accentColor.color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             .contextMenu {
                 Text("Date Actions")
                     .foregroundStyle(.secondary)

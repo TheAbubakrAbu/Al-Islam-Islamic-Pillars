@@ -15,18 +15,18 @@ struct PrayerList: View {
     @AppStorage("prayerDisplayModeV2") private var prayerDisplayModeRawValue: String = PrayerDisplayMode.tiles.rawValue
 
     enum PrayerDisplayMode: String, CaseIterable, Identifiable {
-        case list = "Prayer List"
-        case grid = "Prayer Grid"
         case tiles = "Prayer Tiles"
+        case grid = "Prayer Grid"
+        case list = "Prayer List"
         case split = "Prayer Split"
 
         var id: String { rawValue }
 
         var displayName: String {
             switch self {
-            case .list: return "LIST"
-            case .grid: return "GRID"
             case .tiles: return "TILES"
+            case .grid: return "GRID"
+            case .list: return "LIST"
             case .split: return "SPLIT"
             }
         }

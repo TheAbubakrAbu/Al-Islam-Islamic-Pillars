@@ -199,11 +199,35 @@ struct TajweedLegendView: View {
                     Text("Use the colors as a quick guide, then read the longer notes below for what each rule is doing in recitation.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    
-                    Text("Tajweed is in beta. Some rules or colors may appear differently or be incomplete.")
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(isOn: Binding(
+                        get: { settings.showTajweedColors },
+                        set: { newValue in
+                            settings.hapticFeedback()
+                            withAnimation {
+                                settings.showTajweedColors = newValue
+                                // Mirror the master switch onto every category so the legend below visibly
+                                // reflects on/off (all rules go gray when off).
+                                TajweedLegendCategory.allCases.forEach {
+                                    settings.setTajweedCategory($0, visible: newValue)
+                                }
+                            }
+                        }
+                    )) {
+                        Text("Turn Tajweed colors on or off")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .tint(settings.accentColor.color)
+
+                    Text("Go to Quran Settings → Arabic Text to turn it back on")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .conditionalGlassEffect(rectangle: true)
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Quick Guide")

@@ -177,14 +177,8 @@ struct AyahRow: View, Equatable {
     }
 
     private func queryForInlineHighlight(_ query: String) -> String {
-        let stripped = query
-            .replacingOccurrences(of: "&&", with: " ")
-            .replacingOccurrences(of: "||", with: " ")
-            .replacingOccurrences(of: "&", with: " ")
-            .replacingOccurrences(of: "|", with: " ")
-            .replacingOccurrences(of: "!", with: " ")
-            .replacingOccurrences(of: "#", with: " ")
-        return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Drop every search operator (& | ! # ^ % $) so the residual text highlights correctly.
+        query.removingAyahSearchOperators.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var shouldShowTajweedColors: Bool {
@@ -744,8 +738,11 @@ struct AyahRow: View, Equatable {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 4)
         .padding(.bottom, 2)
+        #if os(iOS)
+        .textSelection(.enabled)
+        #endif
     }
-    
+
     @State private var confirmRemoveNote = false
 
     private func toggleBookmarkWithNoteGuard() {

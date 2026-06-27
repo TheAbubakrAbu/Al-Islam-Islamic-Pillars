@@ -103,10 +103,11 @@ struct PlayCustomRangeSheet: View {
         max(0, endAyah - startAyah + 1)
     }
 
-    /// "Ayah N" plus the mushaf page it falls on (when page data is available).
+    /// "Ayah N" plus the mushaf page it falls on (when page data is available),
+    /// the page annotated with its position within this surah, e.g. "Page 102 (3)".
     private func ayahPageLabel(_ ayahID: Int) -> String {
         if hasPageData, let page = pageNumber(forAyah: ayahID) {
-            return "Ayah \(ayahID) · Page \(page)"
+            return "Ayah \(ayahID) · \(mushafPageLabel(forAbsolutePage: page, in: surah))"
         }
         return "Ayah \(ayahID)"
     }
@@ -617,7 +618,7 @@ struct PlayCustomRangeSheet: View {
     }
 
     private func pageLabelColumn(forAyah ayah: Int) -> some View {
-        Text(pageNumber(forAyah: ayah).map { "Page \($0)" } ?? " ")
+        Text(pageNumber(forAyah: ayah).map { mushafPageLabel(forAbsolutePage: $0, in: surah) } ?? " ")
             .font(.caption)
             .foregroundColor(Color(.tertiaryLabel))
             .frame(maxWidth: .infinity, alignment: .center)

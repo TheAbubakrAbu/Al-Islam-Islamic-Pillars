@@ -20,8 +20,8 @@ extension View {
         #endif
     }
 
-    func applyConditionalListStyle(disableNowPlayingInset: Bool = false) -> some View {
-        modifier(ConditionalListStyle(disableNowPlayingInset: disableNowPlayingInset))
+    func applyConditionalListStyle(disableNowPlayingInset: Bool = false, topContentMargin: CGFloat = 0) -> some View {
+        modifier(ConditionalListStyle(disableNowPlayingInset: disableNowPlayingInset, topContentMargin: topContentMargin))
     }
 
     /// Tints list rows for the Sepia / Gray reading themes. Apply this to the rows/sections INSIDE a `List`
@@ -85,6 +85,7 @@ struct ConditionalListStyle: ViewModifier {
     @Environment(\.customColorScheme) private var customColorScheme
 
     let disableNowPlayingInset: Bool
+    var topContentMargin: CGFloat = 0
 
     private var currentColorScheme: ColorScheme {
         settings.colorScheme ?? systemColorScheme
@@ -106,7 +107,7 @@ struct ConditionalListStyle: ViewModifier {
         .accentColor(settings.accentColor.color)
         .tint(settings.accentColor.color)
         .dismissKeyboardOnScroll()
-        .topContentMargin(0)
+        .topContentMargin(topContentMargin)
         // Force the theme's light/dark base here (not just at the app root) so sheets — which are their own
         // presentation contexts and don't inherit the root's preferredColorScheme — also adopt the theme.
         .preferredColorScheme(settings.colorScheme)

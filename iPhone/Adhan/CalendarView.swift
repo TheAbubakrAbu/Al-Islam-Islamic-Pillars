@@ -22,9 +22,17 @@ struct CalendarView: View {
     @State private var hijriMonth = 1
     @State private var didAutoScrollToNearest = false
     @State private var eventRows: [HijriEventRowModel] = []
-    @State private var nextYearEventRows: [HijriEventRowModel] = []
     @State private var nearestEventRow: HijriEventRowModel?
-    @State private var showNextYear = false
+
+    // Hijri year currently shown in the events list. `resolvedCurrentYear` is the "today" year the
+    // list opens on (rolled to next year when every event for the real year has already passed);
+    // `displayedYear` is what the stepper points at and can be moved freely within the bounds below.
+    @State private var displayedYear = 1445
+    @State private var resolvedCurrentYear = 1445
+    @State private var didInitializeYear = false
+
+    private static let minHijriYear = 1300
+    private static let maxHijriYear = 1600
 
     private static let monthSymbols = [
         "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
@@ -131,33 +139,16 @@ struct CalendarView: View {
                     }
 
                     Section(header: Text("IMPORTANT ISLAMIC DATES")) {
+                        yearStepperRow
+                            .listRowSeparator(.hidden)
+
                         ForEach(eventRows, id: \.id) { row in
                             HijriEventRow(row: row, isPast: isPastEvent(row))
                                 .id(row.id)
                         }
 
-                        Button {
-                            settings.hapticFeedback()
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showNextYear.toggle()
-                            }
-                        } label: {
-                            Label(
-                                showNextYear ? "Hide Next Year's Events" : "Show Next Year's Events",
-                                systemImage: showNextYear ? "chevron.up" : "chevron.down"
-                            )
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(settings.accentColor.color)
-                        }
-                    }
-
-                    if showNextYear {
-                        Section(header: Text("NEXT YEAR'S DATES")) {
-                            ForEach(nextYearEventRows, id: \.id) { row in
-                                HijriEventRow(row: row, isPast: false)
-                                    .id("next-\(row.id)")
-                            }
-                        }
+                        yearStepperRow
+                            .listRowSeparator(.hidden)
                     }
                 }
                 .themedListRowBackground()
@@ -183,24 +174,10 @@ struct CalendarView: View {
         }
     }
 
-    private func buildEventRows(extraYearShift: Int = 0) -> [HijriEventRowModel] {
-        let baseEvents = settings.specialEvents
-        let todayStart = Calendar.current.startOfDay(for: Date())
-
-        // The Islamic year runs Muharram → Dhul Hijjah. Once every event for the current Hijri
-        // year has already passed (e.g. late Dhul Hijjah), roll the whole set to the next Hijri
-        // year so the list leads with the upcoming Islamic New Year instead of being all grayed out.
-        let allPast = baseEvents.allSatisfy { event in
-            guard let date = settings.hijriCalendar.date(from: event.1) else { return true }
-            return date < todayStart
-        }
-        // extraYearShift lets the "next year's events" button build the following year's set on top of
-        // whatever the current display year already resolved to.
-        let yearShift = (allPast ? 1 : 0) + extraYearShift
-
-        return baseEvents.map { event in
+    private func buildEventRows(forHijriYear year: Int) -> [HijriEventRowModel] {
+        settings.specialEvents.map { event in
             var components = event.1
-            components.year = (components.year ?? hijriYear) + yearShift
+            components.year = year
             let date = settings.hijriCalendar.date(from: components) ?? Date()
             let monthName = Self.monthSymbols[(components.month ?? 1) - 1]
 
@@ -209,11 +186,118 @@ struct CalendarView: View {
                 title: event.0,
                 subtitle: event.2,
                 description: event.3,
-                hijriDateText: "\(components.day ?? 1) \(monthName), \(String(components.year ?? hijriYear)) AH",
+                hijriDateText: "\(components.day ?? 1) \(monthName), \(String(year)) AH",
                 gregorianDateText: Self.formatter.string(from: date),
                 date: date
             )
         }
+    }
+
+    /// The Islamic year runs Muharram → Dhul Hijjah. Once every event for `currentYear` has already
+    /// passed (e.g. late Dhul Hijjah), the list should open on the next Hijri year so it leads with
+    /// the upcoming Islamic New Year instead of being entirely grayed out.
+    private func resolvedDisplayYear(forCurrentYear currentYear: Int) -> Int {
+        let todayStart = Calendar.current.startOfDay(for: Date())
+        let allPast = settings.specialEvents.allSatisfy { event in
+            var components = event.1
+            components.year = currentYear
+            guard let date = settings.hijriCalendar.date(from: components) else { return true }
+            return date < todayStart
+        }
+        return currentYear + (allPast ? 1 : 0)
+    }
+
+    private func reloadEventRows() {
+        eventRows = buildEventRows(forHijriYear: displayedYear)
+        nearestEventRow = nearestEventRow(in: eventRows)
+    }
+
+    private func changeYear(by delta: Int) {
+        let target = displayedYear + delta
+        guard (Self.minHijriYear...Self.maxHijriYear).contains(target) else { return }
+        displayedYear = target
+        reloadEventRows()
+    }
+
+    private func goToCurrentYear() {
+        guard displayedYear != resolvedCurrentYear else { return }
+        displayedYear = resolvedCurrentYear
+        reloadEventRows()
+    }
+
+    /// Approximate Gregorian span the displayed Hijri year covers, derived from the event dates.
+    private var gregorianSpanText: String? {
+        let dates = eventRows.map(\.date)
+        guard let first = dates.min(), let last = dates.max() else { return nil }
+        let gregorian = Calendar(identifier: .gregorian)
+        let startYear = gregorian.component(.year, from: first)
+        let endYear = gregorian.component(.year, from: last)
+        return startYear == endYear ? "≈ \(startYear) CE" : "≈ \(startYear)–\(endYear) CE"
+    }
+
+    @ViewBuilder
+    private var yearStepperRow: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                yearArrow("chevron.left", enabled: displayedYear > Self.minHijriYear) {
+                    changeYear(by: -1)
+                }
+
+                VStack(spacing: 2) {
+                    Text("\(String(displayedYear)) AH")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+
+                    if let gregorianSpanText {
+                        Text(gregorianSpanText)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                yearArrow("chevron.right", enabled: displayedYear < Self.maxHijriYear) {
+                    changeYear(by: 1)
+                }
+            }
+
+            if displayedYear != resolvedCurrentYear {
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation { goToCurrentYear() }
+                } label: {
+                    Label("Go to This Year", systemImage: "calendar.badge.clock")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(settings.accentColor.color)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(settings.accentColor.color.opacity(0.12))
+                        .clipShape(Capsule())
+                        .contentShape(Capsule())
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+    }
+
+    private func yearArrow(_ systemName: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            guard enabled else { return }
+            settings.hapticFeedback()
+            withAnimation { action() }
+        } label: {
+            Image(systemName: systemName)
+                .font(.body.weight(.semibold))
+                .foregroundColor(enabled ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                .frame(width: 44, height: 44)
+                .background((enabled ? settings.accentColor.color : Color(UIColor.tertiaryLabel)).opacity(0.12))
+                .clipShape(Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
     }
 
     private func nearestEventRow(in rows: [HijriEventRowModel]) -> HijriEventRowModel? {
@@ -253,9 +337,12 @@ struct CalendarView: View {
         let components = settings.hijriCalendar.dateComponents([.year, .month], from: currentDate)
         hijriYear = components.year ?? 1445
         hijriMonth = components.month ?? 1
-        eventRows = buildEventRows()
-        nextYearEventRows = buildEventRows(extraYearShift: 1)
-        nearestEventRow = nearestEventRow(in: eventRows)
+        resolvedCurrentYear = resolvedDisplayYear(forCurrentYear: hijriYear)
+        if !didInitializeYear {
+            displayedYear = resolvedCurrentYear
+            didInitializeYear = true
+        }
+        reloadEventRows()
         settings.updateDates()
     }
 }
@@ -340,6 +427,9 @@ struct HijriMonthCalendarView: View {
     @State private var selectedDay: Int?
     @State private var didInitialize = false
 
+    private static let minHijriYear = 1300
+    private static let maxHijriYear = 1600
+
     private static let monthSymbols = [
         "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
         "Jumada al-Ula", "Jumada al-Thani", "Rajab", "Sha'ban",
@@ -369,6 +459,7 @@ struct HijriMonthCalendarView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 18) {
+                yearHeader
                 monthHeader
                 weekdayHeader
                 daysGrid
@@ -390,13 +481,32 @@ struct HijriMonthCalendarView: View {
 
     // MARK: Header
 
+    /// Year stepper shown above the month stepper for quick year jumps.
+    private var yearHeader: some View {
+        HStack(spacing: 12) {
+            yearArrow(systemName: "chevron.left", enabled: displayedYear > Self.minHijriYear) {
+                changeYear(by: -1)
+            }
+
+            Text("\(String(displayedYear)) AH")
+                .font(.headline.weight(.semibold))
+                .foregroundColor(.primary)
+                .monospacedDigit()
+                .frame(maxWidth: .infinity)
+
+            yearArrow(systemName: "chevron.right", enabled: displayedYear < Self.maxHijriYear) {
+                changeYear(by: 1)
+            }
+        }
+    }
+
     private var monthHeader: some View {
         VStack(spacing: 10) {
             HStack(spacing: 12) {
                 monthArrow(systemName: "chevron.left") { changeMonth(by: -1) }
 
                 VStack(spacing: 3) {
-                    Text("\(Self.monthSymbols[displayedMonth - 1]) \(String(displayedYear)) AH")
+                    Text(Self.monthSymbols[displayedMonth - 1])
                         .font(.title3.weight(.semibold))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
@@ -419,7 +529,7 @@ struct HijriMonthCalendarView: View {
                         goToToday()
                     }
                 } label: {
-                    Label("Today", systemImage: "calendar.badge.clock")
+                    Label("Go to Today", systemImage: "calendar.badge.clock")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(settings.accentColor.color)
                         .padding(.horizontal, 14)
@@ -435,6 +545,25 @@ struct HijriMonthCalendarView: View {
     private var isViewingTodayMonth: Bool {
         let t = todayHijriComponents()
         return t.year == displayedYear && t.month == displayedMonth
+    }
+
+    private func yearArrow(systemName: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            guard enabled else { return }
+            settings.hapticFeedback()
+            withAnimation {
+                action()
+            }
+        } label: {
+            Image(systemName: systemName)
+                .font(.body.weight(.semibold))
+                .foregroundColor(enabled ? settings.accentColor.color : Color(UIColor.tertiaryLabel))
+                .frame(width: 44, height: 44)
+                .background((enabled ? settings.accentColor.color : Color(UIColor.tertiaryLabel)).opacity(0.12))
+                .clipShape(Circle())
+                .contentShape(Circle())
+        }
+        .disabled(!enabled)
     }
 
     private func monthArrow(systemName: String, action: @escaping () -> Void) -> some View {
@@ -636,8 +765,18 @@ struct HijriMonthCalendarView: View {
         var year = displayedYear
         if month < 1 { month = 12; year -= 1 }
         if month > 12 { month = 1; year += 1 }
+        guard (Self.minHijriYear...Self.maxHijriYear).contains(year) else { return }
         withAnimation(.easeInOut(duration: 0.2)) {
             displayedMonth = month
+            displayedYear = year
+            selectedDay = nil
+        }
+    }
+
+    private func changeYear(by delta: Int) {
+        let year = displayedYear + delta
+        guard (Self.minHijriYear...Self.maxHijriYear).contains(year) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
             displayedYear = year
             selectedDay = nil
         }

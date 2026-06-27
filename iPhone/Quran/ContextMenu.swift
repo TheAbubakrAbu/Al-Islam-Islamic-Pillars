@@ -198,6 +198,8 @@ struct AyahTafsirSheet: View {
 
     @StateObject private var viewModel: AyahTafsirViewModel
     @State private var searchText = ""
+    @State private var searchMatches: [(block: Int, occurrence: Int)] = []
+    @State private var currentMatchIndex = 0
     @AppStorage("quran.tafsir.author") private var selectedAuthorRawValue = TafsirAuthor.ibnKathir.rawValue
 
     init(surahName: String, surahNumber: Int, ayahNumber: Int) {
@@ -229,6 +231,32 @@ struct AyahTafsirSheet: View {
 
     private var selectedTafsirText: String? {
         selectedTafsirEntry?.content
+    }
+
+    private var hasActiveSearch: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var currentMatch: (block: Int, occurrence: Int)? {
+        searchMatches.indices.contains(currentMatchIndex) ? searchMatches[currentMatchIndex] : nil
+    }
+
+    private func recomputeMatches(scrollProxy: ScrollViewProxy?) {
+        searchMatches = TafsirMarkdownView.searchMatches(markdown: selectedTafsirText ?? "", query: searchText)
+        currentMatchIndex = 0
+        if let scrollProxy, let first = searchMatches.first {
+            scrollToMatch(first, proxy: scrollProxy)
+        }
+    }
+
+    private func goToMatch(_ delta: Int, proxy: ScrollViewProxy) {
+        guard !searchMatches.isEmpty else { return }
+        currentMatchIndex = (currentMatchIndex + delta + searchMatches.count) % searchMatches.count
+        scrollToMatch(searchMatches[currentMatchIndex], proxy: proxy)
+    }
+
+    private func scrollToMatch(_ match: (block: Int, occurrence: Int), proxy: ScrollViewProxy) {
+        withAnimation { proxy.scrollTo(tafsirBlockScrollID(match.block), anchor: .center) }
     }
 
     private var tafsirAyahRange: ClosedRange<Int> {
@@ -274,6 +302,7 @@ struct AyahTafsirSheet: View {
                     tafsirLoadingView
                         .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 } else {
+                    ScrollViewReader { proxy in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             noticeCard
@@ -314,6 +343,19 @@ struct AyahTafsirSheet: View {
                             }
                         }
                         .padding()
+                    }
+                    .safeAreaInset(edge: .bottom) {
+                        if hasActiveSearch {
+                            TafsirFindBar(
+                                current: currentMatchIndex,
+                                total: searchMatches.count,
+                                onPrevious: { goToMatch(-1, proxy: proxy) },
+                                onNext: { goToMatch(1, proxy: proxy) }
+                            )
+                        }
+                    }
+                    .onChange(of: searchText) { _ in recomputeMatches(scrollProxy: proxy) }
+                    .onChange(of: selectedTafsirText) { _ in recomputeMatches(scrollProxy: nil) }
                     }
                 }
             }
@@ -389,12 +431,13 @@ struct AyahTafsirSheet: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(settings.accentColor.color.opacity(0.18), lineWidth: 1)
         )
+        .textSelection(.enabled)
         .animation(.easeInOut, value: tafsirRangeTitle)
     }
 
     @ViewBuilder
     private func tafsirContentView(for content: String) -> some View {
-        TafsirMarkdownView(markdown: content, searchText: searchText, accent: settings.accentColor.color)
+        TafsirMarkdownView(markdown: content, searchText: searchText, accent: settings.accentColor.color, currentMatch: currentMatch)
     }
 
     private var tafsirLoadingView: some View {
@@ -473,6 +516,8 @@ struct SurahInfoSheet: View {
     let surahNumber: Int
 
     @State private var searchText = ""
+    @State private var searchMatches: [(block: Int, occurrence: Int)] = []
+    @State private var currentMatchIndex = 0
     @AppStorage("quran.surahInfo.source") private var selectedSourceName = ""
 
     private var sources: [SurahInfoSource] {
@@ -504,12 +549,39 @@ struct SurahInfoSheet: View {
         return arabic > latin
     }
 
+    private var hasActiveSearch: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var currentMatch: (block: Int, occurrence: Int)? {
+        searchMatches.indices.contains(currentMatchIndex) ? searchMatches[currentMatchIndex] : nil
+    }
+
+    private func recomputeMatches(scrollProxy: ScrollViewProxy?) {
+        searchMatches = TafsirMarkdownView.searchMatches(markdown: selectedSource?.contents ?? "", query: searchText)
+        currentMatchIndex = 0
+        if let scrollProxy, let first = searchMatches.first {
+            scrollToMatch(first, proxy: scrollProxy)
+        }
+    }
+
+    private func goToMatch(_ delta: Int, proxy: ScrollViewProxy) {
+        guard !searchMatches.isEmpty else { return }
+        currentMatchIndex = (currentMatchIndex + delta + searchMatches.count) % searchMatches.count
+        scrollToMatch(searchMatches[currentMatchIndex], proxy: proxy)
+    }
+
+    private func scrollToMatch(_ match: (block: Int, occurrence: Int), proxy: ScrollViewProxy) {
+        withAnimation { proxy.scrollTo(tafsirBlockScrollID(match.block), anchor: .center) }
+    }
+
     var body: some View {
         NavigationView {
             Group {
                 if sources.isEmpty {
                     infoPlaceholder
                 } else {
+                    ScrollViewReader { proxy in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             noticeCard
@@ -537,7 +609,8 @@ struct SurahInfoSheet: View {
                                         markdown: source.contents,
                                         searchText: searchText,
                                         accent: settings.accentColor.color,
-                                        textAlignment: arabic ? .trailing : .leading
+                                        textAlignment: arabic ? .trailing : .leading,
+                                        currentMatch: currentMatch
                                     )
                                     .frame(maxWidth: .infinity, alignment: arabic ? .trailing : .leading)
                                 }
@@ -547,6 +620,19 @@ struct SurahInfoSheet: View {
                             }
                         }
                         .padding()
+                    }
+                    .safeAreaInset(edge: .bottom) {
+                        if hasActiveSearch {
+                            TafsirFindBar(
+                                current: currentMatchIndex,
+                                total: searchMatches.count,
+                                onPrevious: { goToMatch(-1, proxy: proxy) },
+                                onNext: { goToMatch(1, proxy: proxy) }
+                            )
+                        }
+                    }
+                    .onChange(of: searchText) { _ in recomputeMatches(scrollProxy: proxy) }
+                    .onChange(of: selectedSourceName) { _ in recomputeMatches(scrollProxy: nil) }
                     }
                 }
             }
@@ -618,6 +704,7 @@ struct SurahInfoSheet: View {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .stroke(settings.accentColor.color.opacity(0.18), lineWidth: 1)
             )
+            .textSelection(.enabled)
         }
     }
 
@@ -640,12 +727,18 @@ struct SurahInfoSheet: View {
     }
 }
 
+/// Stable scroll id for the Nth render block of a `TafsirMarkdownView` (used by find-in-page navigation).
+private func tafsirBlockScrollID(_ offset: Int) -> String { "tafsir-block-\(offset)" }
+
 private struct TafsirMarkdownView: View {
     let markdown: String
     let searchText: String
     let accent: Color
     /// Text/line alignment for the rendered blocks. Pass `.trailing` for Arabic so it reads right-to-left.
     var textAlignment: TextAlignment = .leading
+    /// The find-in-page "current" match as (render-block offset, occurrence index within that block); the
+    /// matching occurrence gets a background box so the user can see which hit they're on.
+    var currentMatch: (block: Int, occurrence: Int)? = nil
 
     private var frameAlignment: Alignment {
         switch textAlignment {
@@ -663,15 +756,9 @@ private struct TafsirMarkdownView: View {
         }
     }
 
-    private var blocks: [TafsirMarkdownBlock] {
-        normalizedMarkdown
-            .components(separatedBy: "\n\n")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .map(TafsirMarkdownBlock.init(raw:))
-    }
+    private var blocks: [TafsirMarkdownBlock] { Self.blocks(from: markdown) }
 
-    private var normalizedMarkdown: String {
+    static func normalizedMarkdown(_ markdown: String) -> String {
         markdown
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(
@@ -681,30 +768,70 @@ private struct TafsirMarkdownView: View {
             )
     }
 
+    static func blocks(from markdown: String) -> [TafsirMarkdownBlock] {
+        normalizedMarkdown(markdown)
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .map(TafsirMarkdownBlock.init(raw:))
+    }
+
+    /// Document-order list of search matches, each as (render-block offset, occurrence index within block).
+    /// Counting on the same `displayText` the highlighter searches keeps the count and the highlights in sync.
+    static func searchMatches(markdown: String, query: String) -> [(block: Int, occurrence: Int)] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+
+        var matches: [(block: Int, occurrence: Int)] = []
+        for (offset, block) in blocks(from: markdown).enumerated() {
+            let text = block.displayText
+            var start = text.startIndex
+            var occurrence = 0
+            while start < text.endIndex,
+                  let found = text.range(
+                    of: trimmed,
+                    options: [.caseInsensitive, .diacriticInsensitive],
+                    range: start..<text.endIndex
+                  ) {
+                matches.append((offset, occurrence))
+                occurrence += 1
+                start = found.upperBound
+            }
+        }
+        return matches
+    }
+
     var body: some View {
         VStack(alignment: stackAlignment, spacing: 14) {
-            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                switch block.kind {
-                case .heading:
-                    Text(block.highlightedDisplayText(searchText: searchText, accent: accent))
-                        .font(.title3.bold())
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: frameAlignment)
-                case .body:
-                    if let attributed = block.attributedText(searchText: searchText, accent: accent) {
-                        Text(attributed)
-                            .frame(maxWidth: .infinity, alignment: frameAlignment)
-                            .textSelection(.enabled)
-                            .lineSpacing(5)
-                    } else {
-                        Text(block.displayText)
-                            .font(.body)
+            ForEach(Array(blocks.enumerated()), id: \.offset) { item in
+                let offset = item.offset
+                let block = item.element
+                let currentOccurrence = currentMatch?.block == offset ? currentMatch?.occurrence : nil
+
+                Group {
+                    switch block.kind {
+                    case .heading:
+                        Text(block.highlightedDisplayText(searchText: searchText, accent: accent, currentOccurrence: currentOccurrence))
+                            .font(.title3.bold())
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity, alignment: frameAlignment)
-                            .textSelection(.enabled)
-                            .lineSpacing(5)
+                    case .body:
+                        if let attributed = block.attributedText(searchText: searchText, accent: accent, currentOccurrence: currentOccurrence) {
+                            Text(attributed)
+                                .frame(maxWidth: .infinity, alignment: frameAlignment)
+                                .textSelection(.enabled)
+                                .lineSpacing(5)
+                        } else {
+                            Text(block.displayText)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                                .frame(maxWidth: .infinity, alignment: frameAlignment)
+                                .textSelection(.enabled)
+                                .lineSpacing(5)
+                        }
                     }
                 }
+                .id(tafsirBlockScrollID(offset))
             }
         }
         .frame(maxWidth: .infinity, alignment: frameAlignment)
@@ -741,7 +868,7 @@ private struct TafsirMarkdownBlock {
         rawText.replacingOccurrences(of: #"\\-"#, with: "-", options: .regularExpression)
     }
 
-    func attributedText(searchText: String, accent: Color) -> AttributedString? {
+    func attributedText(searchText: String, accent: Color, currentOccurrence: Int? = nil) -> AttributedString? {
         guard kind == .body else { return nil }
         guard var attributed = try? AttributedString(markdown: displayText) else { return nil }
         for run in attributed.runs {
@@ -749,21 +876,22 @@ private struct TafsirMarkdownBlock {
                 attributed[run.range].inlinePresentationIntent = nil
             }
         }
-        applySearchHighlight(to: &attributed, searchText: searchText, accent: accent)
+        applySearchHighlight(to: &attributed, searchText: searchText, accent: accent, currentOccurrence: currentOccurrence)
         return attributed
     }
 
-    func highlightedDisplayText(searchText: String, accent: Color) -> AttributedString {
+    func highlightedDisplayText(searchText: String, accent: Color, currentOccurrence: Int? = nil) -> AttributedString {
         var attributed = AttributedString(displayText)
-        applySearchHighlight(to: &attributed, searchText: searchText, accent: accent)
+        applySearchHighlight(to: &attributed, searchText: searchText, accent: accent, currentOccurrence: currentOccurrence)
         return attributed
     }
 
-    private func applySearchHighlight(to attributed: inout AttributedString, searchText: String, accent: Color) {
+    private func applySearchHighlight(to attributed: inout AttributedString, searchText: String, accent: Color, currentOccurrence: Int?) {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         var searchStart = displayText.startIndex
+        var occurrence = 0
         while searchStart < displayText.endIndex,
               let found = displayText.range(
                 of: trimmed,
@@ -772,11 +900,61 @@ private struct TafsirMarkdownBlock {
               ) {
             if let lower = AttributedString.Index(found.lowerBound, within: attributed),
                let upper = AttributedString.Index(found.upperBound, within: attributed) {
-                // Tint matches with the accent foreground only — no background highlight box.
+                // Tint every match with the accent foreground; the find-in-page "current" match also gets a
+                // soft background box so the user can see which hit the up/down arrows landed on.
                 attributed[lower..<upper].foregroundColor = accent
+                if occurrence == currentOccurrence {
+                    attributed[lower..<upper].backgroundColor = accent.opacity(0.25)
+                }
             }
+            occurrence += 1
             searchStart = found.upperBound
         }
+    }
+}
+
+/// Find-in-page control bar: "current/total" plus up/down arrows, styled to match the app. Shown over the
+/// Tafsir / Surah Info sheets while a search query is active.
+private struct TafsirFindBar: View {
+    @EnvironmentObject var settings: Settings
+
+    let current: Int   // 0-based index of the active match
+    let total: Int
+    let onPrevious: () -> Void
+    let onNext: () -> Void
+
+    var body: some View {
+        HStack(spacing: 18) {
+            Text(total == 0 ? "0/0" : "\(current + 1)/\(total)")
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(total == 0 ? .secondary : .primary)
+
+            Button {
+                settings.hapticFeedback()
+                onPrevious()
+            } label: {
+                Image(systemName: "chevron.up")
+                    .font(.body.weight(.semibold))
+            }
+            .disabled(total == 0)
+
+            Button {
+                settings.hapticFeedback()
+                onNext()
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.body.weight(.semibold))
+            }
+            .disabled(total == 0)
+        }
+        .foregroundStyle(settings.accentColor.color)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+        .conditionalGlassEffect(rectangle: true)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
@@ -894,7 +1072,6 @@ struct AyahQiraahComparisonSheet: View {
             .navigationTitle("Qiraah Comparison")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search riwayat")
-            .dismissKeyboardOnScroll()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -1229,7 +1406,6 @@ struct AyahEnglishComparisonSheet: View {
             .navigationTitle("Translation Comparison")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText.animation(.easeInOut), prompt: "Search translations")
-            .dismissKeyboardOnScroll()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {

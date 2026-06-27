@@ -222,6 +222,20 @@ extension String {
         String(unicodeScalars.filter { $0.value != 0x0652 })
     }
 
+    /// Replaces the ayah-search operator characters (`# ^ % $ & | !`) with spaces. The search parser
+    /// consumes these as operators, so they must be removed before the residual text is matched against
+    /// (or highlighted within) ayah content — otherwise a query like `#الله` keeps the `#`, never matches
+    /// the source, and nothing highlights. Operators become spaces (not deleted) to preserve word breaks.
+    var removingAyahSearchOperators: String {
+        let operators = Set("#^%$&|!".unicodeScalars)
+        var out = String.UnicodeScalarView()
+        out.reserveCapacity(unicodeScalars.count)
+        for scalar in unicodeScalars {
+            out.append(operators.contains(scalar) ? " " : scalar)
+        }
+        return String(out)
+    }
+
     var removingSilentArabicLettersForSearch: String {
         var out = ""
         out.reserveCapacity(count)

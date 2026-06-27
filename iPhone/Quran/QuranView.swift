@@ -376,8 +376,7 @@ struct QuranView: View {
             if showAyahSearchLearnMore {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Boolean operators: & (AND), | (OR), ! (NOT)")
-                    Text("Use #Arabic for normalized letters + matching tashkeel")
-                    Text("Use #English for exact phrase (case-insensitive)")
+                    Text("Use #term for an exact match (Arabic: exact diacritics; English: exact phrase)")
                     Text("Use ^term for starts-with and term% for ends-with")
                     Text("Count filters: 'X ayahs/pages', '<X', '>X', '<=X', '>=X', '==X'")
                     Text("Juz names work too: Arabic or transliteration")
@@ -1156,6 +1155,8 @@ struct QuranView: View {
                     scrollToSurahID: $scrollToSurahID,
                     onSelectAyah: columnAyahSelectionHandler
                 )
+                .animation(.easeInOut, value: pair.surah.id)
+                .animation(.easeInOut, value: pair.ayah.id)
             }
 
             if context.isSearching == false, settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
@@ -1169,6 +1170,7 @@ struct QuranView: View {
                         selectedRoute = .ayahs(surahID: surahID, ayah: nil)
                     } : nil
                 )
+                .animation(.easeInOut, value: surah.surahNumber)
             }
 
             if context.isSearching == false,
@@ -1184,6 +1186,8 @@ struct QuranView: View {
                     showAyahListeningHistory: $showAyahListeningHistory,
                     onSelectAyah: columnAyahSelectionHandler
                 )
+                .animation(.easeInOut, value: pair.surah.id)
+                .animation(.easeInOut, value: pair.ayah.id)
             }
 
             if context.isSearching == false,
@@ -1248,16 +1252,22 @@ struct QuranView: View {
                     SummaryAyahTile(title: "Last Read Ayah", icon: "book", surah: lastReadSurah, ayah: lastReadAyah) {
                         push(surahID: lastReadSurah.id, ayahID: lastReadAyah.id)
                     }
+                    .animation(.easeInOut, value: settings.lastReadAyah)
+                    .animation(.easeInOut, value: settings.lastReadSurah)
                 }
                 if showAyah, let pair = ayahOfTheDayPair {
                     SummaryAyahTile(title: "Ayah of the Day", icon: "sparkles", surah: pair.surah, ayah: pair.ayah) {
                         push(surahID: pair.surah.id, ayahID: pair.ayah.id)
                     }
+                    .animation(.easeInOut, value: pair.surah.id)
+                    .animation(.easeInOut, value: pair.ayah.id)
                 }
                 if settings.saveLastListenedAyah, let pair = lastListenedAyahPair {
                     SummaryAyahTile(title: "Last Listened Ayah", icon: "headphones.circle", surah: pair.surah, ayah: pair.ayah) {
                         push(surahID: pair.surah.id, ayahID: pair.ayah.id)
                     }
+                    .animation(.easeInOut, value: pair.surah.id)
+                    .animation(.easeInOut, value: pair.ayah.id)
                 }
                 if settings.saveLastListenedSurah,
                    let last = settings.lastListenedSurah,
@@ -1265,6 +1275,7 @@ struct QuranView: View {
                     SummarySurahTile(title: "Last Listened Surah", icon: "headphones", surah: surah, lastListenedSurah: last) {
                         push(surahID: surah.id, ayahID: nil)
                     }
+                    .animation(.easeInOut, value: last.surahNumber)
                 }
             }
             .padding(.vertical, 4)
@@ -2075,7 +2086,7 @@ struct QuranView: View {
         .id("surah_\(surah.id)")
         .onAppear {
             if surah.id == scrollToSurahID {
-                withAnimation { scrollToSurahID = -1 }
+                scrollToSurahID = -1
             }
         }
     }
@@ -2106,9 +2117,7 @@ struct QuranView: View {
                     .id("surah_\(surah.id)")
                     .onAppear {
                         if surah.id == scrollToSurahID {
-                            withAnimation {
-                                scrollToSurahID = -1
-                            }
+                            scrollToSurahID = -1
                         }
                     }
                     .rightSwipeActions(
@@ -2540,7 +2549,7 @@ struct QuranView: View {
             if !bestHits.isEmpty {
                 Section(header: bestAyahHeader(count: bestHits.count)) {
                     ForEach(bestHits) { hit in
-                        ayahHitRow(hit: hit, context: context)
+                        ayahHitRow(hit: hit, context: context, section: "best")
                     }
                 }
             }
@@ -2552,7 +2561,7 @@ struct QuranView: View {
             ForEach(verseHitsGroupedBySurah, id: \.surahId) { group in
                 Section {
                     ForEach(group.hits) { hit in
-                        ayahHitRow(hit: hit, context: context)
+                        ayahHitRow(hit: hit, context: context, section: "grouped")
                     }
                 } header: {
                     surahSearchSectionHeader(surahId: group.surahId)
@@ -2698,7 +2707,7 @@ struct QuranView: View {
     }
 
     @ViewBuilder
-    private func ayahHitRow(hit: VerseIndexEntry, context: SearchDisplayContext) -> some View {
+    private func ayahHitRow(hit: VerseIndexEntry, context: SearchDisplayContext, section: String) -> some View {
         if let surah = quranData.surah(hit.surah),
            let ayah = quranData.ayah(surah: hit.surah, ayah: hit.ayah) {
             let row = AyahSearchRow(
@@ -2720,8 +2729,11 @@ struct QuranView: View {
                 compact: true,
                 disableTajweedColors: true
             )
-            .id("ayah-results-\(surah.id)-\(ayah.id)")
-            .animation(.easeInOut, value: verseHits.count)
+            // Section-scoped id: the same ayah can appear in both "best" and "grouped" sections, and
+            // duplicate List identities cause scroll jank. No per-row .animation here — that previously
+            // re-animated every visible row whenever verseHits.count changed (e.g. while loading more
+            // results during scroll), which is what made scrolling feel laggy versus SurahView.
+            .id("ayah-results-\(section)-\(surah.id)-\(ayah.id)")
 
             quranNavigationLink(route: .ayahs(surahID: surah.id, ayah: ayah.id)) {
                 row
@@ -2777,10 +2789,8 @@ struct QuranView: View {
                     guard !Task.isCancelled else { return }
                     await MainActor.run {
                         guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-                        withAnimation {
-                            verseHits = allHits
-                            hasMoreHits = false
-                        }
+                        verseHits = allHits
+                        hasMoreHits = false
                     }
                 }
             } label: {
@@ -2828,10 +2838,8 @@ struct QuranView: View {
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-                withAnimation {
-                    verseHits.append(contentsOf: moreHits)
-                    hasMoreHits = moreAvail
-                }
+                verseHits.append(contentsOf: moreHits)
+                hasMoreHits = moreAvail
             }
         }
     }
@@ -2879,10 +2887,8 @@ struct QuranView: View {
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-                withAnimation {
-                    verseHits = first
-                    hasMoreHits = more
-                }
+                verseHits = first
+                hasMoreHits = more
             }
         }
     }

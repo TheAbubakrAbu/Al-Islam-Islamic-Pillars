@@ -540,6 +540,7 @@ struct ShareAyahSheet: View {
                     } else {
                         Text(shareAttributedText)
                             .font(.body)
+                            .textSelection(.enabled)
                             .padding()
                             .background(Color.black)
                             .cornerRadius(24)
