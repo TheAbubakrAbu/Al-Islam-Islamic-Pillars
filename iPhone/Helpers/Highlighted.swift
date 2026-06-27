@@ -34,11 +34,11 @@ struct HighlightedSnippet: View {
                 )
             )
 
-            (Text(highlightedText) + suffixText)
+            Text("\(Text(highlightedText))\(suffixText)")
                 .font(font)
                 .lineLimit(lineLimit)
         } else {
-            (Text(source).foregroundColor(fg) + suffixText)
+            Text("\(Text(source).foregroundColor(fg))\(suffixText)")
                 .font(font)
                 .lineLimit(lineLimit)
         }

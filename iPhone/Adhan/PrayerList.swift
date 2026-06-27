@@ -76,21 +76,32 @@ struct PrayerList: View {
         settings.prayersIncludingOptional(base, for: date)
     }
 
-    private var displayedPrayers: [Prayer] {
-        if settings.changedDate {
-            let base = fullPrayers ? (settings.dateFullPrayers ?? []) : (settings.datePrayers ?? [])
-            return mergedWithOptional(base, for: selectedDate)
+    /// True when the user has picked a day other than today. Derived from `selectedDate` so the
+    /// comparison UI stays in sync without any imperative state to keep updated.
+    private var isShowingDifferentDay: Bool {
+        !Calendar.current.isDate(selectedDate, inSameDayAs: Date())
+    }
+
+    /// Prayer times for an arbitrary day, computed on demand. Today reuses the already-fetched
+    /// `settings.prayers`; any other day is generated directly (the generator is cached and fast).
+    /// Computing this purely from `date` — instead of relying on `onChange` to populate published
+    /// state — is what makes selecting a different day reliably refresh every display mode.
+    private func prayers(for date: Date) -> [Prayer] {
+        if Calendar.current.isDate(date, inSameDayAs: Date()), let prayers = settings.prayers {
+            let base = fullPrayers ? prayers.fullPrayers : prayers.prayers
+            return mergedWithOptional(base, for: prayers.day)
         }
 
-        guard let prayers = settings.prayers else { return [] }
-        let base = fullPrayers ? prayers.fullPrayers : prayers.prayers
-        return mergedWithOptional(base, for: prayers.day)
+        let base = settings.getPrayerTimes(for: date, fullPrayers: fullPrayers) ?? []
+        return mergedWithOptional(base, for: date)
+    }
+
+    private var displayedPrayers: [Prayer] {
+        prayers(for: selectedDate)
     }
 
     private var todayPrayers: [Prayer] {
-        guard let prayers = settings.prayers else { return [] }
-        let base = fullPrayers ? prayers.fullPrayers : prayers.prayers
-        return mergedWithOptional(base, for: prayers.day)
+        prayers(for: Date())
     }
 
     var body: some View {
@@ -107,7 +118,7 @@ struct PrayerList: View {
 
     @ViewBuilder
     private var prayerContentStack: some View {
-        if settings.changedDate && compareToday {
+        if isShowingDifferentDay && compareToday {
             prayerGroupHeader("TODAY")
             prayerModeContent(prayers: todayPrayers, isComparisonBaseline: true)
                 .opacity(0.45)
@@ -115,7 +126,9 @@ struct PrayerList: View {
             prayerGroupHeader(selectedDateHeaderText)
         }
 
-        prayerModeContent(prayers: displayedPrayers)
+        // The selected day only highlights a "current" prayer when it is actually today; on any other
+        // day the concept doesn't apply, so render its prayers in the neutral primary color.
+        prayerModeContent(prayers: displayedPrayers, highlightsCurrent: !isShowingDifferentDay)
         travelModeFooter
         dateSelectionFooter
     }
@@ -156,23 +169,23 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func prayerModeContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+    private func prayerModeContent(prayers: [Prayer], isComparisonBaseline: Bool = false, highlightsCurrent: Bool = true) -> some View {
         switch prayerDisplayMode {
         case .list:
-            listContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
+            listContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline, highlightsCurrent: highlightsCurrent)
         case .grid:
-            gridContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
+            gridContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline, highlightsCurrent: highlightsCurrent)
         case .split:
-            splitContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
+            splitContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline, highlightsCurrent: highlightsCurrent)
         case .tiles:
-            tilesContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline)
+            tilesContent(prayers: prayers, isComparisonBaseline: isComparisonBaseline, highlightsCurrent: highlightsCurrent)
         }
     }
 
     @ViewBuilder
-    private func listContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+    private func listContent(prayers: [Prayer], isComparisonBaseline: Bool = false, highlightsCurrent: Bool = true) -> some View {
         ForEach(prayers, id: \.stableDisplayID) { prayer in
-            listRow(for: prayer, in: prayers, isComparisonBaseline: isComparisonBaseline)
+            listRow(for: prayer, in: prayers, isComparisonBaseline: isComparisonBaseline, highlightsCurrent: highlightsCurrent)
         }
         .onChange(of: settings.travelingMode) { _ in
             withAnimation {
@@ -181,10 +194,10 @@ struct PrayerList: View {
         }
     }
 
-    private func listRow(for prayer: Prayer, in prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+    private func listRow(for prayer: Prayer, in prayers: [Prayer], isComparisonBaseline: Bool = false, highlightsCurrent: Bool = true) -> some View {
         let prayerKey = expansionKey(for: prayer)
         let isExpanded = expandedPrayerKey == prayerKey
-        let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
+        let isCurrent = highlightsCurrent && !isComparisonBaseline && isCurrentPrayer(prayer)
         let listIconColor = prayer.nameTransliteration == "Shurooq" ? Color.primary : settings.accentColor.color
 
         return Group {
@@ -211,7 +224,7 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func gridContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+    private func gridContent(prayers: [Prayer], isComparisonBaseline: Bool = false, highlightsCurrent: Bool = true) -> some View {
         let columns = Array(
             repeating: GridItem(.flexible(), spacing: 12),
             count: prayers.count == 4 ? 2 : 3
@@ -219,7 +232,7 @@ struct PrayerList: View {
 
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(prayers, id: \.stableDisplayID) { prayer in
-                let color: Color = isComparisonBaseline ? .secondary : legacyGridPrayerColor(for: prayer, in: prayers)
+                let color: Color = isComparisonBaseline ? .secondary : (highlightsCurrent ? legacyGridPrayerColor(for: prayer, in: prayers) : .primary)
 
                 PrayerGridTile(
                     prayer: prayer,
@@ -242,7 +255,7 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func splitContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+    private func splitContent(prayers: [Prayer], isComparisonBaseline: Bool = false, highlightsCurrent: Bool = true) -> some View {
         let midpoint = Int(floor(Double(prayers.count) / 2.0))
         let firstHalf = Array(prayers.prefix(midpoint))
         let secondHalf = Array(prayers.suffix(prayers.count - midpoint))
@@ -250,7 +263,7 @@ struct PrayerList: View {
         HStack(spacing: 0) {
             VStack(spacing: 4) {
                 ForEach(firstHalf, id: \.stableDisplayID) { prayer in
-                    let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
+                    let color: Color = isComparisonBaseline ? .secondary : (highlightsCurrent ? prayerColor(for: prayer, in: prayers) : .primary)
 
                     SplitPrayerRow(
                         prayer: prayer,
@@ -272,7 +285,7 @@ struct PrayerList: View {
 
             VStack(spacing: 4) {
                 ForEach(secondHalf, id: \.stableDisplayID) { prayer in
-                    let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
+                    let color: Color = isComparisonBaseline ? .secondary : (highlightsCurrent ? prayerColor(for: prayer, in: prayers) : .primary)
 
                     SplitPrayerRow(
                         prayer: prayer,
@@ -295,7 +308,7 @@ struct PrayerList: View {
     }
 
     @ViewBuilder
-    private func tilesContent(prayers: [Prayer], isComparisonBaseline: Bool = false) -> some View {
+    private func tilesContent(prayers: [Prayer], isComparisonBaseline: Bool = false, highlightsCurrent: Bool = true) -> some View {
         #if os(watchOS)
         let columnCount = 2
         #else
@@ -308,8 +321,8 @@ struct PrayerList: View {
 
         LazyVGrid(columns: columns, spacing: 10) {
             ForEach(prayers, id: \.stableDisplayID) { prayer in
-                let color: Color = isComparisonBaseline ? .secondary : prayerColor(for: prayer, in: prayers)
-                let isCurrent = !isComparisonBaseline && isCurrentPrayer(prayer)
+                let color: Color = isComparisonBaseline ? .secondary : (highlightsCurrent ? prayerColor(for: prayer, in: prayers) : .primary)
+                let isCurrent = highlightsCurrent && !isComparisonBaseline && isCurrentPrayer(prayer)
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
@@ -406,7 +419,7 @@ struct PrayerList: View {
                 .datePickerStyle(DefaultDatePickerStyle())
                 .padding(4)
 
-            if !Calendar.current.isDate(selectedDate, inSameDayAs: Date()) {
+            if isShowingDifferentDay {
                 footerActionButton(compareToday ? "Hide Today Comparison" : "Compare With Today") {
                     compareToday.toggle()
                 }
@@ -416,9 +429,12 @@ struct PrayerList: View {
                 }
             }
         }
-        .onChange(of: selectedDate) { value in
+        .onChange(of: selectedDate) { _ in
             settings.hapticFeedback()
-            updateDisplayedDate(to: value)
+            // Re-show the today comparison by default whenever a different day is picked.
+            if isShowingDifferentDay {
+                compareToday = true
+            }
         }
         #endif
     }
@@ -443,21 +459,6 @@ struct PrayerList: View {
                     action()
                 }
             }
-    }
-
-    private func updateDisplayedDate(to value: Date) {
-        if let result = settings.getPrayerTimesNormalAndFull(for: value) {
-            settings.datePrayers = result.normal
-            settings.dateFullPrayers = result.full
-        } else {
-            settings.datePrayers = []
-            settings.dateFullPrayers = []
-        }
-
-        settings.changedDate = !Calendar.current.isDate(value, inSameDayAs: Date())
-        if settings.changedDate {
-            compareToday = true
-        }
     }
 
     private func isCurrentPrayer(_ prayer: Prayer) -> Bool {
