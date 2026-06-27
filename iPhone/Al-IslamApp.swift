@@ -47,7 +47,7 @@ struct AlIslamApp: App {
                 .preferredColorScheme(settings.colorScheme)
                 .appReviewPrompt()
                 .onAppear(perform: refreshPrayerTimes)
-                //.statusBarHidden(true)
+                //.statusBarHidden()
         }
         .onChange(of: settings.accentColor) { _ in
             WidgetCenter.shared.reloadAllTimelines()

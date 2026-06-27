@@ -247,11 +247,9 @@ struct SettingsAdhanView: View {
     @ViewBuilder
     private var notificationsSection: some View {
         #if os(iOS)
-        if showNotifications {
-            Section(header: Text("NOTIFICATIONS")) {
-                NavigationLink(destination: NotificationView()) {
-                    Label("Notification Settings", systemImage: "bell.badge")
-                }
+        Section {
+            NavigationLink(destination: NotificationView()) {
+                Label("Notification Settings", systemImage: "bell.badge")
             }
         }
         #endif
