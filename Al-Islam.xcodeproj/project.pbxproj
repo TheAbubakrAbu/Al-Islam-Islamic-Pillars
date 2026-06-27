@@ -839,8 +839,8 @@
 			projectRoot = "";
 			targets = (
 				725E6F4C2A1C687500AF8854 /* iPhone */,
-				725B41FF2AA0061B009C8C91 /* Widget */,
 				72B531A12A22DCFE007FA002 /* Watch */,
+				725B41FF2AA0061B009C8C91 /* Widget */,
 				72109F2B2A65D77400BD373E /* Complication */,
 			);
 		};

@@ -659,8 +659,9 @@ struct QuranView: View {
             .applyConditionalListStyle(disableNowPlayingInset: true)
             .compactListSectionSpacing()
             .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
-            .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
-            .animation(.easeInOut(duration: 0.22), value: settings.quranSortDirection)
+            // No list-level `.animation(...)` here — it makes lazily-loaded rows stutter while scrolling
+            // (SurahView has none). The sort-change transition is already animated at the toggle sites via
+            // `withAnimation` in `sortModeButton` / the sort-direction picker.
             #if os(watchOS)
             .searchable(text: $searchText.animation(.easeInOut))
             #endif
@@ -678,17 +679,15 @@ struct QuranView: View {
             }
             .onChange(of: scrollToSurahID) { id in
                 guard id > 0 else { return }
-                // Grid mode uses a LazyVGrid, whose off-screen tiles aren't realized, so ScrollViewReader
-                // can't reach them. Force list mode (each surah is its own List row, which scrolls
-                // reliably to off-screen rows) before scrolling.
-                if settings.quranGridMode {
-                    settings.quranGridMode = false
+                // Grid mode (a LazyVGrid added after 4.4.4) can't scroll to off-screen tiles, so flip to list
+                // first. Otherwise this is exactly the Version 4.4.4 scroll, which felt right: one delayed,
+                // animated scrollTo — no retry loop, no settle attempts.
+                if settings.quranGridMode { settings.quranGridMode = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        scrollProxy.scrollTo("surah_\(id)", anchor: .top)
+                    }
                 }
-                // "Scroll To Surah" often clears an active search at the same time (and now may also flip
-                // grid→list), both of which rebuild the List. A single fixed-delay scroll races that
-                // rebuild and lands on an id that doesn't exist yet, so retry until the target row appears
-                // (its onAppear resets scrollToSurahID, which ends the retries).
-                scrollToSurah(id, proxy: scrollProxy, attemptsLeft: 12)
             }
             
         }
@@ -783,8 +782,12 @@ struct QuranView: View {
         // On iPad/Mac the open-surah (detail) pane shows its own Now Playing bar; don't duplicate it in
         // the sidebar list when using side-by-side column navigation.
         if !usesColumnNavigation {
+            let active = quranPlayer.isPlaying || quranPlayer.isPaused
+            // Insert/remove the bar on isPlaying||isPaused with `.animation` so SwiftUI animates BOTH the fade
+            // (the bar's `.transition`) and the height collapse natively. The bar keeps its content while
+            // fading out via `retainedContext`, and "Stop Playing" defers `stop()`, so closing still works.
             VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                if quranPlayer.isPlaying || quranPlayer.isPaused {
+                if active {
                     if #available(iOS 16.0, *) {
                         NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText) { context in
                             push(surahID: context.surah.id, ayahID: quranPlayer.isPlayingSurah ? nil : context.ayahNumber)
@@ -795,9 +798,9 @@ struct QuranView: View {
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 8)
+            .padding(.bottom, active ? 8 : 0)
             .background(Color.white.opacity(0.00001))
-            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+            .animation(.easeInOut, value: active)
         }
         #endif
     }
@@ -1155,8 +1158,8 @@ struct QuranView: View {
                     scrollToSurahID: $scrollToSurahID,
                     onSelectAyah: columnAyahSelectionHandler
                 )
-                .animation(.easeInOut, value: pair.surah.id)
-                .animation(.easeInOut, value: pair.ayah.id)
+                // One animation (combined surah+ayah key) rather than a stack of two.
+                .animation(.easeInOut, value: pair.surah.id * 1000 + pair.ayah.id)
             }
 
             if context.isSearching == false, settings.saveLastListenedSurah, let surah = settings.lastListenedSurah {
@@ -1186,8 +1189,7 @@ struct QuranView: View {
                     showAyahListeningHistory: $showAyahListeningHistory,
                     onSelectAyah: columnAyahSelectionHandler
                 )
-                .animation(.easeInOut, value: pair.surah.id)
-                .animation(.easeInOut, value: pair.ayah.id)
+                .animation(.easeInOut, value: pair.surah.id * 1000 + pair.ayah.id)
             }
 
             if context.isSearching == false,
@@ -1204,8 +1206,7 @@ struct QuranView: View {
                     showReadingHistory: $showReadingHistory,
                     onSelectAyah: columnAyahSelectionHandler
                 )
-                .animation(.easeInOut, value: settings.lastReadAyah)
-                .animation(.easeInOut, value: settings.lastReadSurah)
+                .animation(.easeInOut, value: settings.lastReadSurah * 1000 + settings.lastReadAyah)
             }
         }
         #else
@@ -1252,22 +1253,19 @@ struct QuranView: View {
                     SummaryAyahTile(title: "Last Read Ayah", icon: "book", surah: lastReadSurah, ayah: lastReadAyah) {
                         push(surahID: lastReadSurah.id, ayahID: lastReadAyah.id)
                     }
-                    .animation(.easeInOut, value: settings.lastReadAyah)
-                    .animation(.easeInOut, value: settings.lastReadSurah)
+                    .animation(.easeInOut, value: settings.lastReadSurah * 1000 + settings.lastReadAyah)
                 }
                 if showAyah, let pair = ayahOfTheDayPair {
                     SummaryAyahTile(title: "Ayah of the Day", icon: "sparkles", surah: pair.surah, ayah: pair.ayah) {
                         push(surahID: pair.surah.id, ayahID: pair.ayah.id)
                     }
-                    .animation(.easeInOut, value: pair.surah.id)
-                    .animation(.easeInOut, value: pair.ayah.id)
+                    .animation(.easeInOut, value: pair.surah.id * 1000 + pair.ayah.id)
                 }
                 if settings.saveLastListenedAyah, let pair = lastListenedAyahPair {
                     SummaryAyahTile(title: "Last Listened Ayah", icon: "headphones.circle", surah: pair.surah, ayah: pair.ayah) {
                         push(surahID: pair.surah.id, ayahID: pair.ayah.id)
                     }
-                    .animation(.easeInOut, value: pair.surah.id)
-                    .animation(.easeInOut, value: pair.ayah.id)
+                    .animation(.easeInOut, value: pair.surah.id * 1000 + pair.ayah.id)
                 }
                 if settings.saveLastListenedSurah,
                    let last = settings.lastListenedSurah,
@@ -2812,20 +2810,6 @@ struct QuranView: View {
 
     private func handleAyahSearchChange(_ txt: String) {
         handleAyahSearchChange(txt, debounce: true)
-    }
-
-    /// Scrolls to a surah row, retrying until it appears. Needed because the action that requests the
-    /// scroll may also clear an active search, and the resulting List rebuild can outlast a single
-    /// fixed delay. The target row's `onAppear` resets `scrollToSurahID` to -1, which stops the loop.
-    private func scrollToSurah(_ id: Int, proxy: ScrollViewProxy, attemptsLeft: Int) {
-        guard attemptsLeft > 0, scrollToSurahID == id else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            guard scrollToSurahID == id else { return }
-            withAnimation {
-                proxy.scrollTo("surah_\(id)", anchor: .top)
-            }
-            scrollToSurah(id, proxy: proxy, attemptsLeft: attemptsLeft - 1)
-        }
     }
 
     private func loadMoreAyahMatches(_ amount: Int) {

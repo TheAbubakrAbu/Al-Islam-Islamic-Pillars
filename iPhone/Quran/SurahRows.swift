@@ -906,8 +906,8 @@ struct LastListenedSurahRow: View {
                     .minimumScaleFactor(0.75)
                     .transition(.opacity)
                     .opacity(!quranPlayer.isPlaying && !quranPlayer.isPaused ? 1 : 0.35)
-                    .animation(.easeInOut, value: quranPlayer.isPlaying)
-                    .animation(.easeInOut, value: quranPlayer.isPaused)
+                    // The opacity only depends on whether playback is active, so animate on that one value.
+                    .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
                     .contentShape(Rectangle())
             }
             .disabled(quranPlayer.isPlaying || quranPlayer.isPaused)

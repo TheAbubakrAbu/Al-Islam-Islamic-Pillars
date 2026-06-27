@@ -541,8 +541,8 @@ struct PlayCustomRangeSheet: View {
                 }
             }
         }
-        .animation(.easeInOut, value: startAyah)
-        .animation(.easeInOut, value: endAyah)
+        // One animation for the range as a whole, not a separate one per endpoint.
+        .animation(.easeInOut, value: [startAyah, endAyah])
     }
 
     private var ayahSelectionSection: some View {
@@ -850,10 +850,8 @@ struct PlayCustomRangeSheet: View {
                 previewSummaryHeader
             }
         }
-        .animation(.easeInOut, value: startAyah)
-        .animation(.easeInOut, value: endAyah)
-        .animation(.easeInOut, value: repeatPerAyah)
-        .animation(.easeInOut, value: repeatSection)
+        // One animation keyed on the whole selection, not four stacked modifiers.
+        .animation(.easeInOut, value: [startAyah, endAyah, repeatPerAyah, repeatSection])
     }
 
     /// Range count + repeats on the left, a bold "total plays" badge on the right.

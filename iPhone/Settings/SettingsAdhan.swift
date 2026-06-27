@@ -1028,18 +1028,18 @@ extension Settings {
         return raw.first  // Fajr is always first regardless of mode
     }
     
-    /// Whether THIS device should schedule prayer notifications locally. iPhone always does; the Watch
-    /// only does so when the companion iPhone app isn't installed — otherwise the iPhone handles them and
-    /// scheduling on both would double up the alerts.
+    /// Whether THIS device should schedule prayer notifications locally. Both the iPhone and the Watch
+    /// always do.
+    ///
+    /// The Watch must schedule its OWN notifications: a native watchOS app is responsible for its own
+    /// alerts, and iOS does NOT forward the iPhone's local notifications to a watch that has its own app.
+    /// The previous "only schedule on the Watch when the companion iPhone app isn't installed" logic meant
+    /// the Watch (whose app is always installed via the iPhone app) never scheduled anything, so it showed
+    /// no prayer notifications when the iPhone wasn't around. Each device fires its own locally, so there's
+    /// no double-alert on a single device.
     var shouldScheduleNotificationsLocally: Bool {
-        #if os(iOS)
+        #if os(iOS) || os(watchOS)
         return true
-        #elseif os(watchOS)
-        guard WCSession.isSupported() else { return true }
-        // Only trust isCompanionAppInstalled once the session is activated; before that, skip scheduling
-        // to avoid double notifications, and re-run once activation completes (see WatchConnectivity).
-        guard WCSession.default.activationState == .activated else { return false }
-        return !WCSession.default.isCompanionAppInstalled
         #else
         return false
         #endif

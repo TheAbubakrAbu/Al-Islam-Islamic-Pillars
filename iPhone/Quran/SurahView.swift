@@ -1462,16 +1462,23 @@ struct SurahView: View {
                 )
             }
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                let active = quranPlayer.isPlaying || quranPlayer.isPaused
+                // Insert/remove the bar on isPlaying||isPaused with `.animation` so SwiftUI animates BOTH the
+                // fade (the bar's `.transition`) and the height collapse natively. The bar keeps its content
+                // while fading out via `retainedContext`, and "Stop Playing" defers `stop()`, so closing works.
+                VStack(spacing: 0) {
                     qiraatAndTajweedControls
-                    
-                    if quranPlayer.isPlaying || quranPlayer.isPaused {
-                        nowPlayingInset(proxy: proxy).padding(.horizontal, 24)
-                            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+
+                    if active {
+                        nowPlayingInset(proxy: proxy)
+                            .padding(.horizontal, 24)
+                            .padding(.top, SafeAreaInsetVStackSpacing.standard)
+                            .transition(.opacity)
                     }
                 }
                 .padding(.bottom, 7)
                 .background(Color.white.opacity(0.00001))
+                .animation(.easeInOut, value: active)
             }
             .adaptiveSafeArea(edge: .bottom) {
                 bottomInsetContent(proxy: proxy)
