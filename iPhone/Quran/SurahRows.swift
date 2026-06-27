@@ -280,14 +280,18 @@ struct SurahRow: View, Equatable {
                     term: searchQuery,
                     font: .custom(fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize),
                     accent: accentColor.color,
-                    fg: .primary
+                    fg: .primary,
+                    // HighlightedSnippet applies its own `.lineLimit` to the inner Text, which would otherwise
+                    // override the row's outer `.lineLimit(1)` (the closest modifier wins) and let long Arabic
+                    // names like آل عمران wrap to two lines.
+                    lineLimit: 1
                 )
 
                 Text(surah.idArabic)
                     .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .title1).pointSize))
                     .foregroundColor(accentColor.color)
             }
-            .minimumScaleFactor(1)
+            .minimumScaleFactor(0.5)
             .padding(.leading, 8)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -324,7 +328,8 @@ struct SurahRow: View, Equatable {
                     term: searchQuery,
                     font: .custom(fontArabic, size: UIFont.preferredFont(forTextStyle: .title3).pointSize),
                     accent: accentColor.color,
-                    fg: .primary
+                    fg: .primary,
+                    lineLimit: 1
                 )
             }
             .lineLimit(1)

@@ -900,6 +900,10 @@ extension Settings {
         
         guard let loc = currentLocation, loc.latitude  != 1000, loc.longitude != 1000 else {
             logger.debug("No valid location – skip refresh")
+            // Hijri-event reminders are date-based and don't need a location, so still (re)schedule
+            // them even when prayer times can't be computed yet (the scheduler skips the prayer
+            // parts and leaves existing prayer notifications untouched when there's no location).
+            schedulePrayerTimeNotifications()
             completion?()
             return
         }
@@ -1201,9 +1205,6 @@ extension Settings {
         guard shouldScheduleNotificationsLocally else { return }
         #endif
         #if os(iOS) || os(watchOS)
-        guard let city = currentLocation?.city, let prayerObj = prayers
-        else { return }
-
         logger.debug("Scheduling prayer time notifications")
         let center = UNUserNotificationCenter.current()
 
@@ -1216,31 +1217,37 @@ extension Settings {
         var adhanRequests: [(request: UNNotificationRequest, date: Date)] = []
         var reminderRequests: [(request: UNNotificationRequest, date: Date)] = []
 
-        func collectPrayer(_ prayer: Prayer, _ minutes: Int?) {
-            guard let built = makePrayerNotificationRequest(for: prayer, preNotificationTime: minutes, city: city) else { return }
-            if built.isAdhan {
-                adhanRequests.append((built.request, built.date))
-            } else {
-                reminderRequests.append((built.request, built.date))
+        // Prayer notifications need a resolved location + computed prayer times. Hijri-event reminders and
+        // refresh nags below do NOT, so they're collected regardless of location — date notifications work
+        // even before (or without) a location fix, instead of being silently skipped by an early return.
+        let hasPrayers = currentLocation?.city != nil && prayers != nil
+        if let city = currentLocation?.city, let prayerObj = prayers {
+            func collectPrayer(_ prayer: Prayer, _ minutes: Int?) {
+                guard let built = makePrayerNotificationRequest(for: prayer, preNotificationTime: minutes, city: city) else { return }
+                if built.isAdhan {
+                    adhanRequests.append((built.request, built.date))
+                } else {
+                    reminderRequests.append((built.request, built.date))
+                }
             }
-        }
 
-        for prayer in prayersIncludingOptional(prayerObj.prayers, for: prayerObj.day) {
-            guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
-            for minutes in offsets(for: prefs) {
-                collectPrayer(prayer, minutes == 0 ? nil : minutes)
+            for prayer in prayersIncludingOptional(prayerObj.prayers, for: prayerObj.day) {
+                guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
+                for minutes in offsets(for: prefs) {
+                    collectPrayer(prayer, minutes == 0 ? nil : minutes)
+                }
             }
-        }
 
-        let futureDays = naggingMode ? 1 : 3
-        if futureDays > 0 {
-            for dayOffset in 1...futureDays {
-                let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? Date()
-                guard let list = getPrayerTimes(for: date) else { continue }
-                for prayer in prayersIncludingOptional(list, for: date) {
-                    guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
-                    for minutes in offsets(for: prefs) {
-                        collectPrayer(prayer, minutes == 0 ? nil : minutes)
+            let futureDays = naggingMode ? 1 : 3
+            if futureDays > 0 {
+                for dayOffset in 1...futureDays {
+                    let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: prayerObj.day) ?? Date()
+                    guard let list = getPrayerTimes(for: date) else { continue }
+                    for prayer in prayersIncludingOptional(list, for: date) {
+                        guard let prefs = Self.notifTable[prayer.nameTransliteration] else { continue }
+                        for minutes in offsets(for: prefs) {
+                            collectPrayer(prayer, minutes == 0 ? nil : minutes)
+                        }
                     }
                 }
             }
@@ -1286,7 +1293,14 @@ extension Settings {
             }
         }
         center.getPendingNotificationRequests { pending in
-            let stale = pending.map(\.identifier).filter { !desiredIDs.contains($0) }
+            let stale = pending.map(\.identifier).filter { id in
+                guard !desiredIDs.contains(id) else { return false }
+                // When there were no prayers to rebuild (no location yet), only prune the categories we DID
+                // rebuild — events and refresh nags. Leaving prayer notifications alone means a momentary
+                // location gap can't wipe a working adhan schedule.
+                if !hasPrayers { return id.hasPrefix("Event-") || id.hasPrefix("RefreshReminder-") }
+                return true
+            }
             if !stale.isEmpty {
                 center.removePendingNotificationRequests(withIdentifiers: stale)
             }
@@ -1436,15 +1450,23 @@ extension Settings {
         // has an upcoming reminder scheduled — even late in the Hijri year after all of this year's
         // events are behind us.
         var comps = hijriComps
-        var gregorianComps = DateComponents()
         var finalDate: Date?
+        var beforeFajr = false
         for _ in 0...1 {
             guard let hijriDate = hijriCalendar.date(from: comps) else { return nil }
-            var g = gregorianCalendar.dateComponents([.year, .month, .day], from: hijriDate)
-            g.hour = 9
-            g.minute = 0
-            if let candidate = gregorianCalendar.date(from: g), candidate > Date() {
-                gregorianComps = g
+            let eventDay = gregorianCalendar.startOfDay(for: hijriDate)
+            // Fire 30 minutes before Fajr on the event day (useful for fasting days — suhoor / intention).
+            // Fajr needs computed prayer times, which need a location; if those aren't available, fall back
+            // to 5:00 AM so the reminder still lands pre-dawn.
+            let candidate: Date?
+            if let fajr = getPrayerTimes(for: eventDay, fullPrayers: true)?.first {
+                candidate = gregorianCalendar.date(byAdding: .minute, value: -30, to: fajr.time)
+                beforeFajr = true
+            } else {
+                candidate = gregorianCalendar.date(bySettingHour: 5, minute: 0, second: 0, of: eventDay)
+                beforeFajr = false
+            }
+            if let candidate, candidate > Date() {
                 finalDate = candidate
                 break
             }
@@ -1452,10 +1474,13 @@ extension Settings {
         }
 
         guard let finalDate else { return nil }
+        let gregorianComps = gregorianCalendar.dateComponents([.year, .month, .day, .hour, .minute], from: finalDate)
 
         let content = UNMutableNotificationContent()
         content.title = AppIdentifiers.appName
-        content.body = "\(titleText) (\(eventSubTitle))"
+        content.body = beforeFajr
+            ? "\(titleText) is today — \(eventSubTitle). Sent 30 minutes before Fajr."
+            : "\(titleText) is today — \(eventSubTitle)."
         content.sound = .default
         #if os(iOS)
         if #available(iOS 15.0, *) {

@@ -38,7 +38,6 @@ struct AlIslamApp: App {
     var body: some Scene {
         WindowGroup {
             rootContent
-                .statusBarHidden(true)
                 .environmentObject(settings)
                 .environmentObject(quranData)
                 .environmentObject(quranPlayer)
@@ -48,6 +47,7 @@ struct AlIslamApp: App {
                 .preferredColorScheme(settings.colorScheme)
                 .appReviewPrompt()
                 .onAppear(perform: refreshPrayerTimes)
+                //.statusBarHidden(true)
         }
         .onChange(of: settings.accentColor) { _ in
             WidgetCenter.shared.reloadAllTimelines()
