@@ -42,8 +42,7 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     private override init() {
         self.accentColor = AccentColor(rawValue: appGroupUserDefaults?.string(forKey: "accentColor") ?? AppIdentifiers.mainColorString) ?? AppIdentifiers.mainColor
         self.customAccentColorHex = appGroupUserDefaults?.string(forKey: "customAccentColorHex") ?? "34C759"
-        self.nowPlayingExpanded = appGroupUserDefaults?.bool(forKey: "nowPlayingExpanded") ?? false
-        
+
         self.prayersData = appGroupUserDefaults?.data(forKey: "prayersData") ?? Data()
         self.travelingMode = appGroupUserDefaults?.bool(forKey: "travelingMode") ?? false
         self.hanafiMadhab = appGroupUserDefaults?.bool(forKey: "hanafiMadhab") ?? false
@@ -111,13 +110,6 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
     }
 
-    /// Big vs. small in-app Now Playing player. A @Published (not @AppStorage) so `withAnimation` animates it.
-    @Published var nowPlayingExpanded: Bool {
-        didSet {
-            guard Bundle.main.bundleIdentifier?.contains("Widget") != true else { return }
-            appGroupUserDefaults?.setValue(nowPlayingExpanded, forKey: "nowPlayingExpanded")
-        }
-    }
 
     @Published var prayersData: Data {
         didSet {
@@ -446,7 +438,10 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     static let optionalPrayerNames: Set<String> = ["Duhaa", "Islamic Midnight", "Last Third"]
 
     // MARK: - Quran — @AppStorage
-    
+
+    /// Big vs. small in-app Now Playing player. An in-app UI preference, not shared with the widget/watch.
+    @AppStorage("nowPlayingExpanded") var nowPlayingExpanded: Bool = false
+
     @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
 
     /// Disambiguates reciters that share the same display name (qiraah / surah base URL).

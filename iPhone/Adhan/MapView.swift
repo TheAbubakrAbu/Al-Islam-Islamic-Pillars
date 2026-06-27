@@ -222,14 +222,25 @@ struct MapView: View {
             }
             .padding(.vertical, 12)
             .conditionalGlassEffect(rectangle: true, useColor: 0.08)
-        } else if !choosingPrayerTimes, let home = settings.homeLocation {
+        } else if !choosingPrayerTimes, settings.homeLocation != nil || hasValidCurrentLocation {
             VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
-                HomeLocationSummaryCard(home: home, distanceString: distanceString)
-                useCurrentButton
+                if let home = settings.homeLocation {
+                    HomeLocationSummaryCard(home: home, distanceString: distanceString)
+                }
+                // Always offer the one-tap "use my location" shortcut whenever a real fix exists,
+                // even before a home has been chosen.
+                if hasValidCurrentLocation {
+                    useCurrentButton
+                }
             }
             .padding(.bottom, 26)
             .padding(.horizontal)
         }
+    }
+
+    private var hasValidCurrentLocation: Bool {
+        guard let current = settings.currentLocation else { return false }
+        return current.latitude != 1000 && current.longitude != 1000
     }
 
     private var useCurrentButton: some View {

@@ -62,12 +62,8 @@ struct SimpleWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
-            if #available(iOS 17.0, *) {
-                SimpleEntryView(entry: entry)
-            } else {
-                SimpleEntryView(entry: entry)
-                    .padding()
-            }
+            SimpleEntryView(entry: entry)
+                .widgetContainerBackground(legacyPadding: true)
         }
         .supportedFamilies([.systemSmall])
         .configurationDisplayName("Simple Prayer Countdown")

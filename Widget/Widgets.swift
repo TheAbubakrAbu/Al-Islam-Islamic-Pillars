@@ -24,3 +24,25 @@ struct Widgets: WidgetBundle {
         AyahOfTheDayWidget()
     }
 }
+
+extension View {
+    /// iOS 17 requires every widget to declare its background through `containerBackground(for:)`.
+    /// Widgets that don't adopt it render blank on iOS 17+ and can disappear from the widget gallery.
+    /// Home-screen (system) widgets get the default system background; lock-screen (accessory) widgets
+    /// stay clear so the system can apply its own vibrant treatment. `legacyPadding` restores the manual
+    /// padding these widgets relied on before iOS 17.
+    @ViewBuilder
+    func widgetContainerBackground(accessory: Bool = false, legacyPadding: Bool = false) -> some View {
+        if #available(iOS 17.0, *) {
+            if accessory {
+                containerBackground(.clear, for: .widget)
+            } else {
+                containerBackground(.background, for: .widget)
+            }
+        } else if legacyPadding {
+            padding()
+        } else {
+            self
+        }
+    }
+}

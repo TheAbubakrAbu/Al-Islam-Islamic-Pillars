@@ -5,8 +5,11 @@ struct SettingsView: View {
     @EnvironmentObject var quranData: QuranData
     
     @State private var showingCredits = false
-    @State private var selectedDestination: SettingsDestination? = .quranSettings
+    @State private var selectedDestination: SettingsDestination? = SettingsView.defaultDestination
     @State private var hasSetDefaultSelection = false
+
+    /// The destination shown when nothing is explicitly selected (single source of truth).
+    private static let defaultDestination: SettingsDestination = .quranSettings
 
     private enum SettingsDestination: Hashable {
         case notification
@@ -28,7 +31,7 @@ struct SettingsView: View {
                         settingsSplitList
                             .onAppear {
                                 if !hasSetDefaultSelection {
-                                    selectedDestination = .quranSettings
+                                    selectedDestination = Self.defaultDestination
                                     hasSetDefaultSelection = true
                                 }
                             }
@@ -39,7 +42,7 @@ struct SettingsView: View {
                         NavigationStack {
                             settingsSplitDetail
                         }
-                        .id(selectedDestination ?? .quranSettings)
+                        .id(selectedDestination ?? Self.defaultDestination)
                         .animation(.easeInOut(duration: 0.25), value: selectedDestination)
                     }
                 } else {
@@ -102,7 +105,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var settingsSplitDetail: some View {
         Group {
-            switch selectedDestination ?? .quranSettings {
+            switch selectedDestination ?? Self.defaultDestination {
             case .notification:
                 NotificationView()
             case .manualOffsets:
@@ -544,7 +547,7 @@ struct SettingsAppearanceView: View {
                     .labelsHidden()
                     .tint(Color(hex: settings.customAccentColorHex) ?? .green)
             }
-            .padding(.horizontal, 23)
+            .padding(.horizontal, 24)
             .onChange(of: settings.accentColor) { _ in settings.hapticFeedback() }
             #endif
             

@@ -185,12 +185,8 @@ struct CountdownWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
-            if #available(iOS 17.0, *) {
-                CountdownEntryView(entry: entry)
-            } else {
-                CountdownEntryView(entry: entry)
-                    .padding()
-            }
+            CountdownEntryView(entry: entry)
+                .widgetContainerBackground(legacyPadding: true)
         }
         .supportedFamilies([.systemSmall, .systemMedium])
         .configurationDisplayName("Prayer Countdown")

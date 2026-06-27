@@ -50,6 +50,7 @@ struct LockScreen4Widget: Widget {
         if #available(iOS 16, *) {
             return StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
                 LockScreen4EntryView(entry: entry)
+                    .widgetContainerBackground(accessory: true)
             }
             .supportedFamilies([.accessoryRectangular])
             .configurationDisplayName("Last 3 Prayer Times")

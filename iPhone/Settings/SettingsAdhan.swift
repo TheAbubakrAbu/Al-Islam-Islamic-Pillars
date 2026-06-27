@@ -183,6 +183,21 @@ extension Settings {
         }
     }
 
+    /// Seeds the home location from the current location the first time we have a valid fix.
+    /// A freshly installed app — or an existing user who never set a home — automatically adopts the
+    /// first location it gets as home, so Traveling Mode and travel-distance work out of the box.
+    /// Once a home exists it is never overwritten here.
+    @MainActor
+    func seedHomeLocationIfNeeded() {
+        guard homeLocation == nil,
+              let current = currentLocation,
+              current.latitude != 1000,
+              current.longitude != 1000 else { return }
+        withAnimation {
+            homeLocation = current
+        }
+    }
+
     /// Decide whether a new reading is worth saving, and update only as much as needed.
     /// - `refining`: true during a high-accuracy burst (accept small accuracy improvements in place);
     ///   false for passive significant-change updates while moving (only real, throttled moves commit).
@@ -194,6 +209,8 @@ extension Settings {
             Self.lastFixAccuracy = loc.horizontalAccuracy
             Task { @MainActor in
                 await updateCity(latitude: newCoord.latitude, longitude: newCoord.longitude)
+                // Fresh install: now that the first fix has a city, adopt it as home.
+                seedHomeLocationIfNeeded()
                 fetchPrayerTimes(force: false)
             }
             return
@@ -231,6 +248,8 @@ extension Settings {
                     currentLocation = Location(city: cur.city, latitude: newCoord.latitude, longitude: newCoord.longitude)
                 }
             }
+            // Existing user with a location but no home yet: adopt the current location as home.
+            seedHomeLocationIfNeeded()
             if shouldRecomputePrayers {
                 fetchPrayerTimes(force: false)
             }

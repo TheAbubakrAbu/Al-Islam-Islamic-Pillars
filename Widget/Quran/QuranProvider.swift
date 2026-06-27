@@ -190,6 +190,7 @@ struct QuranWidgetEntryView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(contentPadding)
+        .widgetContainerBackground(accessory: isAccessoryRectangularFamily)
     }
 
     private var header: some View {

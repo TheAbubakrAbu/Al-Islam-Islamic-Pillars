@@ -202,12 +202,8 @@ struct PrayersWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
-            if #available(iOS 17.0, *) {
-                PrayersEntryView(entry: entry)
-            } else {
-                PrayersEntryView(entry: entry)
-                    .padding()
-            }
+            PrayersEntryView(entry: entry)
+                .widgetContainerBackground(legacyPadding: true)
         }
         .supportedFamilies([.systemMedium, .systemLarge])
         .configurationDisplayName("Prayer Times")

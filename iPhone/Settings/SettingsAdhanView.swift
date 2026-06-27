@@ -380,19 +380,31 @@ struct SettingsAdhanView: View {
     @ViewBuilder
     private var homeCityButton: some View {
         #if os(iOS)
-        HStack {
+        HStack(spacing: 8) {
             Text("Set Home City")
                 .font(.subheadline)
                 .foregroundColor(settings.accentColor.color)
-            
-            if !(settings.homeLocation?.city.isEmpty ?? true) {
-                Spacer()
-                
-                Text(settings.homeLocation?.city ?? "")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+
+            Spacer(minLength: 8)
+
+            if let city = settings.homeLocation?.city, !city.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "house.fill")
+                        .font(.caption)
+                        .foregroundColor(settings.accentColor.color)
+
+                    Text(city)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                // Mirrors the current-city capsule in AdhanView.
+                .conditionalGlassEffect()
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture {
             settings.hapticFeedback()

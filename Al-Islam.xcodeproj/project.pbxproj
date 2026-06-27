@@ -312,12 +312,12 @@
 		723B9E072F3B13EF0042DCDE /* QiraahDuri.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = QiraahDuri.json; sourceTree = "<group>"; };
 		723B9E0A2F3B141E0042DCDE /* QiraahSusi.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = QiraahSusi.json; sourceTree = "<group>"; };
 		723CE3022FAF0BB900E83F5A /* Qiraat.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Qiraat.ttf; sourceTree = "<group>"; };
-		723DA4552D59FC5A00AC20B3 /* iPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = iPhone.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-iphoneos/iPhone.app"; sourceTree = "<absolute>"; };
-		723DA4562D59FC5A00AC20B3 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Watch.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-watchos/Watch.app"; sourceTree = "<absolute>"; };
-		723DA4572D59FC5A00AC20B3 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Complication.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-watchos/Complication.appex"; sourceTree = "<absolute>"; };
-		723DA4582D59FC5A00AC20B3 /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Widget.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-iphoneos/Widget.appex"; sourceTree = "<absolute>"; };
 		724B8BD12FADD98500804C3D /* Uthmani.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Uthmani.ttf; sourceTree = "<group>"; };
 		724B8BE02FADE8D900804C3D /* Indopak.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Indopak.ttf; sourceTree = "<group>"; };
+		724C667B2FF0836600C0E1BB /* iPhone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = iPhone.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-iphoneos/iPhone.app"; sourceTree = "<absolute>"; };
+		724C667C2FF0836600C0E1BB /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Watch.app; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-watchos/Watch.app"; sourceTree = "<absolute>"; };
+		724C667D2FF0836600C0E1BB /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Complication.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-watchos/Complication.appex"; sourceTree = "<absolute>"; };
+		724C667E2FF0836600C0E1BB /* Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = Widget.appex; path = "/Users/theabubakrabu/Library/Mobile Documents/com~apple~CloudDocs/Projects/(1) Xcode/Al-Islam | Islamic-Pillars/build/Debug-iphoneos/Widget.appex"; sourceTree = "<absolute>"; };
 		72574CB22E49E3F000BFF138 /* QuranShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranShortcuts.swift; sourceTree = "<group>"; };
 		72574CC52E49EDDE00BFF138 /* AdhanShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdhanShortcuts.swift; sourceTree = "<group>"; };
 		72574CC82E49EE7F00BFF138 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
@@ -534,8 +534,8 @@
 				725D4C6A2E29584B00817FFB /* Logo.jpg */,
 				7230F8A32D42119D0017DAE3 /* Resources */,
 				7260F9132A8715D600E8FF87 /* iPhone */,
-				725B42032AA0061C009C8C91 /* Widget */,
 				72B531A32A22DCFE007FA002 /* Apple Watch */,
+				725B42032AA0061C009C8C91 /* Widget */,
 				72109F2F2A65D77400BD373E /* Complication */,
 			);
 			sourceTree = "<group>";
@@ -710,7 +710,7 @@
 				72802B942C570B9F000DF9B5 /* Adhan */,
 			);
 			productName = ComplicationExtension;
-			productReference = 723DA4572D59FC5A00AC20B3 /* Complication.appex */;
+			productReference = 724C667D2FF0836600C0E1BB /* Complication.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		725B41FF2AA0061B009C8C91 /* Widget */ = {
@@ -730,7 +730,7 @@
 				72802B902C570B86000DF9B5 /* Adhan */,
 			);
 			productName = WidgetExtension;
-			productReference = 723DA4582D59FC5A00AC20B3 /* Widget.appex */;
+			productReference = 724C667E2FF0836600C0E1BB /* Widget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		725E6F4C2A1C687500AF8854 /* iPhone */ = {
@@ -754,7 +754,7 @@
 				72802B8E2C570B76000DF9B5 /* Adhan */,
 			);
 			productName = "Islamic Pillars";
-			productReference = 723DA4552D59FC5A00AC20B3 /* iPhone.app */;
+			productReference = 724C667B2FF0836600C0E1BB /* iPhone.app */;
 			productType = "com.apple.product-type.application";
 		};
 		72B531A12A22DCFE007FA002 /* Watch */ = {
@@ -777,7 +777,7 @@
 				72802B922C570B93000DF9B5 /* Adhan */,
 			);
 			productName = "IslamicPillars Watch App";
-			productReference = 723DA4562D59FC5A00AC20B3 /* Watch.app */;
+			productReference = 724C667C2FF0836600C0E1BB /* Watch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

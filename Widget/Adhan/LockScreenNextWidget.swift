@@ -40,6 +40,7 @@ struct LockScreen1Widget: Widget {
         if #available(iOS 16, *) {
             return StaticConfiguration(kind: kind, provider: PrayersProvider()) { entry in
                 LockScreen1EntryView(entry: entry)
+                    .widgetContainerBackground(accessory: true)
             }
             .supportedFamilies([.accessoryCircular])
             .configurationDisplayName("Next Prayer Time")
