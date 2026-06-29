@@ -227,7 +227,7 @@ extension String {
     /// (or highlighted within) ayah content — otherwise a query like `#الله` keeps the `#`, never matches
     /// the source, and nothing highlights. Operators become spaces (not deleted) to preserve word breaks.
     var removingAyahSearchOperators: String {
-        let operators = Set("#^%$&|!".unicodeScalars)
+        let operators = Set("#^%$&|!=".unicodeScalars)
         var out = String.UnicodeScalarView()
         out.reserveCapacity(unicodeScalars.count)
         for scalar in unicodeScalars {

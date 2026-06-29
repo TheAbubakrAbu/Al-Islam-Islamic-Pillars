@@ -6,16 +6,22 @@ import WidgetKit
 /// Two-way settings sync between iPhone and Apple Watch.
 ///
 /// Designed to avoid the failure modes the previous version had:
-/// - **Complete snapshots only.** Every message carries the full set of synced settings, and the receiver
-///   only writes keys that are present — so a payload can never reset an unmentioned setting to a default
-///   (that was the cause of settings randomly flipping on/off).
-/// - **Monotonic versioning + device tiebreak.** Each payload carries a score = version·10 + deviceRank
-///   (iPhone outranks the watch). A device applies an incoming payload only if its score beats everything
-///   it has already sent or applied, so simultaneous edits converge deterministically instead of ping-ponging.
+/// - **Never transmits a default.** A snapshot carries *only* settings this device has actually set, and the
+///   receiver only writes keys that are present. So a payload can never reset an unmentioned (or freshly
+///   installed) setting to its default — the cause of settings randomly flipping on/off or "all resetting."
+/// - **Wall-clock recency + device tiebreak.** Each payload carries the real timestamp of the write plus
+///   the originating device's rank (iPhone outranks the watch). A device applies an incoming payload only
+///   if it is *newer* than everything it has already sent or applied — strictly later in time, or, only
+///   when two writes share the exact same instant, made by the higher-ranked device. So the literally
+///   newest edit always wins and iPhone wins ties, instead of a logical counter letting a stale-but-busier
+///   device clobber a newer one (which looked like settings randomly "resetting").
 /// - **Echo suppression.** After applying a remote snapshot we remember its serialized form, so the local
 ///   change it triggers doesn't get sent straight back.
 /// - **Reliable channel.** Uses `updateApplicationContext` (always delivered, latest-state-wins) plus an
-///   immediate `sendMessage` when reachable; duplicates are harmless because of the score check.
+///   immediate `sendMessage` when reachable; duplicates are harmless because of the recency check.
+///
+/// All sync bookkeeping is read and mutated only on the main queue, so the WCSession delegate callbacks
+/// (which arrive on a background queue) and the debounced sender never race.
 final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     static let shared = WatchConnectivityManager()
 
@@ -26,17 +32,32 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     /// bookkeeping is what prevents a stale `applicationContext` from being re-applied over a newer local
     /// change on relaunch — the "change a setting, reopen, it reverts" bug.
     private let store: UserDefaults
-    private static let scoreKey = "watchSync.knownMaxScore"
+    private static let timestampKey = "watchSync.knownTimestamp"
+    private static let rankKey = "watchSync.knownRank"
     private static let lastSyncedKey = "watchSync.lastSyncedSettingsData"
+
+    /// How far ahead of our own clock an incoming timestamp may be before we treat it as a bogus
+    /// (mis-set) peer clock and ignore it. Paired devices stay within seconds of each other; a full hour
+    /// of slack never trips in practice but stops a wildly-wrong clock from pinning sync into the future
+    /// and freezing out our legitimately-newer edits.
+    private static let maxClockSkew: TimeInterval = 60 * 60
 
     /// Serialized form of the settings dict we last sent or applied — used to skip no-op/echo sends.
     private var lastSyncedSettingsData: Data {
         didSet { store.set(lastSyncedSettingsData, forKey: Self.lastSyncedKey) }
     }
-    /// Highest score (version·10 + rank) we've sent or applied. Drives versioning and conflict resolution.
-    /// Persisted so a relaunch doesn't forget it and re-accept an already-superseded payload.
-    private var knownMaxScore: Int {
-        didSet { store.set(knownMaxScore, forKey: Self.scoreKey) }
+    /// Wall-clock recency (seconds since 1970) of the newest write we've sent or applied, with the
+    /// originating device's rank as the tiebreak. Together they resolve conflicts: the literally newest
+    /// write wins, and iPhone outranks the watch only when two writes share the exact same timestamp.
+    /// Persisted so a relaunch doesn't forget and re-accept an already-superseded payload.
+    ///
+    /// (Kept as a Double rather than packed into one Int because `Int` is 32-bit on some watchOS targets,
+    /// where a millisecond timestamp would overflow.)
+    private var knownTimestamp: Double {
+        didSet { store.set(knownTimestamp, forKey: Self.timestampKey) }
+    }
+    private var knownRank: Int {
+        didSet { store.set(knownRank, forKey: Self.rankKey) }
     }
 
     #if os(iOS)
@@ -48,7 +69,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     private override init() {
         let store = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName) ?? .standard
         self.store = store
-        self.knownMaxScore = store.integer(forKey: Self.scoreKey)
+        self.knownTimestamp = store.double(forKey: Self.timestampKey)
+        self.knownRank = store.integer(forKey: Self.rankKey)
         self.lastSyncedSettingsData = store.data(forKey: Self.lastSyncedKey) ?? Data()
         super.init()
         guard WCSession.isSupported() else { return }
@@ -79,11 +101,16 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         guard data != lastSyncedSettingsData else { return }   // no real change, or an echo of what we just applied
         lastSyncedSettingsData = data
 
-        let version = knownMaxScore / 10 + 1
-        let score = version * 10 + deviceRank
-        knownMaxScore = max(knownMaxScore, score)
+        // Stamp the write with the real wall clock so the newest edit always wins. If the clock hasn't
+        // advanced past our last stamp (rapid successive edits, or a backward clock correction), nudge just
+        // past it so this brand-new change is still strictly newer than anything we've already sent. The
+        // rank tiebreak only matters when two devices write at the exact same instant.
+        var ts = Date().timeIntervalSince1970
+        if ts <= knownTimestamp { ts = knownTimestamp.nextUp }
+        knownTimestamp = ts
+        knownRank = deviceRank
 
-        let payload: [String: Any] = ["score": score, "settings": snapshot]
+        let payload: [String: Any] = ["timestamp": ts, "rank": deviceRank, "settings": snapshot]
 
         do { try session.updateApplicationContext(payload) }
         catch { logger.debug("WC updateApplicationContext error: \(error)") }
@@ -98,11 +125,18 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     // MARK: - Receiving
 
     private func receive(_ payload: [String: Any]) {
-        guard let score = payload["score"] as? Int,
+        guard let ts = payload["timestamp"] as? Double,
+              let rank = payload["rank"] as? Int,
               let settings = payload["settings"] as? [String: Any] else { return }
-        // Only accept payloads that are strictly newer than anything we've sent or applied.
-        guard score > knownMaxScore else { return }
-        knownMaxScore = score
+        // Ignore a timestamp absurdly far in our future — a peer with a badly mis-set clock — so it can't
+        // pin our sync ahead and freeze out our own legitimately-newer edits.
+        guard ts <= Date().timeIntervalSince1970 + Self.maxClockSkew else { return }
+        // Accept only writes newer than anything we've sent or applied: a strictly later wall-clock time,
+        // or — only as a tiebreak for the exact same instant — a higher-ranked device (iPhone > watch).
+        let isNewer = ts > knownTimestamp || (ts == knownTimestamp && rank > knownRank)
+        guard isNewer else { return }
+        knownTimestamp = ts
+        knownRank = rank
 
         // Remember the applied content so the change it triggers locally isn't echoed back.
         if let data = try? JSONSerialization.data(withJSONObject: settings, options: [.sortedKeys]) {
@@ -122,12 +156,15 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
         // Apply any context that arrived while we were inactive (rejected if not strictly newer than what
         // we already know), then push any local change that wasn't sent before — between them, the latest
-        // value always wins and both devices converge regardless of who was open when.
+        // value always wins and both devices converge regardless of who was open when. Hop to main first:
+        // this delegate runs on a background queue, and all sync bookkeeping must be touched only there.
         if activationState == .activated {
-            if !session.receivedApplicationContext.isEmpty {
-                receive(session.receivedApplicationContext)
+            let pending = session.receivedApplicationContext
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if !pending.isEmpty { self.receive(pending) }
+                self.sendSnapshotIfChanged()
             }
-            DispatchQueue.main.async { [weak self] in self?.sendSnapshotIfChanged() }
         }
 
         #if os(watchOS)
@@ -200,18 +237,25 @@ extension Settings {
         "copyAyahArabic", "copyAyahTransliteration", "copyAyahEnglishSaheeh", "copyAyahEnglishMustafa",
     ]
 
-    /// A complete snapshot of the synced settings (never partial — that is what prevents the old
-    /// "settings randomly flipped" glitch, since the receiver only writes keys that are present).
+    /// A snapshot of the synced settings, containing **only keys this device has actually set**. A value
+    /// the user never touched is absent from its backing store, so it is left out — and the receiver only
+    /// writes keys that are present. That is the core safeguard against the "everything reset" bug: a
+    /// freshly-installed (or never-configured) device cannot broadcast its defaults over an established
+    /// peer, because it transmits nothing for settings it doesn't hold.
     func watchSyncSnapshot() -> [String: Any] {
         var dict: [String: Any] = [:]
-        // Core @Published (app-group) settings.
-        dict["accentColor"] = accentColor.rawValue
-        dict["customAccentColorHex"] = customAccentColorHex
-        dict["prayerCalculation"] = prayerCalculation
-        dict["hanafiMadhab"] = hanafiMadhab
-        dict["travelingMode"] = travelingMode
-        dict["hijriOffset"] = hijriOffset
-        // @AppStorage settings.
+
+        // Core @Published settings live in the app-group store; their `didSet` only writes once changed,
+        // so `object(forKey:) != nil` means the user (or a prior sync) genuinely set this value.
+        let appGroup = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName)
+        if appGroup?.object(forKey: "accentColor") != nil { dict["accentColor"] = accentColor.rawValue }
+        if appGroup?.object(forKey: "customAccentColorHex") != nil { dict["customAccentColorHex"] = customAccentColorHex }
+        if appGroup?.object(forKey: "prayerCalculation") != nil { dict["prayerCalculation"] = prayerCalculation }
+        if appGroup?.object(forKey: "hanafiMadhab") != nil { dict["hanafiMadhab"] = hanafiMadhab }
+        if appGroup?.object(forKey: "travelingMode") != nil { dict["travelingMode"] = travelingMode }
+        if appGroup?.object(forKey: "hijriOffset") != nil { dict["hijriOffset"] = hijriOffset }
+
+        // @AppStorage settings — likewise only keys that have been explicitly written.
         let store = UserDefaults.standard
         for key in Self.watchSyncedAppStorageKeys where store.object(forKey: key) != nil {
             dict[key] = store.object(forKey: key)

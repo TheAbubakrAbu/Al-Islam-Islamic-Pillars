@@ -18,9 +18,10 @@ enum LaunchScreenLayout {
 
 struct LaunchScreen: View {
     @EnvironmentObject var settings: Settings
-    @EnvironmentObject var quranData: QuranData
-    @EnvironmentObject var quranPlayer: QuranPlayer
-    @EnvironmentObject var namesData: NamesViewModel
+    // Note: QuranData / QuranPlayer / NamesViewModel are intentionally NOT observed here. They publish
+    // frequently while loading (load-state changes, the 6k-entry verse index, player/names state), and
+    // observing them would re-render the launch screen mid-animation — the source of the startup chop.
+    // Readiness is awaited via the `.shared` singletons below, which doesn't subscribe to their changes.
     @Environment(\.colorScheme) private var systemColorScheme
     @Environment(\.customColorScheme) private var customColorScheme
 
@@ -148,45 +149,25 @@ struct LaunchScreen: View {
 
     @MainActor
     private func runLaunchAnimation() async {
+        // 1) Calm entrance — bring "Al-Islam" up to a resting state with one short, cheap fade/scale. Kept
+        //    deliberately simple so the very first frames can't visibly stutter even while Settings / Quran /
+        //    etc. are still spinning up.
         triggerHapticFeedback(.soft)
-
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
-            size = 0.94
+        withAnimation(.easeOut(duration: 0.45)) {
+            size = 0.9
             opacity = 1.0
-            gradientSize = 3.4
-            glowOpacity = 1.0
-            ringScale = 1.08
-            ringOpacity = 1.0
+            gradientSize = 2.8
+            glowOpacity = 0.72
             logoRotation = 0
             logoYOffset = 0
             textOffset = 0
-            glassFloat = 2
-            glassTilt = 0
-            glassOpacity = 0.0
-            leftGlassOffset = 0
-            rightGlassOffset = 0
         }
+        // Let the entrance settle on screen before anything else animates.
+        try? await Task.sleep(nanoseconds: 450_000_000)
 
-        withAnimation(.easeInOut(duration: 0.8)) {
-            shimmerOffset = 220
-        }
-
-        try? await Task.sleep(nanoseconds: 800_000_000)
-
-        triggerHapticFeedback(.soft)
-        withAnimation(.easeOut(duration: 0.5)) {
-            size = 0.88
-            gradientSize = 2.8
-            ringScale = 1.18
-            ringOpacity = 0.0
-            glowOpacity = 0.72
-            glassFloat = 0
-            glassTilt = 0
-            glassOpacity = 0.0
-            leftGlassOffset = 0
-            rightGlassOffset = 0
-        }
-
+        // 2) Hold on "Al-Islam" and wait for everything to finish initializing. Nothing is animating during
+        //    this window, so background-init contention is invisible — the screen simply rests on the logo
+        //    for as long as it takes. This is the "keep Al-Islam there and wait" behavior.
         async let settingsReady: Void = Settings.shared.waitUntilReady()
         async let quranReady: Void = {
             if QuranData.shared.shouldWaitForFullLaunchReadiness {
@@ -199,8 +180,20 @@ struct LaunchScreen: View {
         async let namesReady: Void = NamesViewModel.shared.waitUntilLoaded()
         _ = await (settingsReady, quranReady, playerReady, namesReady)
 
+        // 3) Everything is ready and the CPU is free, so the full flourish plays smoothly: the glow/ring
+        //    bloom, the shimmer sweep across the logo, and the Quran/Adhan companion cards floating out.
         triggerHapticFeedback(.soft)
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.8)) {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            size = 0.94
+            gradientSize = 3.4
+            glowOpacity = 1.0
+            ringScale = 1.08
+            ringOpacity = 1.0
+        }
+        withAnimation(.easeInOut(duration: 0.75)) {
+            shimmerOffset = 220
+        }
+        withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
             glassFloat = -10
             glassTilt = 7
             glassOpacity = 1.0
@@ -210,8 +203,9 @@ struct LaunchScreen: View {
 
         try? await Task.sleep(nanoseconds: 650_000_000)
 
+        // 4) Smoothly hand off to the app.
+        triggerHapticFeedback(.soft)
         withAnimation(.easeInOut(duration: 0.42)) {
-            triggerHapticFeedback(.soft)
             isLaunching = false
         }
     }

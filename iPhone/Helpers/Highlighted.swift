@@ -195,6 +195,13 @@ struct HighlightedSnippet: View {
                     indexMap: normEntry.indexMap
                 )
             }
+            // Final safety net: if nothing matched yet, highlight the closest word(s) in THIS field so the
+            // user always sees at least one thing for their query. It works on the original words normalized
+            // individually, so it doesn't depend on the whole-string index alignment the paths above need —
+            // which can silently fail on heavily-marked Arabic and leave a real match un-highlighted.
+            if ranges.isEmpty {
+                ranges = closestMatchRanges(in: source, normalizedTerm: normalizedTerm)
+            }
             Self.matchRangeCache.setObject(RangeEntry(ranges), forKey: matchKey)
             matchedRanges = ranges
         }
@@ -336,6 +343,61 @@ struct HighlightedSnippet: View {
             prefixLen -= 1
         }
         return []
+    }
+
+    /// Guarantees at least one highlight: scans the original words (each normalized on its own, so there's
+    /// no fragile whole-string alignment), scores them against the query, and returns every word that
+    /// contains the query — or, if none do, the single closest word. This is the "something is always
+    /// highlighted, the closest match" behavior.
+    private func closestMatchRanges(in source: String, normalizedTerm: String) -> [Range<String.Index>] {
+        // Match against the most specific (longest) query word.
+        guard let primaryQuery = normalizedTerm
+            .split(separator: " ")
+            .map(String.init)
+            .filter({ !$0.isEmpty })
+            .max(by: { $0.count < $1.count })
+        else { return [] }
+
+        var scored: [(range: Range<String.Index>, score: Int)] = []
+        var cursor = source.startIndex
+        while cursor < source.endIndex {
+            while cursor < source.endIndex, source[cursor].isWhitespace { cursor = source.index(after: cursor) }
+            guard cursor < source.endIndex else { break }
+            let start = cursor
+            while cursor < source.endIndex, !source[cursor].isWhitespace { cursor = source.index(after: cursor) }
+            let tokenRange = start..<cursor
+
+            let normToken = normalizeForSearch(String(source[tokenRange]), trimWhitespace: true)
+            guard !normToken.isEmpty else { continue }
+            let score = wordMatchScore(word: normToken, query: primaryQuery)
+            if score > 0 { scored.append((tokenRange, score)) }
+        }
+
+        guard let best = scored.max(by: { $0.score < $1.score }) else { return [] }
+        // Words that actually contain the query (or equal it) are all highlighted; otherwise fall back to
+        // the single closest word so there's always exactly something.
+        let strong = scored.filter { $0.score >= 70 }.map(\.range)
+        return strong.isEmpty ? [best.range] : strong
+    }
+
+    private func wordMatchScore(word: String, query: String) -> Int {
+        if word == query { return 100 }
+        if word.contains(query) { return 70 }
+        if query.contains(word) { return 60 }
+        let lcp = commonPrefixLength(word, query)
+        return lcp >= 2 ? lcp : 0
+    }
+
+    private func commonPrefixLength(_ a: String, _ b: String) -> Int {
+        var count = 0
+        var i = a.startIndex
+        var j = b.startIndex
+        while i < a.endIndex, j < b.endIndex, a[i] == b[j] {
+            count += 1
+            i = a.index(after: i)
+            j = b.index(after: j)
+        }
+        return count
     }
 
     private func normalizedTokenRanges(in text: String) -> [Range<String.Index>] {

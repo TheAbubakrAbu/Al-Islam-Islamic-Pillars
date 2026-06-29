@@ -375,12 +375,14 @@ struct QuranView: View {
 
             if showAyahSearchLearnMore {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Boolean operators: & (AND), | (OR), ! (NOT)")
-                    Text("Use #term for an exact match (Arabic: exact diacritics; English: exact phrase)")
+                    Text("Plain text matches anywhere (substring): 'رب' also finds 'ربهم'")
+                    Text("Use =term for whole words / a phrase: '=رب' finds the word رب, not ربهم")
+                    Text("Use #term for an exact substring (case- and tashkeel-sensitive)")
                     Text("Use ^term for starts-with and term% for ends-with")
+                    Text("Boolean operators: & (AND), | (OR), ! (NOT)")
                     Text("Count filters: 'X ayahs/pages', '<X', '>X', '<=X', '>=X', '==X'")
                     Text("Juz names work too: Arabic or transliteration")
-                    Text("Example: ^Allah & mercy%")
+                    Text("Example: =Allah & mercy%")
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)

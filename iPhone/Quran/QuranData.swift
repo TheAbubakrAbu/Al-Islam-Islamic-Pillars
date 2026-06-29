@@ -3203,6 +3203,7 @@ final class QuranData: ObservableObject {
                 case startsWith
                 case endsWith
                 case exact
+                case wholeWord   // `=` — matches whole words / a series of whole words (not substrings)
             }
 
             let value: String
@@ -3259,11 +3260,15 @@ final class QuranData: ObservableObject {
             limit: Int,
             offset: Int
         ) -> [VerseIndexEntry] {
+            // Plain substring search, returned in mushaf order. Word and sentence boundaries don't matter — a
+            // query matches anywhere it appears (e.g. "رب" inside "ربهم"). Use the `=` operator for whole-word
+            // / phrase matching, or `#` for an exact (case- and tashkeel-sensitive) substring. The scan exits
+            // early at `limit` and runs off the main thread.
             var results: [VerseIndexEntry] = []
             results.reserveCapacity(limit == .max ? 64 : min(limit, 64))
 
             var skipped = 0
-            for index in candidateVerseIndices(for: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) {
+            for index in allVerseIndices {
                 guard verseIndex.indices.contains(index) else { continue }
                 let entry = verseIndex[index]
                 guard regularSearchEntryMatches(entry, cleanedQuery: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) else { continue }
@@ -3283,20 +3288,21 @@ final class QuranData: ObservableObject {
             silentQuery: String?,
             useArabic: Bool
         ) -> Bool {
+            // Pure substring (`contains`) — boundaries don't matter. Whole-word / phrase matching lives in
+            // the `=` operator instead.
             if useArabic {
-                if entry.arabicBlob.contains(cleanedQuery) || phrasePrefixMatch(entry.arabicTokens, query: searchTokens(from: cleanedQuery)) {
-                    return true
-                }
+                if entry.arabicBlob.contains(cleanedQuery) { return true }
                 guard let silentQuery, !silentQuery.isEmpty else { return false }
                 return entry.silentArabicBlob.contains(silentQuery)
-                    || phrasePrefixMatch(entry.silentArabicTokens, query: searchTokens(from: silentQuery))
             }
 
             return entry.englishBlob.contains(cleanedQuery)
-                || phrasePrefixMatch(entry.englishTokens, query: searchTokens(from: cleanedQuery))
         }
 
-        private func phrasePrefixMatch(_ haystack: [String], query: [String]) -> Bool {
+        /// True if `query`'s tokens appear as a consecutive run in `haystack`. The leading tokens must match
+        /// exactly; the final token must match exactly when `lastMustBeExact` is true, otherwise it only has
+        /// to be a prefix (e.g. query "when" hits "...whenever..." when `lastMustBeExact` is false).
+        private func consecutiveTokenMatch(_ haystack: [String], query: [String], lastMustBeExact: Bool) -> Bool {
             guard !query.isEmpty, haystack.count >= query.count else { return false }
 
             for start in 0...(haystack.count - query.count) {
@@ -3304,7 +3310,7 @@ final class QuranData: ObservableObject {
                 for offset in query.indices {
                     let word = haystack[start + offset]
                     let term = query[offset]
-                    if offset == query.count - 1 {
+                    if offset == query.count - 1 && !lastMustBeExact {
                         if !word.hasPrefix(term) { matched = false; break }
                     } else if word != term {
                         matched = false
@@ -3317,74 +3323,12 @@ final class QuranData: ObservableObject {
             return false
         }
 
-        private func candidateVerseIndices(for cleanedQuery: String, silentQuery: String?, useArabic: Bool) -> [Int] {
-            var tokens = searchTokens(from: cleanedQuery)
-            if useArabic, let silentQuery {
-                tokens.append(contentsOf: searchTokens(from: silentQuery))
-            }
-            guard !tokens.isEmpty else { return allVerseIndices }
-
-            let minimumPrefixLength = useArabic ? 2 : 3
-
-            var candidates: Set<Int>? = nil
-            var matchedAnyIndexedToken = false
-
-            for token in tokens {
-                var tokenMatches = Set<Int>()
-                let tokenIndex = useArabic ? arabicTokenIndex : englishTokenIndex
-                let prefixIndex = useArabic ? arabicPrefix2Index : englishPrefix3Index
-
-                if let exactMatches = tokenIndex[token] {
-                    tokenMatches.formUnion(exactMatches)
-                }
-
-                if token.count >= minimumPrefixLength {
-                    let prefix = String(token.prefix(minimumPrefixLength))
-                    if let prefixMatches = prefixIndex[prefix] {
-                        tokenMatches.formUnion(prefixMatches)
-                    }
-                }
-
-                if useArabic {
-                    if let exactMatches = silentArabicTokenIndex[token] {
-                        tokenMatches.formUnion(exactMatches)
-                    }
-
-                    if token.count >= minimumPrefixLength {
-                        let prefix = String(token.prefix(minimumPrefixLength))
-                        if let prefixMatches = silentArabicPrefix2Index[prefix] {
-                            tokenMatches.formUnion(prefixMatches)
-                        }
-                    }
-                }
-
-                guard !tokenMatches.isEmpty else { continue }
-
-                matchedAnyIndexedToken = true
-                if let existing = candidates {
-                    candidates = existing.intersection(tokenMatches)
-                } else {
-                    candidates = tokenMatches
-                }
-
-                if candidates?.isEmpty == true {
-                    return []
-                }
-            }
-
-            guard matchedAnyIndexedToken, let candidates else {
-                return allVerseIndices
-            }
-
-            return candidates.sorted()
-        }
-
         private func booleanAyahSearchGroups(from rawQuery: String) -> [[BooleanAyahTerm]]? {
             let normalized = rawQuery
                 .replacingOccurrences(of: "&&", with: "&")
                 .replacingOccurrences(of: "||", with: "|")
 
-            guard normalized.contains("&") || normalized.contains("|") || normalized.contains("!") || normalized.contains("#") || normalized.contains("^") || normalized.contains("%") || normalized.contains("$") else {
+            guard normalized.contains("&") || normalized.contains("|") || normalized.contains("!") || normalized.contains("#") || normalized.contains("^") || normalized.contains("%") || normalized.contains("$") || normalized.contains("=") else {
                 return nil
             }
 
@@ -3417,6 +3361,13 @@ final class QuranData: ObservableObject {
                 term = term.trimmingCharacters(in: .whitespacesAndNewlines)
             }
 
+            var wholeWordMatch = false
+            while term.hasPrefix("=") {
+                wholeWordMatch = true
+                term.removeFirst()
+                term = term.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+
             var startsWithMatch = false
             if term.hasPrefix("^") {
                 startsWithMatch = true
@@ -3436,7 +3387,9 @@ final class QuranData: ObservableObject {
             guard !cleaned.isEmpty else { return nil }
 
             let matchMode: BooleanAyahTerm.MatchMode
-            if startsWithMatch && endsWithMatch {
+            if wholeWordMatch {
+                matchMode = .wholeWord
+            } else if startsWithMatch && endsWithMatch {
                 matchMode = .exact
             } else if startsWithMatch {
                 matchMode = .startsWith
@@ -3467,6 +3420,10 @@ final class QuranData: ObservableObject {
                 return haystack.hasSuffix(term) || tokens.contains(where: { $0.hasSuffix(term) })
             case .exact:
                 return haystack == term || tokens.contains(term)
+            case .wholeWord:
+                // The query's words must appear as a consecutive run of whole words (a full word, or a
+                // full series of words) — e.g. "=رب" matches the word رب but not "ربهم".
+                return consecutiveTokenMatch(tokens, query: searchTokens(from: term), lastMustBeExact: true)
             }
         }
 
@@ -5197,7 +5154,10 @@ final class QuranData: ObservableObject {
             matchingIndices.reserveCapacity(64)
         }
 
-        for index in candidateVerseIndices(for: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) {
+        // Scan every verse — see the note in the snapshot's regularSearchResults: the word/prefix index
+        // can't represent mid-word substring hits, so gating on it made plain search miss them and behave
+        // like a whole-word/exact match. The full match list is cached below for paginated reuse.
+        for index in allVerseIndices {
             guard verseIndex.indices.contains(index) else { continue }
             let entry = verseIndex[index]
             guard regularSearchEntryMatches(entry, cleanedQuery: cleanedQuery, silentQuery: silentQuery, useArabic: useArabic) else { continue }
@@ -5265,69 +5225,6 @@ final class QuranData: ObservableObject {
         return false
     }
 
-    private func candidateVerseIndices(for cleanedQuery: String, silentQuery: String?, useArabic: Bool) -> [Int] {
-        var tokens = searchTokens(from: cleanedQuery)
-        if useArabic, let silentQuery {
-            tokens.append(contentsOf: searchTokens(from: silentQuery))
-        }
-        guard !tokens.isEmpty else { return allVerseIndices }
-
-        let minimumPrefixLength = useArabic ? 2 : 3
-
-        var candidates: Set<Int>? = nil
-        var matchedAnyIndexedToken = false
-
-        for token in tokens {
-            var tokenMatches = Set<Int>()
-            let tokenIndex = useArabic ? arabicTokenIndex : englishTokenIndex
-            let prefixIndex = useArabic ? arabicPrefix2Index : englishPrefix3Index
-
-            if let exactMatches = tokenIndex[token] {
-                tokenMatches.formUnion(exactMatches)
-            }
-
-            if token.count >= minimumPrefixLength {
-                let prefix = String(token.prefix(minimumPrefixLength))
-                if let prefixMatches = prefixIndex[prefix] {
-                    tokenMatches.formUnion(prefixMatches)
-                }
-            }
-
-            if useArabic {
-                if let exactMatches = silentArabicTokenIndex[token] {
-                    tokenMatches.formUnion(exactMatches)
-                }
-
-                if token.count >= minimumPrefixLength {
-                    let prefix = String(token.prefix(minimumPrefixLength))
-                    if let prefixMatches = silentArabicPrefix2Index[prefix] {
-                        tokenMatches.formUnion(prefixMatches)
-                    }
-                }
-            }
-
-            guard !tokenMatches.isEmpty else {
-                continue
-            }
-
-            matchedAnyIndexedToken = true
-            if let existing = candidates {
-                candidates = existing.intersection(tokenMatches)
-            } else {
-                candidates = tokenMatches
-            }
-
-            if candidates?.isEmpty == true {
-                return []
-            }
-        }
-
-        guard matchedAnyIndexedToken, let candidates else {
-            return allVerseIndices
-        }
-
-        return candidates.sorted()
-    }
 
     private struct BooleanAyahTerm {
         enum MatchMode {

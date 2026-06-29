@@ -291,7 +291,8 @@ struct SurahView: View {
 
         if lowered.hasPrefix("juz ") {
             let valueText = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
-            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
+            // Accept a juz name (Arabic or transliteration) as well as a number, matching QuranView.
+            let n = quranData.resolveJuzIdentifier(valueText) ?? Int(valueText) ?? arabicToEnglishNumber(valueText)
             if let n, (1...30).contains(n) { return PageJuzQuery(page: nil, juz: n) }
             return PageJuzQuery(page: nil, juz: nil)
         }
@@ -320,7 +321,7 @@ struct SurahView: View {
             .replacingOccurrences(of: "&&", with: "&")
             .replacingOccurrences(of: "||", with: "|")
 
-        guard normalized.contains("&") || normalized.contains("|") || normalized.contains("!") || normalized.contains("#") || normalized.contains("^") || normalized.contains("%") || normalized.contains("$") else {
+        guard normalized.contains("&") || normalized.contains("|") || normalized.contains("!") || normalized.contains("#") || normalized.contains("^") || normalized.contains("%") || normalized.contains("$") || normalized.contains("=") else {
             return nil
         }
 
@@ -341,6 +342,7 @@ struct SurahView: View {
             case startsWith
             case endsWith
             case exact
+            case wholeWord   // `=` — matches whole words / a series of whole words (not substrings)
         }
 
         let value: String
@@ -391,6 +393,13 @@ struct SurahView: View {
             term = term.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
+        var wholeWordMatch = false
+        while term.hasPrefix("=") {
+            wholeWordMatch = true
+            term.removeFirst()
+            term = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
         var startsWithMatch = false
         if term.hasPrefix("^") {
             startsWithMatch = true
@@ -410,7 +419,9 @@ struct SurahView: View {
         guard !cleaned.isEmpty else { return nil }
 
         let matchMode: BooleanAyahTerm.MatchMode
-        if startsWithMatch && endsWithMatch {
+        if wholeWordMatch {
+            matchMode = .wholeWord
+        } else if startsWithMatch && endsWithMatch {
             matchMode = .exact
         } else if startsWithMatch {
             matchMode = .startsWith
@@ -445,7 +456,31 @@ struct SurahView: View {
             return haystack.hasSuffix(term) || tokens.contains(where: { $0.hasSuffix(term) })
         case .exact:
             return haystack == term || tokens.contains(term)
+        case .wholeWord:
+            // The query's words must appear as a consecutive run of whole words (a full word, or a full
+            // series of words) — e.g. "=رب" matches the word رب but not "ربهم".
+            return consecutiveTokenMatch(tokens, query: searchTokens(from: term), lastMustBeExact: true)
         }
+    }
+
+    /// True if `query`'s tokens appear as a consecutive run of whole words in `haystack`.
+    private func consecutiveTokenMatch(_ haystack: [String], query: [String], lastMustBeExact: Bool) -> Bool {
+        guard !query.isEmpty, haystack.count >= query.count else { return false }
+        for start in 0...(haystack.count - query.count) {
+            var matched = true
+            for offset in query.indices {
+                let word = haystack[start + offset]
+                let term = query[offset]
+                if offset == query.count - 1 && !lastMustBeExact {
+                    if !word.hasPrefix(term) { matched = false; break }
+                } else if word != term {
+                    matched = false
+                    break
+                }
+            }
+            if matched { return true }
+        }
+        return false
     }
 
     private func matchesBooleanAyahSearch(ayah: Ayah, haystack: String, groups: [[BooleanAyahTerm]]) -> Bool {
