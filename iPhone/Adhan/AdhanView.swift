@@ -3,6 +3,9 @@ import CoreLocation
 
 struct AdhanView: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
+    @EnvironmentObject var quranPlayer: QuranPlayer
+    
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var showingSettingsSheet = false
