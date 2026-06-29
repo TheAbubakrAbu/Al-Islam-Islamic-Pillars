@@ -43,11 +43,7 @@ struct AlIslamApp: App {
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
             .animation(.easeInOut, value: isLaunching)
-            .onAppear {
-                withAnimation {
-                    settings.fetchPrayerTimes()
-                }
-            }
+            .onAppear { settings.fetchPrayerTimes() }
         }
         .onChange(of: settings.accentColor) { _ in
             WidgetCenter.shared.reloadAllTimelines()

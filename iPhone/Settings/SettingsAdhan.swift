@@ -577,7 +577,7 @@ extension Settings {
                 #if os(iOS)
                 let content = UNMutableNotificationContent()
                 content.title = AppIdentifiers.appName
-                content.body  = "Traveling mode automatically turned on at \(currentLocation.city)"
+                content.body  = "Traveling mode automatically turned on at \(currentLocation.city), away from your home city of \(homeLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
                 let req = UNNotificationRequest(identifier: Self.travelingNotificationId, content: content, trigger: trigger)
@@ -592,7 +592,7 @@ extension Settings {
                 #if os(iOS)
                 let content = UNMutableNotificationContent()
                 content.title = AppIdentifiers.appName
-                content.body  = "Traveling mode automatically turned off at \(currentLocation.city)"
+                content.body  = "Traveling mode automatically turned off at \(currentLocation.city), near your home city of \(homeLocation.city)"
                 content.sound = .default
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
                 let req = UNNotificationRequest(identifier: Self.travelingNotificationId, content: content, trigger: trigger)
@@ -933,7 +933,7 @@ extension Settings {
             // Hijri-event reminders are date-based and don't need a location, so still (re)schedule
             // them even when prayer times can't be computed yet (the scheduler skips the prayer
             // parts and leaves existing prayer notifications untouched when there's no location).
-            schedulePrayerTimeNotifications()
+            scheduleNotifications(deferred: completion == nil)
             completion?()
             return
         }
@@ -981,7 +981,12 @@ extension Settings {
         let staleDate  = !(stored?.day.isSameDay(as: today) ?? false)
         let emptyList  = stored?.prayers.isEmpty ?? true
         let needsFetch = force || stored == nil || staleCity || staleDate || emptyList
-        
+
+        // A caller with a completion (notably the background-refresh task) needs the reschedule to finish
+        // before it returns/reports done, so it runs synchronously. Everyone else (the launch burst, setting
+        // toggles) defers + coalesces the heavy reschedule/widget-reload off the synchronous path.
+        let deferWork = completion == nil
+
         if needsFetch {
             logger.debug("Fetching prayer times – caller: \(calledFrom)")
             
@@ -998,13 +1003,11 @@ extension Settings {
                 setNotification: false
             )
             
-            schedulePrayerTimeNotifications()
-            printAllScheduledNotifications()
-            WidgetCenter.shared.reloadAllTimelines()
+            scheduleNotifications(deferred: deferWork)
+            reloadWidgets(deferred: deferWork)
         } else if notification {
-            schedulePrayerTimeNotifications()
-            printAllScheduledNotifications()
-            WidgetCenter.shared.reloadAllTimelines()
+            scheduleNotifications(deferred: deferWork)
+            reloadWidgets(deferred: deferWork)
         }
         
         updateCurrentAndNextPrayer()
@@ -1130,13 +1133,52 @@ extension Settings {
         }
     }
     
+    /// Debug-only dump of pending notifications. Gated so it never round-trips to the notification daemon in
+    /// release builds (it used to be called on every `fetchPrayerTimes`, i.e. several times per launch).
     func printAllScheduledNotifications() {
+        #if DEBUG
         let center = UNUserNotificationCenter.current()
         center.getPendingNotificationRequests { (requests) in
             for request in requests {
                 logger.debug("\(request.content.body)")
             }
         }
+        #endif
+    }
+
+    /// Reschedule prayer/event notifications, coalescing the launch burst. `deferred == false` runs it
+    /// synchronously (callers that must finish before reporting done — e.g. background refresh). `deferred ==
+    /// true` trailing-debounces it on the main queue so the multiple `fetchPrayerTimes` calls fired during
+    /// launch / setting changes collapse to one run, off the synchronous first-paint path.
+    func scheduleNotifications(deferred: Bool) {
+        pendingNotificationScheduleWorkItem?.cancel()
+        pendingNotificationScheduleWorkItem = nil
+        guard deferred else {
+            schedulePrayerTimeNotifications()
+            return
+        }
+        let work = DispatchWorkItem { [weak self] in
+            self?.pendingNotificationScheduleWorkItem = nil
+            self?.schedulePrayerTimeNotifications()
+        }
+        pendingNotificationScheduleWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
+    }
+
+    /// Reload widget timelines, coalescing the launch burst the same way as `scheduleNotifications`.
+    func reloadWidgets(deferred: Bool) {
+        pendingWidgetReloadWorkItem?.cancel()
+        pendingWidgetReloadWorkItem = nil
+        guard deferred else {
+            WidgetCenter.shared.reloadAllTimelines()
+            return
+        }
+        let work = DispatchWorkItem { [weak self] in
+            self?.pendingWidgetReloadWorkItem = nil
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        pendingWidgetReloadWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
     }
 
     /// Static lookup table
@@ -1639,8 +1681,18 @@ extension Settings {
     // MARK: - Travel & automatic calculation (UI prompts)
 
     func automaticTravelMessage(turnOn: Bool) -> String {
+        // Name the home city the detection is measured against so the user knows the reference point. Falls
+        // back to the city-less wording if no home is set (shouldn't happen — checkIfTraveling requires one
+        // before raising this dialog — but keeps the copy clean if it's ever empty).
+        let homeCity = homeLocation?.city
         if turnOn {
+            if let homeCity, !homeCity.isEmpty {
+                return "\(AppIdentifiers.appName) has automatically detected that you are traveling away from your home city of \(homeCity), so your prayers will be shortened."
+            }
             return "\(AppIdentifiers.appName) has automatically detected that you are traveling, so your prayers will be shortened."
+        }
+        if let homeCity, !homeCity.isEmpty {
+            return "\(AppIdentifiers.appName) has automatically detected that you have returned to your home city of \(homeCity), so your prayers will not be shortened."
         }
         return "\(AppIdentifiers.appName) has automatically detected that you are no longer traveling, so your prayers will not be shortened."
     }

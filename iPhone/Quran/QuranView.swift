@@ -459,8 +459,9 @@ struct QuranView: View {
             // leaving and re-entering the Quran tab — common on iPad/Mac split view — would otherwise spawn
             // overlapping full prewarm passes. Run it at most once per session; caches are rebuilt lazily on
             // demand afterward, so correctness is unaffected.
-            guard shouldPrewarmAllQuranDestinations, !Self.didPrewarmAllDestinations else { return }
-            Self.didPrewarmAllDestinations = true
+            // Shared with the app-root prewarm that fires when the Adhan tab appears — whichever finishes the
+            // full sweep first sets the flag, and the other skips it (no duplicate pass).
+            guard shouldPrewarmAllQuranDestinations, !QuranData.didBroadPrewarm else { return }
 
             for surah in quranData.quran {
                 guard seen.insert(surah.id).inserted else { continue }
@@ -468,10 +469,9 @@ struct QuranView: View {
                 await Task.yield()
                 try? await Task.sleep(nanoseconds: 18_000_000)
             }
+            QuranData.didBroadPrewarm = true
         }
     }
-
-    @MainActor private static var didPrewarmAllDestinations = false
 
     private var shouldPrewarmAllQuranDestinations: Bool {
         !AppPerformance.shouldAvoidBroadPrewarm
@@ -817,6 +817,12 @@ struct QuranView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 8)
         .background(Color.white.opacity(0.00001))
+        // Strip the inherited animation transaction so this bottom bar SNAPS to its keyboard-driven position
+        // instead of easing on its own curve. Dismissing the keyboard on scroll fires onFocusChanged →
+        // `withAnimation { isQuranSearchFocused = … }`, whose easeInOut then collides with the keyboard's own
+        // frame animation on the same bar — the "weird" lurch. Same `.transaction { $0.animation = nil }` fix
+        // as NowPlayingView's progress bar; the keyboard supplies the motion, so the bar tracks it cleanly.
+        .transaction { $0.animation = nil }
         #else
         EmptyView()
         #endif
@@ -2873,8 +2879,14 @@ struct QuranView: View {
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard query == searchText.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-                verseHits = first
-                hasMoreHits = more
+                // Animate the initial appearance of results so it matches `clearAyahSearchState()` (which
+                // animates) — that mismatch is why search felt "sometimes animated, sometimes not". Only the
+                // first page animates; `loadMoreAyahMatches` / "load all" stay un-animated on purpose so
+                // appending rows mid-scroll doesn't re-animate the whole list (see the `.id(...)` note above).
+                withAnimation {
+                    verseHits = first
+                    hasMoreHits = more
+                }
             }
         }
     }

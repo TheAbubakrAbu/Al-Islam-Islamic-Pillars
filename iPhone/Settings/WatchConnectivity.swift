@@ -250,6 +250,7 @@ extension Settings {
         let appGroup = UserDefaults(suiteName: AppIdentifiers.appGroupSuiteName)
         if appGroup?.object(forKey: "accentColor") != nil { dict["accentColor"] = accentColor.rawValue }
         if appGroup?.object(forKey: "customAccentColorHex") != nil { dict["customAccentColorHex"] = customAccentColorHex }
+        if appGroup?.object(forKey: "customBackgroundColorHex") != nil { dict["customBackgroundColorHex"] = customBackgroundColorHex }
         if appGroup?.object(forKey: "prayerCalculation") != nil { dict["prayerCalculation"] = prayerCalculation }
         if appGroup?.object(forKey: "hanafiMadhab") != nil { dict["hanafiMadhab"] = hanafiMadhab }
         if appGroup?.object(forKey: "travelingMode") != nil { dict["travelingMode"] = travelingMode }
@@ -269,6 +270,7 @@ extension Settings {
     func applyWatchSyncSnapshot(_ dict: [String: Any]) {
         if let raw = dict["accentColor"] as? String, let c = AccentColor(rawValue: raw), c != accentColor { accentColor = c }
         if let v = dict["customAccentColorHex"] as? String, v != customAccentColorHex { customAccentColorHex = v }
+        if let v = dict["customBackgroundColorHex"] as? String, v != customBackgroundColorHex { customBackgroundColorHex = v }
         if let v = dict["prayerCalculation"] as? String, v != prayerCalculation { prayerCalculation = v }
         if let v = dict["hanafiMadhab"] as? Bool, v != hanafiMadhab { hanafiMadhab = v }
         if let v = dict["travelingMode"] as? Bool, v != travelingMode { travelingMode = v }

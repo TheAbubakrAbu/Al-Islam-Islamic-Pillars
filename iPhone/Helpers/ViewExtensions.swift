@@ -177,6 +177,12 @@ struct DismissKeyboardOnScrollModifier: ViewModifier {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *) {
+                // Keep `.immediately` (both `.immediately` and `.interactively` showed a weird lurch). The
+                // lurch isn't the dismiss mode — it's the bottom safe-area bar re-animating its position on a
+                // curve that fights the keyboard's. That's fixed at the bar itself: the search-bar container
+                // strips its inherited animation transaction (see QuranView `bottomControls`) so it snaps with
+                // the keyboard instead of easing separately — the same `.transaction { $0.animation = nil }`
+                // fix used in NowPlayingView.
                 content.scrollDismissesKeyboard(.immediately)
             } else {
                 content.gesture(

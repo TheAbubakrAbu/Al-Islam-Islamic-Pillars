@@ -1601,8 +1601,11 @@ struct AyahContextMenuModifier: ViewModifier {
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        let surahObj = quranData.quran.first { $0.id == surah }
-        
+        // O(1) dictionary lookup, not an O(114) linear scan. This `body` re-evaluates whenever `settings`/
+        // `quranPlayer` publish (constant during playback), and the modifier sits on every history/bookmark/
+        // favorite row — the linear scan added up across all visible rows.
+        let surahObj = quranData.surah(surah)
+
         #if os(iOS)
         content
             .contextMenu {

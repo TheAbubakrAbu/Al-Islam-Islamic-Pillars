@@ -424,11 +424,10 @@ final class TajweedStore {
         static let hamzatWaslSilent = 50
     }
 
-    private struct AttributedCacheKey: Hashable {
-        let surah: Int
-        let ayah: Int
-        let textDigest: UInt64
-        let displayTextDigest: UInt64
+    /// Boxes the `AttributedString` value so it can live in an `NSCache` (which requires class types).
+    private final class AttributedStringBox {
+        let value: AttributedString
+        init(_ value: AttributedString) { self.value = value }
     }
 
     private struct TajweedAyahKey: Hashable {
@@ -469,7 +468,15 @@ final class TajweedStore {
         return bundle.url(forResource: "TajweedRules", withExtension: "json")
     }
 
-    private var attributedCache: [AttributedCacheKey: AttributedString] = [:]
+    /// Self-evicting (and thread-safe) tajweed attributed-string cache. Replaces a plain dict whose only
+    /// eviction was a full `removeAll` once it crossed the limit — a cliff that wiped the entire cache
+    /// mid-scroll on long surahs (Baqarah), forcing the expensive projection+painting to re-run. `NSCache`
+    /// drops just the coldest entries at `countLimit` and also evicts automatically under memory pressure.
+    private let attributedCache: NSCache<NSString, AttributedStringBox> = {
+        let c = NSCache<NSString, AttributedStringBox>()
+        c.countLimit = AppPerformance.tajweedAttributedCacheLimit
+        return c
+    }()
     private var lastVisibilitySignature = ""
     private let settings = Settings.shared
 
@@ -517,11 +524,24 @@ final class TajweedStore {
     ) -> AttributedString? {
         let visibilitySignature = tajweedVisibilitySignature()
         if visibilitySignature != lastVisibilitySignature {
-            attributedCache.removeAll()
+            attributedCache.removeAllObjects()
             lastVisibilitySignature = visibilitySignature
         }
 
         let shouldRemoveArabicDots = removeArabicDots ?? (cleanDisplayText && settings.removeArabicDots)
+
+        // Key the cache on the INPUTS, not on the projected `displayText`. `displayText` is a pure function of
+        // (text, requestedDisplayText, cleanDisplayText, beginnerSpacing, shouldRemoveArabicDots), so keying on
+        // those is equivalent — but it lets a cache HIT skip `tajweedProjection` (a full per-scalar pass)
+        // entirely. Previously the projection ran on every call just to build the key, even on hits, which is
+        // the per-scroll-render cost. (surah/ayah are in the key because they change the painting, not the text.)
+        let requestedDisplayDigest = requestedDisplayText.map(Self.stableTextDigest) ?? 0
+        let cacheKey = "\(surah):\(ayah):\(Self.stableTextDigest(text)):\(requestedDisplayDigest):\(cleanDisplayText ? 1 : 0):\(beginnerSpacing ? 1 : 0):\(shouldRemoveArabicDots ? 1 : 0)" as NSString
+        if let cached = attributedCache.object(forKey: cacheKey) {
+            return cached.value
+        }
+
+        // Cache miss — only now run the expensive projection + painting.
         let projection = (requestedDisplayText != nil || cleanDisplayText || beginnerSpacing || shouldRemoveArabicDots)
             ? tajweedProjection(
                 from: text,
@@ -532,15 +552,6 @@ final class TajweedStore {
             )
             : nil
         let displayText = projection?.displayText ?? text
-        let cacheKey = AttributedCacheKey(
-            surah: surah,
-            ayah: ayah,
-            textDigest: Self.stableTextDigest(text),
-            displayTextDigest: Self.stableTextDigest(displayText)
-        )
-        if let cached = attributedCache[cacheKey] {
-            return cached
-        }
 
         guard !text.isEmpty else { return nil }
         guard TajweedLegendCategory.allCases.contains(where: { settings.isTajweedCategoryVisible($0) }) else {
@@ -661,10 +672,7 @@ final class TajweedStore {
         guard anyPainted else { return nil }
 
         let result = AttributedString(attributed)
-        if attributedCache.count > AppPerformance.tajweedAttributedCacheLimit {
-            attributedCache.removeAll(keepingCapacity: true)
-        }
-        attributedCache[cacheKey] = result
+        attributedCache.setObject(AttributedStringBox(result), forKey: cacheKey)
         return result
     }
 
@@ -3125,6 +3133,10 @@ final class QuranData: ObservableObject {
         return q
     }()
 
+    /// Set once the full "warm every surah" prewarm pass has completed (whether driven from the app root when
+    /// the Adhan tab appears, or from QuranView). Shared so neither site repeats the broad pass.
+    @MainActor static var didBroadPrewarm = false
+
     private let settings = Settings.shared
 
     @Published private(set) var quran: [Surah] = []
@@ -3158,6 +3170,10 @@ final class QuranData: ObservableObject {
     /// Cached contiguous index list to avoid reallocating Array(verseIndex.indices) on every query.
     private var allVerseIndices: [Int] = []
     private var searchResultIndexCache = [SearchResultCacheKey: [Int]]()
+    /// The immutable per-keystroke search snapshot, reused until the index is (re)built. Built/read only on
+    /// the main actor (`verseSearchSnapshot()` is called from a View before its detached search task), and
+    /// nil'd wherever the underlying index arrays change. Avoids reconstructing the 9-field struct each keystroke.
+    private var cachedVerseSearchSnapshot: VerseSearchSnapshot?
     private var surahIDsByAyahCount = [Int: [Int]]()
     private var surahIDsByPageCount = [Int: [Int]]()
     private var surahIDsByJuz = [Int: [Int]]()
@@ -3732,6 +3748,7 @@ final class QuranData: ObservableObject {
         self.cachedBoundaryQiraah = cache.qiraahKey
         self.cachedFirstAyahLookupQiraah = cache.qiraahKey
         self.searchResultIndexCache.removeAll()
+        self.cachedVerseSearchSnapshot = nil
         self.isVerseSearchReady = true
         self.loadState = .ready
     }
@@ -3803,6 +3820,7 @@ final class QuranData: ObservableObject {
                 self.allVerseIndices = finalizedAllVerseIndices
                 self.cachedVerseIndexQiraah = qiraahKey
                 self.searchResultIndexCache.removeAll()
+                self.cachedVerseSearchSnapshot = nil
                 self.isVerseSearchReady = true
             }
 
@@ -3827,6 +3845,13 @@ final class QuranData: ObservableObject {
 
     private func startLoading() {
         guard loadTask == nil else { return }
+        // `.userInitiated`: this fires at app launch (QuranData.shared is created up front) while the app
+        // opens on the Adhan tab. It runs on a BACKGROUND thread (it's a detached parse + index build), so it
+        // doesn't block the Adhan tab's first paint — and the heavy launch *main-thread* work (prayer-time
+        // scheduling) is now deferred off the synchronous path separately, so this no longer contends with it.
+        // The higher QoS gets the Quran data ready before the user navigates to the Quran tab, so opening it
+        // doesn't catch the load mid-flight (which lands data while the view is on screen and stutters). The
+        // search-index build remains a separate lower-priority task.
         loadTask = Task(priority: .userInitiated) { [weak self] in
             await self?.load()
         }
@@ -4136,18 +4161,24 @@ final class QuranData: ObservableObject {
         let cacheSignature = resourceSignature(for: [url] + qiraatURLs) + (includeQiraat ? "-q" : "-noq")
 
         if let staticCache = loadStaticCache(resourceSignature: cacheSignature) {
-            await MainActor.run {
-                applyStaticCache(staticCache)
-            }
-
             #if !os(watchOS)
+            // Fast path for returning users (the common case): load the dynamic search-index cache too, then
+            // apply BOTH caches in a SINGLE main-actor hop. Two separate hops made QuranView run its heavy
+            // first List build when `quran` landed, then immediately re-render again when the search indexes
+            // landed — the visible double-layout stutter the first time the Quran tab opens. One hop → SwiftUI
+            // coalesces all the @Published writes into a single render. (loadDynamicCache reads off-main here.)
             if let cachedDynamic = loadDynamicCache(resourceSignature: cacheSignature, qiraahKey: qiraahKey) {
                 await MainActor.run {
+                    applyStaticCache(staticCache)
                     applyDynamicCache(cachedDynamic)
                 }
                 return
             }
             #endif
+
+            await MainActor.run {
+                applyStaticCache(staticCache)
+            }
 
             let currentQiraah = await MainActor.run { settings.displayQiraahForArabic }
             let surahsToPublish = await MainActor.run { self.quran }
@@ -4261,12 +4292,11 @@ final class QuranData: ObservableObject {
         let surahIDsByJuz = Dictionary(uniqueKeysWithValues: preprocessedSections.juzSections.map { ($0.juz.id, $0.surahIDs) })
         let juzSearchIndex = buildJuzSearchIndex()
 
+        // Single main-actor hop so QuranView re-renders once, not twice (publishing `quran` and then the
+        // index batch separately triggered two heavy first builds in a row).
         await MainActor.run {
             self.quran = surahsToPublish
             self.invalidateDerivedResultCaches()
-        }
-
-        await MainActor.run {
             self.surahIndex = sIndex
             self.ayahIndex = aIndex
             self.pageSections = preprocessedSections.pageSections
@@ -4408,6 +4438,7 @@ final class QuranData: ObservableObject {
         englishPrefix3Index = englishIndexes.prefix3
         allVerseIndices = Array(verseIndex.indices)
         searchResultIndexCache.removeAll()
+        cachedVerseSearchSnapshot = nil
     }
 
     private func rebuildBoundaryModels() {
@@ -5098,7 +5129,13 @@ final class QuranData: ObservableObject {
         }
         guard !verseIndex.isEmpty else { return nil }
 
-        return VerseSearchSnapshot(
+        // Reuse the immutable snapshot across keystrokes; it's nil'd whenever the index is (re)built, so a
+        // stale one can't be returned. The qiraah guard is belt-and-suspenders against any missed invalidation.
+        if let cached = cachedVerseSearchSnapshot, cached.qiraahKey == currentKey {
+            return cached
+        }
+
+        let snapshot = VerseSearchSnapshot(
             qiraahKey: currentKey,
             verseIndex: verseIndex,
             arabicTokenIndex: arabicTokenIndex,
@@ -5109,6 +5146,8 @@ final class QuranData: ObservableObject {
             englishPrefix3Index: englishPrefix3Index,
             allVerseIndices: allVerseIndices
         )
+        cachedVerseSearchSnapshot = snapshot
+        return snapshot
         #endif
     }
 

@@ -197,7 +197,9 @@ struct NamesView: View {
     @State private var expandedNameNumbers = Set<Int>()
     @AppStorage("namesDisplayMode") private var namesDisplayMode: String = "list"
 
-    private var cleanedSearch: String { Self.clean(searchText) }
+    /// Cached so the diacritic-stripping `clean()` only runs when the query changes — not on every `body`
+    /// re-eval (expand/collapse, favorite toggles, font switches all re-run body but leave the query alone).
+    @State private var cleanedSearch = ""
 
     private static func clean(_ s: String) -> String {
         let unwanted: Set<Character> = ["[", "]", "(", ")", "-", "'", "\""]
@@ -260,6 +262,21 @@ struct NamesView: View {
         .applyConditionalListStyle()
         .compactListSectionSpacing()
         .navigationTitle("99 Names of Allah")
+        .onChange(of: searchText) { newValue in cleanedSearch = Self.clean(newValue) }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                // Grid/list toggle lives in the toolbar (same as QuranView) rather than on a section header.
+                Button {
+                    settings.hapticFeedback()
+                    withAnimation { namesDisplayMode = namesDisplayMode == "grid" ? "list" : "grid" }
+                } label: {
+                    Image(systemName: namesDisplayMode == "grid" ? "list.bullet" : "square.grid.2x2")
+                }
+                .accessibilityLabel(namesDisplayMode == "grid" ? "Show list" : "Show grid")
+            }
+        }
+        #endif
     }
 
     private var descriptionSection: some View {
@@ -310,21 +327,6 @@ struct NamesView: View {
                     .padding(.vertical, 6)
                     .conditionalGlassEffect()
             }
-
-            Button {
-                settings.hapticFeedback()
-                withAnimation(.easeInOut) {
-                    namesDisplayMode = namesDisplayMode == "grid" ? "list" : "grid"
-                }
-            } label: {
-                Image(systemName: namesDisplayMode == "grid" ? "list.bullet" : "square.grid.2x2")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(settings.accentColor.color)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .conditionalGlassEffect()
-            }
-            .padding(.vertical, -16)
         }
     }
 

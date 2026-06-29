@@ -485,6 +485,29 @@ struct SettingsAppearanceView: View {
         )
     }
 
+    /// Reads/writes the stored custom background hex; picking a color also switches the active theme to `custom`.
+    private var customBackgroundColorBinding: Binding<Color> {
+        Binding(
+            get: { Color(hex: settings.customBackgroundColorHex) ?? .gray },
+            set: { newColor in
+                settings.customBackgroundColorHex = newColor.hexString
+                withAnimation { settings.colorSchemeString = "custom" }
+            }
+        )
+    }
+
+    /// On = custom background theme is active. Off = revert to the System theme.
+    private var customBackgroundEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { settings.colorSchemeString == "custom" },
+            set: { isOn in
+                withAnimation {
+                    settings.colorSchemeString = isOn ? "custom" : "system"
+                }
+            }
+        )
+    }
+
     var body: some View {
         #if os(iOS)
         VStack(alignment: .leading) {
@@ -499,7 +522,29 @@ struct SettingsAppearanceView: View {
             .pickerStyle(SegmentedPickerStyle())
             .onChange(of: settings.colorSchemeString) { _ in settings.hapticFeedback() }
             
-            Text("System follows your device — Light theme in Light Mode, Dark theme in Dark Mode. Gray and Sepia are fixed and ignore your device setting.")
+            Text("System follows your device. Light theme in Light Mode, Dark theme in Dark Mode. Other themes are ignored.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 2)
+        }
+         
+        VStack(alignment: .leading) {
+            HStack(spacing: 12) {
+                ColorPicker("", selection: customBackgroundColorBinding, supportsOpacity: false)
+                    .labelsHidden()
+
+                Text("Custom Background")
+                    .font(.subheadline)
+
+                Spacer()
+
+                Toggle("", isOn: customBackgroundEnabledBinding.animation(.easeInOut))
+                    .labelsHidden()
+                    .tint(Color(hex: settings.customBackgroundColorHex) ?? .gray)
+            }
+            // (Haptic on theme change is already handled by the Color Theme picker's onChange above.)
+
+            Text("Pick any background color for the whole app. Light or dark text is chosen automatically so it stays readable.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)

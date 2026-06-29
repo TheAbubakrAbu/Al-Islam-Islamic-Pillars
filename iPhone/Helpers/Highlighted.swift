@@ -25,11 +25,18 @@ struct HighlightedSnippet: View {
             .foregroundColor(trailingSuffixColor ?? fg)
 
         if needsAttributedWork {
+            // When highlighting a search term, base the attributed text on the PLAIN `source` — never a
+            // `preStyledSource` (e.g. tajweed-colored Arabic). The matched ranges are `String.Index` ranges
+            // into `source`; a preStyledSource can have a different character layout (clean text / removed
+            // dots / beginner spacing), so converting those indices into it silently fails (`Index(_, within:)`
+            // returns nil) and a real — even exact — match never gets colored. On a matched row the search
+            // highlight takes priority over tajweed, matching how text-search results are shown elsewhere.
+            let base = needsSearchHighlight ? plainSourceAttributed() : baseAttributedText()
             let highlightedText = highlightAllahIfNeeded(
                 source: source,
                 baseAttributed: highlight(
                     source: source,
-                    baseAttributed: baseAttributedText(),
+                    baseAttributed: base,
                     term: resolvedSearchTerm
                 )
             )
@@ -129,6 +136,12 @@ struct HighlightedSnippet: View {
             return preStyledSource
         }
 
+        return plainSourceAttributed()
+    }
+
+    /// A plain attributed copy of `source` with the base foreground color — indices always align with
+    /// `source`, so highlight ranges computed against `source` map cleanly onto it.
+    private func plainSourceAttributed() -> AttributedString {
         var attributed = AttributedString(source)
         attributed.foregroundColor = fg
         return attributed
@@ -373,11 +386,33 @@ struct HighlightedSnippet: View {
             if score > 0 { scored.append((tokenRange, score)) }
         }
 
-        guard let best = scored.max(by: { $0.score < $1.score }) else { return [] }
+        guard let best = scored.max(by: { $0.score < $1.score }) else {
+            // Absolute last resort. The row only passes `term` when its field matched the query, so we should
+            // always show *something* — even a 1% match. If no word scored at all (a normalization mismatch
+            // between the verse-search index and this highlighter), highlight the longest word so the user
+            // never sees a "matched but nothing colored" row.
+            return longestWordRange(in: source).map { [$0] } ?? []
+        }
         // Words that actually contain the query (or equal it) are all highlighted; otherwise fall back to
         // the single closest word so there's always exactly something.
         let strong = scored.filter { $0.score >= 70 }.map(\.range)
         return strong.isEmpty ? [best.range] : strong
+    }
+
+    /// The range of the longest whitespace-delimited word in `source` (the guaranteed-something fallback).
+    private func longestWordRange(in source: String) -> Range<String.Index>? {
+        var best: Range<String.Index>? = nil
+        var bestLen = 0
+        var cursor = source.startIndex
+        while cursor < source.endIndex {
+            while cursor < source.endIndex, source[cursor].isWhitespace { cursor = source.index(after: cursor) }
+            guard cursor < source.endIndex else { break }
+            let start = cursor
+            while cursor < source.endIndex, !source[cursor].isWhitespace { cursor = source.index(after: cursor) }
+            let len = source.distance(from: start, to: cursor)
+            if len > bestLen { bestLen = len; best = start..<cursor }
+        }
+        return best
     }
 
     private func wordMatchScore(word: String, query: String) -> Int {
