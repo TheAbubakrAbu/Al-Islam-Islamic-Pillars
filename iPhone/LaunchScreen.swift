@@ -27,15 +27,18 @@ struct LaunchScreen: View {
 
     @Binding var isLaunching: Bool
 
-    @State private var size = 0.8
-    @State private var opacity = 0.5
-    @State private var gradientSize: CGFloat = 0.8
+    // Initial state = a plain background with the Al-Islam icon already at rest: no gradient, no glow, no
+    // motion. Everything heavy loads during the quiet "hold" below; the gradient / rings / companion apps are
+    // only brought in for the finale once the app is fully ready — so nothing animates while the CPU is busy.
+    @State private var size = 0.9
+    @State private var opacity = 1.0
+    @State private var gradientSize: CGFloat = 0.6
     @State private var glowOpacity: Double = 0.0
-    @State private var ringScale: CGFloat = 0.8
+    @State private var ringScale: CGFloat = 0.9
     @State private var ringOpacity: Double = 0.0
-    @State private var logoRotation: Double = -8
-    @State private var logoYOffset: CGFloat = 18
-    @State private var textOffset: CGFloat = 10
+    @State private var logoRotation: Double = 0
+    @State private var logoYOffset: CGFloat = 0
+    @State private var textOffset: CGFloat = 0
     @State private var shimmerOffset: CGFloat = -220
     @State private var glassFloat: CGFloat = 0
     @State private var glassTilt: Double = 0
@@ -149,25 +152,14 @@ struct LaunchScreen: View {
 
     @MainActor
     private func runLaunchAnimation() async {
-        // 1) Calm entrance — bring "Al-Islam" up to a resting state with one short, cheap fade/scale. Kept
-        //    deliberately simple so the very first frames can't visibly stutter even while Settings / Quran /
-        //    etc. are still spinning up.
+        // 1) Nothing animates yet. The initial state already shows just the Al-Islam icon on a plain background
+        //    (no gradient), so the heavy load + warm in step 2 stays perfectly smooth — there are no running
+        //    animations to drop frames.
         triggerHapticFeedback(.soft)
-        withAnimation(.easeOut(duration: 0.45)) {
-            size = 0.9
-            opacity = 1.0
-            gradientSize = 2.8
-            glowOpacity = 0.72
-            logoRotation = 0
-            logoYOffset = 0
-            textOffset = 0
-        }
-        // Let the entrance settle on screen before anything else animates.
-        try? await Task.sleep(nanoseconds: 450_000_000)
 
-        // 2) Hold on "Al-Islam" and wait for everything to finish initializing. Nothing is animating during
-        //    this window, so background-init contention is invisible — the screen simply rests on the logo
-        //    for as long as it takes. This is the "keep Al-Islam there and wait" behavior.
+        // 2) Hold on the icon and wait for everything to finish initializing. Nothing is animating during this
+        //    window, so background-init contention is invisible — the screen simply rests on the icon for as
+        //    long as it takes. This is the "keep Al-Islam there and wait" behavior.
         async let settingsReady: Void = Settings.shared.waitUntilReady()
         async let quranReady: Void = {
             if QuranData.shared.shouldWaitForFullLaunchReadiness {
@@ -180,20 +172,29 @@ struct LaunchScreen: View {
         async let namesReady: Void = NamesViewModel.shared.waitUntilLoaded()
         _ = await (settingsReady, quranReady, playerReady, namesReady)
 
-        // 3) Everything is ready and the CPU is free, so the full flourish plays smoothly: the glow/ring
-        //    bloom, the shimmer sweep across the logo, and the Quran/Adhan companion cards floating out.
+        #if os(iOS)
+        // Still nothing animating: also let the main tabs build + warm behind this cover (the Quran tab is
+        // realized and retained, then we settle on Adhan). Waiting here means the flourish + hand-off below run
+        // against an already-built UI, so the reveal is instant and the first Quran tap doesn't stall. Capped so
+        // a failed warm can never strand us on the launch screen. iPhone-only: the Watch has no such tab warm.
+        await LaunchWarmup.shared.waitUntilWarm(maxWaitNanos: 6_000_000_000)
+        #endif
+
+        // 3) Everything is ready and the CPU is free, so the finale plays smoothly on top of the resting icon:
+        //    the gradient/glow blooms in, the rings expand, the shimmer sweeps the logo, and — a beat later —
+        //    the Quran/Adhan companion apps are released outward.
         triggerHapticFeedback(.soft)
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.82)) {
             size = 0.94
             gradientSize = 3.4
             glowOpacity = 1.0
             ringScale = 1.08
             ringOpacity = 1.0
         }
-        withAnimation(.easeInOut(duration: 0.75)) {
+        withAnimation(.easeInOut(duration: 0.85)) {
             shimmerOffset = 220
         }
-        withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.82).delay(0.08)) {
             glassFloat = -10
             glassTilt = 7
             glassOpacity = 1.0
@@ -201,11 +202,12 @@ struct LaunchScreen: View {
             rightGlassOffset = 34
         }
 
-        try? await Task.sleep(nanoseconds: 650_000_000)
+        // Let the finale breathe before handing off.
+        try? await Task.sleep(nanoseconds: 900_000_000)
 
-        // 4) Smoothly hand off to the app.
+        // 4) Smoothly hand off to the app (revealing the already-warm Adhan tab underneath).
         triggerHapticFeedback(.soft)
-        withAnimation(.easeInOut(duration: 0.42)) {
+        withAnimation(.easeInOut(duration: 0.5)) {
             isLaunching = false
         }
     }
@@ -270,6 +272,9 @@ struct LaunchScreenBackground: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
+            // Gated with the glow so the very first frame is a plain background + icon; the wash blooms in only
+            // for the finale.
+            .opacity(glowOpacity)
 
             RadialGradient(
                 colors: [
@@ -299,6 +304,9 @@ struct LaunchScreenBackground: View {
             .frame(width: disk, height: disk)
             .scaleEffect(gradientSize)
             .blur(radius: blurDisk)
+            // The colored disk behind the logo is the most visible "gradient"; keep it hidden until the finale
+            // blooms it in (it also scales up via `gradientSize`).
+            .opacity(glowOpacity)
 
             Circle()
                 .stroke(accentColor.opacity(0.18), lineWidth: max(1.5, 1.2 * s))

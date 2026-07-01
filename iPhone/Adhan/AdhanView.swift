@@ -1,12 +1,25 @@
 import SwiftUI
 import CoreLocation
 
+/// True once the launch/splash cover has been lifted and the tabs are actually on screen. Views that fire
+/// user-facing side effects on appear (e.g. AdhanView's prayer-calculation confirmation dialogs) read this so
+/// they don't present while they're only being built behind the launch screen. Defaults to `true`, so anywhere
+/// it isn't explicitly set (the Watch app, previews) behaves normally. Defined here because this file is shared
+/// by both the iPhone and Watch targets; it's only *set* by the iPhone app root.
+struct AppRevealedKey: EnvironmentKey { static let defaultValue = true }
+extension EnvironmentValues {
+    var appRevealed: Bool {
+        get { self[AppRevealedKey.self] }
+        set { self[AppRevealedKey.self] = newValue }
+    }
+}
+
 struct AdhanView: View {
     @EnvironmentObject var settings: Settings
-    @EnvironmentObject var quranData: QuranData
-    @EnvironmentObject var quranPlayer: QuranPlayer
     
     @Environment(\.scenePhase) private var scenePhase
+    // False while this view is being built behind the launch/splash cover; holds prompts until we're on screen.
+    @Environment(\.appRevealed) private var appRevealed
 
     @State private var showingSettingsSheet = false
     @State private var showBigQibla = false
@@ -52,7 +65,10 @@ struct AdhanView: View {
         .confirmationDialog(
             dialogTitle,
             isPresented: Binding(
-                get: { showAlert != nil },
+                // Hold the prompt until the app is actually revealed — otherwise a calc/travel change detected
+                // while AdhanView is still building behind the launch screen would pop a dialog over it. The
+                // pending `showAlert` (or the standing flag via `nextAlertToPresent`) still presents at reveal.
+                get: { showAlert != nil && appRevealed },
                 set: { if !$0 { showAlert = nil } }
             ),
             titleVisibility: .visible
