@@ -324,9 +324,26 @@ extension Settings {
         }
     }
     
-    /// Reverse‑geocode utilities
+    /// Label to show when reverse-geocoding can't resolve a real place name. We prefer an honest city
+    /// name and never invent one: if a previously-resolved city is still nearby it stays (a momentary
+    /// geocode failure shouldn't flip a known place to raw numbers), but once we've moved far enough that
+    /// the old name would be wrong, raw coordinates are shown instead of a stale/"fake" city.
+    private func cityFallback(latitude: Double, longitude: Double) -> String {
+        if let cur = currentLocation, !cur.city.contains("(") {
+            let moved = CLLocation(latitude: cur.latitude, longitude: cur.longitude)
+                .distance(from: CLLocation(latitude: latitude, longitude: longitude))
+            if moved < Self.halfMile { return cur.city }
+        }
+        return "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))"
+    }
+
+    /// Reverse‑geocode utilities.
+    ///
+    /// `maxAttempts` defaults higher than one round-trip because watchOS reverse-geocoding (which often
+    /// has to relay through the paired iPhone) is slower and flakier than on iOS; persisting through a few
+    /// backed-off retries is what keeps a real city label from prematurely degrading to raw coordinates.
     @MainActor
-    func updateCity(latitude: Double, longitude: Double, attempt: Int = 0, maxAttempts: Int = 3) async {
+    func updateCity(latitude: Double, longitude: Double, attempt: Int = 0, maxAttempts: Int = 5) async {
         Self.ensureNetworkMonitorStarted()
 
         let coord = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -337,7 +354,7 @@ extension Settings {
             // Keep coordinates usable for prayer calculations while waiting for connectivity.
             if currentLocation == nil || currentLocation?.city.contains("(") == true {
                 withAnimation {
-                    currentLocation = Location(city: "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))",
+                    currentLocation = Location(city: cityFallback(latitude: latitude, longitude: longitude),
                                                latitude: latitude, longitude: longitude)
                 }
             }
@@ -368,7 +385,7 @@ extension Settings {
                 if let c = cityLike, let r = region { return "\(c), \(r)" }
                 if let c = cityLike { return c }
                 if let r = region { return r }
-                return "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))"
+                return cityFallback(latitude: latitude, longitude: longitude)
             }()
 
             let detectedCountryCode = placemark.isoCountryCode?.uppercased() ?? ""
@@ -392,15 +409,21 @@ extension Settings {
 
             logger.warning("Geocode attempt \(attempt+1) failed: \(error.localizedDescription)")
             guard attempt + 1 < maxAttempts else {
-                withAnimation {
-                    currentLocation = Location(city: "(\(latitude.stringRepresentation), \(longitude.stringRepresentation))",
-                                               latitude: latitude, longitude: longitude)
-                    currentCountryCode = ""
-                    WidgetCenter.shared.reloadAllTimelines()
+                // Only degrade the visible label to coordinates when we don't already have a still-valid
+                // nearby city (handled by `cityFallback`); a far move yields honest coordinates.
+                let fallbackCity = cityFallback(latitude: latitude, longitude: longitude)
+                if fallbackCity != currentLocation?.city {
+                    withAnimation {
+                        currentLocation = Location(city: fallbackCity, latitude: latitude, longitude: longitude)
+                        currentCountryCode = ""
+                        WidgetCenter.shared.reloadAllTimelines()
+                    }
                 }
                 return
             }
-            let delay = UInt64(pow(2.0, Double(attempt)) * 2_000_000_000)
+            // Backed-off retry, capped so the tail attempts don't stretch the wait out indefinitely.
+            let delaySeconds = min(pow(2.0, Double(attempt)) * 2.0, 10.0)
+            let delay = UInt64(delaySeconds * 1_000_000_000)
             try? await Task.sleep(nanoseconds: delay)
             await updateCity(latitude: latitude, longitude: longitude, attempt: attempt + 1, maxAttempts: maxAttempts)
         }
@@ -1065,17 +1088,25 @@ extension Settings {
         return raw.first  // Fajr is always first regardless of mode
     }
     
-    /// Whether THIS device should schedule prayer notifications locally. Both the iPhone and the Watch
-    /// always do.
+    /// Whether THIS device should schedule prayer notifications locally.
     ///
-    /// The Watch must schedule its OWN notifications: a native watchOS app is responsible for its own
-    /// alerts, and iOS does NOT forward the iPhone's local notifications to a watch that has its own app.
-    /// The previous "only schedule on the Watch when the companion iPhone app isn't installed" logic meant
-    /// the Watch (whose app is always installed via the iPhone app) never scheduled anything, so it showed
-    /// no prayer notifications when the iPhone wasn't around. Each device fires its own locally, so there's
-    /// no double-alert on a single device.
+    /// The iPhone always schedules. The Watch schedules **only when it is standalone** — i.e. there is no
+    /// paired iPhone running this app's companion. When a companion iPhone exists it owns prayer
+    /// notifications, so the Watch stays silent to avoid double-alerting the user across both devices.
+    /// `companionPhoneExists` keys off installation (not Bluetooth range), so a phone left at home still
+    /// counts; and it is re-evaluated on every scheduling pass, so the behavior tracks a user who later
+    /// pairs an iPhone (Watch goes silent) or unpairs one (Watch resumes scheduling).
     var shouldScheduleNotificationsLocally: Bool {
-        #if os(iOS) || os(watchOS)
+        #if os(watchOS)
+        // Query WCSession directly (rather than via WatchConnectivityManager) so this also compiles in
+        // targets that don't include the manager source, e.g. the watch Complication extension.
+        // `isCompanionAppInstalled` reflects installation, not Bluetooth range, so a phone left at home
+        // still counts as "exists"; it's re-read on every scheduling pass, so the behavior tracks a user
+        // who later pairs an iPhone (Watch goes silent) or unpairs one (Watch resumes scheduling).
+        let session = WCSession.default
+        let companionPhoneExists = session.activationState == .activated && session.isCompanionAppInstalled
+        return !companionPhoneExists
+        #elseif os(iOS)
         return true
         #else
         return false
@@ -1274,7 +1305,12 @@ extension Settings {
 
     func schedulePrayerTimeNotifications() {
         #if os(watchOS)
-        guard shouldScheduleNotificationsLocally else { return }
+        guard shouldScheduleNotificationsLocally else {
+            // A companion iPhone now owns notifications — clear anything this Watch scheduled while it was
+            // standalone so the two devices can't double-alert for the same prayer.
+            UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+            return
+        }
         #endif
         #if os(iOS) || os(watchOS)
         logger.debug("Scheduling prayer time notifications")

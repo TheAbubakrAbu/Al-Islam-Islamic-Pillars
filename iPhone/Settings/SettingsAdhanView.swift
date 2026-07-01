@@ -64,7 +64,7 @@ struct SettingsAdhanView: View {
                     }
                 }
                 Section {
-                    adhanSettingsLink(title: "Prayer Offsets", systemImage: "slider.horizontal.3") {
+                    adhanSettingsLink(title: "Manual Offsets", systemImage: "slider.horizontal.3") {
                         prayerOffsetsDestination
                     }
                 }
@@ -239,7 +239,7 @@ struct SettingsAdhanView: View {
     }
 
     private var prayerOffsetsDestination: some View {
-        adhanSettingsSubList(title: "Prayer Offsets") {
+        adhanSettingsSubList(title: "Manual Offsets") {
             prayerOffsetsSection
         }
     }
@@ -458,6 +458,44 @@ struct SettingsAdhanView: View {
     @ViewBuilder
     private var prayerOffsetsSection: some View {
         #if os(iOS)
+        // The Hijri day offset used to live in its own top-level "Manual Offsets" screen; it now sits here
+        // alongside the prayer-time offsets so every manual adjustment is in one place.
+        Section(header: Text("HIJRI OFFSET")) {
+            Stepper(value: $settings.hijriOffset, in: -3...3) {
+                HStack {
+                    Text("Hijri Offset:")
+                        .foregroundColor(.primary)
+
+                    Text("\(settings.hijriOffset) days")
+                        .foregroundColor(settings.accentColor.color)
+                }
+            }
+            .font(.subheadline)
+
+            if let hijriDate = settings.hijriDate {
+                HStack {
+                    Text("English:")
+                        .foregroundColor(.primary)
+
+                    Text(hijriDate.english)
+                        .foregroundColor(settings.accentColor.color)
+                }
+                .font(.subheadline)
+
+                HStack {
+                    Text("Arabic: ")
+                        .foregroundColor(.primary)
+
+                    Text(hijriDate.arabic)
+                        .foregroundColor(settings.accentColor.color)
+                }
+                .font(.subheadline)
+            }
+        }
+        .onAppear {
+            settings.fetchPrayerTimes()
+        }
+
         PrayerOffsetsView()
         #endif
     }

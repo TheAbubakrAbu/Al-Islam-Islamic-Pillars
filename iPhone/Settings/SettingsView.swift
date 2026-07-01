@@ -7,13 +7,13 @@ struct SettingsView: View {
     @State private var showingCredits = false
     @State private var selectedDestination: SettingsDestination? = SettingsView.defaultDestination
     @State private var hasSetDefaultSelection = false
+    @State private var showResetConfirmation = false
 
     /// The destination shown when nothing is explicitly selected (single source of truth).
     private static let defaultDestination: SettingsDestination = .quranSettings
 
     private enum SettingsDestination: Hashable {
         case notification
-        case manualOffsets
         case prayerSettings
         case quranSettings
     }
@@ -69,10 +69,10 @@ struct SettingsView: View {
         List {
             Group {
                 notificationSection
-                manualOffsetsSection
                 adhanSection
                 quranSection
                 appearanceSection
+                resetSection
                 creditsSection
 
                 AlIslamAppsSection()
@@ -89,10 +89,10 @@ struct SettingsView: View {
         List(selection: $selectedDestination) {
             Group {
                 notificationSectionSplit
-                manualOffsetsSectionSplit
                 adhanSectionSplit
                 quranSectionSplit
                 appearanceSection
+                resetSection
                 creditsSection
                 AlIslamAppsSection()
             }
@@ -108,8 +108,6 @@ struct SettingsView: View {
             switch selectedDestination ?? Self.defaultDestination {
             case .notification:
                 NotificationView()
-            case .manualOffsets:
-                manualOffsetDestination
             case .prayerSettings:
                 SettingsAdhanView(showNotifications: false)
             case .quranSettings:
@@ -176,69 +174,34 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
-    private var manualOffsetsSection: some View {
+    private var resetSection: some View {
         #if os(iOS)
-        Section(header: Text("MANUAL OFFSETS")) {
-            resourceLink(title: "Manual Offset Settings", systemImage: "slider.horizontal.3") {
-                manualOffsetDestination
+        Section(header: Text("RESET")) {
+            Button(role: .destructive) {
+                settings.hapticFeedback()
+                showResetConfirmation = true
+            } label: {
+                Label("Reset All Settings", systemImage: "arrow.counterclockwise")
+                    .font(.subheadline)
+                    .foregroundColor(.red)
+            }
+            .confirmationDialog(
+                "Reset All Settings?",
+                isPresented: $showResetConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Reset All Settings", role: .destructive) {
+                    settings.hapticFeedback()
+                    withAnimation {
+                        settings.resetAllSettings()
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This restores every setting (appearance, prayer, and Quran options) to its default. Your bookmarks, favorites, khatm progress, and saved location are kept.")
             }
         }
         #endif
-    }
-
-    @available(iOS 16.0, *)
-    @ViewBuilder
-    private var manualOffsetsSectionSplit: some View {
-        Section(header: Text("MANUAL OFFSETS")) {
-            splitResourceLink(title: "Manual Offset Settings", systemImage: "slider.horizontal.3", value: .manualOffsets)
-        }
-    }
-
-    private var manualOffsetDestination: some View {
-        List {
-            Group {
-                Section(header: Text("HIJRI OFFSET")) {
-                    Stepper(value: $settings.hijriOffset, in: -3...3) {
-                        HStack {
-                            Text("Hijri Offset:")
-                                .foregroundColor(.primary)
-
-                            Text("\(settings.hijriOffset) days")
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                    }
-                    .font(.subheadline)
-
-                    if let hijriDate = settings.hijriDate {
-                        HStack {
-                            Text("English:")
-                                .foregroundColor(.primary)
-
-                            Text(hijriDate.english)
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                        .font(.subheadline)
-
-                        HStack {
-                            Text("Arabic: ")
-                                .foregroundColor(.primary)
-
-                            Text(hijriDate.arabic)
-                                .foregroundColor(settings.accentColor.color)
-                        }
-                        .font(.subheadline)
-                    }
-                }
-                .onAppear {
-                    settings.fetchPrayerTimes()
-                }
-
-                PrayerOffsetsView()
-            }
-            .themedListRowBackground()
-        }
-        .applyConditionalListStyle()
-        .navigationTitle("Manual Offset Settings")
     }
 
     private var adhanSection: some View {

@@ -10,6 +10,11 @@ struct QuranView: View {
     @State private var isQuranSearchFocused = false
     @State private var scrollToSurahID: Int = -1
     @State private var showingSettingsSheet = false
+    #if os(iOS)
+    /// Drives the favorites/bookmarks bulk-edit sheet opened from the section headers, so editing them is
+    /// reachable from the Quran tab itself and not only from Settings.
+    @State private var editFavoritesType: FavoriteType?
+    #endif
     @State private var showReciterPickerSheet = false
     @State private var showListeningHistory = false
     @State private var showReadingHistory = false
@@ -144,6 +149,29 @@ struct QuranView: View {
         var hasAny: Bool { ayahs != nil || pages != nil }
     }
 
+    /// The last page number of the bundled mushaf (≈604), used as the upper bound and the anchor for
+    /// "page from the end" (`page -1` → the last page).
+    private var totalMushafPages: Int {
+        quranData.surah(114)?.pageEnd ?? 604
+    }
+
+    /// Resolve a 1-based positional value that may be written *from the end* with a leading "-".
+    /// "5" → 5; "-1" → `count` (the last item); "-2" → `count - 1` … Returns nil outside 1...count.
+    /// Accepts Arabic-Indic digits too. Shared by surah / juz / page resolution.
+    private func resolvePositional(_ valueText: String, count: Int) -> Int? {
+        let t = valueText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return nil }
+
+        if t.hasPrefix("-") {
+            let v = String(t.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let n = Int(v) ?? arabicToEnglishNumber(v), (1...count).contains(n) else { return nil }
+            return count + 1 - n
+        }
+
+        guard let n = Int(t) ?? arabicToEnglishNumber(t), (1...count).contains(n) else { return nil }
+        return n
+    }
+
     private func parsePageJuzQuery(from raw: String) -> PageJuzQuery {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -152,25 +180,38 @@ struct QuranView: View {
 
         let lowered = trimmed.lowercased()
 
+        // "page X" / "page -X": -X counts from the end of the mushaf ("page -1" → the last page).
         if lowered.hasPrefix("page ") {
-            let valueText = String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespacesAndNewlines)
-            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
-            let validPage = (n != nil && (1...630).contains(n!)) ? n : nil
+            let valueText = String(trimmed.dropFirst(5))
+            let validPage = resolvePositional(valueText, count: totalMushafPages)
             return PageJuzQuery(page: validPage, juz: nil, isExplicitPage: true, isExplicitJuz: false)
         }
 
+        // "juz X" / "juz -X": a juz name, a number, or "-X" counting from the end ("juz -1" → juz 30).
         if lowered.hasPrefix("juz ") {
             let valueText = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
-            let n = quranData.resolveJuzIdentifier(valueText) ?? Int(valueText) ?? arabicToEnglishNumber(valueText)
-            let validJuz = (n != nil && (1...30).contains(n!)) ? n : nil
+            let validJuz = quranData.resolveJuzIdentifier(valueText) ?? resolvePositional(valueText, count: 30)
             return PageJuzQuery(page: nil, juz: validJuz, isExplicitPage: false, isExplicitJuz: true)
         }
 
-        // Plain number (no "page"/"juz" prefix): offer it as both a page and a juz candidate so a bare
-        // number like "50" surfaces page 50 (and juz, when in range) alongside surah 50. Kept
+        // "surah X" / "surah -X" is resolved in the surah list (filteredSurahs), not as a page/juz.
+        if lowered.hasPrefix("surah ") {
+            return PageJuzQuery(page: nil, juz: nil, isExplicitPage: false, isExplicitJuz: false)
+        }
+
+        // A bare leading "-" counts from the end of the Quran and, like a plain number, offers surah +
+        // page + juz candidates (non-explicit): "-1" → surah 114, page \(totalMushafPages), juz 30.
+        if trimmed.hasPrefix("-") {
+            let page = resolvePositional(trimmed, count: totalMushafPages)
+            let juz = resolvePositional(trimmed, count: 30)
+            return PageJuzQuery(page: page, juz: juz, isExplicitPage: false, isExplicitJuz: false)
+        }
+
+        // Plain number (no "page"/"juz"/"surah" prefix): offer it as both a page and a juz candidate so a
+        // bare number like "50" surfaces page 50 (and juz, when in range) alongside surah 50. Kept
         // non-explicit so the surah results still show too.
         if let n = Int(trimmed) ?? arabicToEnglishNumber(trimmed) {
-            let validPage = (1...630).contains(n) ? n : nil
+            let validPage = (1...totalMushafPages).contains(n) ? n : nil
             let validJuz = (1...30).contains(n) ? n : nil
             return PageJuzQuery(page: validPage, juz: validJuz, isExplicitPage: false, isExplicitJuz: false)
         }
@@ -230,11 +271,29 @@ struct QuranView: View {
     }
 
     private func filteredSurahs(for query: String, countQuery: SurahCountQuery?) -> [Surah] {
-        guard let countQuery else {
-            return quranData.filteredSurahs(query: query)
+        if let countQuery {
+            return quranData.surahsMatchingCount(ayahFilter: countQuery.ayahs, pageFilter: countQuery.pages)
         }
 
-        return quranData.surahsMatchingCount(ayahFilter: countQuery.ayahs, pageFilter: countQuery.pages)
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // "surah X" / "surah -X": jump straight to one surah (negative counts from the end: "surah -1" →
+        // An-Nas). Fall back to a name search on the remainder so "surah baqarah" still works.
+        if trimmed.lowercased().hasPrefix("surah ") {
+            let valueText = String(trimmed.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let n = resolvePositional(valueText, count: 114), let surah = quranData.surah(n) {
+                return [surah]
+            }
+            return quranData.filteredSurahs(query: valueText)
+        }
+
+        // A bare leading "-" counts surahs from the end: "-1" → An-Nas (114), "-2" → Al-Falaq … alongside
+        // the page/juz candidates from parsePageJuzQuery.
+        if trimmed.hasPrefix("-"), let n = resolvePositional(trimmed, count: 114), let surah = quranData.surah(n) {
+            return [surah]
+        }
+
+        return quranData.filteredSurahs(query: query)
     }
 
     private var sajdahAyahs: [(surah: Surah, ayah: Ayah)] {
@@ -353,9 +412,11 @@ struct QuranView: View {
                 .foregroundStyle(settings.accentColor.color)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("• Surah: number, Arabic, English, or transliteration")
+                Text("• Surah: number, Arabic, English, transliteration, or 'surah X'")
                 Text("• Ayah: X:Y or text (Arabic/English/transliteration)")
                 Text("• Page/Juz: 'page X', 'juz X', or plain numbers")
+                Text("• From the end with '-': '-1' is the last surah, page, and juz 30")
+                Text("• Works after a keyword too: 'surah -1', 'page -1', 'juz -1'")
                 Text("• Counts: '286 ayahs' or '48 pages'")
             }
             .font(.caption)
@@ -737,6 +798,24 @@ struct QuranView: View {
         .sheet(isPresented: $showingSettingsSheet) {
             NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
                 .smallMediumSheetPresentation()
+        }
+        .sheet(item: $editFavoritesType) { type in
+            NavigationView {
+                FavoritesView(type: type)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                settings.hapticFeedback()
+                                editFavoritesType = nil
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.body.weight(.semibold))
+                            }
+                            .tint(settings.accentColor.color)
+                        }
+                    }
+            }
+            .navigationViewStyle(.stack)
         }
         .sheet(isPresented: $showReciterPickerSheet) {
             NavigationView {
@@ -1335,6 +1414,10 @@ struct QuranView: View {
 
             Spacer()
 
+            #if os(iOS)
+            editFavoritesButton(type: .ayah, accessibilityLabel: "Edit Bookmarked Ayahs")
+            #endif
+
             Image(systemName: settings.showBookmarks ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
                 .padding(4)
@@ -1345,6 +1428,22 @@ struct QuranView: View {
                 }
         }
     }
+
+    #if os(iOS)
+    /// Small pencil affordance shown in the Bookmarked Ayahs / Favorite Surahs headers that opens the bulk
+    /// editor (delete, delete-all) for that collection without leaving the Quran tab.
+    private func editFavoritesButton(type: FavoriteType, accessibilityLabel: String) -> some View {
+        Image(systemName: "pencil")
+            .foregroundColor(settings.accentColor.color)
+            .padding(4)
+            .conditionalGlassEffect()
+            .onTapGesture {
+                settings.hapticFeedback()
+                editFavoritesType = type
+            }
+            .accessibilityLabel(accessibilityLabel)
+    }
+    #endif
 
     @ViewBuilder
     private func bookmarkGridTile(_ bookmarkedAyah: BookmarkedAyah, context: SearchDisplayContext) -> some View {
@@ -1473,6 +1572,10 @@ struct QuranView: View {
                 .conditionalGlassEffect()
 
             Spacer()
+
+            #if os(iOS)
+            editFavoritesButton(type: .surah, accessibilityLabel: "Edit Favorite Surahs")
+            #endif
 
             Image(systemName: settings.showFavorites ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
@@ -1883,9 +1986,9 @@ struct QuranView: View {
                 }
                 .font(.subheadline)
 
-                Divider()
-
                 if khatmEditMode {
+                    Divider()
+                    
                     Button(role: .destructive) {
                         settings.hapticFeedback()
                         withAnimation {

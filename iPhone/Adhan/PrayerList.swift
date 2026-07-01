@@ -9,6 +9,7 @@ struct PrayerList: View {
     @State private var bellAnimationActive = false
     @State private var selectedDate = Date()
     @State private var compareToday = true
+    @State private var showOptionalPrayerToggles = false
 
     // New storage key (V2) so every existing user is reset to the new Tiles default, regardless of what
     // they had saved under the old "prayerDisplayMode" key.
@@ -130,7 +131,56 @@ struct PrayerList: View {
         // day the concept doesn't apply, so render its prayers in the neutral primary color.
         prayerModeContent(prayers: displayedPrayers, highlightsCurrent: !isShowingDifferentDay)
         travelModeFooter
+        optionalPrayersFooter
         dateSelectionFooter
+    }
+
+    /// Lets the optional/extra prayers (Duha, Islamic Midnight, Last Third) be shown or hidden right from
+    /// the prayer page, so toggling them no longer means a trip into Settings. These bind to the same
+    /// persisted settings used elsewhere — this is just a more discoverable entry point.
+    @ViewBuilder
+    private var optionalPrayersFooter: some View {
+        // Everything lives in one VStack so it's a single list row — no internal separators to fight with.
+        // The row's own bottom separator is hidden so the button reads as a clean standalone pill.
+        VStack(spacing: 18) {
+            // Hand-drawn dividers top and bottom (the real list separators are hidden) so both ends match.
+            // The VStack spacing gives them breathing room from the button/content, while the negative
+            // outer padding pulls them close to the neighboring rows above and below.
+            Divider()
+
+            footerActionButton(showOptionalPrayerToggles ? "Hide Optional Prayer Times" : "Show Optional Prayer Times") {
+                showOptionalPrayerToggles.toggle()
+            }
+
+            if showOptionalPrayerToggles {
+                VStack(spacing: 10) {
+                    optionalPrayerToggle("Duha", isOn: $settings.showDuha)
+                    optionalPrayerToggle("Islamic Midnight", isOn: $settings.showIslamicMidnight)
+                    optionalPrayerToggle("Last Third of the Night", isOn: $settings.showLastThird)
+                }
+
+                Text("These extra prayer times appear in the app only, never in widgets.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Divider()
+        }
+        .padding(.vertical, -12)
+        #if os(iOS)
+        .listRowSeparator(.hidden)
+        #endif
+    }
+
+    private func optionalPrayerToggle(_ label: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn.animation(.easeInOut)) {
+            Text(label)
+                .font(.subheadline)
+        }
+        .tint(settings.accentColor.color)
+        .padding(.vertical, 4)
+        .onChange(of: isOn.wrappedValue) { _ in settings.hapticFeedback() }
     }
 
     private var selectedDateHeaderText: String {

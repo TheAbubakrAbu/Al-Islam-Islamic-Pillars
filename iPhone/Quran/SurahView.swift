@@ -209,7 +209,7 @@ struct SurahView: View {
 
     private func boundaryDividerInfo(for model: BoundaryDividerModel) -> DividerInfo {
         let title: String
-        let message: String
+        var message: String
 
         switch model.style {
         case .allGreen:
@@ -226,7 +226,29 @@ struct SurahView: View {
             message = "\(model.text)\n\nThe color change means both the page and the juz change here."
         }
 
+        // Same-surah page dividers annotate the absolute page with its position within this surah,
+        // e.g. "Page 102 (3)". Translate the bare "(N)" into its plain meaning: the Nth page of this surah.
+        if let relative = pageWithinSurah(fromSegment: model.pageSegment) {
+            message += "\n\n(\(relative)) means you're on the \(ordinal(relative)) page of this surah."
+        }
+
         return DividerInfo(title: title, message: message)
+    }
+
+    /// Pull the "(N)" position-within-surah value out of a page segment like "Page 102 (3)".
+    private func pageWithinSurah(fromSegment segment: String) -> Int? {
+        guard let open = segment.firstIndex(of: "("),
+              let close = segment.firstIndex(of: ")"),
+              open < close else { return nil }
+        let inner = segment[segment.index(after: open)..<close].trimmingCharacters(in: .whitespaces)
+        return Int(inner)
+    }
+
+    /// "1st", "2nd", "3rd", "5th"… for short, human divider text.
+    private func ordinal(_ n: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .ordinal
+        return formatter.string(from: NSNumber(value: n)) ?? "\(n)th"
     }
 
     private func surahInfoDialog(for surah: Surah) -> SurahInfoDialog {
@@ -817,31 +839,47 @@ struct SurahView: View {
         .contentShape(Rectangle())
         
         #if os(iOS)
-        if !searchText.isEmpty, let ayahID = nextAyahID {
-            let labeledContent = VStack(spacing: 2) {
-                dividerContent
-                if showAyahLabel {
-                    Text("Ayah \(ayahID)")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundColor(.secondary)
-                }
-
-                // For a bare "page"/"juz" keyword search we only list dividers (no ayah rows), so show a
-                // small Arabic preview of the start of the divider's first ayah. Rendered with the same
-                // pipeline as a real ayah row (font, tajweed, beginner mode, Allah highlight), just smaller
-                // and single-line so only the beginning of the ayah shows.
-                if showAyahPreview, settings.showArabicText,
-                   let previewAyah = surah.ayahs.first(where: { $0.id == ayahID }) {
-                    AyahArabicSnippet(surah: surah, ayah: previewAyah, scale: 0.7, lineLimit: 1)
-                }
-            }
-            return AnyView(
-                labeledContent
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        settings.hapticFeedback()
-                        scrollDown = ayahID
+        // While searching, dividers double as jump targets: a tap navigates to the ayah and the info
+        // dialog is reserved for a long-press. When not searching there is nothing to jump to, so a plain
+        // tap opens the info dialog and there is no long-press.
+        if !searchText.isEmpty {
+            if let ayahID = nextAyahID {
+                let labeledContent = VStack(spacing: 2) {
+                    dividerContent
+                    if showAyahLabel {
+                        Text("Ayah \(ayahID)")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(.secondary)
                     }
+
+                    // For a bare "page"/"juz" keyword search we only list dividers (no ayah rows), so show a
+                    // small Arabic preview of the start of the divider's first ayah. Rendered with the same
+                    // pipeline as a real ayah row (font, tajweed, beginner mode, Allah highlight), just smaller
+                    // and single-line so only the beginning of the ayah shows.
+                    if showAyahPreview, settings.showArabicText,
+                       let previewAyah = surah.ayahs.first(where: { $0.id == ayahID }) {
+                        AyahArabicSnippet(surah: surah, ayah: previewAyah, scale: 0.7, lineLimit: 1)
+                    }
+                }
+                return AnyView(
+                    labeledContent
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            settings.hapticFeedback()
+                            scrollDown = ayahID
+                        }
+                        .simultaneousGesture(
+                            LongPressGesture(minimumDuration: 0.45)
+                                .onEnded { _ in
+                                    settings.hapticFeedback()
+                                    dividerInfo = boundaryDividerInfo(for: model)
+                                }
+                        )
+                )
+            }
+
+            return AnyView(
+                dividerContent
                     .simultaneousGesture(
                         LongPressGesture(minimumDuration: 0.45)
                             .onEnded { _ in
@@ -851,8 +889,15 @@ struct SurahView: View {
                     )
             )
         }
-        #endif
-        
+
+        return AnyView(
+            dividerContent
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    dividerInfo = boundaryDividerInfo(for: model)
+                }
+        )
+        #else
         return AnyView(
             dividerContent
                 .simultaneousGesture(
@@ -863,6 +908,7 @@ struct SurahView: View {
                         }
                 )
         )
+        #endif
     }
     
     // Extracted from `body` so the large modifier chain stays under the Swift type-checker limit.
@@ -1351,7 +1397,16 @@ struct SurahView: View {
                                     ayah: ayah,
                                     renderSettingsSignature: ayahRowRenderSettingsSignature,
                                     scrollDown: $scrollDown,
-                                    searchText: $searchText
+                                    searchText: $searchText,
+                                    onAyahTextAppear: {
+                                        visibleAyahIDs.insert(ayah.id)
+                                        markKhatmViewedIfNeeded(ayah.id)
+                                        syncVisibleAyahAnchor()
+                                    },
+                                    onAyahTextDisappear: {
+                                        visibleAyahIDs.remove(ayah.id)
+                                        syncVisibleAyahAnchor()
+                                    }
                                 )
                                 .equatable()
                             }
@@ -1361,21 +1416,21 @@ struct SurahView: View {
                                 ayah: ayah,
                                 renderSettingsSignature: ayahRowRenderSettingsSignature,
                                 scrollDown: $scrollDown,
-                                searchText: $searchText
+                                searchText: $searchText,
+                                onAyahTextAppear: {
+                                    visibleAyahIDs.insert(ayah.id)
+                                    markKhatmViewedIfNeeded(ayah.id)
+                                    syncVisibleAyahAnchor()
+                                },
+                                onAyahTextDisappear: {
+                                    visibleAyahIDs.remove(ayah.id)
+                                    syncVisibleAyahAnchor()
+                                }
                             )
                             .equatable()
                             #endif
                         }
                         .id(ayah.id)
-                        .onAppear {
-                            visibleAyahIDs.insert(ayah.id)
-                            markKhatmViewedIfNeeded(ayah.id)
-                            syncVisibleAyahAnchor()
-                        }
-                        .onDisappear {
-                            visibleAyahIDs.remove(ayah.id)
-                            syncVisibleAyahAnchor()
-                        }
                         #if os(watchOS)
                         .padding(.vertical)
                         #endif

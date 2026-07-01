@@ -96,6 +96,9 @@ struct SettingsQuranView: View {
                         englishTextDestination
                     }
                 }
+                #if os(iOS)
+                favoritesAndBookmarksSection
+                #endif
             }
             .themedListRowBackground()
         }
@@ -133,6 +136,35 @@ struct SettingsQuranView: View {
         }
         .tint(settings.accentColor.color)
     }
+
+    #if os(iOS)
+    /// Bulk-management screens for the user's saved items. Only shown from the main Settings entry
+    /// (`showEdits`), not the in-reader Quran-settings sheet.
+    @ViewBuilder
+    private var favoritesAndBookmarksSection: some View {
+        if showEdits {
+            Section(header: Text("FAVORITES AND BOOKMARKS")) {
+                favoritesLink(title: "Edit Favorite Surahs", type: .surah)
+                favoritesLink(title: "Edit Bookmarked Ayahs", type: .ayah)
+                favoritesLink(title: "Edit Favorite Letters", type: .letter)
+                favoritesLink(title: "Edit Khatm Progress", type: .khatm)
+            }
+        }
+    }
+
+    private func favoritesLink(title: String, type: FavoriteType) -> some View {
+        NavigationLink {
+            FavoritesView(type: type)
+                .environmentObject(quranData)
+                .environmentObject(settings)
+                .accentColor(settings.accentColor.color)
+        } label: {
+            Label(title, systemImage: "pencil")
+                .padding(.vertical, 4)
+        }
+        .tint(settings.accentColor.color)
+    }
+    #endif
 
     /// Shared scaffold for each Quran settings sub-screen: themed list + standard style + title.
     @ViewBuilder
@@ -288,8 +320,6 @@ struct SettingsQuranView: View {
             pageAndJuzDividersGroup
 
             highlightAllahGroup
-
-            systemFontSizeToggle
         }
     }
 
@@ -354,11 +384,6 @@ struct SettingsQuranView: View {
         }
     }
 
-    private var systemFontSizeToggle: some View {
-        Toggle("Use System Font Size", isOn: useSystemFontSizes.animation(.easeInOut))
-            .font(.subheadline)
-    }
-
     private var searchSection: some View {
         Section(header: Text("SEARCH")) {
             VStack(alignment: .leading) {
@@ -374,31 +399,36 @@ struct SettingsQuranView: View {
         }
     }
 
-    private var useSystemFontSizes: Binding<Bool> {
+    /// "Use System Font Size" for the Arabic text only — pins the Arabic size to the device's Dynamic Type
+    /// body size (+10, the reading-comfortable default). Split out from the English control so each script
+    /// can follow the system size independently.
+    private var useSystemArabicFontSize: Binding<Bool> {
         Binding(
             get: {
                 let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-                var usesSystemSizes = true
-
-                if settings.showArabicText {
-                    usesSystemSizes = usesSystemSizes && (settings.fontArabicSize == systemBodySize + 10)
-                }
-
-                if settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa {
-                    usesSystemSizes = usesSystemSizes && (settings.englishFontSize == systemBodySize)
-                }
-                return usesSystemSizes
+                return settings.fontArabicSize == systemBodySize + 10
             },
             set: { newValue in
                 let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
                 withAnimation {
-                    if newValue {
-                        settings.fontArabicSize = systemBodySize + 10
-                        settings.englishFontSize = systemBodySize
-                    } else {
-                        settings.fontArabicSize = systemBodySize + 11
-                        settings.englishFontSize = systemBodySize + 1
-                    }
+                    settings.fontArabicSize = newValue ? systemBodySize + 10 : systemBodySize + 11
+                }
+            }
+        )
+    }
+
+    /// "Use System Font Size" for the English text only — pins the English size to the device's Dynamic
+    /// Type body size.
+    private var useSystemEnglishFontSize: Binding<Bool> {
+        Binding(
+            get: {
+                let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                return settings.englishFontSize == systemBodySize
+            },
+            set: { newValue in
+                let systemBodySize = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+                withAnimation {
+                    settings.englishFontSize = newValue ? systemBodySize : systemBodySize + 1
                 }
             }
         )
@@ -519,6 +549,9 @@ struct SettingsQuranView: View {
 
     private var arabicFontSizeControls: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Toggle("Use System Font Size", isOn: useSystemArabicFontSize.animation(.easeInOut))
+                .font(.subheadline)
+
             Stepper(value: $settings.fontArabicSize.animation(.easeInOut), in: 15...75, step: 1) {
                 Text("Arabic Font Size: \(Int(settings.fontArabicSize))")
                     .font(.subheadline)
@@ -580,6 +613,9 @@ struct SettingsQuranView: View {
     private var englishFontSizeControls: some View {
         if settings.isHafsDisplay && includeEnglish.wrappedValue && (settings.showTransliteration || settings.showEnglishSaheeh || settings.showEnglishMustafa) {
             VStack(alignment: .leading, spacing: 16) {
+                Toggle("Use System Font Size", isOn: useSystemEnglishFontSize.animation(.easeInOut))
+                    .font(.subheadline)
+
                 Stepper(value: $settings.englishFontSize.animation(.easeInOut), in: 13...20, step: 1) {
                     Text("English Font Size: \(Int(settings.englishFontSize))")
                         .font(.subheadline)
@@ -2026,3 +2062,153 @@ private struct WatchReciterRow: View {
         SettingsQuranView()
     }
 }
+
+#if os(iOS)
+enum FavoriteType: Identifiable {
+    case surah, ayah, letter, khatm
+    var id: Self { self }
+}
+
+/// Bulk editor for the user's saved Quran items — favorite surahs, bookmarked ayahs, favorite letters, and
+/// khatm progress — with swipe-to-delete, EditButton, and a "Delete All". Reachable from Quran Settings.
+struct FavoritesView: View {
+    @EnvironmentObject var quranData: QuranData
+    @EnvironmentObject var settings: Settings
+
+    @State private var editMode: EditMode = .inactive
+
+    let type: FavoriteType
+
+    var body: some View {
+        List {
+            Group {
+            switch type {
+            case .surah:
+                if settings.favoriteSurahs.isEmpty {
+                    Text("No favorite surahs here, long tap a surah to favorite it.")
+                } else {
+                    ForEach(settings.favoriteSurahs.sorted(), id: \.self) { surahId in
+                        if let surah = quranData.quran.first(where: { $0.id == surahId }) {
+                            SurahRow(surah: surah, isFavorite: true).equatable()
+                        }
+                    }
+                    .onDelete(perform: removeSurahs)
+                }
+            case .ayah:
+                if settings.bookmarkedAyahs.isEmpty {
+                    Text("No bookmarked ayahs here, long tap an ayah to bookmark it.")
+                } else {
+                    ForEach(settings.bookmarkedAyahs.sorted {
+                        $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
+                    }, id: \.id) { bookmarkedAyah in
+                        if let surah = quranData.quran.first(where: { $0.id == bookmarkedAyah.surah }),
+                           let ayah = surah.ayahs.first(where: { $0.id == bookmarkedAyah.ayah }) {
+                            SurahAyahRow(surah: surah, ayah: ayah)
+                        }
+                    }
+                    .onDelete(perform: removeAyahs)
+                }
+            case .letter:
+                if settings.favoriteLetters.isEmpty {
+                    Text("No favorite letters here, long tap a letter to favorite it.")
+                } else {
+                    ForEach(settings.favoriteLetters.sorted(), id: \.id) { favorite in
+                        ArabicLetterRow(letterData: favorite).equatable()
+                    }
+                    .onDelete(perform: removeLetters)
+                }
+            case .khatm:
+                if settings.khatmCompletedAyahs.isEmpty {
+                    Text("No khatm progress yet. Open a surah while Khatm mode is selected to mark ayahs as viewed.")
+                } else {
+                    ForEach(quranData.quran.filter { settings.khatmCompletedCount(for: $0) > 0 }, id: \.id) { surah in
+                        SurahRow(
+                            surah: surah,
+                            khatmCompletedAyahs: settings.khatmCompletedCount(for: surah),
+                            khatmTotalAyahs: surah.numberOfAyahs
+                        )
+                        .equatable()
+                    }
+                    .onDelete(perform: removeKhatmSurahs)
+                }
+            }
+
+            Section {
+                if !isListEmpty {
+                    Button("Delete All") {
+                        settings.hapticFeedback()
+                        withAnimation { deleteAll() }
+                    }
+                    .foregroundColor(.red)
+                }
+            }
+            }
+            .themedListRowBackground()
+        }
+        .applyConditionalListStyle()
+        .navigationTitle(titleForFavoriteType(type))
+        .toolbar {
+            EditButton()
+        }
+        .environment(\.editMode, $editMode)
+    }
+
+    private var isListEmpty: Bool {
+        switch type {
+        case .surah: return settings.favoriteSurahs.isEmpty
+        case .ayah: return settings.bookmarkedAyahs.isEmpty
+        case .letter: return settings.favoriteLetters.isEmpty
+        case .khatm: return settings.khatmCompletedAyahs.isEmpty
+        }
+    }
+
+    private func deleteAll() {
+        switch type {
+        case .surah:
+            settings.favoriteSurahs.removeAll()
+        case .ayah:
+            settings.bookmarkedAyahs.removeAll()
+        case .letter:
+            settings.favoriteLetters.removeAll()
+        case .khatm:
+            settings.resetAllKhatmProgress()
+        }
+    }
+
+    private func removeSurahs(at offsets: IndexSet) {
+        let sorted = settings.favoriteSurahs.sorted()
+        let idsToRemove = offsets.map { sorted[$0] }
+        settings.favoriteSurahs.removeAll { idsToRemove.contains($0) }
+    }
+
+    private func removeAyahs(at offsets: IndexSet) {
+        let sorted = settings.bookmarkedAyahs.sorted {
+            $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
+        }
+        let idsToRemove = Set(offsets.map { sorted[$0].id })
+        settings.bookmarkedAyahs.removeAll { idsToRemove.contains($0.id) }
+    }
+
+    private func removeLetters(at offsets: IndexSet) {
+        let sorted = settings.favoriteLetters.sorted()
+        let idsToRemove = Set(offsets.map { sorted[$0].id })
+        settings.favoriteLetters.removeAll { idsToRemove.contains($0.id) }
+    }
+
+    private func removeKhatmSurahs(at offsets: IndexSet) {
+        let surahsWithProgress = quranData.quran.filter { settings.khatmCompletedCount(for: $0) > 0 }
+        for offset in offsets {
+            settings.resetKhatmProgress(for: surahsWithProgress[offset])
+        }
+    }
+
+    private func titleForFavoriteType(_ type: FavoriteType) -> String {
+        switch type {
+        case .surah:  return "Favorite Surahs"
+        case .ayah:   return "Bookmarked Ayahs"
+        case .letter: return "Favorite Letters"
+        case .khatm:  return "Khatm Progress"
+        }
+    }
+}
+#endif

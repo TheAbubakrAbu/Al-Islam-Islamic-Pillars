@@ -30,7 +30,13 @@ struct AyahRow: View, Equatable {
 
     @Binding var scrollDown: Int?
     @Binding var searchText: String
-    
+
+    /// Fired when the ayah's actual text block (Arabic / translations) scrolls into view, not just the
+    /// row's number/menu header. Drives last-read tracking and automatic khatm marking so an ayah only
+    /// counts as "read" once its text is on screen.
+    var onAyahTextAppear: (() -> Void)? = nil
+    var onAyahTextDisappear: (() -> Void)? = nil
+
     @State private var showRespectAlert = false
 
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -363,9 +369,7 @@ struct AyahRow: View, Equatable {
                     if shouldShowManualKhatmButton {
                         Button {
                             settings.hapticFeedback()
-                            withAnimation(.easeInOut) {
-                                settings.markKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
-                            }
+                            settings.markKhatmAyahComplete(surah: surah.id, ayah: ayah.id)
                         } label: {
                             Image(systemName: "checkmark.circle")
                                 .resizable()
@@ -741,6 +745,8 @@ struct AyahRow: View, Equatable {
         #if os(iOS)
         .textSelection(.enabled)
         #endif
+        .onAppear { onAyahTextAppear?() }
+        .onDisappear { onAyahTextDisappear?() }
     }
 
     @State private var confirmRemoveNote = false
