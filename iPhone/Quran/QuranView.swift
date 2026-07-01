@@ -10,11 +10,6 @@ struct QuranView: View {
     @State private var isQuranSearchFocused = false
     @State private var scrollToSurahID: Int = -1
     @State private var showingSettingsSheet = false
-    #if os(iOS)
-    /// Drives the favorites/bookmarks bulk-edit sheet opened from the section headers, so editing them is
-    /// reachable from the Quran tab itself and not only from Settings.
-    @State private var editFavoritesType: FavoriteType?
-    #endif
     @State private var showReciterPickerSheet = false
     @State private var showListeningHistory = false
     @State private var showReadingHistory = false
@@ -796,26 +791,8 @@ struct QuranView: View {
             }
         }
         .sheet(isPresented: $showingSettingsSheet) {
-            NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
+            NavigationView { SettingsQuranView(presentedAsSheet: true) }
                 .smallMediumSheetPresentation()
-        }
-        .sheet(item: $editFavoritesType) { type in
-            NavigationView {
-                FavoritesView(type: type)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button {
-                                settings.hapticFeedback()
-                                editFavoritesType = nil
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.body.weight(.semibold))
-                            }
-                            .tint(settings.accentColor.color)
-                        }
-                    }
-            }
-            .navigationViewStyle(.stack)
         }
         .sheet(isPresented: $showReciterPickerSheet) {
             NavigationView {
@@ -968,24 +945,54 @@ struct QuranView: View {
         #endif
     }
 
+    @ViewBuilder
     private var sortDirectionPicker: some View {
         #if os(iOS)
-        Picker("Sort Direction", selection: Binding(
-            get: {
-                sortDirectionOptions.contains(settings.quranSortDirection) ? settings.quranSortDirection : .ascending
-            },
-            set: { newDirection in
+        // Khatm mode reuses this slot for a Surah/Juz grouping toggle instead of Asc/Desc.
+        if settings.quranSortMode == .khatm {
+            khatmGroupingPicker
+        } else {
+            Picker("Sort Direction", selection: Binding(
+                get: {
+                    sortDirectionOptions.contains(settings.quranSortDirection) ? settings.quranSortDirection : .ascending
+                },
+                set: { newDirection in
+                    settings.hapticFeedback()
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        settings.quranSortDirection = newDirection
+                    }
+                }
+            ).animation(.easeInOut)) {
+                ForEach(sortDirectionOptions) { direction in
+                    Text(direction.title)
+                        .tag(direction)
+                        .accessibilityLabel(direction.accessibilityTitle)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .conditionalGlassEffect()
+            .frame(maxWidth: .infinity)
+        }
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var khatmGroupingPicker: some View {
+        #if os(iOS)
+        Picker("Khatm Grouping", selection: Binding(
+            get: { settings.khatmGroupByJuz },
+            set: { groupByJuz in
                 settings.hapticFeedback()
                 withAnimation(.easeInOut(duration: 0.22)) {
-                    settings.quranSortDirection = newDirection
+                    settings.khatmGroupByJuz = groupByJuz
                 }
             }
         ).animation(.easeInOut)) {
-            ForEach(sortDirectionOptions) { direction in
-                Text(direction.title)
-                    .tag(direction)
-                    .accessibilityLabel(direction.accessibilityTitle)
-            }
+            Text("Surah").tag(false)
+                .accessibilityLabel("Group by Surah")
+            Text("Juz").tag(true)
+                .accessibilityLabel("Group by Juz")
         }
         .pickerStyle(SegmentedPickerStyle())
         .conditionalGlassEffect()
@@ -1337,7 +1344,7 @@ struct QuranView: View {
                 spacing: 10
             ) {
                 if settings.saveLastReadAyah, let lastReadSurah, let lastReadAyah {
-                    SummaryAyahTile(title: "Last Read Ayah", icon: "book", surah: lastReadSurah, ayah: lastReadAyah) {
+                    SummaryAyahTile(title: "Last Read Ayah", icon: "book", surah: lastReadSurah, ayah: lastReadAyah, titleColor: settings.accentColor.color) {
                         push(surahID: lastReadSurah.id, ayahID: lastReadAyah.id)
                     }
                     .animation(.easeInOut, value: settings.lastReadSurah * 1000 + settings.lastReadAyah)
@@ -1349,7 +1356,7 @@ struct QuranView: View {
                     .animation(.easeInOut, value: pair.surah.id * 1000 + pair.ayah.id)
                 }
                 if settings.saveLastListenedAyah, let pair = lastListenedAyahPair {
-                    SummaryAyahTile(title: "Last Listened Ayah", icon: "headphones.circle", surah: pair.surah, ayah: pair.ayah) {
+                    SummaryAyahTile(title: "Last Listened Ayah", icon: "headphones.circle", surah: pair.surah, ayah: pair.ayah, titleColor: settings.accentColor.color) {
                         push(surahID: pair.surah.id, ayahID: pair.ayah.id)
                     }
                     .animation(.easeInOut, value: pair.surah.id * 1000 + pair.ayah.id)
@@ -1357,7 +1364,7 @@ struct QuranView: View {
                 if settings.saveLastListenedSurah,
                    let last = settings.lastListenedSurah,
                    let surah = quranData.surah(last.surahNumber) {
-                    SummarySurahTile(title: "Last Listened Surah", icon: "headphones", surah: surah, lastListenedSurah: last) {
+                    SummarySurahTile(title: "Last Listened Surah", icon: "headphones", surah: surah, lastListenedSurah: last, titleColor: settings.accentColor.color) {
                         push(surahID: surah.id, ayahID: nil)
                     }
                     .animation(.easeInOut, value: last.surahNumber)
@@ -1403,6 +1410,9 @@ struct QuranView: View {
                 .foregroundStyle(settings.accentColor.color)
 
             Text("BOOKMARKED AYAHS")
+                .foregroundStyle(settings.accentColor.color)
+
+            Spacer()
 
             Text("\(count)")
                 .font(.caption.weight(.semibold))
@@ -1411,12 +1421,6 @@ struct QuranView: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .conditionalGlassEffect()
-
-            Spacer()
-
-            #if os(iOS)
-            editFavoritesButton(type: .ayah, accessibilityLabel: "Edit Bookmarked Ayahs")
-            #endif
 
             Image(systemName: settings.showBookmarks ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
@@ -1428,22 +1432,6 @@ struct QuranView: View {
                 }
         }
     }
-
-    #if os(iOS)
-    /// Small pencil affordance shown in the Bookmarked Ayahs / Favorite Surahs headers that opens the bulk
-    /// editor (delete, delete-all) for that collection without leaving the Quran tab.
-    private func editFavoritesButton(type: FavoriteType, accessibilityLabel: String) -> some View {
-        Image(systemName: "pencil")
-            .foregroundColor(settings.accentColor.color)
-            .padding(4)
-            .conditionalGlassEffect()
-            .onTapGesture {
-                settings.hapticFeedback()
-                editFavoritesType = type
-            }
-            .accessibilityLabel(accessibilityLabel)
-    }
-    #endif
 
     @ViewBuilder
     private func bookmarkGridTile(_ bookmarkedAyah: BookmarkedAyah, context: SearchDisplayContext) -> some View {
@@ -1562,6 +1550,9 @@ struct QuranView: View {
                 .foregroundStyle(settings.accentColor.color)
 
             Text("FAVORITE SURAHS")
+                .foregroundStyle(settings.accentColor.color)
+
+            Spacer()
 
             Text("\(count)")
                 .font(.caption.weight(.semibold))
@@ -1570,12 +1561,6 @@ struct QuranView: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .conditionalGlassEffect()
-
-            Spacer()
-
-            #if os(iOS)
-            editFavoritesButton(type: .surah, accessibilityLabel: "Edit Favorite Surahs")
-            #endif
 
             Image(systemName: settings.showFavorites ? "chevron.down.circle" : "chevron.up.circle")
                 .foregroundColor(settings.accentColor.color)
@@ -1667,6 +1652,12 @@ struct QuranView: View {
     }
 
     private func orderedQuranSurahs(showsRevelationOrder: Bool) -> [Surah] {
+        // Khatm's Surah grouping is always natural surah order — it reuses the Asc/Desc slot for the
+        // Surah/Juz toggle, so `quranSortDirection` (left over from another mode) must not reorder it.
+        if settings.quranSortMode == .khatm {
+            return quranData.quran
+        }
+
         if settings.quranSortDirection == .surahOrder {
             return quranData.quran
         }
@@ -1752,7 +1743,11 @@ struct QuranView: View {
             case .khatm:
                 khatmProgressSection()
                 khatmExtraDetailsSection()
-                surahBrowseSection(context: context, showsRevelationOrder: false)
+                if settings.khatmGroupByJuz {
+                    khatmJuzSections(context: context)
+                } else {
+                    surahBrowseSection(context: context, showsRevelationOrder: false)
+                }
             case .pages:
                 pagesBrowseSection(context: context)
             case .sajdah:
@@ -2326,6 +2321,33 @@ struct QuranView: View {
                 #else
                 ForEach(sectionData.rows) { row in
                     preprocessedJuzRow(row: row, context: context)
+                }
+                #endif
+            }
+            .sectionIndexLabelWhenAvailable("\(juz.id)")
+        }
+    }
+
+    /// Khatm-mode Juz grouping: each surah is listed once, under the juz it *starts* in (via `firstJuz`),
+    /// so a surah that merely continues into later juz isn't repeated. Every juz header is still shown, so
+    /// juz that no surah opens (e.g. juz 2, 5) render empty. Rows carry the same khatm progress as the Surah
+    /// grouping because `surahRow`/`surahGridTile` read `quranSortMode == .khatm`.
+    @ViewBuilder
+    private func khatmJuzSections(context: SearchDisplayContext) -> some View {
+        ForEach(QuranData.juzList, id: \.id) { juz in
+            let surahs = quranData.quran.filter { ($0.firstJuz ?? $0.ayahs.first?.juz) == juz.id }
+            Section(header: JuzHeader(juz: juz)) {
+                #if os(iOS)
+                if settings.quranGridMode {
+                    surahGrid(surahs, context: context)
+                } else {
+                    ForEach(surahs, id: \.id) { surah in
+                        surahRow(surah: surah, context: context)
+                    }
+                }
+                #else
+                ForEach(surahs, id: \.id) { surah in
+                    surahRow(surah: surah, context: context)
                 }
                 #endif
             }

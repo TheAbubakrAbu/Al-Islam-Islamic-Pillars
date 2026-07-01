@@ -139,17 +139,29 @@ struct SurahRow: View, Equatable {
     @ViewBuilder
     private var khatmProgressLine: some View {
         if let khatmCompletedAyahs, let khatmTotalAyahs {
-            HStack(spacing: 5) {
-                Image(systemName: isKhatmComplete ? "checkmark.circle.fill" : "circle.dashed")
-                    .font(.caption2.weight(.semibold))
-                Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs) ayahs")
-                    .font(.caption2.weight(isKhatmComplete ? .semibold : .regular))
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
+                    Image(systemName: isKhatmComplete ? "checkmark.circle.fill" : "circle.dashed")
+                        .font(.caption2.weight(.semibold))
+                    Text("\(khatmCompletedAyahs)/\(khatmTotalAyahs) ayahs")
+                        .font(.caption2.weight(isKhatmComplete ? .semibold : .regular))
+                }
+                .foregroundStyle(
+                    isKhatmComplete ? accentColor.color :
+                    isKhatmPartiallyComplete ? accentColor.color.opacity(0.72) :
+                    .secondary
+                )
+
+                // Per-surah progress bar (shown in both Surah and Juz khatm grouping).
+                ProgressView(
+                    value: Double(min(max(khatmCompletedAyahs, 0), khatmTotalAyahs)),
+                    total: Double(max(khatmTotalAyahs, 1))
+                )
+                .progressViewStyle(.linear)
+                .tint(accentColor.color)
             }
-            .foregroundStyle(
-                isKhatmComplete ? accentColor.color :
-                isKhatmPartiallyComplete ? accentColor.color.opacity(0.72) :
-                .secondary
-            )
+            // Fill the content column so the bar uses its full width (leading-aligned).
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
     
@@ -220,6 +232,9 @@ struct SurahRow: View, Equatable {
             surahNumberPill
                 .padding(.trailing, 2)
 
+            // Khatm progress lives INSIDE this content column so the column (and therefore the full-height
+            // number pill beside it, plus the vertically-centered Arabic name) grows to include it — rather
+            // than hanging below the row where the pill wouldn't reach it.
             VStack(alignment: .leading, spacing: 2) {
                 if let context = positionContextLine {
                     Text(context)
@@ -304,25 +319,14 @@ struct SurahRow: View, Equatable {
     /// well in a narrow 2-column grid cell.
     private var gridBody: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
-                Text("\(surah.id)")
-                    .font(.subheadline.monospacedDigit().weight(.bold))
-                    .foregroundColor(accentColor.color)
-
-                Spacer(minLength: 0)
-
-                if favoriteState {
-                    Image(systemName: "star.fill")
-                        .font(.caption2)
-                        .foregroundStyle(accentColor.color)
-                }
-            }
-
+            // Arabic id ornament + name on the top row, with the favorite star pinned to the trailing end of
+            // that same row (pushed over by a Spacer) instead of sitting alone above. The id now prefixes the
+            // transliteration below (e.g. "1: Al-Fatihah").
             HStack(spacing: 4) {
                 Text(surah.idArabic)
                     .font(.custom(Settings.hafsUthmaniFontName, size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
                     .foregroundColor(accentColor.color)
-                
+
                 HighlightedSnippet(
                     source: surah.nameArabic,
                     term: searchQuery,
@@ -331,6 +335,14 @@ struct SurahRow: View, Equatable {
                     fg: .primary,
                     lineLimit: 1
                 )
+
+                Spacer(minLength: 4)
+
+                if favoriteState {
+                    Image(systemName: "star.fill")
+                        .font(.caption2)
+                        .foregroundStyle(accentColor.color)
+                }
             }
             .lineLimit(1)
             .minimumScaleFactor(0.5)
@@ -341,14 +353,21 @@ struct SurahRow: View, Equatable {
                     .foregroundColor(.secondary)
             }
 
-            HighlightedSnippet(
-                source: surah.nameTransliteration,
-                term: searchQuery,
-                font: .subheadline.weight(.semibold),
-                accent: accentColor.color,
-                fg: .primary
-            )
-            .lineLimit(1)
+            HStack(spacing: 4) {
+                Text("\(surah.id):")
+                    .font(.subheadline.monospacedDigit().weight(.bold))
+                    .foregroundColor(accentColor.color)
+                    .layoutPriority(1)
+
+                HighlightedSnippet(
+                    source: surah.nameTransliteration,
+                    term: searchQuery,
+                    font: .subheadline.weight(.semibold),
+                    accent: accentColor.color,
+                    fg: .primary
+                )
+                .lineLimit(1)
+            }
             .minimumScaleFactor(0.6)
 
             HighlightedSnippet(
@@ -946,6 +965,7 @@ struct SummaryAyahTile: View {
     let icon: String
     let surah: Surah
     let ayah: Ayah
+    var titleColor: Color = .secondary
     let onTap: () -> Void
 
     /// e.g. "Al-Fatiha 1:5"
@@ -988,7 +1008,7 @@ struct SummaryAyahTile: View {
                             .foregroundColor(settings.accentColor.color)
                         Text(title)
                             .font(.caption2.weight(.semibold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(titleColor)
                             .lineLimit(1)
                     }
                 }
@@ -1064,6 +1084,7 @@ struct SummarySurahTile: View {
     let icon: String
     let surah: Surah
     let lastListenedSurah: LastListenedSurah
+    var titleColor: Color = .secondary
     let onTap: () -> Void
 
     /// e.g. "1 - Al-Fatiha"
@@ -1081,7 +1102,7 @@ struct SummarySurahTile: View {
                         .foregroundColor(settings.accentColor.color)
                     Text(title)
                         .font(.caption2.weight(.semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(titleColor)
                         .lineLimit(1)
                 }
 

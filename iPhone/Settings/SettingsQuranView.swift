@@ -8,12 +8,10 @@ struct SettingsQuranView: View {
     @EnvironmentObject var quranData: QuranData
     @Environment(\.dismiss) private var dismiss
 
-    @State private var showEdits: Bool
     @State private var confirmHideQiraahDetails = false
     private let presentedAsSheet: Bool
 
-    init(showEdits: Bool = false, presentedAsSheet: Bool = false) {
-        _showEdits = State(initialValue: showEdits)
+    init(presentedAsSheet: Bool = false) {
         self.presentedAsSheet = presentedAsSheet
     }
 
@@ -139,16 +137,13 @@ struct SettingsQuranView: View {
 
     #if os(iOS)
     /// Bulk-management screens for the user's saved items. Only shown from the main Settings entry
-    /// (`showEdits`), not the in-reader Quran-settings sheet.
     @ViewBuilder
     private var favoritesAndBookmarksSection: some View {
-        if showEdits {
-            Section(header: Text("FAVORITES AND BOOKMARKS")) {
-                favoritesLink(title: "Edit Favorite Surahs", type: .surah)
-                favoritesLink(title: "Edit Bookmarked Ayahs", type: .ayah)
-                favoritesLink(title: "Edit Favorite Letters", type: .letter)
-                favoritesLink(title: "Edit Khatm Progress", type: .khatm)
-            }
+        Section(header: Text("FAVORITES AND BOOKMARKS")) {
+            favoritesLink(title: "Edit Favorite Surahs", type: .surah)
+            favoritesLink(title: "Edit Bookmarked Ayahs", type: .ayah)
+            favoritesLink(title: "Edit Favorite Letters", type: .letter)
+            favoritesLink(title: "Edit Khatm Progress", type: .khatm)
         }
     }
 

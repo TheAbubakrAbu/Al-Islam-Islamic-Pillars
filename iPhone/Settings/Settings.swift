@@ -673,6 +673,10 @@ final class Settings: NSObject, CLLocationManagerDelegate, ObservableObject {
     }
 
     var groupBySurah: Bool { quranSortMode == .surah }
+    /// In Khatm mode, the Surah/Juz toggle (which replaces the Asc/Desc control). When on, surahs are grouped
+    /// under juz headers, each surah shown once in the juz it *starts* in — so juz that no surah opens (e.g.
+    /// juz 2, 5) appear empty.
+    @AppStorage("khatmGroupByJuz") var khatmGroupByJuz: Bool = false
     @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
     @AppStorage("ignoreSilentLettersInQuranSearch") var ignoreSilentLettersInQuranSearch: Bool = true
 

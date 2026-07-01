@@ -111,7 +111,7 @@ struct SettingsView: View {
             case .prayerSettings:
                 SettingsAdhanView(showNotifications: false)
             case .quranSettings:
-                SettingsQuranView(showEdits: true)
+                SettingsQuranView()
             }
         }
     }
@@ -222,7 +222,7 @@ struct SettingsView: View {
     private var quranSection: some View {
         Section(header: Text("AL-QURAN")) {
             resourceLink(title: "Quran Settings", systemImage: "character.book.closed.ar") {
-                SettingsQuranView(showEdits: true)
+                SettingsQuranView()
             }
         }
     }

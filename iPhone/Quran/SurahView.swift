@@ -2084,7 +2084,7 @@ struct SurahView: View {
     }
     
     private var settingsSheet: some View {
-        NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
+        NavigationView { SettingsQuranView(presentedAsSheet: true) }
     }
     #endif
     

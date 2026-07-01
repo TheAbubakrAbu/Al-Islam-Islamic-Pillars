@@ -87,7 +87,11 @@ struct JuzHeader: View {
 
             surahCountBadge
             infoButton
-            randomSurahLink
+            // Khatm's Juz grouping is about tracking a full read-through, so the random "shuffle to a surah"
+            // jump doesn't belong there — hide it in khatm mode.
+            if settings.quranSortMode != .khatm {
+                randomSurahLink
+            }
             #endif
         }
         .onAppear {
@@ -133,13 +137,14 @@ struct JuzHeader: View {
     }
 
     private var surahCountBadge: some View {
-        Text("\(surahCount) surahs")
+        Text("\(surahCount)")
             .font(.caption2.weight(.semibold))
             .monospacedDigit()
             .foregroundStyle(settings.accentColor.color)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .conditionalGlassEffect()
+            .accessibilityLabel("\(surahCount) surahs")
     }
 
     private var infoButton: some View {
