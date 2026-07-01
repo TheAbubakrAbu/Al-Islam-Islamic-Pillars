@@ -5049,15 +5049,20 @@ final class QuranData: ObservableObject {
         let revelationSearchMode: RevelationSearchMode? = {
             guard !normalizedQuery.isEmpty else { return nil }
 
-            let makkanHit = Self.makkanAliases.contains { alias in
-                alias.hasPrefix(normalizedQuery) || normalizedQuery.hasPrefix(alias)
+            // Treat the query as a revelation-place filter only when it's a deliberate word, not an incidental
+            // prefix. Typing a single letter like "m" used to prefix-match "makkah" and silently swap the whole
+            // list for all 86 Meccan surahs (and "d" → every Madinan one). Require at least 4 characters before
+            // a *partial* alias counts; a fully-typed alias ("makki", "madina", …) still matches at any point.
+            let minRevelationPrefix = 4
+            func hits(_ aliases: Set<String>) -> Bool {
+                aliases.contains { alias in
+                    normalizedQuery.hasPrefix(alias)
+                        || (normalizedQuery.count >= minRevelationPrefix && alias.hasPrefix(normalizedQuery))
+                }
             }
-            if makkanHit { return .makkan }
 
-            let madinanHit = Self.madinanAliases.contains { alias in
-                alias.hasPrefix(normalizedQuery) || normalizedQuery.hasPrefix(alias)
-            }
-            if madinanHit { return .madinan }
+            if hits(Self.makkanAliases) { return .makkan }
+            if hits(Self.madinanAliases) { return .madinan }
 
             return nil
         }()

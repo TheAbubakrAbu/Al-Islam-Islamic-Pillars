@@ -15,6 +15,16 @@ struct HighlightedSnippet: View {
     var trailingSuffixColor: Color? = nil
     var lineLimit: Int? = nil
     var highlightAllahNames: Bool = false
+    /// When `true`, this field is guaranteed to show at least one highlight: if no confident match is found
+    /// the fuzzy last-resorts (Arabic partial-prefix, closest/longest word) kick in so the user always sees
+    /// *something*. Meant for ayah search, and only for the field(s) that actually matched the query.
+    ///
+    /// When `false` (the default, used by Surah rows and anywhere a single query is shown against several
+    /// fields side-by-side), only high-confidence matches are colored — exact substring, a full
+    /// alef-insensitive Arabic match, or a phrase-prefix. A field that doesn't really contain the term is
+    /// left un-highlighted, so a query that matched only the transliteration doesn't also paint the English
+    /// name and the Arabic name.
+    var guaranteeMatch: Bool = false
 
     var body: some View {
         let resolvedSearchTerm = searchTerm
@@ -165,8 +175,10 @@ struct HighlightedSnippet: View {
             Self.sourceNormCache.setObject(normEntry, forKey: sourceKey)
         }
 
-        // --- Step 2: matched ranges in original source, cached per (source, normalizedTerm) ---
-        let matchKey = "\(source)\u{0000}\(normalizedTerm)" as NSString
+        // --- Step 2: matched ranges in original source, cached per (source, normalizedTerm, guarantee) ---
+        // `guaranteeMatch` changes which fallbacks run, so it must be part of the key — otherwise the same
+        // source+term shown once as a matched ayah field and once as a non-matching sibling would collide.
+        let matchKey = "\(guaranteeMatch ? "1" : "0")\u{0000}\(source)\u{0000}\(normalizedTerm)" as NSString
         let matchedRanges: [Range<String.Index>]
         if let cached = Self.matchRangeCache.object(forKey: matchKey) {
             matchedRanges = cached.ranges
@@ -208,11 +220,14 @@ struct HighlightedSnippet: View {
                     indexMap: normEntry.indexMap
                 )
             }
-            // Final safety net: if nothing matched yet, highlight the closest word(s) in THIS field so the
-            // user always sees at least one thing for their query. It works on the original words normalized
-            // individually, so it doesn't depend on the whole-string index alignment the paths above need —
-            // which can silently fail on heavily-marked Arabic and leave a real match un-highlighted.
-            if ranges.isEmpty {
+            // Final safety net — ONLY when this field is expected to contain the match (`guaranteeMatch`,
+            // i.e. ayah search on the field that actually matched). If nothing matched yet, highlight the
+            // closest word(s) in THIS field so the user always sees at least one thing for their query. It
+            // works on the original words normalized individually, so it doesn't depend on the whole-string
+            // index alignment the paths above need — which can silently fail on heavily-marked Arabic and
+            // leave a real match un-highlighted. Skipped by default so a query that matched a sibling field
+            // doesn't force a spurious highlight here.
+            if ranges.isEmpty, guaranteeMatch {
                 ranges = closestMatchRanges(in: source, normalizedTerm: normalizedTerm)
             }
             Self.matchRangeCache.setObject(RangeEntry(ranges), forKey: matchKey)
@@ -295,8 +310,9 @@ struct HighlightedSnippet: View {
     /// `normalizeForSearch` already folds the dagger alef (ٰ) to a plain alef, so dropping every "ا" from
     /// both the source and the term produces a skeleton where الرحمن, الرحمان and الرحمٰن all compare equal.
     /// The kept-character → source-index map lets a skeleton match map back to a contiguous original range.
-    /// If the whole term skeleton isn't found, the longest leading chunk (≥ 2 letters) is highlighted, so
-    /// the user always sees *something* of what they searched.
+    /// If the whole term skeleton isn't found, the longest leading chunk (≥ 2 letters) is highlighted — but
+    /// only when `guaranteeMatch` is set, so this "always sees *something*" fuzziness is limited to fields
+    /// that are meant to contain the match (ayah search) and doesn't leak onto side-by-side sibling fields.
     private func arabicLooseRanges(
         source: String,
         normalizedSource: String,
@@ -346,7 +362,11 @@ struct HighlightedSnippet: View {
         }
         if !ranges.isEmpty { return ranges }
 
-        // Longest-prefix partial: highlight the longest leading chunk of the term we can find.
+        // Longest-prefix partial: highlight the longest leading chunk of the term we can find. This is a
+        // fuzzy guess (it colors a fragment even when the full term isn't present), so it's reserved for
+        // fields that are supposed to contain the match — otherwise a two-letter overlap on an unrelated
+        // sibling field would light up.
+        guard guaranteeMatch else { return [] }
         var prefixLen = termSkeleton.count - 1
         while prefixLen >= 2 {
             let prefix = String(termSkeleton.prefix(prefixLen))

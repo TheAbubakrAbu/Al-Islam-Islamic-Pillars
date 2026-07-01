@@ -51,13 +51,23 @@ struct AdhkarRow: View {
     }
 
     private var rowContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // Guarantee a highlight only on the field(s) that actually contain the query (folded the same way the
+        // dhikr search itself matches), so a match in one field doesn't force-color the other two.
+        let normalizedQuery = searchQuery
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        func matches(_ field: String) -> Bool {
+            guard !normalizedQuery.isEmpty else { return false }
+            return field.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current).contains(normalizedQuery)
+        }
+        return VStack(alignment: .leading, spacing: 10) {
             HighlightedSnippet(
                 source: arabicText,
                 term: searchQuery,
                 font: useQuranicFont ? .custom(settings.fontArabic, size: 30) : .title2,
                 accent: settings.accentColor.color,
-                fg: settings.accentColor.color
+                fg: settings.accentColor.color,
+                guaranteeMatch: matches(arabicText)
             )
                 .multilineTextAlignment(alignArabicTrailing ? .trailing : .leading)
                 .frame(maxWidth: .infinity, alignment: alignArabicTrailing ? .trailing : .leading)
@@ -68,7 +78,8 @@ struct AdhkarRow: View {
                 term: searchQuery,
                 font: .subheadline,
                 accent: settings.accentColor.color,
-                fg: .primary
+                fg: .primary,
+                guaranteeMatch: matches(transliteration)
             )
 
             HighlightedSnippet(
@@ -76,7 +87,8 @@ struct AdhkarRow: View {
                 term: searchQuery,
                 font: .subheadline,
                 accent: settings.accentColor.color,
-                fg: .secondary
+                fg: .secondary,
+                guaranteeMatch: matches(translation)
             )
         }
         .padding(.vertical, 4)

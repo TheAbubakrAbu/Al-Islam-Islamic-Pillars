@@ -500,7 +500,11 @@ struct AyahRow: View, Equatable {
                     showEnglishSaheeh: showEnglishSaheeh,
                     showEnglishMustafa: showEnglishMustafa,
                     fontSizeEN: fontSizeEN,
-                    highlightQuery: highlightQuery
+                    highlightQuery: highlightQuery,
+                    matchedArabic: mArabic,
+                    matchedTranslit: mTranslit,
+                    matchedSaheeh: mSaheeh,
+                    matchedMustafa: mMustafa
                 )
                 .padding(.bottom, 2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -614,7 +618,11 @@ struct AyahRow: View, Equatable {
         showEnglishSaheeh: Bool,
         showEnglishMustafa: Bool,
         fontSizeEN: CGFloat,
-        highlightQuery: String
+        highlightQuery: String,
+        matchedArabic: Bool = false,
+        matchedTranslit: Bool = false,
+        matchedSaheeh: Bool = false,
+        matchedMustafa: Bool = false
     ) -> some View {
         let groupHasEnglishOrTranslit = showTranslit || showEnglishSaheeh || showEnglishMustafa
         let prefixOnTranslit  = groupHasEnglishOrTranslit && showTranslit
@@ -675,7 +683,8 @@ struct AyahRow: View, Equatable {
                     trailingSuffix: " \(ayah.idArabic)",
                     trailingSuffixFont: suffixFont,
                     trailingSuffixColor: settings.accentColor.color,
-                    highlightAllahNames: settings.highlightAllahNames
+                    highlightAllahNames: settings.highlightAllahNames,
+                    guaranteeMatch: matchedArabic
                 )
                 .id(tajweedAnimationKey)
                 .multilineTextAlignment(.trailing)
@@ -691,7 +700,8 @@ struct AyahRow: View, Equatable {
                     font: .system(size: fontSizeEN),
                     accent: settings.accentColor.color,
                     fg: .primary,
-                    highlightAllahNames: settings.highlightAllahNames
+                    highlightAllahNames: settings.highlightAllahNames,
+                    guaranteeMatch: matchedTranslit
                 )
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -707,7 +717,8 @@ struct AyahRow: View, Equatable {
                         font: .system(size: fontSizeEN),
                         accent: settings.accentColor.color,
                         fg: .primary,
-                        highlightAllahNames: settings.highlightAllahNames
+                        highlightAllahNames: settings.highlightAllahNames,
+                        guaranteeMatch: matchedSaheeh
                     )
                     Text("— Saheeh International")
                         .font(.caption)
@@ -727,7 +738,8 @@ struct AyahRow: View, Equatable {
                         font: .system(size: fontSizeEN),
                         accent: settings.accentColor.color,
                         fg: .primary,
-                        highlightAllahNames: settings.highlightAllahNames
+                        highlightAllahNames: settings.highlightAllahNames,
+                        guaranteeMatch: matchedMustafa
                     )
                     Text("— Clear Quran (Mustafa Khattab)")
                         .font(.caption)

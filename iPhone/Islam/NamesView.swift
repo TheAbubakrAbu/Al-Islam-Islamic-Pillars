@@ -78,6 +78,22 @@ struct NameOfAllah: Decodable, Identifiable, Equatable {
         guard let closingParen = found.firstIndex(of: ")") else { return found }
         return String(found[...closingParen])
     }
+
+    /// Which of the three *displayed* fields (Arabic name, transliteration, meaning) actually contain the
+    /// query. A name can also match on hidden fields (`desc`, `otherNames`, `found`), in which case all three
+    /// are false and the collapsed row shows no highlight — correct, since the match isn't visible. When a
+    /// displayed field does match, its flag drives `guaranteeMatch` so that field always shows at least one
+    /// highlight even if the highlighter's normalization differs from this search's (e.g. `ḥ` vs `h`).
+    /// Indices mirror `searchTokens`: [0] = Arabic name, [1] = transliteration, [2] = meaning.
+    func displayedFieldMatches(query rawQuery: String) -> (arabic: Bool, transliteration: Bool, meaning: Bool) {
+        let q = Self.clean(rawQuery)
+        guard !q.isEmpty, searchTokens.count >= 3 else { return (false, false, false) }
+        return (
+            arabic: searchTokens[0].contains(q),
+            transliteration: searchTokens[1].contains(q),
+            meaning: searchTokens[2].contains(q)
+        )
+    }
 }
 
 final class NamesViewModel: ObservableObject {
@@ -551,7 +567,8 @@ private struct NameRow: View, Equatable {
     }
 
     private var content: some View {
-        Group {
+        let fieldMatches = name.displayedFieldMatches(query: searchQuery)
+        return Group {
             HStack(alignment: .center, spacing: 12) {
                 numberPill
 
@@ -562,7 +579,8 @@ private struct NameRow: View, Equatable {
                             term: searchQuery,
                             font: .subheadline.weight(.semibold),
                             accent: accentColor.color,
-                            fg: .primary
+                            fg: .primary,
+                            guaranteeMatch: fieldMatches.transliteration
                         )
                             .lineLimit(1)
 
@@ -571,7 +589,8 @@ private struct NameRow: View, Equatable {
                             term: searchQuery,
                             font: .caption,
                             accent: accentColor.color,
-                            fg: .secondary
+                            fg: .secondary,
+                            guaranteeMatch: fieldMatches.meaning
                         )
                             .lineLimit(1)
 
@@ -589,7 +608,8 @@ private struct NameRow: View, Equatable {
                             term: searchQuery,
                             font: useFontArabic ? .custom(fontArabic, size: 24) : .title3,
                             accent: accentColor.color,
-                            fg: .primary
+                            fg: .primary,
+                            guaranteeMatch: fieldMatches.arabic
                         )
                             .lineLimit(2)
                             .multilineTextAlignment(.trailing)
